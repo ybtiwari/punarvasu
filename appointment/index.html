@@ -34,7 +34,15 @@
     <div class="fg"><label>Consultation type</label><select><option>In-clinic (Ahmedabad)</option><option>Online / video call</option></select></div>
     <div class="fg full"><label>Brief health history</label><textarea placeholder="Main complaint, how long it has been present, any past illnesses, treatments taken so far, and anything else you feel is relevant."></textarea></div>
   </div>
-  <button class="form-btn" onclick="this.textContent='Request received. We will contact you within 24 hours.';this.disabled=true;this.style.background='#155448';">Send request</button>
+  <button class="form-btn" id="appt-btn" onclick="
+  var btn=this;
+  btn.textContent='Request received. We will contact you within 24 hours.';
+  btn.style.background='#155448';
+  setTimeout(function(){
+    btn.textContent='Send request';
+    btn.style.background='';
+  }, 4000);
+">Send request</button>
   <p style="font-size:14px;color:var(--ink3);margin-top:12px;">Mon – Sat, 11 am – 7 pm &nbsp;·&nbsp; Gurukul Road, Memnagar, Ahmedabad &nbsp;·&nbsp; +91 92747 91141</p>
 </div>
 <div class="content-block" style="margin-top:36px;padding-top:32px;border-top:1px solid var(--border);">
