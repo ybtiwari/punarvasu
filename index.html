@@ -1,78 +1,86 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Home · Punarvasu</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="assets/style.css"/>
-</head>
-<body>
-<header class="topbar">
-  <a href="index.html" class="topbar-logo">
-    <span class="logo-name">Punarvasu</span>
-    <span class="logo-sub">Punarvasu Clinic · Classical Homeopathy · Ahmedabad</span>
-  </a>
-  <div class="topbar-right">
-    <a href="appointment/index.html" class="topbar-appt">Book Appointment</a>
-    <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
-  </div>
-</header>
-<nav class="sidebar" id="sidebar"></nav>
-<div class="sidebar-overlay" id="sidebar-overlay"></div>
-<main class="page-wrap">
-  <div class="page-content">
-    
-<div class="page-header">
-  <span class="sec-label">Welcome</span>
-  <h1>Punarvasu</h1>
-  <p>Natural law. Constitutional healing. Complete restoration.<br/>A diseased body is a body that has been wound up — layer by layer, through stress, disturbance, and suppression. Our work is to unwind it.</p>
-</div>
-<div style="padding:1rem 0 1.5rem;">
-  <p id="anim-label" style="font-size:12px;font-weight:500;color:var(--ink);letter-spacing:0.18em;text-transform:uppercase;text-align:center;margin-bottom:0.75rem;">natural state</p>
-  <canvas id="anim-canvas" style="width:100%;display:block;" height="160"></canvas>
-</div>
-<div class="cards" style="margin-top:28px;">
-  <a href="mission-vision/index.html" class="card"><span class="card-label">Start here</span><h3>Mission &amp; Vision</h3><p>What we are working toward and why.</p></a>
-  <a href="philosophy/index.html" class="card"><span class="card-label">Foundation</span><h3>Our Philosophy</h3><p>The principles behind every prescription made here.</p></a>
-  <a href="treatment/index.html" class="card"><span class="card-label">Process</span><h3>How We Treat</h3><p>From first consultation to complete restoration.</p></a>
-  <a href="conditions/index.html" class="card"><span class="card-label">Scope</span><h3>Conditions We Address</h3><p>What kinds of cases we take, and why.</p></a>
-  <a href="medicine/index.html" class="card"><span class="card-label">The remedy</span><h3>Medicine &amp; Dose</h3><p>Why there is no fixed medicine for any disease.</p></a>
-  <a href="about/index.html" class="card"><span class="card-label">The practice</span><h3>About Us</h3><p>Dr. Yogeshwar Tiwari, BHMS · Ahmedabad.</p></a>
-</div>
-<script>
-(function(){
-  const canvas=document.getElementById('anim-canvas'),label=document.getElementById('anim-label');
-  if(!canvas)return;
-  const ctx=canvas.getContext('2d'),STRANDS=3,COLORS=['#C8600A','#E8830A','#A34A06'],PHASES=[0,Math.PI*2/3,Math.PI*4/3];
-  const STAGES=[{twist:0,label:'natural state'},{twist:0.4,label:'stress begins'},{twist:1.0,label:'disease progresses'},{twist:2.0,label:'fully wound'},{twist:2.0,label:'homeopathy begins'},{twist:1.0,label:'cure progresses'},{twist:0.4,label:'nearly free'},{twist:0,label:'restored'}];
-  let si=0,from=0,to=0,st=null;const DUR=1600,PAUSE=1100;
-  function ease(t){return t<0.5?2*t*t:-1+(4-2*t)*t;}
-  function draw(twist){
-    const dpr=window.devicePixelRatio||1,W=canvas.width/dpr,H=canvas.height/dpr;
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    const margin=W*0.04,cy=H/2,len=W-margin*2,amp=Math.min(H*0.32,H*0.08+twist*H*0.1),freq=0.014+twist*0.032,thick=Math.max(W*0.006,W*0.012-twist*W*0.002);
-    ctx.save();ctx.globalAlpha=0.06+twist*0.04;ctx.strokeStyle='#435C72';ctx.lineWidth=thick*2.2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(margin,cy);ctx.lineTo(margin+len,cy);ctx.stroke();ctx.restore();
-    for(let s=0;s<STRANDS;s++){ctx.save();ctx.strokeStyle=COLORS[s];ctx.lineWidth=thick;ctx.lineCap='round';ctx.lineJoin='round';ctx.globalAlpha=0.78+s*0.08;ctx.beginPath();let first=true;const steps=Math.ceil(len/1.5);for(let i=0;i<=steps;i++){const x=i/steps,env=1-Math.pow(Math.abs(x-0.5)*2,0.6)*twist*0.22,y=cy+Math.sin(freq*i*Math.PI*2+PHASES[s])*amp*env,px=margin+x*len;if(first){ctx.moveTo(px,y);first=false;}else ctx.lineTo(px,y);}ctx.stroke();ctx.restore();}
-    [margin,margin+len].forEach(ex=>{ctx.save();ctx.fillStyle='rgba(15,32,53,0.15)';ctx.beginPath();ctx.arc(ex,cy,thick*1.4,0,Math.PI*2);ctx.fill();ctx.restore();});
-  }
-  function resize(){const dpr=window.devicePixelRatio||1,rect=canvas.parentElement.getBoundingClientRect();canvas.style.width=rect.width+'px';canvas.width=rect.width*dpr;canvas.height=160*dpr;ctx.setTransform(1,0,0,1,0,0);ctx.scale(dpr,dpr);draw(from);}
-  function tick(ts){if(!st)st=ts;const t=Math.min((ts-st)/DUR,1),twist=from+(to-from)*ease(t);draw(twist);if(t<1)requestAnimationFrame(tick);else{draw(to);from=to;setTimeout(next,PAUSE);}}
-  function next(){si=(si+1)%STAGES.length;const s=STAGES[si];label.textContent=s.label;to=s.twist;st=null;requestAnimationFrame(tick);}
-  resize();window.addEventListener('resize',resize);setTimeout(next,PAUSE*2);
-})();
-</script>
-    
-  </div>
-</main>
-<footer class="site-footer">
-  <div class="footer-inner">
-    <p>© 2025 Punarvasu Clinic · Dr. Yogeshwar Tiwari, BHMS · Ahmedabad, Gujarat</p>
-    <p class="footer-disc">Homeopathy is a system of complementary medicine. For emergencies, seek appropriate medical care.</p>
-  </div>
-</footer>
-<script src="assets/nav.js"></script>
-</body>
-</html>
+Punarvasu
+PUNARVASU CLINIC · CLASSICAL HOMEOPATHY · AHMEDABAD
+EN
+हि
+ગુ
+Book Appointment
+Home
+Mission & Vision
+PHILOSOPHY
+Overview
+The Winding Metaphor
+How Disease Progresses
+How Cure Happens
+Wave Theory
+The Body as One Entity
+Evidence Based Treatment
+TREATMENT
+Overview
+Case Taking
+Constitutional Remedy
+Follow-up & Unfolding
+What to Expect
+Evidence Based Treatment
+CONDITIONS
+Overview
+Chronic Conditions
+Acute Conditions
+Mind & Emotions
+Why We Don't List Diseases
+MEDICINE
+Overview
+No Fixed Medicine
+No Fixed Dose
+Treatment vs Prescription
+ABOUT US
+Overview
+Dr. Yogeshwar Tiwari
+Articles
+Appointment
+HOMEOPATHIC HEALING · AHMEDABAD
+Healing that begins
+at the root.
+A diseased body is a body that has been wound up — layer by layer, through stress, suppression, and disturbance. Punarvasu is the place where that unwinding begins.
+
+Book a Consultation
+Our Philosophy →
+FULLY RESTORED
+WHAT WE OFFER
+Constitutional homeopathic care for the whole person
+Every prescription at Punarvasu is built on a complete understanding of who you are — your constitution, your history, your symptoms as a language. We do not treat diseases. We treat people.
+
+START HERE
+Mission & Vision
+What we are working toward and why.
+
+FOUNDATION
+Our Philosophy
+The principles behind every prescription made here.
+
+EVIDENCE
+Evidence Based Treatment
+Why the symptom itself is the clearest proof of cure.
+
+PROCESS
+How We Treat
+From first consultation to complete restoration.
+
+SCOPE
+Conditions We Address
+What kinds of cases we take, and why.
+
+THE REMEDY
+Medicine & Dose
+Why there is no fixed medicine for any disease.
+
+THE PRACTICE
+About Us
+Dr. Yogeshwar Tiwari, BHMS · Ahmedabad.
+
+READ
+Articles
+Thoughts on healing, health, and homeopathy.
+
+© 2025 Punarvasu Clinic · Dr. Yogeshwar Tiwari, BHMS · Ahmedabad, Gujarat
+
+Homeopathy is a system of complementary medicine. For emergencies, seek appropriate medical care.
