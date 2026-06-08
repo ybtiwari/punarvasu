@@ -4,359 +4,85 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Punarvasu — Unwind Healing Center</title>
+  <title>Punarvasu — Home</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=Noto+Sans+Devanagari:wght@300;400;500&family=Noto+Sans+Gujarati:wght@300;400;500&display=swap" rel="stylesheet"/>
-
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --sand:    #F2EFE8;
-      --sand2:   #E8E3D8;
-      --sand3:   #DDD5BC;
-      --parchment: #F8F7F4;
-      --bark:    #6B5B2E;
-      --bark2:   #856E35;
-      --clay:    #A07C2A;
-      --clay2:   #7A5E1A;
-      --forest:  #7A5E1A;
-      --forest2: #5C4510;
-      --ink:     #1E1A10;
-      --ink2:    #3A3220;
-      --ink3:    #7A6A40;
-      --white:   #FFFFFF;
-      --serif:   'Cormorant Garamond', Georgia, serif;
-      --sans:    'DM Sans', system-ui, sans-serif;
-      --deva:    'Noto Sans Devanagari', sans-serif;
-      --guj:     'Noto Sans Gujarati', sans-serif;
-      --topbar-h: 64px;
-      --sidebar-w: 260px;
+      --sand: #F2EFE8; --sand2: #E8E3D8; --sand3: #DDD5BC;
+      --parchment: #F8F7F4; --bark: #6B5B2E; --bark2: #856E35;
+      --clay: #A07C2A; --clay2: #7A5E1A; --forest: #7A5E1A;
+      --forest2: #5C4510; --ink: #1E1A10; --ink2: #3A3220;
+      --ink3: #7A6A40; --white: #FFFFFF;
+      --serif: 'Cormorant Garamond', Georgia, serif;
+      --sans: 'DM Sans', system-ui, sans-serif;
+      --deva: 'Noto Sans Devanagari', sans-serif;
+      --guj: 'Noto Sans Gujarati', sans-serif;
+      --topbar-h: 64px; --sidebar-w: 260px;
     }
-
     html { scroll-behavior: smooth; }
-
-    body {
-      font-family: var(--sans);
-      font-size: 16px;
-      line-height: 1.75;
-      color: var(--ink);
-      background: var(--parchment);
-      -webkit-font-smoothing: antialiased;
-    }
-
-    body.lang-hi { --body-font: var(--deva); }
-    body.lang-gu { --body-font: var(--guj); }
-
+    body { font-family: var(--sans); font-size: 16px; line-height: 1.75; color: var(--ink); background: var(--parchment); -webkit-font-smoothing: antialiased; }
     a { color: var(--forest); text-decoration: none; }
     a:hover { text-decoration: underline; }
-
-    /* ── TOPBAR ── */
-    .topbar {
-      position: fixed; top: 0; left: 0; right: 0;
-      height: var(--topbar-h); z-index: 200;
-      background: var(--parchment);
-      border-bottom: 1px solid var(--sand3);
-      display: flex; align-items: center;
-      justify-content: space-between;
-      padding: 0 32px;
-    }
-
-    .topbar-logo {
-      text-decoration: none !important;
-      display: flex; flex-direction: column; gap: 1px;
-    }
-    .logo-name {
-      font-family: var(--serif);
-      font-size: 22px;
-      font-weight: 500;
-      color: var(--ink);
-      letter-spacing: 0.04em;
-      line-height: 1;
-    }
-    .logo-sub {
-      font-size: 10px;
-      color: var(--ink3);
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-    }
-
-    .topbar-right {
-      display: flex; align-items: center; gap: 16px;
-    }
-
-    /* ── LANGUAGE SWITCHER ── */
-    .lang-switcher {
-      display: flex; align-items: center;
-      gap: 2px;
-      background: var(--sand2);
-      border-radius: 20px;
-      padding: 3px;
-    }
-    .lang-btn {
-      border: none; background: none; cursor: pointer;
-      padding: 5px 12px; border-radius: 16px;
-      font-family: var(--sans); font-size: 12px;
-      font-weight: 500; color: var(--ink3);
-      transition: all 0.2s;
-      letter-spacing: 0.04em;
-    }
-    .lang-btn.active {
-      background: var(--white);
-      color: var(--ink);
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    }
+    .topbar { position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-h); z-index: 200; background: var(--parchment); border-bottom: 1px solid var(--sand3); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; }
+    .topbar-logo { text-decoration: none !important; display: flex; flex-direction: column; gap: 1px; }
+    .logo-name { font-family: var(--serif); font-size: 22px; font-weight: 500; color: var(--ink); letter-spacing: 0.04em; line-height: 1; }
+    .logo-sub { font-size: 10px; color: var(--ink3); letter-spacing: 0.14em; text-transform: uppercase; }
+    .topbar-right { display: flex; align-items: center; gap: 16px; }
+    .lang-switcher { display: flex; align-items: center; gap: 2px; background: var(--sand2); border-radius: 20px; padding: 3px; }
+    .lang-btn { border: none; background: none; cursor: pointer; padding: 5px 12px; border-radius: 16px; font-family: var(--sans); font-size: 12px; font-weight: 500; color: var(--ink3); transition: all 0.2s; letter-spacing: 0.04em; }
+    .lang-btn.active { background: var(--white); color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
     .lang-btn:hover:not(.active) { color: var(--ink2); }
-
-    .topbar-appt {
-      background: var(--forest);
-      color: var(--white) !important;
-      padding: 9px 20px; border-radius: 4px;
-      font-size: 13px; font-weight: 500;
-      text-decoration: none !important;
-      transition: background 0.15s;
-      letter-spacing: 0.02em;
-    }
+    .topbar-appt { background: var(--forest); color: var(--white) !important; padding: 9px 20px; border-radius: 4px; font-size: 13px; font-weight: 500; text-decoration: none !important; transition: background 0.15s; letter-spacing: 0.02em; }
     .topbar-appt:hover { background: var(--forest2); }
-
-    .hamburger {
-      display: none; flex-direction: column; gap: 5px;
-      background: none; border: none; cursor: pointer; padding: 4px;
-    }
-    .hamburger span {
-      display: block; width: 22px; height: 1.5px;
-      background: var(--ink); border-radius: 2px;
-    }
-
-    /* ── SIDEBAR ── */
-    .sidebar {
-      position: fixed; top: var(--topbar-h); left: 0; bottom: 0;
-      width: var(--sidebar-w);
-      background: var(--sand);
-      border-right: 1px solid var(--sand3);
-      overflow-y: auto; z-index: 100;
-      padding: 28px 0 40px;
-      transition: transform 0.3s;
-    }
+    .hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; }
+    .hamburger span { display: block; width: 22px; height: 1.5px; background: var(--ink); border-radius: 2px; }
+    .sidebar { position: fixed; top: var(--topbar-h); left: 0; bottom: 0; width: var(--sidebar-w); background: var(--sand); border-right: 1px solid var(--sand3); overflow-y: auto; z-index: 100; padding: 28px 0 40px; transition: transform 0.3s; }
     .sidebar-section { margin-bottom: 4px; }
-    .sidebar-section-title {
-      font-size: 9.5px; letter-spacing: 0.2em;
-      text-transform: uppercase; color: var(--ink3);
-      font-weight: 500; padding: 10px 22px 4px; display: block;
-    }
-    .sidebar-link {
-      display: block; padding: 8px 22px;
-      font-size: 13.5px; color: var(--ink2);
-      border-left: 2px solid transparent;
-      transition: all 0.15s; line-height: 1.35;
-    }
-    .sidebar-link:hover {
-      background: var(--sand2); color: var(--ink);
-      text-decoration: none;
-    }
-    .sidebar-link.active {
-      color: var(--forest); font-weight: 500;
-      border-left-color: var(--forest);
-      background: rgba(45,84,68,0.06);
-    }
-    .sidebar-divider {
-      height: 1px; background: var(--sand3); margin: 8px 22px;
-    }
-
-    /* ── OVERLAY ── */
-    .sidebar-overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(26,18,9,0.4); z-index: 99;
-    }
+    .sidebar-section-title { font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink3); font-weight: 500; padding: 10px 22px 4px; display: block; }
+    .sidebar-link { display: block; padding: 8px 22px; font-size: 13.5px; color: var(--ink2); border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.35; }
+    .sidebar-link:hover { background: var(--sand2); color: var(--ink); text-decoration: none; }
+    .sidebar-link.active { color: var(--forest); font-weight: 500; border-left-color: var(--forest); background: rgba(45,84,68,0.06); }
+    .sidebar-divider { height: 1px; background: var(--sand3); margin: 8px 22px; }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(26,18,9,0.4); z-index: 99; }
     .sidebar-overlay.open { display: block; }
-
-    /* ── MAIN ── */
-    .page-wrap {
-      margin-left: var(--sidebar-w);
-      margin-top: var(--topbar-h);
-      min-height: calc(100vh - var(--topbar-h));
-    }
-
-    /* ── HERO ── */
-    .hero {
-      padding: 72px 64px 60px;
-      border-bottom: 1px solid var(--sand3);
-      max-width: 860px;
-      position: relative;
-    }
-
-    .hero-eyebrow {
-      font-size: 10.5px; letter-spacing: 0.22em;
-      text-transform: uppercase; color: var(--clay);
-      margin-bottom: 18px; display: block;
-      font-weight: 500;
-    }
-
-    .hero h1 {
-      font-family: var(--serif);
-      font-size: clamp(36px, 5vw, 58px);
-      font-weight: 400; line-height: 1.15;
-      color: var(--ink); margin-bottom: 24px;
-      letter-spacing: -0.01em;
-    }
-
-    .hero h1 em {
-      font-style: italic; color: var(--clay2);
-    }
-
-    .hero-lead {
-      font-size: 17px; color: var(--ink2);
-      max-width: 540px; line-height: 1.85;
-      margin-bottom: 36px;
-    }
-
-    .hero-lead.hi, .hero-lead.gu {
-      font-size: 16px; line-height: 1.9;
-    }
-
-    .hero-actions {
-      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-    }
-
-    .btn-primary {
-      background: var(--forest); color: var(--white);
-      padding: 12px 28px; border-radius: 4px;
-      font-size: 14px; font-weight: 500;
-      text-decoration: none !important;
-      transition: background 0.15s;
-      letter-spacing: 0.02em;
-    }
+    .page-wrap { margin-left: var(--sidebar-w); margin-top: var(--topbar-h); min-height: calc(100vh - var(--topbar-h)); }
+    .hero { padding: 72px 64px 60px; border-bottom: 1px solid var(--sand3); max-width: 860px; }
+    .hero-eyebrow { font-size: 10.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--clay); margin-bottom: 18px; display: block; font-weight: 500; }
+    .hero h1 { font-family: var(--serif); font-size: clamp(36px, 5vw, 58px); font-weight: 400; line-height: 1.15; color: var(--ink); margin-bottom: 24px; letter-spacing: -0.01em; }
+    .hero h1 em { font-style: italic; color: var(--clay2); }
+    .hero-lead { font-size: 17px; color: var(--ink2); max-width: 540px; line-height: 1.85; margin-bottom: 36px; }
+    .hero-lead.hi, .hero-lead.gu { font-size: 16px; line-height: 1.9; }
+    .hero-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .btn-primary { background: var(--forest); color: var(--white); padding: 12px 28px; border-radius: 4px; font-size: 14px; font-weight: 500; text-decoration: none !important; transition: background 0.15s; letter-spacing: 0.02em; }
     .btn-primary:hover { background: var(--forest2); }
-
-    .btn-secondary {
-      color: var(--ink2); font-size: 14px;
-      padding: 12px 4px;
-      border-bottom: 1px solid var(--ink3);
-      text-decoration: none !important;
-      transition: color 0.15s, border-color 0.15s;
-    }
+    .btn-secondary { color: var(--ink2); font-size: 14px; padding: 12px 4px; border-bottom: 1px solid var(--ink3); text-decoration: none !important; transition: color 0.15s, border-color 0.15s; }
     .btn-secondary:hover { color: var(--forest); border-color: var(--forest); }
-
-    /* ── LOTUS ANIMATION ── */
-    .anim-wrap {
-      padding: 40px 64px 0;
-      max-width: 860px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .anim-label {
-      font-size: 10px; font-weight: 500;
-      color: var(--ink3); letter-spacing: 0.2em;
-      text-transform: uppercase; text-align: center;
-      margin-top: 14px; display: block;
-    }
-    #lotus-canvas {
-      width: 100%; max-width: 520px;
-      display: block;
-    }
-
-    /* ── SECTION INTRO ── */
-    .section-intro {
-      padding: 52px 64px 0;
-      max-width: 860px;
-    }
-    .section-intro .sec-label {
-      font-size: 10px; letter-spacing: 0.2em;
-      text-transform: uppercase; color: var(--ink3);
-      display: block; margin-bottom: 10px;
-    }
-    .section-intro h2 {
-      font-family: var(--serif);
-      font-size: clamp(22px, 3vw, 30px);
-      font-weight: 400; color: var(--ink);
-      margin-bottom: 14px; line-height: 1.3;
-    }
-    .section-intro p {
-      font-size: 16px; color: var(--ink2);
-      max-width: 520px; line-height: 1.85;
-    }
-
-    /* ── CARDS ── */
-    .cards-wrap {
-      padding: 36px 64px 72px;
-      max-width: 860px;
-    }
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-    }
-    .card {
-      border: 1px solid var(--sand3);
-      border-radius: 8px;
-      padding: 24px 20px;
-      background: var(--white);
-      transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
-      text-decoration: none !important;
-      display: block;
-    }
-    .card:hover {
-      box-shadow: 0 6px 24px rgba(26,18,9,0.08);
-      border-color: var(--bark2);
-      transform: translateY(-2px);
-    }
-    .card-label {
-      font-size: 9.5px; letter-spacing: 0.16em;
-      text-transform: uppercase; color: var(--clay);
-      margin-bottom: 10px; display: block; font-weight: 500;
-    }
-    .card h3 {
-      font-family: var(--serif);
-      font-size: 18px; font-weight: 500;
-      color: var(--ink); margin-bottom: 8px; line-height: 1.3;
-    }
-    .card p {
-      font-size: 13px; color: var(--ink3);
-      margin: 0; line-height: 1.65;
-    }
-
-    /* ── FOOTER ── */
-    .site-footer {
-      background: #1E1A10;
-      padding: 36px 64px 28px;
-      margin-left: var(--sidebar-w);
-    }
-    .footer-inner {
-      display: flex; justify-content: space-between;
-      flex-wrap: wrap; gap: 12px;
-    }
-    .site-footer p {
-      font-size: 12px; color: rgba(255,255,255,0.3); margin: 0;
-    }
-    .footer-disc {
-      font-size: 11px; color: rgba(255,255,255,0.18) !important;
-      max-width: 400px; line-height: 1.6;
-    }
-
-    /* ── LANGUAGE CONTENT ── */
+    .anim-wrap { padding: 40px 64px 0; max-width: 860px; display: flex; flex-direction: column; align-items: center; }
+    .anim-label { font-size: 10px; font-weight: 500; color: var(--ink3); letter-spacing: 0.2em; text-transform: uppercase; text-align: center; margin-top: 14px; display: block; }
+    #lotus-canvas { width: 100%; max-width: 520px; display: block; }
+    .section-intro { padding: 52px 64px 0; max-width: 860px; }
+    .section-intro .sec-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink3); display: block; margin-bottom: 10px; }
+    .section-intro h2 { font-family: var(--serif); font-size: clamp(22px, 3vw, 30px); font-weight: 400; color: var(--ink); margin-bottom: 14px; line-height: 1.3; }
+    .section-intro p { font-size: 16px; color: var(--ink2); max-width: 520px; line-height: 1.85; }
+    .cards-wrap { padding: 36px 64px 72px; max-width: 860px; }
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .card { border: 1px solid var(--sand3); border-radius: 8px; padding: 24px 20px; background: var(--white); transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s; text-decoration: none !important; display: block; }
+    .card:hover { box-shadow: 0 6px 24px rgba(26,18,9,0.08); border-color: var(--bark2); transform: translateY(-2px); }
+    .card-label { font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--clay); margin-bottom: 10px; display: block; font-weight: 500; }
+    .card h3 { font-family: var(--serif); font-size: 18px; font-weight: 500; color: var(--ink); margin-bottom: 8px; line-height: 1.3; }
+    .card p { font-size: 13px; color: var(--ink3); margin: 0; line-height: 1.65; }
+    .site-footer { background: #1E1A10; padding: 36px 64px 28px; margin-left: var(--sidebar-w); }
+    .footer-inner { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .site-footer p { font-size: 12px; color: rgba(255,255,255,0.3); margin: 0; }
+    .footer-disc { font-size: 11px; color: rgba(255,255,255,0.18) !important; max-width: 400px; line-height: 1.6; }
     [data-lang] { display: none; }
     [data-lang].visible { display: block; }
-    [data-lang-inline] { display: none; }
-    [data-lang-inline].visible { display: inline; }
-
-    .lang-hi h1, .lang-hi .hero-lead,
-    .lang-hi .card h3, .lang-hi .card p,
-    .lang-hi .section-intro p {
-      font-family: var(--deva);
-    }
-    .lang-gu h1, .lang-gu .hero-lead,
-    .lang-gu .card h3, .lang-gu .card p,
-    .lang-gu .section-intro p {
-      font-family: var(--guj);
-    }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 900px) {
-      .cards { grid-template-columns: 1fr 1fr; }
-    }
-
+    .lang-hi h1, .lang-hi .hero-lead, .lang-hi .card h3, .lang-hi .card p, .lang-hi .section-intro p { font-family: var(--deva); }
+    .lang-gu h1, .lang-gu .hero-lead, .lang-gu .card h3, .lang-gu .card p, .lang-gu .section-intro p { font-family: var(--guj); }
+    @media (max-width: 900px) { .cards { grid-template-columns: 1fr 1fr; } }
     @media (max-width: 768px) {
       .sidebar { transform: translateX(-100%); }
       .sidebar.open { transform: translateX(0); }
@@ -371,11 +97,10 @@
   </style>
 </head>
 <body>
-
 <header class="topbar">
   <a href="/index.html" class="topbar-logo">
     <span class="logo-name">Punarvasu</span>
-    <span class="logo-sub">Unwind Healing Center · Ahmedabad</span>
+    <span class="logo-sub">Punarvasu Clinic · Classical Homeopathy · Ahmedabad</span>
   </a>
   <div class="topbar-right">
     <div class="lang-switcher">
@@ -384,22 +109,14 @@
       <button class="lang-btn" data-set-lang="gu">ગુ</button>
     </div>
     <a href="/appointment/index.html" class="topbar-appt" id="appt-btn">Book Appointment</a>
-    <button class="hamburger" id="hamburger" aria-label="Menu">
-      <span></span><span></span><span></span>
-    </button>
+    <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
   </div>
 </header>
-
 <nav class="sidebar" id="sidebar"></nav>
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
-
 <main class="page-wrap">
-
-  <!-- HERO -->
   <section class="hero">
     <span class="hero-eyebrow">Homeopathic Healing · Ahmedabad</span>
-
-    <!-- English -->
     <div data-lang="en">
       <h1>Healing that begins<br/><em>at the root.</em></h1>
       <p class="hero-lead">A diseased body is a body that has been wound up — layer by layer, through stress, suppression, and disturbance. Punarvasu is the place where that unwinding begins.</p>
@@ -408,8 +125,6 @@
         <a href="/philosophy/index.html" class="btn-secondary">Our Philosophy →</a>
       </div>
     </div>
-
-    <!-- Hindi -->
     <div data-lang="hi">
       <h1>उपचार जो शुरू होता है<br/><em>जड़ से।</em></h1>
       <p class="hero-lead hi">एक रोगग्रस्त शरीर वह शरीर है जो तनाव, दमन और विक्षोभ के कारण परत दर परत जकड़ गया है। पुनर्वसु वह स्थान है जहाँ यह खुलना शुरू होता है।</p>
@@ -418,8 +133,6 @@
         <a href="/philosophy/index.html" class="btn-secondary">हमारा दर्शन →</a>
       </div>
     </div>
-
-    <!-- Gujarati -->
     <div data-lang="gu">
       <h1>ઉપચાર જે શરૂ થાય છે<br/><em>મૂળથી.</em></h1>
       <p class="hero-lead gu">એક રોગગ્રસ્ત શરીર એ શરીર છે જે તણાવ, દમન અને વિક્ષોભ દ્વારા સ્તર-દર-સ્તર જકડાઈ ગયું છે. પુનર્વસુ એ સ્થળ છે જ્યાં આ ઉકેલ શરૂ થાય છે।</p>
@@ -429,14 +142,10 @@
       </div>
     </div>
   </section>
-
-  <!-- ANIMATION -->
   <div class="anim-wrap">
     <canvas id="lotus-canvas" height="200"></canvas>
     <span class="anim-label" id="anim-label">withered</span>
   </div>
-
-  <!-- SECTION INTRO -->
   <div class="section-intro">
     <div data-lang="en">
       <span class="sec-label">What we offer</span>
@@ -454,413 +163,221 @@
       <p>પુનર્વસુ ખાતે દરેક પ્રિસ્ક્રિપ્શન તમારી સંપૂર્ણ સમજ પર આધારિત છે — તમારું બંધારણ, તમારો ઇતિહાસ, ભાષા તરીકે તમારા લક્ષણો. અમે રોગોની સારવાર કરતા નથી. અમે લોકોની સારવાર કરીએ છીએ.</p>
     </div>
   </div>
-
-  <!-- CARDS -->
   <div class="cards-wrap">
-    <div class="cards" id="cards-en" data-lang="en">
-      <a href="/mission-vision/index.html" class="card">
-        <span class="card-label">Start here</span>
-        <h3>Mission &amp; Vision</h3>
-        <p>What we are working toward and why.</p>
-      </a>
-      <a href="/philosophy/index.html" class="card">
-        <span class="card-label">Foundation</span>
-        <h3>Our Philosophy</h3>
-        <p>The principles behind every prescription made here.</p>
-      </a>
-      <a href="/evidence/index.html" class="card">
-        <span class="card-label">Evidence</span>
-        <h3>Evidence Based Treatment</h3>
-        <p>Why the symptom itself is the clearest proof of cure.</p>
-      </a>
-      <a href="/treatment/index.html" class="card">
-        <span class="card-label">Process</span>
-        <h3>How We Treat</h3>
-        <p>From first consultation to complete restoration.</p>
-      </a>
-      <a href="/conditions/index.html" class="card">
-        <span class="card-label">Scope</span>
-        <h3>Conditions We Address</h3>
-        <p>What kinds of cases we take, and why.</p>
-      </a>
-      <a href="/medicine/index.html" class="card">
-        <span class="card-label">The remedy</span>
-        <h3>Medicine &amp; Dose</h3>
-        <p>Why there is no fixed medicine for any disease.</p>
-      </a>
-      <a href="/about/index.html" class="card">
-        <span class="card-label">The practice</span>
-        <h3>About Us</h3>
-        <p>Dr. Yogeshwar Tiwari, BHMS · Ahmedabad.</p>
-      </a>
-      <a href="/articles/index.html" class="card">
-        <span class="card-label">Read</span>
-        <h3>Articles</h3>
-        <p>Thoughts on healing, health, and homeopathy.</p>
-      </a>
+    <div class="cards" data-lang="en">
+      <a href="/mission-vision/index.html" class="card"><span class="card-label">Start here</span><h3>Mission &amp; Vision</h3><p>What we are working toward and why.</p></a>
+      <a href="/philosophy/index.html" class="card"><span class="card-label">Foundation</span><h3>Our Philosophy</h3><p>The principles behind every prescription made here.</p></a>
+      <a href="/evidence/index.html" class="card"><span class="card-label">Evidence</span><h3>Evidence Based Treatment</h3><p>Why the symptom itself is the clearest proof of cure.</p></a>
+      <a href="/treatment/index.html" class="card"><span class="card-label">Process</span><h3>How We Treat</h3><p>From first consultation to complete restoration.</p></a>
+      <a href="/conditions/index.html" class="card"><span class="card-label">Scope</span><h3>Conditions We Address</h3><p>What kinds of cases we take, and why.</p></a>
+      <a href="/medicine/index.html" class="card"><span class="card-label">The remedy</span><h3>Medicine &amp; Dose</h3><p>Why there is no fixed medicine for any disease.</p></a>
+      <a href="/about/index.html" class="card"><span class="card-label">The practice</span><h3>About Us</h3><p>Dr. Yogeshwar Tiwari, BHMS · Ahmedabad.</p></a>
+      <a href="/articles/index.html" class="card"><span class="card-label">Read</span><h3>Articles</h3><p>Thoughts on healing, health, and homeopathy.</p></a>
     </div>
-
-    <div class="cards" id="cards-hi" data-lang="hi">
-      <a href="/mission-vision/index.html" class="card">
-        <span class="card-label">यहाँ से शुरू करें</span>
-        <h3>मिशन और दृष्टि</h3>
-        <p>हम किस दिशा में काम कर रहे हैं और क्यों।</p>
-      </a>
-      <a href="/philosophy/index.html" class="card">
-        <span class="card-label">आधार</span>
-        <h3>हमारा दर्शन</h3>
-        <p>यहाँ बनाए गए हर नुस्खे के पीछे के सिद्धांत।</p>
-      </a>
-      <a href="/evidence/index.html" class="card">
-        <span class="card-label">प्रमाण</span>
-        <h3>साक्ष्य आधारित उपचार</h3>
-        <p>क्यों लक्षण स्वयं इलाज का सबसे स्पष्ट प्रमाण है।</p>
-      </a>
-      <a href="/treatment/index.html" class="card">
-        <span class="card-label">प्रक्रिया</span>
-        <h3>हम कैसे इलाज करते हैं</h3>
-        <p>पहली परामर्श से पूर्ण पुनर्स्थापना तक।</p>
-      </a>
-      <a href="/conditions/index.html" class="card">
-        <span class="card-label">विस्तार</span>
-        <h3>हम किन बीमारियों का इलाज करते हैं</h3>
-        <p>हम किस प्रकार के मामले लेते हैं और क्यों।</p>
-      </a>
-      <a href="/medicine/index.html" class="card">
-        <span class="card-label">औषधि</span>
-        <h3>दवा और खुराक</h3>
-        <p>क्यों किसी भी रोग के लिए कोई निश्चित दवा नहीं होती।</p>
-      </a>
-      <a href="/about/index.html" class="card">
-        <span class="card-label">हमारे बारे में</span>
-        <h3>परिचय</h3>
-        <p>डॉ. योगेश्वर तिवारी, BHMS · अहमदाबाद।</p>
-      </a>
-      <a href="/articles/index.html" class="card">
-        <span class="card-label">पढ़ें</span>
-        <h3>लेख</h3>
-        <p>उपचार, स्वास्थ्य और होम्योपैथी पर विचार।</p>
-      </a>
+    <div class="cards" data-lang="hi">
+      <a href="/mission-vision/index.html" class="card"><span class="card-label">यहाँ से शुरू करें</span><h3>मिशन और दृष्टि</h3><p>हम किस दिशा में काम कर रहे हैं और क्यों।</p></a>
+      <a href="/philosophy/index.html" class="card"><span class="card-label">आधार</span><h3>हमारा दर्शन</h3><p>यहाँ बनाए गए हर नुस्खे के पीछे के सिद्धांत।</p></a>
+      <a href="/evidence/index.html" class="card"><span class="card-label">प्रमाण</span><h3>साक्ष्य आधारित उपचार</h3><p>क्यों लक्षण स्वयं इलाज का सबसे स्पष्ट प्रमाण है।</p></a>
+      <a href="/treatment/index.html" class="card"><span class="card-label">प्रक्रिया</span><h3>हम कैसे इलाज करते हैं</h3><p>पहली परामर्श से पूर्ण पुनर्स्थापना तक।</p></a>
+      <a href="/conditions/index.html" class="card"><span class="card-label">विस्तार</span><h3>हम किन बीमारियों का इलाज करते हैं</h3><p>हम किस प्रकार के मामले लेते हैं और क्यों।</p></a>
+      <a href="/medicine/index.html" class="card"><span class="card-label">औषधि</span><h3>दवा और खुराक</h3><p>क्यों किसी भी रोग के लिए कोई निश्चित दवा नहीं होती।</p></a>
+      <a href="/about/index.html" class="card"><span class="card-label">हमारे बारे में</span><h3>परिचय</h3><p>डॉ. योगेश्वर तिवारी, BHMS · अहमदाबाद।</p></a>
+      <a href="/articles/index.html" class="card"><span class="card-label">पढ़ें</span><h3>लेख</h3><p>उपचार, स्वास्थ्य और होम्योपैथी पर विचार।</p></a>
     </div>
-
-    <div class="cards" id="cards-gu" data-lang="gu">
-      <a href="/mission-vision/index.html" class="card">
-        <span class="card-label">અહીંથી શરૂ કરો</span>
-        <h3>મિશન અને દ્રષ્ટિ</h3>
-        <p>અમે શા માટે અને કઈ દિશામાં કામ કરી રહ્યા છીએ।</p>
-      </a>
-      <a href="/philosophy/index.html" class="card">
-        <span class="card-label">પાયો</span>
-        <h3>અમારી ફિલોસોફી</h3>
-        <p>અહીં બનાવેલ દરેક પ્રિસ્ક્રિપ્શન પાછળના સિદ્ધાંતો।</p>
-      </a>
-      <a href="/evidence/index.html" class="card">
-        <span class="card-label">પુરાવો</span>
-        <h3>પુરાવા આધારિત સારવાર</h3>
-        <p>શા માટે લક્ષણ પોતે ઉપચારનો સૌથી સ્પષ્ટ પુરાવો છે।</p>
-      </a>
-      <a href="/treatment/index.html" class="card">
-        <span class="card-label">પ્રક્રિયા</span>
-        <h3>અમે કેવી રીતે સારવાર કરીએ છીએ</h3>
-        <p>પ્રથમ પરામર્શથી સંપૂર્ણ પુનઃસ્થાપના સુધી।</p>
-      </a>
-      <a href="/conditions/index.html" class="card">
-        <span class="card-label">વ્યાપ</span>
-        <h3>અમે કઈ સ્થિતિઓ સંબોધીએ છીએ</h3>
-        <p>અમે કયા પ્રકારના કેસ લઈએ છીએ, અને શા માટે।</p>
-      </a>
-      <a href="/medicine/index.html" class="card">
-        <span class="card-label">ઔષધ</span>
-        <h3>દવા અને ડોઝ</h3>
-        <p>શા માટે કોઈ પણ રોગ માટે નિશ્ચિત દવા નથી।</p>
-      </a>
-      <a href="/about/index.html" class="card">
-        <span class="card-label">પ્રેક્ટિસ</span>
-        <h3>અમારા વિશે</h3>
-        <p>ડૉ. યોગેશ્વર તિવારી, BHMS · અમદાવાદ।</p>
-      </a>
-      <a href="/articles/index.html" class="card">
-        <span class="card-label">વાંચો</span>
-        <h3>લેખો</h3>
-        <p>ઉપચાર, સ્વાસ્થ્ય અને હોમિયોપેથી પર વિચારો।</p>
-      </a>
+    <div class="cards" data-lang="gu">
+      <a href="/mission-vision/index.html" class="card"><span class="card-label">અહીંથી શરૂ કરો</span><h3>મિશન અને દ્રષ્ટિ</h3><p>અમે શા માટે અને કઈ દિશામાં કામ કરી રહ્યા છીએ।</p></a>
+      <a href="/philosophy/index.html" class="card"><span class="card-label">પાયો</span><h3>અમારી ફિલોસોફી</h3><p>અહીં બનાવેલ દરેક પ્રિસ્ક્રિપ્શન પાછળના સિદ્ધાંતો।</p></a>
+      <a href="/evidence/index.html" class="card"><span class="card-label">પુરાવો</span><h3>પુરાવા આધારિત સારવાર</h3><p>શા માટે લક્ષણ પોતે ઉપચારનો સૌથી સ્પષ્ટ પુરાવો છે।</p></a>
+      <a href="/treatment/index.html" class="card"><span class="card-label">પ્રક્રિયા</span><h3>અમે કેવી રીતે સારવાર કરીએ છીએ</h3><p>પ્રથમ પરામર્શથી સંપૂર્ણ પુનઃસ્થાપના સુધી।</p></a>
+      <a href="/conditions/index.html" class="card"><span class="card-label">વ્યાપ</span><h3>અમે કઈ સ્થિતિઓ સંબોધીએ છીએ</h3><p>અમે કયા પ્રકારના કેસ લઈએ છીએ, અને શા માટે।</p></a>
+      <a href="/medicine/index.html" class="card"><span class="card-label">ઔષધ</span><h3>દવા અને ડોઝ</h3><p>શા માટે કોઈ પણ રોગ માટે નિશ્ચિત દવા નથી।</p></a>
+      <a href="/about/index.html" class="card"><span class="card-label">પ્રેક્ટિસ</span><h3>અમારા વિશે</h3><p>ડૉ. યોગેશ્વર તિવારી, BHMS · અમદાવાદ।</p></a>
+      <a href="/articles/index.html" class="card"><span class="card-label">વાંચો</span><h3>લેખો</h3><p>ઉપચાર, સ્વાસ્થ્ય અને હોમિયોપેથી પર વિચારો।</p></a>
     </div>
   </div>
-
 </main>
-
 <footer class="site-footer">
   <div class="footer-inner">
-    <p>© 2025 Punarvasu · Unwind Healing Center · Dr. Yogeshwar Tiwari, BHMS · Ahmedabad, Gujarat</p>
+    <p>© 2025 Punarvasu Clinic · Dr. Yogeshwar Tiwari, BHMS · Ahmedabad, Gujarat</p>
     <p class="footer-disc">Homeopathy is a system of complementary medicine. For emergencies, seek appropriate medical care.</p>
   </div>
 </footer>
-
 <script>
-/* ── LANGUAGE SWITCHER ── */
-(function () {
-  const LANGS = ['en', 'hi', 'gu'];
-  let current = localStorage.getItem('punarvasu-lang') || 'en';
-
-  function applyLang(lang) {
-    current = lang;
-    localStorage.setItem('punarvasu-lang', lang);
-
-    // Show/hide data-lang blocks
-    document.querySelectorAll('[data-lang]').forEach(el => {
-      el.classList.toggle('visible', el.dataset.lang === lang);
-    });
-
-    // Activate button
-    document.querySelectorAll('.lang-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.setLang === lang);
-    });
-
-    // Set html lang attribute
-    document.documentElement.lang = lang;
-
-    // Update appointment button text
-    const apptBtn = document.getElementById('appt-btn');
-    if (apptBtn) {
-      apptBtn.textContent = lang === 'hi' ? 'परामर्श बुक करें' : lang === 'gu' ? 'પરામર્શ બૂક કરો' : 'Book Appointment';
-    }
-
-    // Update animation label if needed
-    updateAnimLabel();
+(function(){
+  let current=localStorage.getItem('punarvasu-lang')||'en';
+  function applyLang(lang){
+    current=lang;localStorage.setItem('punarvasu-lang',lang);
+    document.querySelectorAll('[data-lang]').forEach(el=>el.classList.toggle('visible',el.dataset.lang===lang));
+    document.querySelectorAll('.lang-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.setLang===lang));
+    document.documentElement.lang=lang;
+    const ab=document.getElementById('appt-btn');
+    if(ab)ab.textContent=lang==='hi'?'परामर्श बुक करें':lang==='gu'?'પરામર્શ બૂક કરો':'Book Appointment';
   }
-
-  document.querySelectorAll('.lang-btn').forEach(btn => {
-    btn.addEventListener('click', () => applyLang(btn.dataset.setLang));
-  });
-
-  // Init
+  document.querySelectorAll('.lang-btn').forEach(btn=>btn.addEventListener('click',()=>applyLang(btn.dataset.setLang)));
   applyLang(current);
 })();
 
-/* ── LOTUS BLOOM ANIMATION — Canvas ── */
-(function () {
-  const canvas = document.getElementById('lotus-canvas');
-  const label  = document.getElementById('anim-label');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-
-  const LABELS = {
-    en: ['withered','awakening','life stirs','growing','opening','blooming','fully restored'],
-    hi: ['मुरझाया हुआ','जागृति','जीवन स्पंदन','बढ़ रहा है','खिल रहा है','पूर्ण प्रस्फुटन','पूर्णतः पुनर्स्थापित'],
-    gu: ['કরমাযেল','જাগૃতি','જীবন સ্পंদন','વधी રহ્યું છe','ખীলী રহ্यू છe','સংপূর্ণ প্রস্ফুটন','સংপূর্ণ পুনઃস্থাপিত']
+(function(){
+  const canvas=document.getElementById('lotus-canvas');
+  const label=document.getElementById('anim-label');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const LABELS={
+    en:['withered','awakening','life stirs','growing','opening','blooming','fully restored'],
+    hi:['मुरझाया हुआ','जागृति','जीवन स्पंदन','बढ़ रहा है','खिल रहा है','पूर्ण प्रस्फुटन','पूर्णतः पुनर्स्थापित'],
+    gu:['કรมายেল','জাগৃতি','জীবন স্পন্দন','বাড়ছে','ফুটছে','সম্পূর্ণ প্রস্ফুটন','সম্পূর্ণ পুনরুদ্ধার']
   };
-
-  function getLang() { return localStorage.getItem('punarvasu-lang') || 'en'; }
-  window.updateAnimLabel = function() {};
-
-  function lerp(a,b,t){ return a+(b-a)*t; }
-  function ease(t){ return t<0.5 ? 2*t*t : -1+(4-2*t)*t; }
-  function clamp(t){ return Math.max(0,Math.min(1,t)); }
-
-  function resize() {
-    const dpr = window.devicePixelRatio || 1;
-    const w   = Math.min(canvas.parentElement.getBoundingClientRect().width, 520);
-    canvas.style.width  = w + 'px';
-    canvas.style.height = '200px';
-    canvas.width  = w * dpr;
-    canvas.height = 200 * dpr;
-    ctx.setTransform(1,0,0,1,0,0);
-    ctx.scale(dpr, dpr);
+  function getLang(){return localStorage.getItem('punarvasu-lang')||'en';}
+  window.updateAnimLabel=function(){};
+  function lerp(a,b,t){return a+(b-a)*t;}
+  function ease(t){return t<0.5?2*t*t:-1+(4-2*t)*t;}
+  function clamp(t){return Math.max(0,Math.min(1,t));}
+  function resize(){
+    const dpr=window.devicePixelRatio||1;
+    const rect=canvas.parentElement.getBoundingClientRect();
+    const w=Math.min(rect.width>0?rect.width:520,520);
+    canvas.style.width=w+'px';canvas.style.height='200px';
+    canvas.width=w*dpr;canvas.height=200*dpr;
+    ctx.setTransform(1,0,0,1,0,0);ctx.scale(dpr,dpr);
   }
-
-  function petal(cx, cy, len, angle, spread, color, alpha) {
-    if (alpha <= 0) return;
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.translate(cx, cy);
-    ctx.rotate(angle);
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.bezierCurveTo(-spread, -len*0.4, -spread*0.5, -len*0.9, 0, -len);
-    ctx.bezierCurveTo( spread*0.5, -len*0.9,  spread, -len*0.4, 0, 0);
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.restore();
+  function petal(cx,cy,len,angle,spread,color,alpha){
+    if(alpha<=0)return;
+    ctx.save();ctx.globalAlpha=alpha;ctx.translate(cx,cy);ctx.rotate(angle);
+    ctx.beginPath();ctx.moveTo(0,0);
+    ctx.bezierCurveTo(-spread,-len*0.4,-spread*0.5,-len*0.9,0,-len);
+    ctx.bezierCurveTo(spread*0.5,-len*0.9,spread,-len*0.4,0,0);
+    ctx.fillStyle=color;ctx.fill();ctx.restore();
   }
-
-  function draw(p) {
-    const dpr = window.devicePixelRatio || 1;
-    const W = canvas.width / dpr, H = canvas.height / dpr;
-    ctx.clearRect(0, 0, W, H);
-    const cx = W / 2, cy = H * 0.82;
-
-    // Water
-    ctx.save(); ctx.globalAlpha = 0.12; ctx.fillStyle = '#A8956A';
-    ctx.beginPath(); ctx.ellipse(cx, cy+2, W*0.38, 9, 0, 0, Math.PI*2); ctx.fill(); ctx.restore();
-
-    // Stem
-    const sa = clamp(p * 5);
-    if (sa > 0) {
-      ctx.save(); ctx.globalAlpha = sa; ctx.strokeStyle = '#5A7A3A';
-      ctx.lineWidth = 2.5; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.quadraticCurveTo(cx-5, cy-30, cx, cy-58); ctx.stroke(); ctx.restore();
-    }
-
-    // Leaves
-    const la = clamp((p - 0.08) * 5);
-    if (la > 0) {
-      ctx.save(); ctx.globalAlpha = la * 0.85; ctx.fillStyle = '#6A8A44';
-      ctx.save(); ctx.translate(cx-10, cy-8); ctx.rotate(-0.35); ctx.beginPath(); ctx.ellipse(0,0,24,8,0,0,Math.PI*2); ctx.fill(); ctx.restore();
-      ctx.save(); ctx.translate(cx+10, cy-8); ctx.rotate( 0.35); ctx.beginPath(); ctx.ellipse(0,0,24,8,0,0,Math.PI*2); ctx.fill(); ctx.restore();
+  function draw(p){
+    const dpr=window.devicePixelRatio||1;
+    const W=canvas.width/dpr,H=canvas.height/dpr;
+    ctx.clearRect(0,0,W,H);
+    const cx=W/2,cy=H*0.82;
+    ctx.save();ctx.globalAlpha=0.12;ctx.fillStyle='#A8956A';
+    ctx.beginPath();ctx.ellipse(cx,cy+2,W*0.38,9,0,0,Math.PI*2);ctx.fill();ctx.restore();
+    const sa=clamp(p*5);
+    if(sa>0){ctx.save();ctx.globalAlpha=sa;ctx.strokeStyle='#5A7A3A';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(cx,cy);ctx.quadraticCurveTo(cx-5,cy-30,cx,cy-58);ctx.stroke();ctx.restore();}
+    const la=clamp((p-0.08)*5);
+    if(la>0){
+      ctx.save();ctx.globalAlpha=la*0.85;ctx.fillStyle='#6A8A44';
+      ctx.save();ctx.translate(cx-10,cy-8);ctx.rotate(-0.35);ctx.beginPath();ctx.ellipse(0,0,24,8,0,0,Math.PI*2);ctx.fill();ctx.restore();
+      ctx.save();ctx.translate(cx+10,cy-8);ctx.rotate(0.35);ctx.beginPath();ctx.ellipse(0,0,24,8,0,0,Math.PI*2);ctx.fill();ctx.restore();
       ctx.restore();
     }
-
-    const bx = cx, by = cy - 58, pLen = H * 0.36, spd = pLen * 0.28;
-
-    // Back petals
-    const bp = clamp((p - 0.12) / 0.38), bpE = ease(bp);
-    if (bp > 0) {
-      const c = `rgb(${Math.round(lerp(180,205,bpE))},${Math.round(lerp(165,175,bpE))},${Math.round(lerp(155,145,bpE))})`;
-      [-0.55, 0.55, -1.05, 1.05, Math.PI, Math.PI-0.4, Math.PI+0.4].forEach(a => petal(bx, by, pLen*lerp(0.4,1,bpE), a, spd, c, clamp(bp*2.5)*0.7));
+    const bx=cx,by=cy-58,pLen=H*0.36,spd=pLen*0.28;
+    const bp=clamp((p-0.12)/0.38),bpE=ease(bp);
+    if(bp>0){
+      const c=`rgb(${Math.round(lerp(180,205,bpE))},${Math.round(lerp(165,175,bpE))},${Math.round(lerp(155,145,bpE))})`;
+      [-0.55,0.55,-1.05,1.05,Math.PI,Math.PI-0.4,Math.PI+0.4].forEach(a=>petal(bx,by,pLen*lerp(0.4,1,bpE),a,spd,c,clamp(bp*2.5)*0.7));
     }
-
-    // Mid petals
-    const mp = clamp((p - 0.38) / 0.3), mpE = ease(mp);
-    if (mp > 0) {
-      const c = `rgb(${Math.round(lerp(190,215,mpE))},${Math.round(lerp(140,145,mpE))},${Math.round(lerp(120,110,mpE))})`;
-      [-0.3, 0.3, -0.7, 0.7, Math.PI+0.2, Math.PI-0.2].forEach(a => petal(bx, by, pLen*lerp(0.5,1.05,mpE), a, spd*0.9, c, clamp(mp*2.5)*0.8));
+    const mp=clamp((p-0.38)/0.3),mpE=ease(mp);
+    if(mp>0){
+      const c=`rgb(${Math.round(lerp(190,215,mpE))},${Math.round(lerp(140,145,mpE))},${Math.round(lerp(120,110,mpE))})`;
+      [-0.3,0.3,-0.7,0.7,Math.PI+0.2,Math.PI-0.2].forEach(a=>petal(bx,by,pLen*lerp(0.5,1.05,mpE),a,spd*0.9,c,clamp(mp*2.5)*0.8));
     }
-
-    // Front petals
-    const fp = clamp((p - 0.58) / 0.28), fpE = ease(fp);
-    if (fp > 0) {
-      const c = `rgb(${Math.round(lerp(210,235,fpE))},${Math.round(lerp(160,175,fpE))},${Math.round(lerp(140,135,fpE))})`;
-      [-0.15, 0.15, -0.42, 0.42].forEach(a => petal(bx, by, pLen*lerp(0.5,0.95,fpE), a, spd*0.75, c, clamp(fp*3)*0.9));
+    const fp=clamp((p-0.58)/0.28),fpE=ease(fp);
+    if(fp>0){
+      const c=`rgb(${Math.round(lerp(210,235,fpE))},${Math.round(lerp(160,175,fpE))},${Math.round(lerp(140,135,fpE))})`;
+      [-0.15,0.15,-0.42,0.42].forEach(a=>petal(bx,by,pLen*lerp(0.5,0.95,fpE),a,spd*0.75,c,clamp(fp*3)*0.9));
     }
-
-    // Golden centre
-    const cp = clamp((p - 0.72) / 0.28), cpE = ease(cp);
-    if (cp > 0) {
-      ctx.save(); ctx.globalAlpha = cpE * 0.22; ctx.fillStyle = '#F5C842';
-      ctx.beginPath(); ctx.arc(bx, by, lerp(0,22,cpE), 0, Math.PI*2); ctx.fill(); ctx.restore();
-      ctx.save(); ctx.globalAlpha = cpE; ctx.fillStyle = '#F0B830';
-      ctx.beginPath(); ctx.arc(bx, by, lerp(0,9,cpE),  0, Math.PI*2); ctx.fill(); ctx.restore();
+    const cp=clamp((p-0.72)/0.28),cpE=ease(cp);
+    if(cp>0){
+      ctx.save();ctx.globalAlpha=cpE*0.22;ctx.fillStyle='#F5C842';ctx.beginPath();ctx.arc(bx,by,lerp(0,22,cpE),0,Math.PI*2);ctx.fill();ctx.restore();
+      ctx.save();ctx.globalAlpha=cpE;ctx.fillStyle='#F0B830';ctx.beginPath();ctx.arc(bx,by,lerp(0,9,cpE),0,Math.PI*2);ctx.fill();ctx.restore();
     }
-
-    // Particles
-    const pp = clamp((p - 0.82) / 0.18), ppE = ease(pp);
-    if (pp > 0) {
-      [{x:bx-28,y:by-20,r:2,c:'#A07C2A'},{x:bx+30,y:by-25,r:1.5,c:'#A07C2A'},
-       {x:bx-12,y:by-42,r:1.2,c:'#C49A3A'},{x:bx+14,y:by-45,r:1.5,c:'#C49A3A'},
-       {x:bx,   y:by-58,r:2,  c:'#E8C060'},{x:bx-40,y:by-10,r:1.5,c:'#A07C2A'},
-       {x:bx+42,y:by-12,r:1.5,c:'#A07C2A'}].forEach((pt,i) => {
-        ctx.save(); ctx.globalAlpha = ppE * 0.7; ctx.fillStyle = pt.c;
-        ctx.beginPath(); ctx.arc(pt.x, pt.y - ppE*(10+i*4), pt.r, 0, Math.PI*2); ctx.fill(); ctx.restore();
+    const pp=clamp((p-0.82)/0.18),ppE=ease(pp);
+    if(pp>0){
+      [{x:bx-28,y:by-20,r:2,c:'#A07C2A'},{x:bx+30,y:by-25,r:1.5,c:'#A07C2A'},{x:bx-12,y:by-42,r:1.2,c:'#C49A3A'},{x:bx+14,y:by-45,r:1.5,c:'#C49A3A'},{x:bx,y:by-58,r:2,c:'#E8C060'},{x:bx-40,y:by-10,r:1.5,c:'#A07C2A'},{x:bx+42,y:by-12,r:1.5,c:'#A07C2A'}].forEach((pt,i)=>{
+        ctx.save();ctx.globalAlpha=ppE*0.7;ctx.fillStyle=pt.c;ctx.beginPath();ctx.arc(pt.x,pt.y-ppE*(10+i*4),pt.r,0,Math.PI*2);ctx.fill();ctx.restore();
       });
     }
-
-    // Label
-    if (label) {
-      const lang = getLang();
-      const lbls = LABELS[lang] || LABELS.en;
-      label.textContent = lbls[Math.min(lbls.length-1, Math.floor(p*(lbls.length-0.01)))];
-    }
+    if(label){const lang=getLang();const lbls=LABELS[lang]||LABELS.en;label.textContent=lbls[Math.min(lbls.length-1,Math.floor(p*(lbls.length-0.01)))];}
   }
-
-  let startTime = null;
-  const BLOOM = 5000, HOLD = 2500, FADE = 800, TOTAL = BLOOM + HOLD + FADE;
-
-  function tick(ts) {
-    if (!startTime) startTime = ts;
-    const el = (ts - startTime) % TOTAL;
+  let startTime=null;
+  const BLOOM=5000,HOLD=2500,FADE=800,TOTAL=BLOOM+HOLD+FADE;
+  function tick(ts){
+    if(!startTime)startTime=ts;
+    const el=(ts-startTime)%TOTAL;
     let p;
-    if (el < BLOOM)            p = ease(el / BLOOM);
-    else if (el < BLOOM + HOLD) p = 1;
-    else                        p = 1 - ((el - BLOOM - HOLD) / FADE);
-    draw(Math.max(0, Math.min(1, p)));
+    if(el<BLOOM)p=ease(el/BLOOM);
+    else if(el<BLOOM+HOLD)p=1;
+    else p=1-((el-BLOOM-HOLD)/FADE);
+    draw(Math.max(0,Math.min(1,p)));
     requestAnimationFrame(tick);
   }
-
-  resize();
-  window.addEventListener('resize', resize);
-  setTimeout(() => requestAnimationFrame(tick), 500);
+  function startAnim(){
+    resize();
+    window.addEventListener('resize',resize);
+    setTimeout(()=>requestAnimationFrame(tick),500);
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',startAnim);
+  } else {
+    startAnim();
+  }
 })();
 
-/* ── SIDEBAR ── */
-(function () {
-  const NAV_EN = [
-    { label: 'Home', href: '/index.html', single: true },
-    { label: 'Mission & Vision', href: '/mission-vision/index.html', single: true },
-    { label: 'Philosophy', href: '/philosophy/index.html', pages: [
-      { title: 'Overview', href: '/philosophy/index.html' },
-      { title: 'The Winding Metaphor', href: '/philosophy/winding.html' },
-      { title: 'How Disease Progresses', href: '/philosophy/disease.html' },
-      { title: 'How Cure Happens', href: '/philosophy/cure.html' },
-      { title: 'Wave Theory', href: '/philosophy/wave-theory.html' },
-      { title: 'The Body as One Entity', href: '/philosophy/single-entity.html' },
+(function(){
+  const NAV=[
+    {label:'Home',href:'/index.html',single:true},
+    {label:'Mission & Vision',href:'/mission-vision/index.html',single:true},
+    {label:'Philosophy',href:'/philosophy/index.html',pages:[
+      {title:'Overview',href:'/philosophy/index.html'},
+      {title:'The Winding Metaphor',href:'/philosophy/winding.html'},
+      {title:'How Disease Progresses',href:'/philosophy/disease.html'},
+      {title:'How Cure Happens',href:'/philosophy/cure.html'},
+      {title:'Wave Theory',href:'/philosophy/wave-theory.html'},
+      {title:'The Body as One Entity',href:'/philosophy/single-entity.html'},
     ]},
-    { label: 'Evidence Based Treatment', href: '/evidence/index.html', single: true },
-    { label: 'Treatment', href: '/treatment/index.html', pages: [
-      { title: 'Overview', href: '/treatment/index.html' },
-      { title: 'Case Taking', href: '/treatment/case-taking.html' },
-      { title: 'Constitutional Remedy', href: '/treatment/remedy.html' },
-      { title: 'Follow-up & Unfolding', href: '/treatment/follow-up.html' },
-      { title: 'What to Expect', href: '/treatment/what-to-expect.html' },
+    {label:'Evidence Based Treatment',href:'/evidence/index.html',single:true},
+    {label:'Treatment',href:'/treatment/index.html',pages:[
+      {title:'Overview',href:'/treatment/index.html'},
+      {title:'Case Taking',href:'/treatment/case-taking.html'},
+      {title:'Constitutional Remedy',href:'/treatment/remedy.html'},
+      {title:'Follow-up & Unfolding',href:'/treatment/follow-up.html'},
+      {title:'What to Expect',href:'/treatment/what-to-expect.html'},
+      {title:'Evidence Based Treatment',href:'/treatment/evidence.html'},
     ]},
-    { label: 'Conditions', href: '/conditions/index.html', pages: [
-      { title: 'Overview', href: '/conditions/index.html' },
-      { title: 'Chronic Conditions', href: '/conditions/chronic.html' },
-      { title: 'Acute Conditions', href: '/conditions/acute.html' },
-      { title: 'Mind & Emotions', href: '/conditions/mind-emotions.html' },
-      { title: "Why We Don't List Diseases", href: '/conditions/why-no-list.html' },
+    {label:'Conditions',href:'/conditions/index.html',pages:[
+      {title:'Overview',href:'/conditions/index.html'},
+      {title:'Chronic Conditions',href:'/conditions/chronic.html'},
+      {title:'Acute Conditions',href:'/conditions/acute.html'},
+      {title:'Mind & Emotions',href:'/conditions/mind-emotions.html'},
+      {title:"Why We Don't List Diseases",href:'/conditions/why-no-list.html'},
     ]},
-    { label: 'Medicine', href: '/medicine/index.html', pages: [
-      { title: 'Overview', href: '/medicine/index.html' },
-      { title: 'No Fixed Medicine', href: '/medicine/no-fixed-medicine.html' },
-      { title: 'No Fixed Dose', href: '/medicine/no-fixed-dose.html' },
-      { title: 'Treatment vs Prescription', href: '/medicine/treatment-vs-prescription.html' },
+    {label:'Medicine',href:'/medicine/index.html',pages:[
+      {title:'Overview',href:'/medicine/index.html'},
+      {title:'No Fixed Medicine',href:'/medicine/no-fixed-medicine.html'},
+      {title:'No Fixed Dose',href:'/medicine/no-fixed-dose.html'},
+      {title:'Treatment vs Prescription',href:'/medicine/treatment-vs-prescription.html'},
     ]},
-    { label: 'About Us', href: '/about/index.html', pages: [
-      { title: 'Overview', href: '/about/index.html' },
-      { title: 'Dr. Yogeshwar Tiwari', href: '/about/dr-tiwari.html' },
+    {label:'About Us',href:'/about/index.html',pages:[
+      {title:'Overview',href:'/about/index.html'},
+      {title:'Dr. Yogeshwar Tiwari',href:'/about/dr-tiwari.html'},
     ]},
-    { label: 'Articles', href: '/articles/index.html', single: true },
-    { label: 'Appointment', href: '/appointment/index.html', single: true },
+    {label:'Articles',href:'/articles/index.html',single:true},
+    {label:'Appointment',href:'/appointment/index.html',single:true},
   ];
-
-  function buildSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    if (!sidebar) return;
-    let html = '';
-    NAV_EN.forEach(section => {
-      if (section.single) {
-        const active = window.location.pathname === section.href ? 'active' : '';
-        html += `<div class="sidebar-section"><a href="${section.href}" class="sidebar-link ${active}">${section.label}</a></div>`;
-      } else {
-        html += `<div class="sidebar-section"><span class="sidebar-section-title">${section.label}</span>`;
-        section.pages.forEach(page => {
-          const active = window.location.pathname === page.href ? 'active' : '';
-          html += `<a href="${page.href}" class="sidebar-link ${active}">${page.title}</a>`;
-        });
-        html += `</div><div class="sidebar-divider"></div>`;
+  function buildSidebar(){
+    const sidebar=document.getElementById('sidebar');if(!sidebar)return;
+    let html='';
+    NAV.forEach(s=>{
+      if(s.single){
+        const a=window.location.pathname===s.href?'active':'';
+        html+=`<div class="sidebar-section"><a href="${s.href}" class="sidebar-link ${a}">${s.label}</a></div>`;
+      }else{
+        html+=`<div class="sidebar-section"><span class="sidebar-section-title">${s.label}</span>`;
+        s.pages.forEach(p=>{const a=window.location.pathname===p.href?'active':'';html+=`<a href="${p.href}" class="sidebar-link ${a}">${p.title}</a>`;});
+        html+=`</div><div class="sidebar-divider"></div>`;
       }
     });
-    sidebar.innerHTML = html;
-
-    const hamburger = document.getElementById('hamburger');
-    const overlay = document.getElementById('sidebar-overlay');
-    if (hamburger) {
-      hamburger.addEventListener('click', () => {
-        sidebar.classList.toggle('open');
-        overlay.classList.toggle('open');
-      });
-    }
-    if (overlay) {
-      overlay.addEventListener('click', () => {
-        sidebar.classList.remove('open');
-        overlay.classList.remove('open');
-      });
-    }
+    sidebar.innerHTML=html;
+    const h=document.getElementById('hamburger'),o=document.getElementById('sidebar-overlay');
+    if(h)h.addEventListener('click',()=>{sidebar.classList.toggle('open');o.classList.toggle('open');});
+    if(o)o.addEventListener('click',()=>{sidebar.classList.remove('open');o.classList.remove('open');});
   }
-
-  document.addEventListener('DOMContentLoaded', buildSidebar);
+  document.addEventListener('DOMContentLoaded',buildSidebar);
 })();
 </script>
-
 </body>
 </html>
