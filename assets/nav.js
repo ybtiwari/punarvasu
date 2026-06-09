@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════
-   PUNARVASU — Shared Navigation
+   PUNARVASU CLINIC — Shared Navigation
    ═══════════════════════════════════════════ */
 
 const NAV = [
@@ -34,7 +34,6 @@ const NAV = [
       { title: 'Constitutional Remedy', href: '/treatment/remedy.html' },
       { title: 'Follow-up & Unfolding', href: '/treatment/follow-up.html' },
       { title: 'What to Expect',        href: '/treatment/what-to-expect.html' },
-      { title: 'Evidence Based Treatment', href: '/treatment/evidence.html' },
     ]
   },
   {
@@ -76,6 +75,22 @@ const NAV = [
     href: '/appointment/index.html',
     single: true
   },
+  {
+    label: '── Patient Area ──',
+    href: null,
+    divider: true
+  },
+  {
+    label: 'Patient Portal',
+    href: '/patient-portal.html',
+    single: true,
+    highlight: true
+  },
+  {
+    label: 'Community Forum',
+    href: '/community-forum.html',
+    single: true
+  },
 ];
 
 function buildSidebar(currentPath) {
@@ -85,15 +100,20 @@ function buildSidebar(currentPath) {
   let html = '';
 
   NAV.forEach(section => {
-    if (section.single) {
+    if (section.divider) {
+      html += `<div class="sidebar-divider"></div>
+        <span class="sidebar-section-title" style="color:#4A6478;margin-top:4px;">${section.label}</span>`;
+    } else if (section.single) {
       const active = currentPath.endsWith(section.href) || currentPath === section.href ? 'active' : '';
+      const style  = section.highlight ? 'font-weight:500;color:#1C6B5A;' : '';
       html += `<div class="sidebar-section">
-        <a href="${section.href}" class="sidebar-link ${active}">${section.label}</a>
+        <a href="${section.href}" class="sidebar-link ${active}" style="${style}">${section.label}</a>
       </div>`;
     } else {
-      const sectionActive = currentPath.includes('/' + section.href.split('/')[1] + '/');
+      // Check if any sub-page of this section is active
+      const sectionActive = section.pages.some(page => currentPath.endsWith(page.href));
       html += `<div class="sidebar-section">
-        <span class="sidebar-section-title">${section.label}</span>`;
+        <span class="sidebar-section-title" style="${sectionActive ? 'color:var(--teal);font-weight:600;' : ''}">${section.label}</span>`;
       section.pages.forEach(page => {
         const active = currentPath.endsWith(page.href) ? 'active' : '';
         html += `<a href="${page.href}" class="sidebar-link ${active}">${page.title}</a>`;
@@ -103,6 +123,23 @@ function buildSidebar(currentPath) {
   });
 
   sidebar.innerHTML = html;
+
+  // Restore saved scroll position
+  const savedScroll = sessionStorage.getItem('sidebarScroll');
+  if (savedScroll) {
+    sidebar.scrollTop = parseInt(savedScroll);
+  }
+
+  // Scroll active link into view if not already visible
+  const activeLink = sidebar.querySelector('.sidebar-link.active');
+  if (activeLink && !savedScroll) {
+    activeLink.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+
+  // Save scroll position whenever sidebar is scrolled
+  sidebar.addEventListener('scroll', () => {
+    sessionStorage.setItem('sidebarScroll', sidebar.scrollTop);
+  });
 
   // Hamburger toggle
   const hamburger = document.getElementById('hamburger');
@@ -125,4 +162,15 @@ function buildSidebar(currentPath) {
 document.addEventListener('DOMContentLoaded', () => {
   const path = window.location.pathname;
   buildSidebar(path);
+
+  // Add discreet admin link to footer
+  const footer = document.querySelector('.site-footer .footer-inner');
+  if (footer) {
+    const adminLink = document.createElement('a');
+    adminLink.href = '/admin-panel.html';
+    adminLink.className = 'admin-link';
+    adminLink.title = '';
+    adminLink.innerHTML = '&#128274;';
+    footer.appendChild(adminLink);
+  }
 });
