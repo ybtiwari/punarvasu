@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel — Punarvasu Clinic</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0F2035; --teal: #1C6B5A; --teal2: #155448;
+      --cream: #F5F2EC; --white: #FFFFFF; --ink: #0F1E2D;
+      --ink2: #2A4055; --ink3: #4A6478; --border: #D0DDE8;
+      --red: #c0392b; --orange: #c8600a;
+      --serif: 'Lora', Georgia, serif; --sans: 'Source Sans 3', system-ui, sans-serif;
+    }
+    body { font-family: var(--sans); background: var(--cream); color: var(--ink); min-height: 100vh; }
+
+    /* LOGIN */
+    .login-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+    .login-box { background:var(--white); border:1px solid var(--border); border-radius:10px; padding:44px 40px; width:100%; max-width:400px; box-shadow:0 4px 24px rgba(15,32,53,0.08); }
+    .login-logo { font-family:var(--serif); font-size:22px; color:var(--navy); margin-bottom:4px; }
+    .login-sub  { font-size:12px; color:var(--ink3); margin-bottom:8px; }
+    .admin-badge { display:inline-block; background:rgba(28,107,90,0.1); color:var(--teal); padding:3px 10px; border-radius:10px; font-size:12px; font-weight:500; margin-bottom:24px; }
+    .login-title { font-family:var(--serif); font-size:20px; color:var(--navy); margin-bottom:22px; }
+    .fg { display:flex; flex-direction:column; gap:5px; margin-bottom:14px; }
+    .fg label { font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3); }
+    .fg input { border:1px solid var(--border); border-radius:4px; padding:10px 12px; font-family:var(--sans); font-size:15px; color:var(--ink); outline:none; transition:border-color 0.15s; }
+    .fg input:focus { border-color:var(--teal); }
+    .btn-primary { width:100%; background:var(--teal); color:var(--white); border:none; padding:12px; border-radius:4px; font-family:var(--sans); font-size:15px; font-weight:500; cursor:pointer; transition:background 0.15s; margin-top:6px; }
+    .btn-primary:hover { background:var(--teal2); }
+    .login-err { font-size:13px; color:var(--red); margin-top:10px; min-height:18px; }
+
+    /* ADMIN */
+    .admin { display:none; min-height:100vh; flex-direction:column; }
+    .topbar { background:var(--navy); padding:0 24px; height:56px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+    .topbar-logo { font-family:var(--serif); font-size:17px; color:var(--white); }
+    .topbar-badge { background:rgba(200,96,10,0.3); color:#f0a060; padding:3px 10px; border-radius:10px; font-size:12px; margin-left:10px; }
+    .btn-logout { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:rgba(255,255,255,0.8); padding:6px 14px; border-radius:4px; font-size:13px; cursor:pointer; font-family:var(--sans); }
+    .admin-body { display:flex; flex:1; }
+    .sidebar { width:230px; background:var(--navy); padding:20px 0; min-height:calc(100vh - 56px); flex-shrink:0; }
+    .nav-item { display:flex; align-items:center; justify-content:space-between; padding:11px 20px; font-size:14px; color:rgba(255,255,255,0.6); cursor:pointer; border-left:2px solid transparent; transition:all 0.15s; }
+    .nav-item:hover { background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.9); }
+    .nav-item.active { color:white; border-left-color:#22A08A; background:rgba(255,255,255,0.06); font-weight:500; }
+    .nav-badge { background:var(--orange); color:white; border-radius:10px; padding:1px 7px; font-size:11px; min-width:20px; text-align:center; }
+    .admin-content { flex:1; padding:32px; }
+    .panel { display:none; }
+    .panel.active { display:block; }
+    .panel-title { font-family:var(--serif); font-size:24px; color:var(--navy); margin-bottom:6px; }
+    .panel-sub { font-size:14px; color:var(--ink3); margin-bottom:28px; }
+
+    /* STATS */
+    .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
+    .stat-card { background:var(--white); border:1px solid var(--border); border-radius:8px; padding:18px 20px; }
+    .stat-num { font-family:var(--serif); font-size:32px; color:var(--navy); line-height:1; }
+    .stat-label { font-size:12px; color:var(--ink3); margin-top:4px; }
+
+    /* PATIENTS */
+    .patient-list { display:flex; flex-direction:column; gap:0; }
+    .patient-item { display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid var(--border); gap:12px; }
+    .patient-item:last-child { border-bottom:none; }
+    .patient-info h4 { font-size:15px; color:var(--navy); font-weight:500; margin-bottom:2px; }
+    .patient-info p  { font-size:12px; color:var(--ink3); }
+    .patient-actions { display:flex; gap:8px; flex-shrink:0; }
+    .btn-sm { padding:6px 14px; border-radius:4px; font-size:13px; cursor:pointer; font-family:var(--sans); border:none; font-weight:500; transition:background 0.15s; }
+    .btn-teal  { background:var(--teal); color:white; }
+    .btn-teal:hover { background:var(--teal2); }
+    .btn-red   { background:rgba(192,57,43,0.1); color:var(--red); border:1px solid rgba(192,57,43,0.2); }
+    .btn-red:hover { background:rgba(192,57,43,0.18); }
+    .btn-gray  { background:var(--cream); color:var(--ink2); border:1px solid var(--border); }
+    .btn-gray:hover { background:#e8e5dc; }
+    .badge { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11.5px; font-weight:500; }
+    .badge-active   { background:rgba(28,107,90,0.1); color:var(--teal); }
+    .badge-disabled { background:rgba(192,57,43,0.1); color:var(--red); }
+
+    /* ADD PATIENT */
+    .add-patient-form { background:var(--white); border:1px solid var(--border); border-radius:8px; padding:24px; margin-bottom:24px; display:none; }
+    .add-patient-form h3 { font-family:var(--serif); font-size:18px; color:var(--navy); margin-bottom:18px; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+
+    /* MESSAGES */
+    .conv-list { display:flex; flex-direction:column; gap:0; margin-bottom:24px; }
+    .conv-item { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border); cursor:pointer; }
+    .conv-item:hover { background:var(--cream); padding-left:8px; }
+    .conv-item.unread .conv-name { font-weight:600; }
+    .conv-name    { font-size:15px; color:var(--navy); margin-bottom:2px; }
+    .conv-preview { font-size:13px; color:var(--ink3); }
+    .conv-time    { font-size:11.5px; color:var(--ink3); flex-shrink:0; margin-left:12px; }
+    .unread-dot   { width:8px; height:8px; border-radius:50%; background:var(--orange); margin-right:10px; flex-shrink:0; }
+
+    /* CHAT PANEL */
+    .chat-panel { display:none; background:var(--white); border:1px solid var(--border); border-radius:8px; flex-direction:column; height:500px; }
+    .chat-panel.open { display:flex; }
+    .chat-header { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:var(--cream); border-radius:8px 8px 0 0; }
+    .chat-header h4 { font-family:var(--serif); font-size:16px; color:var(--navy); }
+    .chat-msgs { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; }
+    .msg-bubble { max-width:75%; padding:10px 14px; border-radius:12px; font-size:14px; line-height:1.55; }
+    .msg-bubble.from-patient { background:var(--cream); border:1px solid var(--border); align-self:flex-start; border-bottom-left-radius:3px; }
+    .msg-bubble.from-doctor  { background:var(--teal); color:white; align-self:flex-end; border-bottom-right-radius:3px; }
+    .msg-meta { font-size:11px; opacity:0.65; margin-top:4px; }
+    .chat-input-row { display:flex; gap:8px; padding:12px 16px; border-top:1px solid var(--border); }
+    .chat-input { flex:1; border:1px solid var(--border); border-radius:6px; padding:9px 12px; font-family:var(--sans); font-size:14px; resize:none; outline:none; height:42px; }
+    .chat-input:focus { border-color:var(--teal); }
+    .chat-send { background:var(--teal); color:white; border:none; border-radius:6px; padding:0 18px; font-size:14px; cursor:pointer; font-family:var(--sans); font-weight:500; }
+
+    /* CASE FILE EDITOR */
+    .case-editor { background:var(--white); border:1px solid var(--border); border-radius:8px; padding:24px; }
+    .case-editor h3 { font-family:var(--serif); font-size:18px; color:var(--navy); margin-bottom:16px; }
+    .case-tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:20px; }
+    .case-tab { padding:9px 20px; font-size:13.5px; cursor:pointer; color:var(--ink3); border-bottom:2px solid transparent; transition:all 0.15s; }
+    .case-tab.active { color:var(--teal); border-bottom-color:var(--teal); font-weight:500; }
+    .case-tab-panel { display:none; }
+    .case-tab-panel.active { display:block; }
+    .case-entries { margin-bottom:16px; }
+    .case-entry { background:var(--cream); border:1px solid var(--border); border-radius:6px; padding:14px 16px; margin-bottom:10px; }
+    .case-entry-date { font-size:11px; color:var(--ink3); margin-bottom:5px; }
+    .case-entry-text { font-size:14px; color:var(--ink2); line-height:1.65; }
+    textarea.full { width:100%; border:1px solid var(--border); border-radius:4px; padding:10px 12px; font-family:var(--sans); font-size:14px; resize:none; height:100px; outline:none; margin-bottom:10px; }
+    textarea.full:focus { border-color:var(--teal); }
+    input.full { width:100%; border:1px solid var(--border); border-radius:4px; padding:10px 12px; font-family:var(--sans); font-size:14px; outline:none; margin-bottom:10px; }
+    input.full:focus { border-color:var(--teal); }
+
+    /* FORUM MODERATION */
+    .forum-item { background:var(--white); border:1px solid var(--border); border-radius:8px; padding:18px 20px; margin-bottom:12px; }
+    .forum-item-title { font-family:var(--serif); font-size:17px; color:var(--navy); margin-bottom:6px; }
+    .forum-item-meta  { font-size:12px; color:var(--ink3); margin-bottom:10px; }
+    .forum-item-body  { font-size:14px; color:var(--ink2); line-height:1.65; margin-bottom:14px; }
+    .forum-item-actions { display:flex; gap:8px; }
+    .status-pending  { color:var(--orange); font-size:12px; font-weight:500; }
+    .status-approved { color:var(--teal);   font-size:12px; font-weight:500; }
+
+    /* empty */
+    .empty { text-align:center; padding:40px 24px; color:var(--ink3); font-size:14px; }
+    .empty-icon { font-size:32px; margin-bottom:10px; }
+
+    @media (max-width:900px) {
+      .stats-row { grid-template-columns:1fr 1fr; }
+      .sidebar { display:none; }
+      .admin-content { padding:20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">Punarvasu Clinic</div>
+    <div class="login-sub">Dr. Yogeshwar Tiwari</div>
+    <div class="admin-badge">Admin Access Only</div>
+    <div class="login-title">Doctor sign in</div>
+    <div class="fg"><label>Email</label><input type="email" id="adminEmail" placeholder="your@email.com"/></div>
+    <div class="fg"><label>Password</label><input type="password" id="adminPass" placeholder="Password"/></div>
+    <button class="btn-primary" id="adminLoginBtn">Sign in</button>
+    <div class="login-err" id="adminErr"></div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="admin" id="adminScreen">
+
+  <div class="topbar">
+    <div style="display:flex;align-items:center;">
+      <div class="topbar-logo">Punarvasu Clinic</div>
+      <span class="topbar-badge">Admin</span>
+    </div>
+    <button class="btn-logout" id="adminLogoutBtn">Sign out</button>
+  </div>
+
+  <div class="admin-body">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="nav-item active" data-panel="overview">
+        <span>📊 Overview</span>
+      </div>
+      <div class="nav-item" data-panel="patients">
+        <span>👤 Patients</span>
+        <span class="nav-badge" id="badge-patients">0</span>
+      </div>
+      <div class="nav-item" data-panel="messages">
+        <span>💬 Messages</span>
+        <span class="nav-badge" id="badge-messages">0</span>
+      </div>
+      <div class="nav-item" data-panel="casefile">
+        <span>📋 Case Files</span>
+      </div>
+      <div class="nav-item" data-panel="appointments">
+        <span>📅 Appointments</span>
+      </div>
+      <div class="nav-item" data-panel="forum">
+        <span>👥 Forum</span>
+        <span class="nav-badge" id="badge-forum">0</span>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="admin-content">
+
+      <!-- ── OVERVIEW ── -->
+      <div class="panel active" id="panel-overview">
+        <div class="panel-title">Overview</div>
+        <div class="panel-sub">Good day, Dr. Tiwari.</div>
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-num" id="stat-patients">0</div><div class="stat-label">Total patients</div></div>
+          <div class="stat-card"><div class="stat-num" id="stat-msgs">0</div><div class="stat-label">Unread messages</div></div>
+          <div class="stat-card"><div class="stat-num" id="stat-forum">0</div><div class="stat-label">Pending forum posts</div></div>
+          <div class="stat-card"><div class="stat-num" id="stat-today">0</div><div class="stat-label">Appointments today</div></div>
+        </div>
+        <div class="panel-sub" style="margin-top:8px;">Recent notifications</div>
+        <div id="notifList"><div class="empty"><div class="empty-icon">🔔</div>No new notifications.</div></div>
+      </div>
+
+      <!-- ── PATIENTS ── -->
+      <div class="panel" id="panel-patients">
+        <div class="panel-title">Patients</div>
+        <div class="panel-sub">Manage patient accounts</div>
+
+        <button class="btn-sm btn-teal" style="margin-bottom:16px;" onclick="toggleAddPatient()">+ Add new patient</button>
+
+        <div class="add-patient-form" id="addPatientForm">
+          <h3>Add new patient</h3>
+          <div class="form-row">
+            <div class="fg"><label>Full name</label><input type="text" id="newPatName" placeholder="Patient name"/></div>
+            <div class="fg"><label>Email</label><input type="email" id="newPatEmail" placeholder="patient@email.com"/></div>
+          </div>
+          <div class="form-row">
+            <div class="fg"><label>Phone</label><input type="tel" id="newPatPhone" placeholder="+91 XXXXX XXXXX"/></div>
+            <div class="fg"><label>Temporary password</label><input type="text" id="newPatPass" placeholder="Set a password for them"/></div>
+          </div>
+          <div class="fg"><label>Chief complaint</label><input type="text" id="newPatComplaint" placeholder="Main condition or complaint"/></div>
+          <button class="btn-sm btn-teal" onclick="addPatient()">Create account</button>
+          <button onclick="toggleAddPatient()" style="background:none;border:none;color:var(--ink3);font-size:13px;cursor:pointer;margin-left:12px;">Cancel</button>
+          <div id="addPatErr" style="font-size:13px;color:var(--red);margin-top:8px;"></div>
+        </div>
+
+        <div class="patient-list" id="patientList">
+          <div class="empty"><div class="empty-icon">👤</div>No patients yet. Add your first patient above.</div>
+        </div>
+      </div>
+
+      <!-- ── MESSAGES ── -->
+      <div class="panel" id="panel-messages">
+        <div class="panel-title">Messages</div>
+        <div class="panel-sub">Private conversations with patients</div>
+        <div class="conv-list" id="convList">
+          <div class="empty"><div class="empty-icon">💬</div>No conversations yet.</div>
+        </div>
+        <div class="chat-panel" id="chatPanel">
+          <div class="chat-header">
+            <h4 id="chatPatientName">Patient</h4>
+            <button onclick="closeChat()" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:18px;">×</button>
+          </div>
+          <div class="chat-msgs" id="chatMsgs"></div>
+          <div class="chat-input-row">
+            <textarea class="chat-input" id="chatInput" placeholder="Type your reply..."></textarea>
+            <button class="chat-send" onclick="sendReply()">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CASE FILES ── -->
+      <div class="panel" id="panel-casefile">
+        <div class="panel-title">Case Files</div>
+        <div class="panel-sub">Select a patient to view or edit their case file</div>
+        <div class="fg" style="max-width:300px;margin-bottom:20px;">
+          <label>Select patient</label>
+          <select id="casePatientSelect" onchange="loadPatientCase()">
+            <option value="">— Select a patient —</option>
+          </select>
+        </div>
+        <div id="caseEditorWrap" style="display:none;">
+          <div class="case-editor">
+            <h3 id="casePatientTitle">Patient Case File</h3>
+            <div class="case-tabs">
+              <div class="case-tab active" onclick="switchCaseTab('notes', this)">Clinical Notes</div>
+              <div class="case-tab" onclick="switchCaseTab('prescriptions', this)">Prescriptions</div>
+              <div class="case-tab" onclick="switchCaseTab('followups', this)">Follow-ups</div>
+              <div class="case-tab" onclick="switchCaseTab('appointments', this)">Appointments</div>
+            </div>
+            <!-- Notes -->
+            <div class="case-tab-panel active" id="tab-notes">
+              <div class="case-entries" id="notes-list"></div>
+              <textarea class="full" id="noteText" placeholder="Add a clinical note..."></textarea>
+              <button class="btn-sm btn-teal" onclick="addCaseEntry('notes')">Add note</button>
+            </div>
+            <!-- Prescriptions -->
+            <div class="case-tab-panel" id="tab-prescriptions">
+              <div class="case-entries" id="presc-list"></div>
+              <input class="full" type="text" id="prescMed" placeholder="Medicine name and potency"/>
+              <input class="full" type="text" id="prescDose" placeholder="Dose and frequency"/>
+              <textarea class="full" id="prescNotes" placeholder="Additional notes..." style="height:70px;"></textarea>
+              <button class="btn-sm btn-teal" onclick="addPrescription()">Add prescription</button>
+            </div>
+            <!-- Follow-ups -->
+            <div class="case-tab-panel" id="tab-followups">
+              <div class="case-entries" id="followup-list"></div>
+              <textarea class="full" id="followupText" placeholder="Follow-up observations and response to treatment..."></textarea>
+              <button class="btn-sm btn-teal" onclick="addCaseEntry('followups')">Add follow-up</button>
+            </div>
+            <!-- Appointments -->
+            <div class="case-tab-panel" id="tab-appointments">
+              <div class="case-entries" id="appt-list"></div>
+              <input class="full" type="date" id="apptDate"/>
+              <input class="full" type="text" id="apptNote" placeholder="Appointment note (e.g. First consultation, Follow-up)"/>
+              <select id="apptStatus" style="width:100%;border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-family:var(--sans);font-size:14px;outline:none;margin-bottom:10px;">
+                <option value="Scheduled">Scheduled</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+              <button class="btn-sm btn-teal" onclick="addAppointment()">Add appointment</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── APPOINTMENTS OVERVIEW ── -->
+      <div class="panel" id="panel-appointments">
+        <div class="panel-title">Appointments</div>
+        <div class="panel-sub">All scheduled and upcoming appointments</div>
+        <div id="allApptList"><div class="empty"><div class="empty-icon">📅</div>No appointments recorded yet.</div></div>
+      </div>
+
+      <!-- ── FORUM MODERATION ── -->
+      <div class="panel" id="panel-forum">
+        <div class="panel-title">Forum Moderation</div>
+        <div class="panel-sub">Review and approve posts and replies before they appear publicly</div>
+        <div style="display:flex;gap:10px;margin-bottom:20px;">
+          <button class="btn-sm btn-gray" onclick="filterForum('pending')" id="fBtn-pending">Pending approval</button>
+          <button class="btn-sm btn-gray" onclick="filterForum('approved')" id="fBtn-approved">Approved</button>
+          <button class="btn-sm btn-gray" onclick="filterForum('all')" id="fBtn-all">All</button>
+        </div>
+        <div id="forumModList"><div class="empty"><div class="empty-icon">👥</div>No posts yet.</div></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, updateProfile }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, push, onValue, set, get, update, remove, serverTimestamp, query, orderByChild }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAqzKPqBzNoBJc5FWjnVXMER4prgrbhqag",
+  authDomain: "punarvasu-790a8.firebaseapp.com",
+  databaseURL: "https://punarvasu-790a8-default-rtdb.firebaseio.com",
+  projectId: "punarvasu-790a8",
+  storageBucket: "punarvasu-790a8.firebasestorage.app",
+  messagingSenderId: "774115339459",
+  appId: "1:774115339459:web:4ee1f45e1e25d61666c676"
+};
+
+const ADMIN_EMAIL = "dr.yogeshwartiwari4@gmail.com";
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getDatabase(app);
+
+let currentChatUid = null;
+let allPatients    = {};
+let forumFilter    = 'pending';
+
+// ── AUTH ──
+document.getElementById('adminLoginBtn').addEventListener('click', async () => {
+  const email = document.getElementById('adminEmail').value.trim();
+  const pass  = document.getElementById('adminPass').value;
+  const errEl = document.getElementById('adminErr');
+  errEl.textContent = '';
+  if (email !== ADMIN_EMAIL) { errEl.textContent = 'Access restricted to authorised admin only.'; return; }
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    errEl.textContent = 'Incorrect email or password.';
+  }
+});
+
+document.getElementById('adminLogoutBtn').addEventListener('click', () => signOut(auth));
+
+onAuthStateChanged(auth, user => {
+  if (user && user.email === ADMIN_EMAIL) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminScreen').style.display = 'flex';
+    loadAll();
+  } else if (user) {
+    signOut(auth);
+    document.getElementById('adminErr').textContent = 'Access restricted.';
+  } else {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('adminScreen').style.display = 'none';
+  }
+});
+
+// ── NAV ──
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    item.classList.add('active');
+    document.getElementById('panel-' + item.dataset.panel).classList.add('active');
+  });
+});
+
+// ── LOAD ALL ──
+function loadAll() {
+  loadPatients();
+  loadMessages();
+  loadForum();
+  loadNotifications();
+  loadAllAppointments();
+}
+
+// ── PATIENTS ──
+function loadPatients() {
+  onValue(ref(db, 'patients'), snap => {
+    const el = document.getElementById('patientList');
+    if (!snap.exists()) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">👤</div>No patients yet.</div>';
+      document.getElementById('stat-patients').textContent = '0';
+      document.getElementById('badge-patients').textContent = '0';
+      return;
+    }
+    allPatients = snap.val();
+    const count = Object.keys(allPatients).length;
+    document.getElementById('stat-patients').textContent = count;
+    document.getElementById('badge-patients').textContent = count;
+
+    // Update case file select
+    const sel = document.getElementById('casePatientSelect');
+    sel.innerHTML = '<option value="">— Select a patient —</option>';
+    Object.entries(allPatients).forEach(([uid, p]) => {
+      sel.innerHTML += `<option value="${uid}">${p.name} (${p.email})</option>`;
+    });
+
+    let html = '';
+    Object.entries(allPatients).forEach(([uid, p]) => {
+      const status = p.status || 'active';
+      html += `<div class="patient-item">
+        <div class="patient-info">
+          <h4>${p.name || 'Unknown'}</h4>
+          <p>${p.email} · ${p.phone || 'No phone'} · ${p.complaint || ''}</p>
+        </div>
+        <div class="patient-actions">
+          <span class="badge ${status==='active'?'badge-active':'badge-disabled'}">${status}</span>
+          <button class="btn-sm btn-teal" onclick="openChat('${uid}','${p.name||p.email}')">Message</button>
+          <button class="btn-sm btn-gray" onclick="viewCase('${uid}')">Case file</button>
+          ${status==='active'
+            ? `<button class="btn-sm btn-red" onclick="togglePatient('${uid}','disabled')">Disable</button>`
+            : `<button class="btn-sm btn-teal" onclick="togglePatient('${uid}','active')">Activate</button>`}
+        </div>
+      </div>`;
+    });
+    el.innerHTML = html;
+  });
+}
+
+window.toggleAddPatient = function() {
+  const f = document.getElementById('addPatientForm');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+};
+
+window.addPatient = async function() {
+  const name      = document.getElementById('newPatName').value.trim();
+  const email     = document.getElementById('newPatEmail').value.trim();
+  const phone     = document.getElementById('newPatPhone').value.trim();
+  const pass      = document.getElementById('newPatPass').value.trim();
+  const complaint = document.getElementById('newPatComplaint').value.trim();
+  const errEl     = document.getElementById('addPatErr');
+  errEl.textContent = '';
+  if (!name || !email || !pass) { errEl.textContent = 'Name, email and password are required.'; return; }
+  try {
+    // Create user in Firebase Auth
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await updateProfile(cred.user, { displayName: name });
+    // Save patient record
+    await set(ref(db, `patients/${cred.user.uid}`), {
+      name, email, phone, complaint,
+      status: 'active', createdAt: Date.now()
+    });
+    // Clear form
+    ['newPatName','newPatEmail','newPatPhone','newPatPass','newPatComplaint'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('addPatientForm').style.display = 'none';
+    alert(`Patient account created for ${name}.\n\nLogin credentials:\nEmail: ${email}\nPassword: ${pass}\n\nPlease share these with the patient.`);
+  } catch(e) {
+    errEl.textContent = e.message;
+  }
+};
+
+window.togglePatient = async function(uid, status) {
+  await set(ref(db, `patients/${uid}/status`), status);
+};
+
+// ── MESSAGES ──
+function loadMessages() {
+  onValue(ref(db, 'messages'), snap => {
+    const el = document.getElementById('convList');
+    if (!snap.exists()) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">💬</div>No messages yet.</div>';
+      document.getElementById('stat-msgs').textContent = '0';
+      document.getElementById('badge-messages').textContent = '0';
+      return;
+    }
+    let unreadTotal = 0;
+    let html = '';
+    Object.entries(snap.val()).forEach(([uid, msgs]) => {
+      const msgArr = Object.values(msgs);
+      const last   = msgArr[msgArr.length - 1];
+      const unread = msgArr.filter(m => m.from === 'patient' && !m.read).length;
+      unreadTotal += unread;
+      const patName = allPatients[uid]?.name || allPatients[uid]?.email || uid;
+      const time = last.timestamp ? new Date(last.timestamp).toLocaleString('en-IN', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+      html += `<div class="conv-item ${unread>0?'unread':''}" onclick="openChat('${uid}','${patName}')">
+        ${unread>0?'<div class="unread-dot"></div>':'<div style="width:18px;"></div>'}
+        <div style="flex:1;">
+          <div class="conv-name">${patName}</div>
+          <div class="conv-preview">${last.text?.substring(0,60)||''}${last.text?.length>60?'...':''}</div>
+        </div>
+        <div class="conv-time">${time}</div>
+      </div>`;
+    });
+    el.innerHTML = html || '<div class="empty">No messages.</div>';
+    document.getElementById('stat-msgs').textContent = unreadTotal;
+    document.getElementById('badge-messages').textContent = unreadTotal;
+  });
+}
+
+window.openChat = function(uid, name) {
+  currentChatUid = uid;
+  document.getElementById('chatPatientName').textContent = name;
+  document.getElementById('chatPanel').classList.add('open');
+  // Switch to messages panel
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('[data-panel="messages"]').classList.add('active');
+  document.getElementById('panel-messages').classList.add('active');
+
+  onValue(query(ref(db, `messages/${uid}`), orderByChild('timestamp')), snap => {
+    const list = document.getElementById('chatMsgs');
+    list.innerHTML = '';
+    if (!snap.exists()) return;
+    snap.forEach(child => {
+      const m = child.val();
+      const div = document.createElement('div');
+      div.className = `msg-bubble ${m.from === 'patient' ? 'from-patient' : 'from-doctor'}`;
+      const time = m.timestamp ? new Date(m.timestamp).toLocaleString('en-IN', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+      div.innerHTML = `${m.text}<div class="msg-meta">${time}</div>`;
+      list.appendChild(div);
+      if (m.from === 'patient' && !m.read) {
+        set(ref(db, `messages/${uid}/${child.key}/read`), true);
+      }
+    });
+    list.scrollTop = list.scrollHeight;
+  });
+};
+
+window.closeChat = function() {
+  document.getElementById('chatPanel').classList.remove('open');
+  currentChatUid = null;
+};
+
+window.sendReply = async function() {
+  if (!currentChatUid) return;
+  const input = document.getElementById('chatInput');
+  const text  = input.value.trim();
+  if (!text) return;
+  await push(ref(db, `messages/${currentChatUid}`), {
+    text, from: 'doctor', timestamp: Date.now(), read: false
+  });
+  input.value = '';
+};
+
+document.getElementById('chatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.sendReply(); }
+});
+
+// ── CASE FILES ──
+let currentCaseUid = null;
+
+window.viewCase = function(uid) {
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('[data-panel="casefile"]').classList.add('active');
+  document.getElementById('panel-casefile').classList.add('active');
+  document.getElementById('casePatientSelect').value = uid;
+  window.loadPatientCase();
+};
+
+window.loadPatientCase = function() {
+  const uid = document.getElementById('casePatientSelect').value;
+  if (!uid) { document.getElementById('caseEditorWrap').style.display = 'none'; return; }
+  currentCaseUid = uid;
+  const pat = allPatients[uid];
+  document.getElementById('casePatientTitle').textContent = (pat?.name || 'Patient') + ' — Case File';
+  document.getElementById('caseEditorWrap').style.display = 'block';
+
+  // Load each section
+  ['notes','prescriptions','followups','appointments'].forEach(section => {
+    onValue(ref(db, `patients/${uid}/casefile/${section}`), snap => {
+      renderCaseSection(section, snap);
+    });
+  });
+};
+
+function renderCaseSection(section, snap) {
+  const listId = section === 'notes' ? 'notes-list' : section === 'prescriptions' ? 'presc-list' : section === 'followups' ? 'followup-list' : 'appt-list';
+  const el = document.getElementById(listId);
+  if (!el) return;
+  if (!snap.exists()) { el.innerHTML = ''; return; }
+  let html = '';
+  const entries = Object.values(snap.val()).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  entries.forEach(e => {
+    if (section === 'prescriptions') {
+      html += `<div class="case-entry"><div class="case-entry-date">${e.date}</div><div class="case-entry-text"><strong>Medicine:</strong> ${e.medicine}<br/><strong>Dose:</strong> ${e.dose}${e.notes?'<br/><strong>Notes:</strong> '+e.notes:''}</div></div>`;
+    } else if (section === 'appointments') {
+      html += `<div class="case-entry"><div class="case-entry-date">${e.date}</div><div class="case-entry-text">${e.note||'Consultation'} — <strong>${e.status||'Completed'}</strong></div></div>`;
+    } else {
+      html += `<div class="case-entry"><div class="case-entry-date">${e.date}</div><div class="case-entry-text">${e.text}</div></div>`;
+    }
+  });
+  el.innerHTML = html;
+}
+
+window.switchCaseTab = function(tab, el) {
+  document.querySelectorAll('.case-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.case-tab-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+};
+
+const today = () => new Date().toISOString().split('T')[0];
+
+window.addCaseEntry = async function(section) {
+  if (!currentCaseUid) return;
+  const textEl = document.getElementById(section === 'notes' ? 'noteText' : 'followupText');
+  const text   = textEl.value.trim();
+  if (!text) return;
+  await push(ref(db, `patients/${currentCaseUid}/casefile/${section}`), { text, date: today() });
+  textEl.value = '';
+};
+
+window.addPrescription = async function() {
+  if (!currentCaseUid) return;
+  const medicine = document.getElementById('prescMed').value.trim();
+  const dose     = document.getElementById('prescDose').value.trim();
+  const notes    = document.getElementById('prescNotes').value.trim();
+  if (!medicine || !dose) { alert('Medicine and dose are required.'); return; }
+  await push(ref(db, `patients/${currentCaseUid}/casefile/prescriptions`), { medicine, dose, notes, date: today() });
+  document.getElementById('prescMed').value  = '';
+  document.getElementById('prescDose').value = '';
+  document.getElementById('prescNotes').value = '';
+};
+
+window.addAppointment = async function() {
+  if (!currentCaseUid) return;
+  const date   = document.getElementById('apptDate').value;
+  const note   = document.getElementById('apptNote').value.trim();
+  const status = document.getElementById('apptStatus').value;
+  if (!date) { alert('Please select a date.'); return; }
+  await push(ref(db, `patients/${currentCaseUid}/casefile/appointments`), { date, note, status });
+  // Also store in main appointments path for patient dashboard
+  await push(ref(db, `patients/${currentCaseUid}/appointments`), { date, note, status });
+  document.getElementById('apptDate').value = '';
+  document.getElementById('apptNote').value = '';
+};
+
+// ── ALL APPOINTMENTS ──
+function loadAllAppointments() {
+  onValue(ref(db, 'patients'), snap => {
+    if (!snap.exists()) return;
+    const el = document.getElementById('allApptList');
+    let html = '';
+    let todayCount = 0;
+    const tod = today();
+    Object.entries(snap.val()).forEach(([uid, pat]) => {
+      if (!pat.appointments) return;
+      Object.values(pat.appointments).forEach(a => {
+        if (a.date === tod) todayCount++;
+        html += `<div class="case-entry"><div class="case-entry-date">${a.date} · ${pat.name||pat.email}</div><div class="case-entry-text">${a.note||'Consultation'} — ${a.status||'Scheduled'}</div></div>`;
+      });
+    });
+    el.innerHTML = html || '<div class="empty">No appointments yet.</div>';
+    document.getElementById('stat-today').textContent = todayCount;
+  });
+}
+
+// ── FORUM MODERATION ──
+window.filterForum = function(f) {
+  forumFilter = f;
+  ['pending','approved','all'].forEach(x => {
+    document.getElementById('fBtn-'+x).style.background = x === f ? 'var(--teal)' : '';
+    document.getElementById('fBtn-'+x).style.color      = x === f ? 'white' : '';
+  });
+  renderForum();
+};
+
+let forumData = {};
+function loadForum() {
+  onValue(ref(db, 'forum'), snap => {
+    forumData = snap.exists() ? snap.val() : {};
+    const pending = Object.values(forumData).filter(p => p.status === 'pending').length;
+    document.getElementById('stat-forum').textContent = pending;
+    document.getElementById('badge-forum').textContent = pending;
+    renderForum();
+  });
+}
+
+function renderForum() {
+  const el = document.getElementById('forumModList');
+  const posts = Object.entries(forumData).map(([id, p]) => ({id, ...p}));
+  const filtered = forumFilter === 'all' ? posts : posts.filter(p => p.status === forumFilter);
+  if (filtered.length === 0) { el.innerHTML = '<div class="empty"><div class="empty-icon">👥</div>No posts in this category.</div>'; return; }
+  filtered.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+  let html = '';
+  filtered.forEach(p => {
+    const statusHtml = p.status === 'pending'
+      ? '<span class="status-pending">⏳ Pending approval</span>'
+      : '<span class="status-approved">✓ Approved</span>';
+    html += `<div class="forum-item">
+      <div class="forum-item-title">${p.title}</div>
+      <div class="forum-item-meta">${p.category||'General'} · ${p.authorName||'Patient'} · ${statusHtml}</div>
+      <div class="forum-item-body">${p.body}</div>
+      <div class="forum-item-actions">
+        ${p.status !== 'approved'
+          ? `<button class="btn-sm btn-teal" onclick="approvePost('${p.id}')">✓ Approve</button>`
+          : `<button class="btn-sm btn-gray" onclick="approvePost('${p.id}')">Approved</button>`}
+        <button class="btn-sm btn-red" onclick="deletePost('${p.id}')">Delete</button>
+        <button class="btn-sm btn-gray" onclick="addDoctorComment('${p.id}')">Add comment as Doctor</button>
+      </div>
+      ${renderReplies(p)}
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+function renderReplies(post) {
+  if (!post.replies) return '';
+  let html = '<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">';
+  Object.entries(post.replies).forEach(([rid, r]) => {
+    html += `<div style="background:var(--cream);border-radius:6px;padding:10px 14px;margin-bottom:8px;">
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:4px;">${r.authorName||'Patient'} · <span class="${r.status==='pending'?'status-pending':'status-approved'}">${r.status==='pending'?'Pending':'Approved'}</span></div>
+      <div style="font-size:14px;color:var(--ink2);">${r.body}</div>
+      <div style="margin-top:8px;display:flex;gap:8px;">
+        ${r.status!=='approved'?`<button class="btn-sm btn-teal" onclick="approveReply('${post.id}','${rid}')">Approve</button>`:''}
+        <button class="btn-sm btn-red" onclick="deleteReply('${post.id}','${rid}')">Delete</button>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+window.approvePost = async function(id) {
+  await set(ref(db, `forum/${id}/status`), 'approved');
+};
+window.deletePost = async function(id) {
+  if (confirm('Delete this post permanently?')) await remove(ref(db, `forum/${id}`));
+};
+window.approveReply = async function(postId, replyId) {
+  await set(ref(db, `forum/${postId}/replies/${replyId}/status`), 'approved');
+};
+window.deleteReply = async function(postId, replyId) {
+  if (confirm('Delete this reply?')) await remove(ref(db, `forum/${postId}/replies/${replyId}`));
+};
+window.addDoctorComment = async function(postId) {
+  const comment = prompt('Add your comment as Dr. Tiwari:');
+  if (!comment || !comment.trim()) return;
+  await push(ref(db, `forum/${postId}/replies`), {
+    body: comment.trim(),
+    authorName: 'Dr. Yogeshwar Tiwari',
+    authorUid: 'admin',
+    timestamp: Date.now(),
+    status: 'approved'
+  });
+};
+
+// ── NOTIFICATIONS ──
+function loadNotifications() {
+  onValue(ref(db, 'notifications/admin'), snap => {
+    const el = document.getElementById('notifList');
+    if (!snap.exists()) { el.innerHTML = '<div class="empty"><div class="empty-icon">🔔</div>No new notifications.</div>'; return; }
+    const notifs = Object.values(snap.val()).sort((a,b) => (b.timestamp||0)-(a.timestamp||0)).slice(0,10);
+    let html = '';
+    notifs.forEach(n => {
+      const time = n.timestamp ? new Date(n.timestamp).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+      const icon = n.type === 'message' ? '💬' : '👥';
+      const text = n.type === 'message' ? `New message from ${n.email}: "${n.preview}"` : `New forum post: "${n.title}"`;
+      html += `<div class="case-entry"><div class="case-entry-date">${time}</div><div class="case-entry-text">${icon} ${text}</div></div>`;
+    });
+    el.innerHTML = html;
+  });
+}
+
+</script>
+</body>
+</html>

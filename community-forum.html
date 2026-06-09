@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Community Forum — Punarvasu Clinic</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:#0F2035; --teal:#1C6B5A; --teal2:#155448;
+      --cream:#F5F2EC; --white:#FFFFFF; --ink:#0F1E2D;
+      --ink2:#2A4055; --ink3:#4A6478; --border:#D0DDE8;
+      --serif:'Lora',Georgia,serif; --sans:'Source Sans 3',system-ui,sans-serif;
+    }
+    body { font-family:var(--sans); background:var(--cream); color:var(--ink); min-height:100vh; }
+
+    /* TOPBAR */
+    .topbar { background:var(--navy); height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 24px; position:sticky; top:0; z-index:100; }
+    .topbar-logo { font-family:var(--serif); font-size:17px; color:var(--white); text-decoration:none; }
+    .topbar-right { display:flex; gap:12px; align-items:center; }
+    .topbar-link { font-size:13.5px; color:rgba(255,255,255,0.65); text-decoration:none; }
+    .topbar-link:hover { color:white; }
+    .btn-login { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:rgba(255,255,255,0.85); padding:7px 16px; border-radius:4px; font-size:13px; cursor:pointer; font-family:var(--sans); text-decoration:none; }
+
+    /* LAYOUT */
+    .wrap { max-width:760px; margin:0 auto; padding:36px 20px 60px; }
+
+    /* HEADER */
+    .forum-header { margin-bottom:32px; }
+    .forum-header h1 { font-family:var(--serif); font-size:28px; color:var(--navy); margin-bottom:6px; }
+    .forum-header p  { font-size:14.5px; color:var(--ink3); line-height:1.6; }
+
+    /* LANG */
+    .lang-bar { display:flex; gap:8px; margin-bottom:24px; }
+    .lang-btn { padding:5px 14px; border:1px solid var(--border); border-radius:20px; font-size:12.5px; cursor:pointer; background:var(--white); color:var(--ink2); font-family:var(--sans); transition:all 0.15s; }
+    .lang-btn.active { background:var(--teal); color:white; border-color:var(--teal); }
+
+    /* CATEGORIES */
+    .cat-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px; }
+    .cat-btn { padding:6px 16px; border:1px solid var(--border); border-radius:20px; font-size:13px; cursor:pointer; background:var(--white); color:var(--ink2); font-family:var(--sans); transition:all 0.15s; }
+    .cat-btn.active { background:var(--navy); color:white; border-color:var(--navy); }
+
+    /* NEW POST */
+    .new-post-wrap { margin-bottom:24px; }
+    .btn-new-post { background:var(--teal); color:white; border:none; border-radius:4px; padding:10px 22px; font-size:14.5px; font-weight:500; cursor:pointer; font-family:var(--sans); transition:background 0.15s; }
+    .btn-new-post:hover { background:var(--teal2); }
+    .post-form { background:var(--white); border:1px solid var(--border); border-radius:8px; padding:22px; margin-top:14px; display:none; }
+    .post-form h3 { font-family:var(--serif); font-size:18px; color:var(--navy); margin-bottom:16px; }
+    .fg { display:flex; flex-direction:column; gap:5px; margin-bottom:12px; }
+    .fg label { font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3); }
+    .fg input, .fg select, .fg textarea { border:1px solid var(--border); border-radius:4px; padding:10px 12px; font-family:var(--sans); font-size:14px; color:var(--ink); outline:none; transition:border-color 0.15s; }
+    .fg input:focus, .fg select:focus, .fg textarea:focus { border-color:var(--teal); }
+    .fg textarea { resize:none; height:100px; }
+    .post-note { font-size:12px; color:var(--ink3); margin-bottom:12px; }
+    .btn-submit { background:var(--teal); color:white; border:none; border-radius:4px; padding:10px 22px; font-size:14px; font-weight:500; cursor:pointer; font-family:var(--sans); }
+    .btn-cancel { background:none; border:none; color:var(--ink3); font-size:13px; cursor:pointer; margin-left:12px; }
+
+    /* LOGIN PROMPT */
+    .login-prompt { background:var(--white); border:1px solid var(--border); border-radius:8px; padding:20px 22px; margin-bottom:20px; display:none; }
+    .login-prompt p { font-size:14px; color:var(--ink2); margin-bottom:12px; }
+    .login-form { display:flex; gap:10px; flex-wrap:wrap; }
+    .login-form input { border:1px solid var(--border); border-radius:4px; padding:9px 12px; font-family:var(--sans); font-size:14px; outline:none; transition:border-color 0.15s; flex:1; min-width:160px; }
+    .login-form input:focus { border-color:var(--teal); }
+    .btn-do-login { background:var(--teal); color:white; border:none; border-radius:4px; padding:9px 18px; font-size:14px; cursor:pointer; font-family:var(--sans); }
+    .login-err { font-size:12px; color:#c0392b; margin-top:6px; }
+
+    /* THREADS */
+    .thread-list { display:flex; flex-direction:column; gap:0; }
+    .thread-item { background:var(--white); border:1px solid var(--border); border-radius:8px; padding:20px 22px; margin-bottom:12px; cursor:pointer; transition:box-shadow 0.15s, border-color 0.15s; }
+    .thread-item:hover { box-shadow:0 2px 12px rgba(15,32,53,0.07); border-color:var(--teal); }
+    .thread-cat  { font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink3); margin-bottom:6px; }
+    .thread-title { font-family:var(--serif); font-size:18px; color:var(--navy); margin-bottom:6px; line-height:1.3; }
+    .thread-excerpt { font-size:14px; color:var(--ink2); line-height:1.6; margin-bottom:12px; }
+    .thread-footer { display:flex; align-items:center; gap:16px; }
+    .thread-author { font-size:12.5px; color:var(--ink3); }
+    .thread-replies { font-size:12.5px; color:var(--ink3); }
+    .doctor-badge { background:rgba(28,107,90,0.12); color:var(--teal); padding:2px 8px; border-radius:10px; font-size:11px; font-weight:500; }
+
+    /* THREAD VIEW */
+    .thread-view { display:none; }
+    .back-btn { background:none; border:none; color:var(--teal); font-size:14px; cursor:pointer; font-family:var(--sans); margin-bottom:20px; padding:0; }
+    .back-btn:hover { text-decoration:underline; }
+    .thread-view-title { font-family:var(--serif); font-size:26px; color:var(--navy); margin-bottom:8px; }
+    .thread-view-meta  { font-size:13px; color:var(--ink3); margin-bottom:24px; }
+    .thread-view-body  { font-size:15.5px; color:var(--ink2); line-height:1.8; margin-bottom:28px; padding-bottom:28px; border-bottom:1px solid var(--border); }
+
+    /* REPLIES */
+    .replies-title { font-family:var(--serif); font-size:18px; color:var(--navy); margin-bottom:16px; }
+    .reply-item { border-bottom:1px solid var(--border); padding:16px 0; }
+    .reply-item:last-child { border-bottom:none; }
+    .reply-author { font-size:12.5px; color:var(--ink3); margin-bottom:6px; display:flex; align-items:center; gap:8px; }
+    .reply-body { font-size:15px; color:var(--ink2); line-height:1.7; }
+
+    /* REPLY FORM */
+    .reply-form { background:var(--white); border:1px solid var(--border); border-radius:8px; padding:20px; margin-top:24px; }
+    .reply-form h4 { font-family:var(--serif); font-size:17px; color:var(--navy); margin-bottom:14px; }
+
+    /* GUEST NAME */
+    .guest-name-row { display:flex; gap:10px; margin-bottom:12px; }
+    .guest-name-row input { border:1px solid var(--border); border-radius:4px; padding:9px 12px; font-family:var(--sans); font-size:14px; outline:none; flex:1; }
+    .guest-name-row input:focus { border-color:var(--teal); }
+
+    .empty { text-align:center; padding:48px 24px; color:var(--ink3); font-size:14px; }
+    .empty-icon { font-size:36px; margin-bottom:12px; }
+
+    @media (max-width:520px) {
+      .wrap { padding:24px 16px 48px; }
+      .thread-footer { flex-wrap:wrap; gap:8px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/" class="topbar-logo">Punarvasu Clinic</a>
+  <div class="topbar-right">
+    <a href="/patient-portal.html" class="topbar-link">Patient Portal</a>
+    <a href="/appointment/index.html" class="topbar-link btn-login">Book Appointment</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- Language -->
+  <div class="lang-bar">
+    <button class="lang-btn active" onclick="setLang('en',this)">English</button>
+    <button class="lang-btn" onclick="setLang('hi',this)">हिन्दी</button>
+    <button class="lang-btn" onclick="setLang('gu',this)">ગુજરાતી</button>
+  </div>
+
+  <!-- Forum list view -->
+  <div id="listView">
+    <div class="forum-header">
+      <h1 id="forum-title">Community Forum</h1>
+      <p id="forum-desc">Share your experience with homeopathic treatment. Ask questions. Read others' recovery stories. All posts are reviewed by Dr. Tiwari before appearing.</p>
+    </div>
+
+    <!-- Categories -->
+    <div class="cat-row">
+      <button class="cat-btn active" onclick="filterCat('all',this)">All</button>
+      <button class="cat-btn" onclick="filterCat('experience',this)">My Experience</button>
+      <button class="cat-btn" onclick="filterCat('question',this)">Questions</button>
+      <button class="cat-btn" onclick="filterCat('recovery',this)">Recovery Stories</button>
+      <button class="cat-btn" onclick="filterCat('general',this)">General</button>
+    </div>
+
+    <!-- New post -->
+    <div class="new-post-wrap">
+      <button class="btn-new-post" onclick="togglePostForm()">+ Share your experience or ask a question</button>
+      <div class="post-form" id="postForm">
+        <h3>New post</h3>
+        <!-- Guest name if not logged in -->
+        <div id="guestNameWrap">
+          <div class="fg"><label>Your name (visible on post)</label><input type="text" id="posterName" placeholder="How you'd like to be identified"/></div>
+        </div>
+        <div class="fg"><label>Title</label><input type="text" id="postTitle" placeholder="What is your post about?"/></div>
+        <div class="fg">
+          <label>Category</label>
+          <select id="postCategory">
+            <option value="experience">My Experience</option>
+            <option value="question">Question</option>
+            <option value="recovery">Recovery Story</option>
+            <option value="general">General</option>
+          </select>
+        </div>
+        <div class="fg"><label>Your message</label><textarea id="postBody" placeholder="Write your post here..."></textarea></div>
+        <p class="post-note">⚠ Your post will be reviewed by Dr. Tiwari before appearing publicly.</p>
+        <button class="btn-submit" onclick="submitPost()">Submit</button>
+        <button class="btn-cancel" onclick="togglePostForm()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Thread list -->
+    <div class="thread-list" id="threadList">
+      <div class="empty"><div class="empty-icon">👥</div>Loading posts...</div>
+    </div>
+  </div>
+
+  <!-- Thread detail view -->
+  <div class="thread-view" id="threadView">
+    <button class="back-btn" onclick="showList()">← Back to forum</button>
+    <div class="thread-view-title" id="tvTitle"></div>
+    <div class="thread-view-meta"  id="tvMeta"></div>
+    <div class="thread-view-body"  id="tvBody"></div>
+
+    <div class="replies-title" id="repliesTitle">Replies</div>
+    <div id="repliesList"></div>
+
+    <div class="reply-form">
+      <h4>Add a reply</h4>
+      <div class="guest-name-row">
+        <input type="text" id="replyName" placeholder="Your name"/>
+      </div>
+      <div class="fg"><textarea id="replyBody" placeholder="Write your reply..."></textarea></div>
+      <p class="post-note">⚠ Your reply will be reviewed before appearing.</p>
+      <button class="btn-submit" onclick="submitReply()">Submit reply</button>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, push, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAqzKPqBzNoBJc5FWjnVXMER4prgrbhqag",
+  authDomain: "punarvasu-790a8.firebaseapp.com",
+  databaseURL: "https://punarvasu-790a8-default-rtdb.firebaseio.com",
+  projectId: "punarvasu-790a8",
+  storageBucket: "punarvasu-790a8.firebasestorage.app",
+  messagingSenderId: "774115339459",
+  appId: "1:774115339459:web:4ee1f45e1e25d61666c676"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getDatabase(app);
+
+let currentUser  = null;
+let allPosts     = {};
+let currentCat   = 'all';
+let currentPost  = null;
+
+const T = {
+  en: { title:'Community Forum', desc:'Share your experience. Ask questions. Read others\' recovery stories. All posts are reviewed before appearing.', newpost:'+ Share your experience or ask a question' },
+  hi: { title:'समुदाय फ़ोरम', desc:'अपना अनुभव साझा करें। प्रश्न पूछें। दूसरों की रिकवरी कहानियाँ पढ़ें।', newpost:'+ अपना अनुभव साझा करें' },
+  gu: { title:'સામુદાયિક ફોરમ', desc:'તમારો અનુભવ શેર કરો. પ્રશ્ન પૂછો. અન્ય લોકોની સ્વસ્થ થવાની વાર્તા વાંચો.', newpost:'+ તમારો અનુભવ શેર કરો' }
+};
+
+window.setLang = function(lang, el) {
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  const t = T[lang];
+  document.getElementById('forum-title').textContent = t.title;
+  document.getElementById('forum-desc').textContent  = t.desc;
+  document.querySelector('.btn-new-post').textContent = t.newpost;
+};
+
+onAuthStateChanged(auth, user => {
+  currentUser = user;
+  if (user) { document.getElementById('guestNameWrap').style.display = 'none'; }
+});
+
+// Load forum
+onValue(ref(db, 'forum'), snap => {
+  allPosts = snap.exists() ? snap.val() : {};
+  renderList();
+});
+
+function renderList() {
+  const el = document.getElementById('threadList');
+  const posts = Object.entries(allPosts)
+    .map(([id, p]) => ({id, ...p}))
+    .filter(p => p.status === 'approved')
+    .filter(p => currentCat === 'all' || p.category === currentCat)
+    .sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+
+  if (posts.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">👥</div>No posts in this category yet. Be the first to share.</div>';
+    return;
+  }
+  let html = '';
+  posts.forEach(p => {
+    const replyCount = p.replies ? Object.values(p.replies).filter(r => r.status === 'approved').length : 0;
+    const isDoctor   = p.authorUid === 'admin';
+    const excerpt    = p.body.substring(0, 120) + (p.body.length > 120 ? '...' : '');
+    html += `<div class="thread-item" onclick="openThread('${p.id}')">
+      <div class="thread-cat">${p.category || 'General'}</div>
+      <div class="thread-title">${p.title}</div>
+      <div class="thread-excerpt">${excerpt}</div>
+      <div class="thread-footer">
+        <span class="thread-author">${isDoctor ? '<span class="doctor-badge">Dr. Tiwari</span>' : (p.authorName || 'Community member')}</span>
+        <span class="thread-replies">💬 ${replyCount} ${replyCount===1?'reply':'replies'}</span>
+      </div>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+window.filterCat = function(cat, el) {
+  currentCat = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderList();
+};
+
+window.togglePostForm = function() {
+  const f = document.getElementById('postForm');
+  f.style.display = f.style.display === 'none' || f.style.display === '' ? 'block' : 'none';
+};
+
+window.submitPost = async function() {
+  const title    = document.getElementById('postTitle').value.trim();
+  const body     = document.getElementById('postBody').value.trim();
+  const category = document.getElementById('postCategory').value;
+  const name     = currentUser
+    ? (currentUser.displayName || currentUser.email.split('@')[0])
+    : document.getElementById('posterName').value.trim();
+  if (!title || !body) { alert('Please fill in both title and content.'); return; }
+  if (!name) { alert('Please enter your name.'); return; }
+  await push(ref(db, 'forum'), {
+    title, body, category, authorName: name,
+    authorUid: currentUser ? currentUser.uid : 'guest',
+    timestamp: Date.now(), status: 'pending'
+  });
+  await push(ref(db, 'notifications/admin'), {
+    type: 'forum_post', title, timestamp: Date.now(), read: false
+  });
+  document.getElementById('postTitle').value = '';
+  document.getElementById('postBody').value  = '';
+  document.getElementById('posterName').value = '';
+  document.getElementById('postForm').style.display = 'none';
+  alert('Thank you. Your post has been submitted and will appear after review by Dr. Tiwari.');
+};
+
+window.openThread = function(id) {
+  const post = allPosts[id];
+  if (!post) return;
+  currentPost = id;
+  const isDoctor = post.authorUid === 'admin';
+  document.getElementById('tvTitle').textContent = post.title;
+  document.getElementById('tvMeta').textContent  = `${post.category || 'General'} · ${isDoctor ? 'Dr. Yogeshwar Tiwari' : (post.authorName || 'Community member')}`;
+  document.getElementById('tvBody').textContent  = post.body;
+
+  // Replies
+  const repliesList = document.getElementById('repliesList');
+  const replies = post.replies
+    ? Object.values(post.replies).filter(r => r.status === 'approved').sort((a,b) => (a.timestamp||0)-(b.timestamp||0))
+    : [];
+  if (replies.length === 0) {
+    repliesList.innerHTML = '<div style="color:var(--ink3);font-size:14px;padding:16px 0;">No replies yet. Be the first to respond.</div>';
+  } else {
+    repliesList.innerHTML = replies.map(r => {
+      const isDoc = r.authorUid === 'admin';
+      return `<div class="reply-item">
+        <div class="reply-author">${isDoc ? '<span class="doctor-badge">Dr. Tiwari</span>' : (r.authorName||'Community member')}</div>
+        <div class="reply-body">${r.body}</div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('listView').style.display   = 'none';
+  document.getElementById('threadView').style.display = 'block';
+  window.scrollTo(0, 0);
+};
+
+window.showList = function() {
+  document.getElementById('threadView').style.display = 'none';
+  document.getElementById('listView').style.display   = 'block';
+  currentPost = null;
+};
+
+window.submitReply = async function() {
+  if (!currentPost) return;
+  const body = document.getElementById('replyBody').value.trim();
+  const name = currentUser
+    ? (currentUser.displayName || currentUser.email.split('@')[0])
+    : document.getElementById('replyName').value.trim();
+  if (!body) { alert('Please write your reply.'); return; }
+  if (!name) { alert('Please enter your name.'); return; }
+  await push(ref(db, `forum/${currentPost}/replies`), {
+    body, authorName: name,
+    authorUid: currentUser ? currentUser.uid : 'guest',
+    timestamp: Date.now(), status: 'pending'
+  });
+  await push(ref(db, 'notifications/admin'), {
+    type: 'forum_reply', postId: currentPost, timestamp: Date.now(), read: false
+  });
+  document.getElementById('replyBody').value = '';
+  document.getElementById('replyName').value = '';
+  alert('Your reply has been submitted and will appear after review by Dr. Tiwari.');
+};
+
+</script>
+</body>
+</html>
