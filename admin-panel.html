@@ -495,7 +495,8 @@ function loadPatients() {
 
 window.toggleAddPatient = function() {
   const f = document.getElementById('addPatientForm');
-  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+  const isHidden = f.style.display === 'none' || f.style.display === '';
+  f.style.display = isHidden ? 'block' : 'none';
 };
 
 window.addPatient = async function() {
