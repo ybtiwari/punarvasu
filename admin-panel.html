@@ -558,7 +558,39 @@ window.addPatient = async function() {
 
   } catch(e) {
     if (e.code === 'auth/email-already-in-use') {
-      errEl.textContent = 'A patient with this phone number already exists.';
+      // Auth account exists but DB record may be missing -- recover it
+      try {
+        errEl.textContent = 'Account exists, recovering...';
+        const recoverCred = await signInWithEmailAndPassword(secondaryAuth, internalEmail, autoPass);
+        const uid = recoverCred.user.uid;
+
+        const existing = await get(ref(db, 'patients/' + uid));
+        if (!existing.exists()) {
+          await set(ref(db, 'patients/' + uid), {
+            name, phone, complaint,
+            email: internalEmail,
+            status: 'active',
+            createdAt: Date.now()
+          });
+        }
+        await signOut(secondaryAuth);
+
+        const portalUrl = 'https://punarvasu.clinic/patient-portal.html';
+        const loginLink = portalUrl + '?uid=' + uid + '&token=' + btoa(internalEmail + ':' + autoPass);
+        const waText = 'Namaste ' + name + ' \u{1F64F}\n\nWelcome to Punarvasu Clinic Patient Portal.\n\nClick the link below to access your personal health portal:\n' + loginLink + '\n\n\u{1F4CC} Save this link on your home screen.\n\n\u2014 Dr. Yogeshwar Tiwari\nPunarvasu Clinic, Ahmedabad';
+        const waUrl2 = 'https://wa.me/91' + cleanPhone + '?text=' + encodeURIComponent(waText);
+
+        ['newPatName','newPatPhone','newPatComplaint'].forEach(id => {
+          document.getElementById(id).value = '';
+        });
+        document.getElementById('addPatientForm').style.display = 'none';
+        errEl.textContent = '';
+
+        window.open(waUrl2, '_blank');
+        alert('Patient account recovered for ' + name + '. WhatsApp has opened with the login link.');
+      } catch(recoverErr) {
+        errEl.textContent = 'Could not recover account: ' + recoverErr.message;
+      }
     } else {
       errEl.textContent = e.message;
     }
