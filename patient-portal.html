@@ -294,9 +294,12 @@
         <div class="panel-sub">Welcome to your patient portal.</div>
 
         <!-- Install prompt -->
-        <div id="installPrompt" style="display:none;background:var(--teal);color:white;border-radius:8px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div id="installPrompt" style="display:none;background:var(--teal);color:white;border-radius:8px;padding:14px 18px;margin-bottom:16px;align-items:center;justify-content:space-between;gap:12px;">
           <span style="font-size:14px;">📱 Save this portal to your home screen for quick access</span>
-          <button id="installBtn" style="background:white;color:var(--teal);border:none;border-radius:4px;padding:7px 16px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;">Add to Home Screen</button>
+          <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+            <button id="installBtn" style="background:white;color:var(--teal);border:none;border-radius:4px;padding:7px 16px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;">Add to Home Screen</button>
+            <button onclick="document.getElementById('installPrompt').style.display='none'" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:4px;padding:7px 10px;font-size:16px;cursor:pointer;line-height:1;">✕</button>
+          </div>
         </div>
 
         <div class="info-card">
@@ -741,10 +744,28 @@ if (installBtn) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       deferredPrompt = null;
-      document.getElementById('installPrompt').style.display = 'none';
     }
+    document.getElementById('installPrompt').style.display = 'none';
   });
 }
+
+// Hide for this session only when X is clicked — reappears on next login
+document.querySelector('#installPrompt button[onclick]')?.addEventListener('click', () => {
+  sessionStorage.setItem('installDismissed', 'true');
+});
+
+// Check if dismissed this session
+if (sessionStorage.getItem('installDismissed')) {
+  const prompt = document.getElementById('installPrompt');
+  if (prompt) prompt.style.display = 'none';
+}
+
+// Hide if already installed
+window.addEventListener('appinstalled', () => {
+  const prompt = document.getElementById('installPrompt');
+  if (prompt) prompt.style.display = 'none';
+  sessionStorage.removeItem('installDismissed');
+});
 
 </script>
 </body>
