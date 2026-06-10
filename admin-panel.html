@@ -223,14 +223,10 @@
           <h3>Add new patient</h3>
           <div class="form-row">
             <div class="fg"><label>Full name</label><input type="text" id="newPatName" placeholder="Patient name"/></div>
-            <div class="fg"><label>Email</label><input type="email" id="newPatEmail" placeholder="patient@email.com"/></div>
+            <div class="fg"><label>Phone / WhatsApp</label><input type="tel" id="newPatPhone" placeholder="9274791141"/></div>
           </div>
-          <div class="form-row">
-            <div class="fg"><label>Phone</label><input type="tel" id="newPatPhone" placeholder="+91 XXXXX XXXXX"/></div>
-            <div class="fg"><label>Temporary password</label><input type="text" id="newPatPass" placeholder="Set a password for them"/></div>
-          </div>
-          <div class="fg"><label>Chief complaint</label><input type="text" id="newPatComplaint" placeholder="Main condition or complaint"/></div>
-          <button class="btn-sm btn-teal" onclick="addPatient()">Create account</button>
+          <div class="fg"><label>Chief complaint (optional)</label><input type="text" id="newPatComplaint" placeholder="Main condition or complaint"/></div>
+          <button class="btn-sm btn-teal" onclick="addPatient()">Create account &amp; send WhatsApp invite</button>
           <button onclick="toggleAddPatient()" style="background:none;border:none;color:var(--ink3);font-size:13px;cursor:pointer;margin-left:12px;">Cancel</button>
           <div id="addPatErr" style="font-size:13px;color:var(--red);margin-top:8px;"></div>
         </div>
@@ -358,9 +354,14 @@ const firebaseConfig = {
 
 const ADMIN_EMAIL = "dr.yogeshwartiwari4@gmail.com";
 
+// Primary app — for admin session
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getDatabase(app);
+
+// Secondary app — for creating patients without disturbing admin session
+const secondaryApp  = initializeApp(firebaseConfig, 'secondary');
+const secondaryAuth = getAuth(secondaryApp);
 
 let currentChatUid = null;
 let allPatients    = {};
@@ -440,15 +441,22 @@ function loadPatients() {
     let html = '';
     Object.entries(allPatients).forEach(([uid, p]) => {
       const status = p.status || 'active';
+      const internalEmail = p.email || '';
+      const autoPass = 'Pun@' + (p.phone||'').replace(/[^0-9]/g,'').slice(-4);
+      const portalUrl = 'https://punarvasu.clinic/patient-portal.html';
+      const loginLink = `${portalUrl}?uid=${uid}&token=${btoa(internalEmail + ':' + autoPass)}`;
+      const waMsg = encodeURIComponent(`Namaste ${p.name} 🙏\n\nYour Punarvasu Clinic portal link:\n${loginLink}\n\n📌 Save this on your home screen.\n\n— Dr. Yogeshwar Tiwari`);
+      const waUrl = `https://wa.me/91${(p.phone||'').replace(/[^0-9]/g,'')}?text=${waMsg}`;
       html += `<div class="patient-item">
         <div class="patient-info">
           <h4>${p.name || 'Unknown'}</h4>
-          <p>${p.email} · ${p.phone || 'No phone'} · ${p.complaint || ''}</p>
+          <p>📞 ${p.phone || 'No phone'} · ${p.complaint || ''}</p>
         </div>
         <div class="patient-actions">
           <span class="badge ${status==='active'?'badge-active':'badge-disabled'}">${status}</span>
-          <button class="btn-sm btn-teal" onclick="openChat('${uid}','${p.name||p.email}')">Message</button>
+          <button class="btn-sm btn-teal" onclick="openChat('${uid}','${p.name||p.phone}')">Message</button>
           <button class="btn-sm btn-gray" onclick="viewCase('${uid}')">Case file</button>
+          <a class="btn-sm btn-gray" href="${waUrl}" target="_blank" style="text-decoration:none;">📲 Resend invite</a>
           ${status==='active'
             ? `<button class="btn-sm btn-red" onclick="togglePatient('${uid}','disabled')">Disable</button>`
             : `<button class="btn-sm btn-teal" onclick="togglePatient('${uid}','active')">Activate</button>`}
@@ -466,30 +474,65 @@ window.toggleAddPatient = function() {
 
 window.addPatient = async function() {
   const name      = document.getElementById('newPatName').value.trim();
-  const email     = document.getElementById('newPatEmail').value.trim();
-  const phone     = document.getElementById('newPatPhone').value.trim();
-  const pass      = document.getElementById('newPatPass').value.trim();
+  const phone     = document.getElementById('newPatPhone').value.trim().replace(/\s+/g, '');
   const complaint = document.getElementById('newPatComplaint').value.trim();
   const errEl     = document.getElementById('addPatErr');
   errEl.textContent = '';
-  if (!name || !email || !pass) { errEl.textContent = 'Name, email and password are required.'; return; }
+  if (!name || !phone) { errEl.textContent = 'Name and phone number are required.'; return; }
+
+  // Use phone number as internal email: 9274791141@punarvasu.clinic
+  const internalEmail = phone.replace(/[^0-9]/g, '') + '@punarvasu.clinic';
+  const autoPass      = 'Pun@' + phone.replace(/[^0-9]/g, '').slice(-4) + Math.random().toString(36).slice(-4);
+
   try {
-    // Create user in Firebase Auth
-    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    // Create user using secondary app — admin session stays active
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, internalEmail, autoPass);
     await updateProfile(cred.user, { displayName: name });
+
     // Save patient record
     await set(ref(db, `patients/${cred.user.uid}`), {
-      name, email, phone, complaint,
-      status: 'active', createdAt: Date.now()
+      name, phone, complaint,
+      email: internalEmail,
+      status: 'active',
+      createdAt: Date.now()
     });
+
+    // Sign out secondary app immediately
+    await signOut(secondaryAuth);
+
+    // Build magic login link
+    const portalUrl = 'https://punarvasu.clinic/patient-portal.html';
+    const loginLink = `${portalUrl}?uid=${cred.user.uid}&token=${btoa(internalEmail + ':' + autoPass)}`;
+
+    // Build WhatsApp message
+    const waMsg = encodeURIComponent(
+      `Namaste ${name} 🙏\n\n` +
+      `Welcome to Punarvasu Clinic Patient Portal.\n\n` +
+      `Click the link below to access your personal health portal:\n` +
+      `${loginLink}\n\n` +
+      `📌 Save this link on your home screen for easy access.\n\n` +
+      `— Dr. Yogeshwar Tiwari\nPunarvasu Clinic, Ahmedabad`
+    );
+    const waNumber = phone.replace(/[^0-9]/g, '');
+    const waUrl    = `https://wa.me/91${waNumber}?text=${waMsg}`;
+
     // Clear form
-    ['newPatName','newPatEmail','newPatPhone','newPatPass','newPatComplaint'].forEach(id => {
+    ['newPatName','newPatPhone','newPatComplaint'].forEach(id => {
       document.getElementById(id).value = '';
     });
     document.getElementById('addPatientForm').style.display = 'none';
-    alert(`Patient account created for ${name}.\n\nLogin credentials:\nEmail: ${email}\nPassword: ${pass}\n\nPlease share these with the patient.`);
+
+    // Open WhatsApp with pre-filled message
+    window.open(waUrl, '_blank');
+
+    alert(`✅ Patient account created for ${name}.\n\nWhatsApp has opened with the login link pre-filled.\nJust press Send to invite ${name} to the portal.`);
+
   } catch(e) {
-    errEl.textContent = e.message;
+    if (e.code === 'auth/email-already-in-use') {
+      errEl.textContent = 'A patient with this phone number already exists.';
+    } else {
+      errEl.textContent = e.message;
+    }
   }
 };
 

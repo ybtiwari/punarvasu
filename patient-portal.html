@@ -4,6 +4,11 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Patient Portal — Punarvasu Clinic</title>
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#1C6B5A"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="Punarvasu"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <style>
@@ -228,16 +233,14 @@
   <div class="login-box">
     <div class="login-logo">Punarvasu Clinic</div>
     <div class="login-sub">Patient Portal · Ahmedabad</div>
-    <div class="login-title">Sign in to your account</div>
-    <div class="fg">
-      <label>Email address</label>
-      <input type="email" id="loginEmail" placeholder="your@email.com" autocomplete="email"/>
+    <div class="login-title" id="loginTitle">Welcome</div>
+    <div id="loginLoading" style="text-align:center;padding:20px;color:var(--ink3);font-size:14px;display:none;">
+      🔐 Logging you in automatically...
     </div>
-    <div class="fg">
-      <label>Password</label>
-      <input type="password" id="loginPass" placeholder="Your password" autocomplete="current-password"/>
+    <div id="loginForm">
+      <p style="font-size:14px;color:var(--ink2);margin-bottom:20px;">Please use the link sent to your WhatsApp to access your portal. If you need a new link, contact the clinic.</p>
+      <p style="font-size:13px;color:var(--ink3);">📞 <strong>+91 92747 91141</strong><br/>dr.yogeshwar@punarvasu.clinic</p>
     </div>
-    <button class="btn-primary" id="loginBtn">Sign in</button>
     <div class="login-err" id="loginErr"></div>
   </div>
 </div>
@@ -289,6 +292,12 @@
       <div class="panel active" id="panel-dashboard">
         <div class="panel-title" id="dash-greeting">Good day</div>
         <div class="panel-sub">Welcome to your patient portal.</div>
+
+        <!-- Install prompt -->
+        <div id="installPrompt" style="display:none;background:var(--teal);color:white;border-radius:8px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <span style="font-size:14px;">📱 Save this portal to your home screen for quick access</span>
+          <button id="installBtn" style="background:white;color:var(--teal);border:none;border-radius:4px;padding:7px 16px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;">Add to Home Screen</button>
+        </div>
 
         <div class="info-card">
           <h3>Account status</h3>
@@ -438,22 +447,30 @@ function applyTranslations() {
   document.getElementById('newPostBtn').textContent = t.newpost;
 }
 
-// ── AUTH ──
-document.getElementById('loginBtn').addEventListener('click', async () => {
-  const email = document.getElementById('loginEmail').value.trim();
-  const pass  = document.getElementById('loginPass').value;
-  const errEl = document.getElementById('loginErr');
-  errEl.textContent = '';
-  try {
-    await signInWithEmailAndPassword(auth, email, pass);
-  } catch(e) {
-    errEl.textContent = 'Incorrect email or password. Please try again.';
-  }
-});
 
-document.getElementById('loginPass').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('loginBtn').click();
-});
+// ── MAGIC LINK AUTO LOGIN ──
+(async function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const token     = urlParams.get('token');
+  const uid       = urlParams.get('uid');
+
+  if (token && uid) {
+    document.getElementById('loginLoading').style.display = 'block';
+    document.getElementById('loginForm').style.display    = 'none';
+    try {
+      const decoded = atob(token);
+      const colonIdx = decoded.indexOf(':');
+      const email = decoded.substring(0, colonIdx);
+      const pass  = decoded.substring(colonIdx + 1);
+      await signInWithEmailAndPassword(auth, email, pass);
+      window.history.replaceState({}, document.title, '/patient-portal.html');
+    } catch(e) {
+      document.getElementById('loginLoading').style.display = 'none';
+      document.getElementById('loginForm').style.display    = 'block';
+      document.getElementById('loginErr').textContent = 'This login link has expired or is invalid. Please contact the clinic for a new link.';
+    }
+  }
+})();
 
 document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
 
@@ -707,6 +724,27 @@ window.openThread = function(postId) {
     }
   });
 };
+
+// ── PWA INSTALL PROMPT ──
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const prompt = document.getElementById('installPrompt');
+  if (prompt) prompt.style.display = 'flex';
+});
+
+const installBtn = document.getElementById('installBtn');
+if (installBtn) {
+  installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      document.getElementById('installPrompt').style.display = 'none';
+    }
+  });
+}
 
 </script>
 </body>
