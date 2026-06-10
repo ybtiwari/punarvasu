@@ -460,6 +460,7 @@ function loadPatients() {
           ${status==='active'
             ? `<button class="btn-sm btn-red" onclick="togglePatient('${uid}','disabled')">Disable</button>`
             : `<button class="btn-sm btn-teal" onclick="togglePatient('${uid}','active')">Activate</button>`}
+          <button class="btn-sm btn-red" onclick="deletePatient('${uid}','${p.name||p.phone}')" style="background:rgba(192,57,43,0.85);color:white;">Delete</button>
         </div>
       </div>`;
     });
@@ -538,6 +539,17 @@ window.addPatient = async function() {
 
 window.togglePatient = async function(uid, status) {
   await set(ref(db, `patients/${uid}/status`), status);
+};
+
+window.deletePatient = async function(uid, name) {
+  if (!confirm(`Permanently delete patient "${name}"?\n\nThis will remove all their records, case file, messages and appointments. This cannot be undone.`)) return;
+  try {
+    await remove(ref(db, `patients/${uid}`));
+    await remove(ref(db, `messages/${uid}`));
+    alert(`Patient "${name}" has been permanently deleted.`);
+  } catch(e) {
+    alert('Error deleting patient: ' + e.message);
+  }
 };
 
 // ── MESSAGES ──

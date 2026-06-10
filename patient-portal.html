@@ -220,8 +220,38 @@
     .empty-icon { font-size: 36px; margin-bottom: 12px; }
 
     @media (max-width: 640px) {
-      .sidebar { display: none; }
-      .portal-content { padding: 20px; }
+      .sidebar {
+        display: flex !important;
+        flex-direction: row;
+        width: 100%;
+        min-height: unset;
+        height: auto;
+        border-right: none;
+        border-top: 1px solid var(--border);
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        overflow-x: auto;
+        padding: 0;
+        z-index: 50;
+        background: var(--white);
+      }
+      .nav-item {
+        flex-direction: column;
+        gap: 2px;
+        padding: 8px 10px;
+        font-size: 10px;
+        min-width: 60px;
+        text-align: center;
+        border-left: none;
+        border-top: 2px solid transparent;
+      }
+      .nav-item.active {
+        border-left: none;
+        border-top-color: var(--teal);
+      }
+      .nav-icon { font-size: 20px; }
+      .portal-body { flex-direction: column; }
+      .portal-content { padding: 16px 14px 80px; }
       .forum-categories { grid-template-columns: 1fr; }
     }
   </style>
