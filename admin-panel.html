@@ -336,27 +336,22 @@
       <!-- ── BROADCAST ── -->
       <div class="panel" id="panel-broadcast">
         <div class="panel-title">Broadcast Message</div>
-        <div class="panel-sub">Send one message to all active patients via WhatsApp at once</div>
+        <div class="panel-sub">Send one message to all active patients — it will appear in each patient's Messages inbox inside the portal</div>
 
         <div class="case-editor">
           <div class="fg">
             <label>Message to broadcast</label>
-            <textarea class="full" id="broadcastMsg" placeholder="Type your announcement or message here. This will be sent to all active patients via WhatsApp..." style="height:140px;"></textarea>
+            <textarea class="full" id="broadcastMsg" placeholder="Type your announcement here. It will appear in every patient's Messages inbox..." style="height:140px;"></textarea>
           </div>
           <div id="broadcastPreview" style="display:none;background:var(--cream);border:1px solid var(--border);border-radius:6px;padding:14px 16px;margin-bottom:16px;">
-            <p style="font-size:12px;color:var(--ink3);margin-bottom:6px;">PREVIEW — Message will be sent as:</p>
-            <p id="broadcastPreviewText" style="font-size:14px;color:var(--ink2);white-space:pre-wrap;"></p>
+            <p style="font-size:12px;color:var(--ink3);margin-bottom:6px;">PREVIEW — patients will see this in their Messages:</p>
+            <p id="broadcastPreviewText" style="font-size:14px;color:var(--ink2);white-space:pre-wrap;line-height:1.7;"></p>
           </div>
           <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-            <button class="btn-sm btn-gray" onclick="previewBroadcast()">Preview message</button>
-            <button class="btn-sm btn-teal" onclick="sendBroadcast()" id="broadcastSendBtn">📣 Send to all patients via WhatsApp</button>
+            <button class="btn-sm btn-gray" onclick="previewBroadcast()">Preview</button>
+            <button class="btn-sm btn-teal" onclick="sendBroadcast()">📣 Send to all patients</button>
           </div>
-          <p style="font-size:12px;color:var(--ink3);margin-top:12px;" id="broadcastStatus"></p>
-        </div>
-
-        <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
-          <p style="font-size:13px;color:var(--ink3);margin-bottom:12px;">How broadcast works: WhatsApp will open for each patient one by one. Press Send for each, then move to the next. This ensures delivery through your personal WhatsApp account.</p>
-          <div id="broadcastPatientList"></div>
+          <p style="font-size:13px;color:var(--ink3);margin-top:12px;" id="broadcastStatus"></p>
         </div>
       </div>
 
@@ -888,36 +883,42 @@ function loadNotifications() {
 window.previewBroadcast = function() {
   const msg = document.getElementById('broadcastMsg').value.trim();
   if (!msg) { alert('Please type a message first.'); return; }
-  const preview = `Namaste 🙏\n\n${msg}\n\n— Dr. Yogeshwar Tiwari\nPunarvasu Clinic, Ahmedabad\n📞 +91 92747 91141`;
-  document.getElementById('broadcastPreviewText').textContent = preview;
+  document.getElementById('broadcastPreviewText').textContent = msg;
   document.getElementById('broadcastPreview').style.display = 'block';
 };
 
-window.sendBroadcast = function() {
+window.sendBroadcast = async function() {
   const msg = document.getElementById('broadcastMsg').value.trim();
   if (!msg) { alert('Please type a message first.'); return; }
-  if (!Object.keys(allPatients).length) { alert('No patients found.'); return; }
 
-  const activePatients = Object.entries(allPatients).filter(([uid, p]) => p.status === 'active' && p.phone);
-  if (!activePatients.length) { alert('No active patients with phone numbers found.'); return; }
+  const activePatients = Object.entries(allPatients).filter(([uid, p]) => p.status === 'active');
+  if (!activePatients.length) { alert('No active patients found.'); return; }
 
-  const fullMsg = `Namaste 🙏\n\n${msg}\n\n— Dr. Yogeshwar Tiwari\nPunarvasu Clinic, Ahmedabad\n📞 +91 92747 91141`;
+  if (!confirm(`Send this message to ${activePatients.length} active patient(s)?\n\nIt will appear in each patient's Messages inbox immediately.`)) return;
 
-  // Show list of patients with individual WhatsApp buttons
-  const listEl = document.getElementById('broadcastPatientList');
-  let html = `<p style="font-size:13px;font-weight:500;color:var(--navy);margin-bottom:12px;">Click each button to send to ${activePatients.length} patient(s):</p>`;
-  activePatients.forEach(([uid, p]) => {
-    const waUrl = `https://wa.me/91${p.phone.replace(/[^0-9]/g,'')}?text=${encodeURIComponent(fullMsg)}`;
-    html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
-      <span style="font-size:14px;color:var(--navy);">${p.name} · ${p.phone}</span>
-      <a href="${waUrl}" target="_blank" class="btn-sm btn-teal" style="text-decoration:none;background:#25D366;">📲 Send on WhatsApp</a>
-    </div>`;
-  });
-  listEl.innerHTML = html;
-  document.getElementById('broadcastStatus').textContent = `Ready to send to ${activePatients.length} active patient(s). Click each button above.`;
+  const statusEl = document.getElementById('broadcastStatus');
+  statusEl.textContent = 'Sending...';
 
-  // Scroll to list
-  listEl.scrollIntoView({ behavior: 'smooth' });
+  let sent = 0;
+  for (const [uid] of activePatients) {
+    try {
+      await push(ref(db, `messages/${uid}`), {
+        text: msg,
+        from: 'doctor',
+        timestamp: Date.now(),
+        read: false,
+        broadcast: true
+      });
+      sent++;
+    } catch(e) {
+      console.error('Failed to send to', uid, e);
+    }
+  }
+
+  document.getElementById('broadcastMsg').value = '';
+  document.getElementById('broadcastPreview').style.display = 'none';
+  statusEl.textContent = `✅ Message sent to ${sent} patient(s) successfully.`;
+  setTimeout(() => { statusEl.textContent = ''; }, 5000);
 };
 
 </script>
