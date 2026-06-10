@@ -193,6 +193,9 @@
         <span>👥 Forum</span>
         <span class="nav-badge" id="badge-forum">0</span>
       </div>
+      <div class="nav-item" data-panel="broadcast">
+        <span>📣 Broadcast</span>
+      </div>
     </div>
 
     <!-- Content -->
@@ -330,6 +333,33 @@
         <div id="forumModList"><div class="empty"><div class="empty-icon">👥</div>No posts yet.</div></div>
       </div>
 
+      <!-- ── BROADCAST ── -->
+      <div class="panel" id="panel-broadcast">
+        <div class="panel-title">Broadcast Message</div>
+        <div class="panel-sub">Send one message to all active patients via WhatsApp at once</div>
+
+        <div class="case-editor">
+          <div class="fg">
+            <label>Message to broadcast</label>
+            <textarea class="full" id="broadcastMsg" placeholder="Type your announcement or message here. This will be sent to all active patients via WhatsApp..." style="height:140px;"></textarea>
+          </div>
+          <div id="broadcastPreview" style="display:none;background:var(--cream);border:1px solid var(--border);border-radius:6px;padding:14px 16px;margin-bottom:16px;">
+            <p style="font-size:12px;color:var(--ink3);margin-bottom:6px;">PREVIEW — Message will be sent as:</p>
+            <p id="broadcastPreviewText" style="font-size:14px;color:var(--ink2);white-space:pre-wrap;"></p>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <button class="btn-sm btn-gray" onclick="previewBroadcast()">Preview message</button>
+            <button class="btn-sm btn-teal" onclick="sendBroadcast()" id="broadcastSendBtn">📣 Send to all patients via WhatsApp</button>
+          </div>
+          <p style="font-size:12px;color:var(--ink3);margin-top:12px;" id="broadcastStatus"></p>
+        </div>
+
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
+          <p style="font-size:13px;color:var(--ink3);margin-bottom:12px;">How broadcast works: WhatsApp will open for each patient one by one. Press Send for each, then move to the next. This ensures delivery through your personal WhatsApp account.</p>
+          <div id="broadcastPatientList"></div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -442,7 +472,7 @@ function loadPatients() {
     Object.entries(allPatients).forEach(([uid, p]) => {
       const status = p.status || 'active';
       const internalEmail = p.email || '';
-      const autoPass = 'Pun@' + (p.phone||'').replace(/[^0-9]/g,'').slice(-4);
+      const autoPass = 'Pun@' + (p.phone||'').replace(/[^0-9]/g,'').slice(-6) + 'Cl!';
       const portalUrl = 'https://punarvasu.clinic/patient-portal.html';
       const loginLink = `${portalUrl}?uid=${uid}&token=${btoa(internalEmail + ':' + autoPass)}`;
       const waMsg = encodeURIComponent(`Namaste ${p.name} 🙏\n\nYour Punarvasu Clinic portal link:\n${loginLink}\n\n📌 Save this on your home screen.\n\n— Dr. Yogeshwar Tiwari`);
@@ -482,8 +512,10 @@ window.addPatient = async function() {
   if (!name || !phone) { errEl.textContent = 'Name and phone number are required.'; return; }
 
   // Use phone number as internal email: 9274791141@punarvasu.clinic
-  const internalEmail = phone.replace(/[^0-9]/g, '') + '@punarvasu.clinic';
-  const autoPass      = 'Pun@' + phone.replace(/[^0-9]/g, '').slice(-4) + Math.random().toString(36).slice(-4);
+  const cleanPhone    = phone.replace(/[^0-9]/g, '');
+  const internalEmail = cleanPhone + '@punarvasu.clinic';
+  // Deterministic password — based on phone only, no random part
+  const autoPass      = 'Pun@' + cleanPhone.slice(-6) + 'Cl!';
 
   try {
     // Create user using secondary app — admin session stays active
@@ -851,6 +883,42 @@ function loadNotifications() {
     el.innerHTML = html;
   });
 }
+
+// ── BROADCAST ──
+window.previewBroadcast = function() {
+  const msg = document.getElementById('broadcastMsg').value.trim();
+  if (!msg) { alert('Please type a message first.'); return; }
+  const preview = `Namaste 🙏\n\n${msg}\n\n— Dr. Yogeshwar Tiwari\nPunarvasu Clinic, Ahmedabad\n📞 +91 92747 91141`;
+  document.getElementById('broadcastPreviewText').textContent = preview;
+  document.getElementById('broadcastPreview').style.display = 'block';
+};
+
+window.sendBroadcast = function() {
+  const msg = document.getElementById('broadcastMsg').value.trim();
+  if (!msg) { alert('Please type a message first.'); return; }
+  if (!Object.keys(allPatients).length) { alert('No patients found.'); return; }
+
+  const activePatients = Object.entries(allPatients).filter(([uid, p]) => p.status === 'active' && p.phone);
+  if (!activePatients.length) { alert('No active patients with phone numbers found.'); return; }
+
+  const fullMsg = `Namaste 🙏\n\n${msg}\n\n— Dr. Yogeshwar Tiwari\nPunarvasu Clinic, Ahmedabad\n📞 +91 92747 91141`;
+
+  // Show list of patients with individual WhatsApp buttons
+  const listEl = document.getElementById('broadcastPatientList');
+  let html = `<p style="font-size:13px;font-weight:500;color:var(--navy);margin-bottom:12px;">Click each button to send to ${activePatients.length} patient(s):</p>`;
+  activePatients.forEach(([uid, p]) => {
+    const waUrl = `https://wa.me/91${p.phone.replace(/[^0-9]/g,'')}?text=${encodeURIComponent(fullMsg)}`;
+    html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:14px;color:var(--navy);">${p.name} · ${p.phone}</span>
+      <a href="${waUrl}" target="_blank" class="btn-sm btn-teal" style="text-decoration:none;background:#25D366;">📲 Send on WhatsApp</a>
+    </div>`;
+  });
+  listEl.innerHTML = html;
+  document.getElementById('broadcastStatus').textContent = `Ready to send to ${activePatients.length} active patient(s). Click each button above.`;
+
+  // Scroll to list
+  listEl.scrollIntoView({ behavior: 'smooth' });
+};
 
 </script>
 </body>
