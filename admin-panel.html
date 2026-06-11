@@ -230,7 +230,7 @@
             <div class="fg"><label>Phone / WhatsApp</label><input type="tel" id="newPatPhone" placeholder="9274791141"/></div>
           </div>
           <div class="fg"><label>Chief complaint (optional)</label><input type="text" id="newPatComplaint" placeholder="Main condition or complaint"/></div>
-          <button class="btn-sm btn-teal" onclick="addPatient()">Create account &amp; send WhatsApp invite</button>
+          <button class="btn-sm btn-teal" onclick="addPatient()">Create patient account</button>
           <button onclick="toggleAddPatient()" style="background:none;border:none;color:var(--ink3);font-size:13px;cursor:pointer;margin-left:12px;">Cancel</button>
           <div id="addPatErr" style="font-size:13px;color:var(--red);margin-top:8px;"></div>
         </div>
@@ -482,7 +482,7 @@ function loadPatients() {
           <span class="badge ${status==='active'?'badge-active':'badge-disabled'}">${status}</span>
           <button class="btn-sm btn-teal" onclick="openChat('${uid}','${p.name||p.phone}')">Message</button>
           <button class="btn-sm btn-gray" onclick="viewCase('${uid}')">Case file</button>
-          <a class="btn-sm btn-gray" href="${waUrl}" target="_blank" style="text-decoration:none;">📲 Resend invite</a>
+          <a class="btn-sm btn-teal" href="${waUrl}" target="_blank" style="text-decoration:none;">📲 Send WhatsApp invite</a>
           ${status==='active'
             ? `<button class="btn-sm btn-red" onclick="togglePatient('${uid}','disabled')">Disable</button>`
             : `<button class="btn-sm btn-teal" onclick="togglePatient('${uid}','active')">Activate</button>`}
@@ -530,65 +530,72 @@ window.addPatient = async function() {
     // Sign out secondary app immediately
     await signOut(secondaryAuth);
 
-    // Build magic login link
-    const portalUrl = 'https://punarvasu.clinic/patient-portal.html';
-    const loginLink = `${portalUrl}?uid=${cred.user.uid}&token=${btoa(internalEmail + ':' + autoPass)}`;
-
-    // Build WhatsApp message
-    const waMsg = encodeURIComponent(
-      `Namaste ${name} 🙏\n\n` +
-      `Welcome to Punarvasu Clinic Patient Portal.\n\n` +
-      `Click the link below to access your personal health portal:\n` +
-      `${loginLink}\n\n` +
-      `📌 Save this link on your home screen for easy access.\n\n` +
-      `— Dr. Yogeshwar Tiwari\nPunarvasu Clinic, Ahmedabad`
-    );
-    const waNumber = phone.replace(/[^0-9]/g, '');
-    const waUrl    = `https://wa.me/91${waNumber}?text=${waMsg}`;
-
     // Clear form
     ['newPatName','newPatPhone','newPatComplaint'].forEach(id => {
       document.getElementById(id).value = '';
     });
     document.getElementById('addPatientForm').style.display = 'none';
 
-    // Open WhatsApp with pre-filled message
-    window.open(waUrl, '_blank');
-
-    alert(`✅ Patient account created for ${name}.\n\nWhatsApp has opened with the login link pre-filled.\nJust press Send to invite ${name} to the portal.`);
+    alert(`✅ Patient account created for ${name}.\n\nUse the "📲 Send WhatsApp invite" button on their row in the patient list whenever you're ready to invite them.`);
 
   } catch(e) {
     if (e.code === 'auth/email-already-in-use') {
-      // Auth account exists but DB record may be missing -- recover it
+      // Auth account exists but DB record may be missing.
+      // Try all plausible phone/email variants to find the right credentials.
       try {
         errEl.textContent = 'Account exists, recovering...';
-        const recoverCred = await signInWithEmailAndPassword(secondaryAuth, internalEmail, autoPass);
-        const uid = recoverCred.user.uid;
 
+        // Build all variants: with/without leading zero, last 10 digits, last 10 without leading zero
+        const stripped = cleanPhone.replace(/^0+/, '');   // remove leading zeros
+        const variants = [...new Set([
+          cleanPhone,                      // exactly as typed, e.g. 09274791141
+          stripped,                        // without leading zero, e.g. 9274791141
+          cleanPhone.slice(-10),           // last 10 digits
+          stripped.slice(-10)              // last 10 digits without leading zero
+        ])];
+
+        let recoverCred = null;
+        let usedEmail = null;
+        let usedPass = null;
+        for (const v of variants) {
+          const tryEmail = v + '@punarvasu.clinic';
+          const tryPass  = 'Pun@' + v.slice(-6) + 'Cl!';
+          try {
+            recoverCred = await signInWithEmailAndPassword(secondaryAuth, tryEmail, tryPass);
+            usedEmail = tryEmail;
+            usedPass  = tryPass;
+            break;
+          } catch(tryErr) {
+            // try next variant
+          }
+        }
+
+        if (!recoverCred) {
+          // Cannot sign in — show actionable instructions
+          errEl.innerHTML = 'Recovery failed. Go to <b>Firebase Console &rarr; Authentication &rarr; Users</b>, ' +
+            'find and delete the account for <b>' + cleanPhone + '@punarvasu.clinic</b> ' +
+            '(or any variant), then try adding this patient again.';
+          return;
+        }
+
+        const uid = recoverCred.user.uid;
         const existing = await get(ref(db, 'patients/' + uid));
         if (!existing.exists()) {
           await set(ref(db, 'patients/' + uid), {
             name, phone, complaint,
-            email: internalEmail,
+            email: usedEmail,
             status: 'active',
             createdAt: Date.now()
           });
         }
         await signOut(secondaryAuth);
 
-        const portalUrl = 'https://punarvasu.clinic/patient-portal.html';
-        const loginLink = portalUrl + '?uid=' + uid + '&token=' + btoa(internalEmail + ':' + autoPass);
-        const waText = 'Namaste ' + name + ' \u{1F64F}\n\nWelcome to Punarvasu Clinic Patient Portal.\n\nClick the link below to access your personal health portal:\n' + loginLink + '\n\n\u{1F4CC} Save this link on your home screen.\n\n\u2014 Dr. Yogeshwar Tiwari\nPunarvasu Clinic, Ahmedabad';
-        const waUrl2 = 'https://wa.me/91' + cleanPhone + '?text=' + encodeURIComponent(waText);
-
         ['newPatName','newPatPhone','newPatComplaint'].forEach(id => {
           document.getElementById(id).value = '';
         });
         document.getElementById('addPatientForm').style.display = 'none';
         errEl.textContent = '';
-
-        window.open(waUrl2, '_blank');
-        alert('Patient account recovered for ' + name + '. WhatsApp has opened with the login link.');
+        alert('Patient account recovered for ' + name + '. Use the "Send WhatsApp invite" button on their row whenever ready.');
       } catch(recoverErr) {
         errEl.textContent = 'Could not recover account: ' + recoverErr.message;
       }
