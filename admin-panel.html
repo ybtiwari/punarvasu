@@ -150,10 +150,7 @@
     <div class="login-logo">Punarvasu Clinic</div>
     <div class="login-sub">Dr. Yogeshwar Tiwari</div>
     <div class="admin-badge">Admin Access Only</div>
-    <div class="login-title">Doctor sign in</div>
-    <div class="fg"><label>Email</label><input type="email" id="adminEmail" placeholder="your@email.com"/></div>
-    <div class="fg"><label>Password</label><input type="password" id="adminPass" placeholder="Password"/></div>
-    <button class="btn-primary" id="adminLoginBtn">Sign in</button>
+    <div class="login-title" id="loginStatusText">Signing in…</div>
     <div class="login-err" id="adminErr"></div>
   </div>
 </div>
@@ -229,7 +226,6 @@
             <div class="fg"><label>Full name</label><input type="text" id="newPatName" placeholder="Patient name"/></div>
             <div class="fg"><label>Phone / WhatsApp</label><input type="tel" id="newPatPhone" placeholder="9274791141"/></div>
           </div>
-          <div class="fg"><label>Chief complaint (optional)</label><input type="text" id="newPatComplaint" placeholder="Main condition or complaint"/></div>
           <button class="btn-sm btn-teal" onclick="addPatient()">Create patient account</button>
           <button onclick="toggleAddPatient()" style="background:none;border:none;color:var(--ink3);font-size:13px;cursor:pointer;margin-left:12px;">Cancel</button>
           <div id="addPatErr" style="font-size:13px;color:var(--red);margin-top:8px;"></div>
@@ -394,18 +390,18 @@ let allPatients    = {};
 let forumFilter    = 'pending';
 
 // ── AUTH ──
-document.getElementById('adminLoginBtn').addEventListener('click', async () => {
-  const email = document.getElementById('adminEmail').value.trim();
-  const pass  = document.getElementById('adminPass').value;
+const ADMIN_PASSWORD = "Punarvasu@1141";
+
+async function autoLogin() {
   const errEl = document.getElementById('adminErr');
   errEl.textContent = '';
-  if (email !== ADMIN_EMAIL) { errEl.textContent = 'Access restricted to authorised admin only.'; return; }
   try {
-    await signInWithEmailAndPassword(auth, email, pass);
+    await signInWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
   } catch(e) {
-    errEl.textContent = 'Incorrect email or password.';
+    document.getElementById('loginStatusText').textContent = 'Sign-in failed';
+    errEl.textContent = 'Could not sign in automatically: ' + e.message;
   }
-});
+}
 
 document.getElementById('adminLogoutBtn').addEventListener('click', () => signOut(auth));
 
@@ -420,6 +416,9 @@ onAuthStateChanged(auth, user => {
   } else {
     document.getElementById('loginScreen').style.display = 'flex';
     document.getElementById('adminScreen').style.display = 'none';
+    document.getElementById('loginStatusText').textContent = 'Signing in…';
+    document.getElementById('adminErr').textContent = '';
+    autoLogin();
   }
 });
 
@@ -503,7 +502,6 @@ window.toggleAddPatient = function() {
 window.addPatient = async function() {
   const name      = document.getElementById('newPatName').value.trim();
   const phone     = document.getElementById('newPatPhone').value.trim().replace(/\s+/g, '');
-  const complaint = document.getElementById('newPatComplaint').value.trim();
   const errEl     = document.getElementById('addPatErr');
   errEl.textContent = '';
   if (!name || !phone) { errEl.textContent = 'Name and phone number are required.'; return; }
@@ -521,7 +519,7 @@ window.addPatient = async function() {
 
     // Save patient record
     await set(ref(db, `patients/${cred.user.uid}`), {
-      name, phone, complaint,
+      name, phone,
       email: internalEmail,
       status: 'active',
       createdAt: Date.now()
@@ -531,7 +529,7 @@ window.addPatient = async function() {
     await signOut(secondaryAuth);
 
     // Clear form
-    ['newPatName','newPatPhone','newPatComplaint'].forEach(id => {
+    ['newPatName','newPatPhone'].forEach(id => {
       document.getElementById(id).value = '';
     });
     document.getElementById('addPatientForm').style.display = 'none';
@@ -582,7 +580,7 @@ window.addPatient = async function() {
         const existing = await get(ref(db, 'patients/' + uid));
         if (!existing.exists()) {
           await set(ref(db, 'patients/' + uid), {
-            name, phone, complaint,
+            name, phone,
             email: usedEmail,
             status: 'active',
             createdAt: Date.now()
@@ -590,7 +588,7 @@ window.addPatient = async function() {
         }
         await signOut(secondaryAuth);
 
-        ['newPatName','newPatPhone','newPatComplaint'].forEach(id => {
+        ['newPatName','newPatPhone'].forEach(id => {
           document.getElementById(id).value = '';
         });
         document.getElementById('addPatientForm').style.display = 'none';
