@@ -96,10 +96,15 @@
     .chat-header { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:var(--cream); border-radius:8px 8px 0 0; }
     .chat-header h4 { font-family:var(--serif); font-size:16px; color:var(--navy); }
     .chat-msgs { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; }
-    .msg-bubble { max-width:75%; padding:10px 14px; border-radius:12px; font-size:14px; line-height:1.55; }
-    .msg-bubble.from-patient { background:var(--cream); border:1px solid var(--border); align-self:flex-start; border-bottom-left-radius:3px; }
-    .msg-bubble.from-doctor  { background:var(--teal); color:white; align-self:flex-end; border-bottom-right-radius:3px; }
+    .msg-row { display:flex; align-items:flex-end; gap:6px; max-width:75%; }
+    .msg-row.from-patient { align-self:flex-start; }
+    .msg-row.from-doctor  { align-self:flex-end; flex-direction:row-reverse; }
+    .msg-bubble { padding:10px 14px; border-radius:12px; font-size:14px; line-height:1.55; }
+    .msg-bubble.from-patient { background:var(--cream); border:1px solid var(--border); border-bottom-left-radius:3px; }
+    .msg-bubble.from-doctor  { background:var(--teal); color:white; border-bottom-right-radius:3px; }
     .msg-meta { font-size:11px; opacity:0.65; margin-top:4px; }
+    .msg-del { opacity:0; transition:opacity 0.15s; background:none; border:none; cursor:pointer; color:var(--ink3); font-size:14px; padding:2px 5px; flex-shrink:0; }
+    .msg-row:hover .msg-del { opacity:1; }
     .chat-input-row { display:flex; gap:8px; padding:12px 16px; border-top:1px solid var(--border); }
     .chat-input { flex:1; border:1px solid var(--border); border-radius:6px; padding:9px 12px; font-family:var(--sans); font-size:14px; resize:none; outline:none; height:42px; }
     .chat-input:focus { border-color:var(--teal); }
@@ -209,7 +214,10 @@
           <div class="stat-card"><div class="stat-num" id="stat-forum">0</div><div class="stat-label">Pending forum posts</div></div>
           <div class="stat-card"><div class="stat-num" id="stat-today">0</div><div class="stat-label">Appointments today</div></div>
         </div>
-        <div class="panel-sub" style="margin-top:8px;">Recent notifications</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+          <div class="panel-sub" style="margin:0;">Recent notifications</div>
+          <button class="btn-sm btn-red" onclick="clearAllNotifications()" id="clearNotifsBtn" style="display:none;">Clear all</button>
+        </div>
         <div id="notifList"><div class="empty"><div class="empty-icon">🔔</div>No new notifications.</div></div>
       </div>
 
@@ -246,7 +254,10 @@
         <div class="chat-panel" id="chatPanel">
           <div class="chat-header">
             <h4 id="chatPatientName">Patient</h4>
-            <button onclick="closeChat()" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:18px;">×</button>
+            <div style="display:flex;align-items:center;gap:14px;">
+              <button class="btn-sm btn-red" onclick="clearConversation()" style="padding:3px 10px;font-size:12px;">Clear conversation</button>
+              <button onclick="closeChat()" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:18px;">×</button>
+            </div>
           </div>
           <div class="chat-msgs" id="chatMsgs"></div>
           <div class="chat-input-row">
@@ -668,17 +679,48 @@ window.openChat = function(uid, name) {
     if (!snap.exists()) return;
     snap.forEach(child => {
       const m = child.val();
-      const div = document.createElement('div');
-      div.className = `msg-bubble ${m.from === 'patient' ? 'from-patient' : 'from-doctor'}`;
+      const fromClass = m.from === 'patient' ? 'from-patient' : 'from-doctor';
       const time = m.timestamp ? new Date(m.timestamp).toLocaleString('en-IN', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
-      div.innerHTML = `${m.text}<div class="msg-meta">${time}</div>`;
-      list.appendChild(div);
+
+      const row = document.createElement('div');
+      row.className = `msg-row ${fromClass}`;
+
+      const bubble = document.createElement('div');
+      bubble.className = `msg-bubble ${fromClass}`;
+      const textDiv = document.createElement('div');
+      textDiv.textContent = m.text || '';
+      const metaDiv = document.createElement('div');
+      metaDiv.className = 'msg-meta';
+      metaDiv.textContent = time;
+      bubble.appendChild(textDiv);
+      bubble.appendChild(metaDiv);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'msg-del';
+      delBtn.title = 'Delete message';
+      delBtn.textContent = '×';
+      delBtn.onclick = () => deleteMessage(uid, child.key);
+
+      row.appendChild(bubble);
+      row.appendChild(delBtn);
+      list.appendChild(row);
+
       if (m.from === 'patient' && !m.read) {
         set(ref(db, `messages/${uid}/${child.key}/read`), true);
       }
     });
     list.scrollTop = list.scrollHeight;
   });
+};
+
+window.deleteMessage = async function(uid, key) {
+  await remove(ref(db, `messages/${uid}/${key}`));
+};
+
+window.clearConversation = async function() {
+  if (!currentChatUid) return;
+  if (!confirm('Clear this entire conversation? This cannot be undone.')) return;
+  await remove(ref(db, `messages/${currentChatUid}`));
 };
 
 window.closeChat = function() {
@@ -905,18 +947,41 @@ window.addDoctorComment = async function(postId) {
 function loadNotifications() {
   onValue(ref(db, 'notifications/admin'), snap => {
     const el = document.getElementById('notifList');
-    if (!snap.exists()) { el.innerHTML = '<div class="empty"><div class="empty-icon">🔔</div>No new notifications.</div>'; return; }
-    const notifs = Object.values(snap.val()).sort((a,b) => (b.timestamp||0)-(a.timestamp||0)).slice(0,10);
+    const clearBtn = document.getElementById('clearNotifsBtn');
+    if (!snap.exists()) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">🔔</div>No new notifications.</div>';
+      clearBtn.style.display = 'none';
+      return;
+    }
+    const entries = Object.entries(snap.val())
+      .sort((a,b) => (b[1].timestamp||0)-(a[1].timestamp||0))
+      .slice(0,10);
     let html = '';
-    notifs.forEach(n => {
+    entries.forEach(([key, n]) => {
       const time = n.timestamp ? new Date(n.timestamp).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
       const icon = n.type === 'message' ? '💬' : '👥';
       const text = n.type === 'message' ? `New message from ${n.email}: "${n.preview}"` : `New forum post: "${n.title}"`;
-      html += `<div class="case-entry"><div class="case-entry-date">${time}</div><div class="case-entry-text">${icon} ${text}</div></div>`;
+      html += `<div class="case-entry" style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+        <div>
+          <div class="case-entry-date">${time}</div>
+          <div class="case-entry-text">${icon} ${text}</div>
+        </div>
+        <button class="btn-sm btn-red" onclick="deleteNotification('${key}')" title="Dismiss" style="padding:2px 9px;flex-shrink:0;">×</button>
+      </div>`;
     });
     el.innerHTML = html;
+    clearBtn.style.display = 'inline-block';
   });
 }
+
+window.deleteNotification = async function(key) {
+  await remove(ref(db, `notifications/admin/${key}`));
+};
+
+window.clearAllNotifications = async function() {
+  if (!confirm('Clear all notifications? This cannot be undone.')) return;
+  await remove(ref(db, 'notifications/admin'));
+};
 
 // ── BROADCAST ──
 window.previewBroadcast = function() {
