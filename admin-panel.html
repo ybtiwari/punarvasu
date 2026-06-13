@@ -112,6 +112,12 @@
     .filter-btn { padding:6px 14px; border-radius:4px; font-size:13px; cursor:pointer; font-family:var(--sans); border:1px solid var(--border); background:var(--cream); color:var(--ink2); font-weight:500; transition:background 0.15s; }
     .filter-btn:hover { background:#e8e5dc; }
     .filter-btn.active { background:var(--teal); color:white; border-color:var(--teal); }
+    .coord-search-wrap { position:relative; max-width:280px; margin-bottom:10px; }
+    .coord-search { width:100%; box-sizing:border-box; border:1px solid var(--border); border-radius:4px; padding:7px 32px 7px 12px; font-family:var(--sans); font-size:13px; color:var(--ink); outline:none; transition:border-color 0.15s; }
+    .coord-search:focus { border-color:var(--teal); }
+    .coord-search-clear { position:absolute; right:6px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:var(--ink3); font-size:15px; padding:2px 6px; display:none; }
+    .coord-search-clear.show { display:block; }
+    .filter-bar-empty { font-size:13px; color:var(--ink3); padding:6px 0; }
     .coord-select { font-family:var(--sans); font-size:13px; padding:5px 8px; border-radius:4px; border:1px solid var(--border); background:var(--white); color:var(--ink2); }
     .chat-input-row { display:flex; gap:8px; padding:12px 16px; border-top:1px solid var(--border); }
     .chat-input { flex:1; border:1px solid var(--border); border-radius:6px; padding:9px 12px; font-family:var(--sans); font-size:14px; resize:none; outline:none; height:42px; }
@@ -251,6 +257,10 @@
           <div id="addPatErr" style="font-size:13px;color:var(--red);margin-top:8px;"></div>
         </div>
 
+        <div class="coord-search-wrap">
+          <input type="text" class="coord-search" id="coordSearchInput" placeholder="Search coordinator..." oninput="setCoordinatorSearch(this.value)"/>
+          <button class="coord-search-clear" id="coordSearchClear" onclick="clearCoordinatorSearch()">×</button>
+        </div>
         <div class="filter-bar" id="patientFilterBar"></div>
 
         <div class="patient-list" id="patientList">
@@ -438,6 +448,7 @@ let currentChatUid = null;
 let allPatients     = {};
 let allCoordinators = {};
 let patientFilter   = 'all';
+let coordinatorSearchTerm = '';
 let forumFilter    = 'pending';
 
 // ── AUTH ──
@@ -528,14 +539,38 @@ function renderPatientFilterBar() {
     patientFilter = 'all';
   }
   const bar = document.getElementById('patientFilterBar');
-  const coords = Object.entries(allCoordinators);
+  const term = coordinatorSearchTerm.trim().toLowerCase();
+  const coords = Object.entries(allCoordinators)
+    .filter(([cuid, c]) => !term || (c.name || '').toLowerCase().includes(term));
+
   let html = `<button class="filter-btn ${patientFilter==='all'?'active':''}" onclick="setPatientFilter('all')">All</button>`;
   html += `<button class="filter-btn ${patientFilter==='unassigned'?'active':''}" onclick="setPatientFilter('unassigned')">Unassigned</button>`;
-  coords.forEach(([cuid, c]) => {
-    html += `<button class="filter-btn ${patientFilter===cuid?'active':''}" onclick="setPatientFilter('${cuid}')">${c.name}</button>`;
-  });
+
+  if (term && coords.length === 0) {
+    html += `<span class="filter-bar-empty">No coordinators match "${coordinatorSearchTerm}"</span>`;
+  } else {
+    coords.forEach(([cuid, c]) => {
+      html += `<button class="filter-btn ${patientFilter===cuid?'active':''}" onclick="setPatientFilter('${cuid}')">${c.name}</button>`;
+    });
+  }
+
   bar.innerHTML = html;
+
+  // Show/hide the clear (×) button based on whether there's a search term
+  const clearBtn = document.getElementById('coordSearchClear');
+  if (clearBtn) clearBtn.classList.toggle('show', term.length > 0);
 }
+
+window.setCoordinatorSearch = function(value) {
+  coordinatorSearchTerm = value;
+  renderPatientFilterBar();
+};
+
+window.clearCoordinatorSearch = function() {
+  coordinatorSearchTerm = '';
+  document.getElementById('coordSearchInput').value = '';
+  renderPatientFilterBar();
+};
 
 window.setPatientFilter = function(f) {
   patientFilter = f;
