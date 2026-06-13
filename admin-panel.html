@@ -99,12 +99,20 @@
     .msg-row { display:flex; align-items:flex-end; gap:6px; max-width:75%; }
     .msg-row.from-patient { align-self:flex-start; }
     .msg-row.from-doctor  { align-self:flex-end; flex-direction:row-reverse; }
+    .msg-row.from-coordinator { align-self:flex-end; flex-direction:row-reverse; }
     .msg-bubble { padding:10px 14px; border-radius:12px; font-size:14px; line-height:1.55; }
     .msg-bubble.from-patient { background:var(--cream); border:1px solid var(--border); border-bottom-left-radius:3px; }
     .msg-bubble.from-doctor  { background:var(--teal); color:white; border-bottom-right-radius:3px; }
+    .msg-bubble.from-coordinator { background:#FBE9DD; border:1px solid #F0C9AE; color:var(--ink); border-bottom-right-radius:3px; }
+    .msg-sender { font-size:11px; font-weight:600; opacity:0.75; margin-bottom:3px; }
     .msg-meta { font-size:11px; opacity:0.65; margin-top:4px; }
     .msg-del { opacity:0; transition:opacity 0.15s; background:none; border:none; cursor:pointer; color:var(--ink3); font-size:14px; padding:2px 5px; flex-shrink:0; }
     .msg-row:hover .msg-del { opacity:1; }
+    .filter-bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+    .filter-btn { padding:6px 14px; border-radius:4px; font-size:13px; cursor:pointer; font-family:var(--sans); border:1px solid var(--border); background:var(--cream); color:var(--ink2); font-weight:500; transition:background 0.15s; }
+    .filter-btn:hover { background:#e8e5dc; }
+    .filter-btn.active { background:var(--teal); color:white; border-color:var(--teal); }
+    .coord-select { font-family:var(--sans); font-size:13px; padding:5px 8px; border-radius:4px; border:1px solid var(--border); background:var(--white); color:var(--ink2); }
     .chat-input-row { display:flex; gap:8px; padding:12px 16px; border-top:1px solid var(--border); }
     .chat-input { flex:1; border:1px solid var(--border); border-radius:6px; padding:9px 12px; font-family:var(--sans); font-size:14px; resize:none; outline:none; height:42px; }
     .chat-input:focus { border-color:var(--teal); }
@@ -182,6 +190,10 @@
         <span>👤 Patients</span>
         <span class="nav-badge" id="badge-patients">0</span>
       </div>
+      <div class="nav-item" data-panel="coordinators">
+        <span>🧑‍⚕️ Coordinators</span>
+        <span class="nav-badge" id="badge-coordinators">0</span>
+      </div>
       <div class="nav-item" data-panel="messages">
         <span>💬 Messages</span>
         <span class="nav-badge" id="badge-messages">0</span>
@@ -239,8 +251,34 @@
           <div id="addPatErr" style="font-size:13px;color:var(--red);margin-top:8px;"></div>
         </div>
 
+        <div class="filter-bar" id="patientFilterBar"></div>
+
         <div class="patient-list" id="patientList">
           <div class="empty"><div class="empty-icon">👤</div>No patients yet. Add your first patient above.</div>
+        </div>
+      </div>
+
+      <!-- ── COORDINATORS ── -->
+      <div class="panel" id="panel-coordinators">
+        <div class="panel-title">Coordinators</div>
+        <div class="panel-sub">Manage patient coordinator accounts</div>
+
+        <button class="btn-sm btn-teal" style="margin-bottom:16px;" onclick="toggleAddCoordinator()">+ Create coordinator</button>
+
+        <div class="add-patient-form" id="addCoordinatorForm">
+          <h3>Create coordinator</h3>
+          <div class="form-row">
+            <div class="fg"><label>Full name</label><input type="text" id="newCoordName" placeholder="Coordinator name"/></div>
+            <div class="fg"><label>Email</label><input type="email" id="newCoordEmail" placeholder="name@punarvasu.clinic"/></div>
+          </div>
+          <div class="fg"><label>Password</label><input type="text" id="newCoordPass" placeholder="Choose a password"/></div>
+          <button class="btn-sm btn-teal" onclick="createCoordinator()">Create coordinator account</button>
+          <button onclick="toggleAddCoordinator()" style="background:none;border:none;color:var(--ink3);font-size:13px;cursor:pointer;margin-left:12px;">Cancel</button>
+          <div id="addCoordErr" style="font-size:13px;color:var(--red);margin-top:8px;"></div>
+        </div>
+
+        <div class="patient-list" id="coordinatorList">
+          <div class="empty"><div class="empty-icon">🧑‍⚕️</div>No coordinators yet. Create your first coordinator above.</div>
         </div>
       </div>
 
@@ -397,7 +435,9 @@ const secondaryApp  = initializeApp(firebaseConfig, 'secondary');
 const secondaryAuth = getAuth(secondaryApp);
 
 let currentChatUid = null;
-let allPatients    = {};
+let allPatients     = {};
+let allCoordinators = {};
+let patientFilter   = 'all';
 let forumFilter    = 'pending';
 
 // ── AUTH ──
@@ -446,6 +486,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
 // ── LOAD ALL ──
 function loadAll() {
   loadPatients();
+  loadCoordinators();
   loadMessages();
   loadForum();
   loadNotifications();
@@ -460,6 +501,8 @@ function loadPatients() {
       el.innerHTML = '<div class="empty"><div class="empty-icon">👤</div>No patients yet.</div>';
       document.getElementById('stat-patients').textContent = '0';
       document.getElementById('badge-patients').textContent = '0';
+      allPatients = {};
+      renderPatientFilterBar();
       return;
     }
     allPatients = snap.val();
@@ -474,35 +517,87 @@ function loadPatients() {
       sel.innerHTML += `<option value="${uid}">${p.name} (${p.email})</option>`;
     });
 
-    let html = '';
-    Object.entries(allPatients).forEach(([uid, p]) => {
-      const status = p.status || 'active';
-      const internalEmail = p.email || '';
-      const autoPass = 'Pun@' + (p.phone||'').replace(/[^0-9]/g,'').slice(-6) + 'Cl!';
-      const portalUrl = 'https://punarvasu.clinic/patient-portal.html';
-      const loginLink = `${portalUrl}?uid=${uid}&token=${btoa(internalEmail + ':' + autoPass)}`;
-      const waMsg = encodeURIComponent(`Namaste ${p.name} 🙏\n\nYour Punarvasu Clinic portal link:\n${loginLink}\n\n📌 Save this on your home screen.\n\n— Dr. Yogeshwar Tiwari`);
-      const waUrl = `https://wa.me/91${(p.phone||'').replace(/[^0-9]/g,'')}?text=${waMsg}`;
-      html += `<div class="patient-item">
-        <div class="patient-info">
-          <h4>${p.name || 'Unknown'}</h4>
-          <p>📞 ${p.phone || 'No phone'} · ${p.complaint || ''}</p>
-        </div>
-        <div class="patient-actions">
-          <span class="badge ${status==='active'?'badge-active':'badge-disabled'}">${status}</span>
-          <button class="btn-sm btn-teal" onclick="openChat('${uid}','${p.name||p.phone}')">Message</button>
-          <button class="btn-sm btn-gray" onclick="viewCase('${uid}')">Case file</button>
-          <a class="btn-sm btn-teal" href="${waUrl}" target="_blank" style="text-decoration:none;">📲 Send WhatsApp invite</a>
-          ${status==='active'
-            ? `<button class="btn-sm btn-red" onclick="togglePatient('${uid}','disabled')">Disable</button>`
-            : `<button class="btn-sm btn-teal" onclick="togglePatient('${uid}','active')">Activate</button>`}
-          <button class="btn-sm btn-red" onclick="deletePatient('${uid}','${p.name||p.phone}')" style="background:rgba(192,57,43,0.85);color:white;">Delete</button>
-        </div>
-      </div>`;
-    });
-    el.innerHTML = html;
+    renderPatientFilterBar();
+    renderPatients();
   });
 }
+
+function renderPatientFilterBar() {
+  // If current filter points to a coordinator that no longer exists, reset to 'all'
+  if (patientFilter !== 'all' && patientFilter !== 'unassigned' && !allCoordinators[patientFilter]) {
+    patientFilter = 'all';
+  }
+  const bar = document.getElementById('patientFilterBar');
+  const coords = Object.entries(allCoordinators);
+  let html = `<button class="filter-btn ${patientFilter==='all'?'active':''}" onclick="setPatientFilter('all')">All</button>`;
+  html += `<button class="filter-btn ${patientFilter==='unassigned'?'active':''}" onclick="setPatientFilter('unassigned')">Unassigned</button>`;
+  coords.forEach(([cuid, c]) => {
+    html += `<button class="filter-btn ${patientFilter===cuid?'active':''}" onclick="setPatientFilter('${cuid}')">${c.name}</button>`;
+  });
+  bar.innerHTML = html;
+}
+
+window.setPatientFilter = function(f) {
+  patientFilter = f;
+  renderPatientFilterBar();
+  renderPatients();
+};
+
+function renderPatients() {
+  const el = document.getElementById('patientList');
+  const entries = Object.entries(allPatients).filter(([uid, p]) => {
+    if (patientFilter === 'all') return true;
+    if (patientFilter === 'unassigned') return !p.coordinatorId;
+    return p.coordinatorId === patientFilter;
+  });
+
+  if (entries.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">👤</div>No patients in this view.</div>';
+    return;
+  }
+
+  let html = '';
+  entries.forEach(([uid, p]) => {
+    const status = p.status || 'active';
+    const internalEmail = p.email || '';
+    const autoPass = 'Pun@' + (p.phone||'').replace(/[^0-9]/g,'').slice(-6) + 'Cl!';
+    const portalUrl = 'https://punarvasu.clinic/patient-portal.html';
+    const loginLink = `${portalUrl}?uid=${uid}&token=${btoa(internalEmail + ':' + autoPass)}`;
+    const waMsg = encodeURIComponent(`Namaste ${p.name} 🙏\n\nYour Punarvasu Clinic portal link:\n${loginLink}\n\n📌 Save this on your home screen.\n\n— Dr. Yogeshwar Tiwari`);
+    const waUrl = `https://wa.me/91${(p.phone||'').replace(/[^0-9]/g,'')}?text=${waMsg}`;
+    const currentCoord = p.coordinatorId || '';
+    let rowCoordOptions = `<option value="" ${currentCoord===''?'selected':''}>Unassigned</option>`;
+    Object.entries(allCoordinators).forEach(([cuid, c]) => {
+      rowCoordOptions += `<option value="${cuid}" ${currentCoord===cuid?'selected':''}>${c.name}</option>`;
+    });
+    html += `<div class="patient-item">
+      <div class="patient-info">
+        <h4>${p.name || 'Unknown'}</h4>
+        <p>📞 ${p.phone || 'No phone'} · ${p.complaint || ''}</p>
+      </div>
+      <div class="patient-actions">
+        <span class="badge ${status==='active'?'badge-active':'badge-disabled'}">${status}</span>
+        <select class="coord-select" onchange="setCoordinator('${uid}', this.value)">${rowCoordOptions}</select>
+        <button class="btn-sm btn-teal" onclick="openChat('${uid}','${p.name||p.phone}')">Message</button>
+        <button class="btn-sm btn-gray" onclick="viewCase('${uid}')">Case file</button>
+        <a class="btn-sm btn-teal" href="${waUrl}" target="_blank" style="text-decoration:none;">📲 Send WhatsApp invite</a>
+        ${status==='active'
+          ? `<button class="btn-sm btn-red" onclick="togglePatient('${uid}','disabled')">Disable</button>`
+          : `<button class="btn-sm btn-teal" onclick="togglePatient('${uid}','active')">Activate</button>`}
+        <button class="btn-sm btn-red" onclick="deletePatient('${uid}','${p.name||p.phone}')" style="background:rgba(192,57,43,0.85);color:white;">Delete</button>
+      </div>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+window.setCoordinator = async function(uid, coordinatorId) {
+  if (coordinatorId) {
+    await set(ref(db, `patients/${uid}/coordinatorId`), coordinatorId);
+  } else {
+    await remove(ref(db, `patients/${uid}/coordinatorId`));
+  }
+};
 
 window.toggleAddPatient = function() {
   const f = document.getElementById('addPatientForm');
@@ -629,6 +724,94 @@ window.deletePatient = async function(uid, name) {
   }
 };
 
+// ── COORDINATORS ──
+function loadCoordinators() {
+  onValue(ref(db, 'coordinators'), snap => {
+    allCoordinators = snap.exists() ? snap.val() : {};
+    const count = Object.keys(allCoordinators).length;
+    document.getElementById('badge-coordinators').textContent = count;
+    renderCoordinators();
+    renderPatientFilterBar();
+    renderPatients();
+  });
+}
+
+function renderCoordinators() {
+  const el = document.getElementById('coordinatorList');
+  const entries = Object.entries(allCoordinators);
+  if (entries.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🧑‍⚕️</div>No coordinators yet. Create your first coordinator above.</div>';
+    return;
+  }
+  let html = '';
+  entries.forEach(([cuid, c]) => {
+    const patientCount = Object.values(allPatients).filter(p => p.coordinatorId === cuid).length;
+    html += `<div class="patient-item">
+      <div class="patient-info">
+        <h4>${c.name || 'Unknown'}</h4>
+        <p>✉️ ${c.email || ''} · ${patientCount} patient(s) assigned</p>
+      </div>
+      <div class="patient-actions">
+        <button class="btn-sm btn-red" onclick="deleteCoordinator('${cuid}','${c.name}')" style="background:rgba(192,57,43,0.85);color:white;">Delete</button>
+      </div>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+window.toggleAddCoordinator = function() {
+  const f = document.getElementById('addCoordinatorForm');
+  const isHidden = f.style.display === 'none' || f.style.display === '';
+  f.style.display = isHidden ? 'block' : 'none';
+};
+
+window.createCoordinator = async function() {
+  const name  = document.getElementById('newCoordName').value.trim();
+  const email = document.getElementById('newCoordEmail').value.trim();
+  const pass  = document.getElementById('newCoordPass').value;
+  const errEl = document.getElementById('addCoordErr');
+  errEl.textContent = '';
+  if (!name || !email || !pass) { errEl.textContent = 'Name, email and password are required.'; return; }
+
+  try {
+    // Create user using secondary app — admin session stays active
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, email, pass);
+    await updateProfile(cred.user, { displayName: name });
+
+    await set(ref(db, `coordinators/${cred.user.uid}`), {
+      name, email,
+      createdAt: Date.now()
+    });
+
+    await signOut(secondaryAuth);
+
+    ['newCoordName','newCoordEmail','newCoordPass'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('addCoordinatorForm').style.display = 'none';
+
+    alert(`Coordinator account created for ${name}.\n\nLogin: ${email}\nPassword: (as entered)\n\nShare these credentials with them. Their dashboard URL will be provided separately once set up.`);
+  } catch(e) {
+    errEl.textContent = e.message;
+  }
+};
+
+window.deleteCoordinator = async function(cuid, name) {
+  if (!confirm(`Permanently delete coordinator "${name}"?\n\nAny patients assigned to them will become unassigned. This does not delete their Firebase Auth login (do that separately in Firebase Console if needed). This cannot be undone.`)) return;
+  try {
+    // Unassign any patients pointing to this coordinator
+    const unassignOps = Object.entries(allPatients)
+      .filter(([uid, p]) => p.coordinatorId === cuid)
+      .map(([uid]) => remove(ref(db, `patients/${uid}/coordinatorId`)));
+    await Promise.all(unassignOps);
+
+    await remove(ref(db, `coordinators/${cuid}`));
+    alert(`Coordinator "${name}" has been removed and their patients are now unassigned.`);
+  } catch(e) {
+    alert('Error deleting coordinator: ' + e.message);
+  }
+};
+
 // ── MESSAGES ──
 function loadMessages() {
   onValue(ref(db, 'messages'), snap => {
@@ -679,7 +862,10 @@ window.openChat = function(uid, name) {
     if (!snap.exists()) return;
     snap.forEach(child => {
       const m = child.val();
-      const fromClass = m.from === 'patient' ? 'from-patient' : 'from-doctor';
+      let fromClass;
+      if (m.from === 'patient') fromClass = 'from-patient';
+      else if (m.from === 'coordinator') fromClass = 'from-coordinator';
+      else fromClass = 'from-doctor';
       const time = m.timestamp ? new Date(m.timestamp).toLocaleString('en-IN', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
 
       const row = document.createElement('div');
@@ -687,6 +873,14 @@ window.openChat = function(uid, name) {
 
       const bubble = document.createElement('div');
       bubble.className = `msg-bubble ${fromClass}`;
+
+      if (m.from === 'coordinator') {
+        const senderDiv = document.createElement('div');
+        senderDiv.className = 'msg-sender';
+        senderDiv.textContent = m.senderName || (allCoordinators[m.senderId]?.name) || 'Coordinator';
+        bubble.appendChild(senderDiv);
+      }
+
       const textDiv = document.createElement('div');
       textDiv.textContent = m.text || '';
       const metaDiv = document.createElement('div');
