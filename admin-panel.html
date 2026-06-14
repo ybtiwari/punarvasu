@@ -281,8 +281,11 @@
             <div class="fg"><label>Full name</label><input type="text" id="newCoordName" placeholder="Coordinator name"/></div>
             <div class="fg"><label>Email</label><input type="email" id="newCoordEmail" placeholder="name@punarvasu.clinic"/></div>
           </div>
-          <div class="fg"><label>Password</label><input type="text" id="newCoordPass" placeholder="Choose a password"/></div>
-          <button class="btn-sm btn-teal" onclick="createCoordinator()">Create coordinator account</button>
+          <div class="form-row">
+            <div class="fg"><label>Password</label><input type="text" id="newCoordPass" placeholder="Choose a password"/></div>
+            <div class="fg"><label>WhatsApp number</label><input type="tel" id="newCoordPhone" placeholder="9876543210"/></div>
+          </div>
+          <button class="btn-sm btn-teal" onclick="createCoordinator()">Create account & send WhatsApp invite</button>
           <button onclick="toggleAddCoordinator()" style="background:none;border:none;color:var(--ink3);font-size:13px;cursor:pointer;margin-left:12px;">Cancel</button>
           <div id="addCoordErr" style="font-size:13px;color:var(--red);margin-top:8px;"></div>
         </div>
@@ -781,12 +784,24 @@ function renderCoordinators() {
   let html = '';
   entries.forEach(([cuid, c]) => {
     const patientCount = Object.values(allPatients).filter(p => p.coordinatorId === cuid).length;
+    const loginUrl = `https://punarvasu.clinic/coordinator-panel.html?c=${c.urlKey||''}`;
+    const waText = encodeURIComponent(
+      `Namaste ${c.name},\n\n` +
+      `Your Punarvasu Clinic Coordinator Dashboard:\n` +
+      `${loginUrl}\n\n` +
+      `📧 Email: ${c.email}\n` +
+      `🔑 Password: ${c.pass||'(as set)'}\n\n` +
+      `📌 Save this link — it signs you in automatically.\n\n` +
+      `— Dr. Yogeshwar Tiwari\nPunarvasu Clinic, Ahmedabad`
+    );
+    const waUrl = `https://wa.me/91${c.phone||''}?text=${waText}`;
     html += `<div class="patient-item">
       <div class="patient-info">
         <h4>${c.name || 'Unknown'}</h4>
-        <p>✉️ ${c.email || ''} · ${patientCount} patient(s) assigned</p>
+        <p>✉️ ${c.email || ''} · 📞 ${c.phone||'No phone'} · ${patientCount} patient(s) assigned</p>
       </div>
       <div class="patient-actions">
+        <a class="btn-sm btn-teal" href="${waUrl}" target="_blank" style="text-decoration:none;">📲 Resend invite</a>
         <button class="btn-sm btn-red" onclick="deleteCoordinator('${cuid}','${c.name}')" style="background:rgba(192,57,43,0.85);color:white;">Delete</button>
       </div>
     </div>`;
@@ -804,28 +819,55 @@ window.createCoordinator = async function() {
   const name  = document.getElementById('newCoordName').value.trim();
   const email = document.getElementById('newCoordEmail').value.trim();
   const pass  = document.getElementById('newCoordPass').value;
+  const phone = document.getElementById('newCoordPhone').value.trim().replace(/\s+/g,'');
   const errEl = document.getElementById('addCoordErr');
   errEl.textContent = '';
   if (!name || !email || !pass) { errEl.textContent = 'Name, email and password are required.'; return; }
+  if (!phone) { errEl.textContent = 'WhatsApp number is required to send the invite.'; return; }
+
+  // Derive URL key from email prefix (e.g. reyansh@punarvasu.clinic → 'reyansh')
+  const urlKey = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+  const loginUrl = `https://punarvasu.clinic/coordinator-panel.html?c=${urlKey}`;
+  const cleanPhone = phone.replace(/[^0-9]/g,'');
 
   try {
-    // Create user using secondary app — admin session stays active
     const cred = await createUserWithEmailAndPassword(secondaryAuth, email, pass);
     await updateProfile(cred.user, { displayName: name });
 
+    // Store coordinator profile including urlKey and phone for resend-invite later
     await set(ref(db, `coordinators/${cred.user.uid}`), {
-      name, email,
+      name, email, phone: cleanPhone,
+      urlKey, pass,
       createdAt: Date.now()
+    });
+
+    // Store public login-lookup entry (readable without auth by coordinator-panel.html)
+    await set(ref(db, `coord_keys/${urlKey}`), {
+      email, pass
     });
 
     await signOut(secondaryAuth);
 
-    ['newCoordName','newCoordEmail','newCoordPass'].forEach(id => {
+    ['newCoordName','newCoordEmail','newCoordPass','newCoordPhone'].forEach(id => {
       document.getElementById(id).value = '';
     });
     document.getElementById('addCoordinatorForm').style.display = 'none';
 
-    alert(`Coordinator account created for ${name}.\n\nLogin: ${email}\nPassword: (as entered)\n\nShare these credentials with them. Their dashboard URL will be provided separately once set up.`);
+    // Open WhatsApp with pre-filled invite
+    const waText = encodeURIComponent(
+      `Namaste ${name},\n\n` +
+      `You have been added as a Patient Coordinator at Punarvasu Clinic.\n\n` +
+      `Your login details:\n` +
+      `📧 Email: ${email}\n` +
+      `🔑 Password: ${pass}\n\n` +
+      `Click the link below to access your Coordinator Dashboard:\n` +
+      `${loginUrl}\n\n` +
+      `📌 Save this link — it will sign you in automatically.\n\n` +
+      `— Dr. Yogeshwar Tiwari\nPunarvasu Clinic, Ahmedabad`
+    );
+    window.open(`https://wa.me/91${cleanPhone}?text=${waText}`, '_blank');
+
+    alert(`Coordinator account created for ${name}.\n\nWhatsApp has opened with their login link pre-filled. Press Send to deliver it.`);
   } catch(e) {
     errEl.textContent = e.message;
   }
@@ -839,6 +881,10 @@ window.deleteCoordinator = async function(cuid, name) {
       .filter(([uid, p]) => p.coordinatorId === cuid)
       .map(([uid]) => remove(ref(db, `patients/${uid}/coordinatorId`)));
     await Promise.all(unassignOps);
+
+    // Also remove the public coord_keys entry so their link stops working
+    const urlKey = allCoordinators[cuid]?.urlKey;
+    if (urlKey) await remove(ref(db, `coord_keys/${urlKey}`));
 
     await remove(ref(db, `coordinators/${cuid}`));
     alert(`Coordinator "${name}" has been removed and their patients are now unassigned.`);
