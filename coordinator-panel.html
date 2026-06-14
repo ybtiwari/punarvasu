@@ -290,7 +290,7 @@ if (!urlKey) {
 onAuthStateChanged(auth, user => {
   if (user) {
     coordUid  = user.uid;
-    coordName = coord?.name || user.displayName || user.email;
+    coordName = user.displayName || user.email;
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('shell').style.display = 'flex';
     document.getElementById('coordNameDisplay').textContent = coordName;
