@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -245,21 +246,6 @@ const firebaseConfig = {
   appId: "1:774115339459:web:4ee1f45e1e25d61666c676"
 };
 
-// ── COORDINATOR LOOKUP TABLE ──
-// Format: { "url-key": { email, password, name } }
-// Add one entry per coordinator. Share the URL:
-//   coordinator-panel.html?c=KEY
-// with the coordinator — they just bookmark it and never type a password.
-const COORDINATORS = {
-  "reyansh": {
-    email: "reyansh@punarvasu.clinic",
-    password: "123punarvasu",
-    name: "Reyansh Tiwari"
-  }
-  // Add more coordinators here as you create them:
-  // "priya": { email: "priya@punarvasu.clinic", password: "...", name: "Priya Sharma" }
-};
-
 // ── FIREBASE INIT ──
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -273,19 +259,31 @@ let currentChatUid = null;
 let currentCaseUid = null;
 
 // ── AUTO-LOGIN FROM URL PARAM ──
+// Credentials are stored in a public Firebase node: coord_keys/{urlKey}
+// This node is readable without auth (see Firebase Rules), but contains
+// only coordinator login info — no patient data.
 const urlKey = new URLSearchParams(window.location.search).get('c');
-const coord  = urlKey ? COORDINATORS[urlKey] : null;
 
-if (!coord) {
+if (!urlKey) {
   document.getElementById('loginStatusText').textContent = 'Invalid access link.';
   document.getElementById('loginErr').textContent =
     'This link is not valid. Please contact Dr. Yogeshwar Tiwari for your personal coordinator link.';
 } else {
-  signInWithEmailAndPassword(auth, coord.email, coord.password)
-    .catch(e => {
-      document.getElementById('loginStatusText').textContent = 'Sign-in failed';
-      document.getElementById('loginErr').textContent = e.message;
-    });
+  // Read from public coord_keys node
+  onValue(ref(db, `coord_keys/${urlKey}`), snap => {
+    if (!snap.exists()) {
+      document.getElementById('loginStatusText').textContent = 'Invalid access link.';
+      document.getElementById('loginErr').textContent =
+        'This link is not valid. Please contact Dr. Yogeshwar Tiwari for your personal coordinator link.';
+      return;
+    }
+    const entry = snap.val();
+    signInWithEmailAndPassword(auth, entry.email, entry.pass)
+      .catch(e => {
+        document.getElementById('loginStatusText').textContent = 'Sign-in failed';
+        document.getElementById('loginErr').textContent = e.message;
+      });
+  }, { onlyOnce: true });
 }
 
 // ── AUTH STATE ──
