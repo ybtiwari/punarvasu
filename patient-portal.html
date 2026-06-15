@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,244 +22,119 @@
     }
     body { font-family: var(--sans); background: var(--cream); color: var(--ink); min-height: 100vh; }
 
-    /* ── LOGIN ── */
-    .login-wrap {
-      min-height: 100vh; display: flex; align-items: center;
-      justify-content: center; padding: 24px;
-    }
-    .login-box {
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: 10px; padding: 44px 40px; width: 100%; max-width: 400px;
-      box-shadow: 0 4px 24px rgba(15,32,53,0.08);
-    }
+    /* LOGIN */
+    .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .login-box { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 44px 40px; width: 100%; max-width: 400px; box-shadow: 0 4px 24px rgba(15,32,53,0.08); }
     .login-logo { font-family: var(--serif); font-size: 22px; color: var(--navy); margin-bottom: 4px; }
     .login-sub  { font-size: 12px; color: var(--ink3); margin-bottom: 32px; }
     .login-title { font-family: var(--serif); font-size: 20px; color: var(--navy); margin-bottom: 22px; }
     .fg { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
     .fg label { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); }
-    .fg input {
-      border: 1px solid var(--border); border-radius: 4px; padding: 10px 12px;
-      font-family: var(--sans); font-size: 15px; color: var(--ink); outline: none;
-      transition: border-color 0.15s;
-    }
+    .fg input { border: 1px solid var(--border); border-radius: 4px; padding: 10px 12px; font-family: var(--sans); font-size: 15px; color: var(--ink); outline: none; transition: border-color 0.15s; }
     .fg input:focus { border-color: var(--teal); }
-    .btn-primary {
-      width: 100%; background: var(--teal); color: var(--white); border: none;
-      padding: 12px; border-radius: 4px; font-family: var(--sans); font-size: 15px;
-      font-weight: 500; cursor: pointer; transition: background 0.15s; margin-top: 6px;
-    }
+    .btn-primary { width: 100%; background: var(--teal); color: var(--white); border: none; padding: 12px; border-radius: 4px; font-family: var(--sans); font-size: 15px; font-weight: 500; cursor: pointer; transition: background 0.15s; margin-top: 6px; }
     .btn-primary:hover { background: var(--teal2); }
     .login-err { font-size: 13px; color: #c0392b; margin-top: 10px; min-height: 18px; }
 
-    /* ── PORTAL ── */
+    /* PORTAL */
     .portal { display: none; min-height: 100vh; flex-direction: column; }
-
-    /* topbar */
-    .topbar {
-      background: var(--navy); padding: 0 24px; height: 56px;
-      display: flex; align-items: center; justify-content: space-between;
-      position: sticky; top: 0; z-index: 100;
-    }
+    .topbar { background: var(--navy); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
     .topbar-logo { font-family: var(--serif); font-size: 17px; color: var(--white); }
     .topbar-right { display: flex; align-items: center; gap: 16px; }
     .topbar-user { font-size: 13px; color: rgba(255,255,255,0.6); }
-    .btn-logout {
-      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-      color: rgba(255,255,255,0.8); padding: 6px 14px; border-radius: 4px;
-      font-size: 13px; cursor: pointer; font-family: var(--sans); transition: background 0.15s;
-    }
+    .btn-logout { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.8); padding: 6px 14px; border-radius: 4px; font-size: 13px; cursor: pointer; font-family: var(--sans); transition: background 0.15s; }
     .btn-logout:hover { background: rgba(255,255,255,0.18); }
-
-    /* layout */
     .portal-body { display: flex; flex: 1; }
-
-    /* sidebar */
-    .sidebar {
-      width: 220px; background: var(--white); border-right: 1px solid var(--border);
-      padding: 20px 0; min-height: calc(100vh - 56px); flex-shrink: 0;
-    }
-    .nav-item {
-      display: flex; align-items: center; gap: 10px; padding: 11px 20px;
-      font-size: 14px; color: var(--ink2); cursor: pointer;
-      border-left: 2px solid transparent; transition: all 0.15s;
-    }
+    .sidebar { width: 220px; background: var(--white); border-right: 1px solid var(--border); padding: 20px 0; min-height: calc(100vh - 56px); flex-shrink: 0; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 11px 20px; font-size: 14px; color: var(--ink2); cursor: pointer; border-left: 2px solid transparent; transition: all 0.15s; }
     .nav-item:hover { background: var(--cream); color: var(--ink); }
     .nav-item.active { color: var(--teal); border-left-color: var(--teal); background: rgba(28,107,90,0.05); font-weight: 500; }
     .nav-icon { font-size: 16px; }
-
-    /* content */
     .portal-content { flex: 1; padding: 32px; max-width: 800px; }
-
-    /* panels */
     .panel { display: none; }
     .panel.active { display: block; }
     .panel-title { font-family: var(--serif); font-size: 24px; color: var(--navy); margin-bottom: 6px; }
     .panel-sub { font-size: 14px; color: var(--ink3); margin-bottom: 28px; }
-
-    /* cards */
-    .info-card {
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: 8px; padding: 20px 22px; margin-bottom: 16px;
-    }
+    .info-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 20px 22px; margin-bottom: 16px; }
     .info-card h3 { font-family: var(--serif); font-size: 16px; color: var(--navy); margin-bottom: 6px; }
     .info-card p  { font-size: 14px; color: var(--ink2); line-height: 1.6; }
-    .badge {
-      display: inline-block; padding: 3px 10px; border-radius: 12px;
-      font-size: 12px; font-weight: 500;
-    }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
     .badge-active { background: rgba(28,107,90,0.1); color: var(--teal); }
     .badge-pending { background: rgba(200,96,10,0.1); color: #c8600a; }
 
-    /* ── MESSENGER ── */
-    .msg-wrap {
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: 8px; display: flex; flex-direction: column; height: 500px;
-    }
-    .msg-header {
-      padding: 14px 18px; border-bottom: 1px solid var(--border);
-      font-size: 13px; color: var(--ink3); background: var(--cream); border-radius: 8px 8px 0 0;
-    }
+    /* MESSENGER */
+    .msg-wrap { background: var(--white); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; height: 500px; }
+    .msg-header { padding: 14px 18px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--ink3); background: var(--cream); border-radius: 8px 8px 0 0; }
     .msg-list { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
-    .msg-bubble {
-      max-width: 75%; padding: 10px 14px; border-radius: 12px;
-      font-size: 14.5px; line-height: 1.55;
-    }
-    .msg-bubble.from-patient {
-      background: var(--teal); color: white; align-self: flex-end;
-      border-bottom-right-radius: 3px;
-    }
-    .msg-bubble.from-doctor {
-      background: var(--cream); color: var(--ink); align-self: flex-start;
-      border: 1px solid var(--border); border-bottom-left-radius: 3px;
-    }
+
+    /* 3-way bubble styles */
+    .msg-row { display: flex; flex-direction: column; max-width: 75%; }
+    .msg-row.from-patient { align-self: flex-end; align-items: flex-end; }
+    .msg-row.from-doctor  { align-self: flex-start; align-items: flex-start; }
+    .msg-row.from-coordinator { align-self: flex-start; align-items: flex-start; }
+    .msg-bubble { padding: 10px 14px; border-radius: 12px; font-size: 14.5px; line-height: 1.55; }
+    .msg-bubble.from-patient { background: var(--teal); color: white; border-bottom-right-radius: 3px; }
+    .msg-bubble.from-doctor  { background: var(--cream); color: var(--ink); border: 1px solid var(--border); border-bottom-left-radius: 3px; }
+    .msg-bubble.from-coordinator { background: #FBE9DD; color: var(--ink); border: 1px solid #F0C9AE; border-bottom-left-radius: 3px; }
+    .msg-sender { font-size: 11px; font-weight: 600; color: var(--ink3); margin-bottom: 4px; }
     .msg-meta { font-size: 11px; opacity: 0.65; margin-top: 4px; }
-    .msg-input-row {
-      display: flex; gap: 8px; padding: 12px 16px;
-      border-top: 1px solid var(--border);
-    }
-    .msg-input {
-      flex: 1; border: 1px solid var(--border); border-radius: 6px;
-      padding: 9px 12px; font-family: var(--sans); font-size: 14px;
-      resize: none; outline: none; transition: border-color 0.15s; height: 42px;
-    }
+
+    .msg-input-row { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); }
+    .msg-input { flex: 1; border: 1px solid var(--border); border-radius: 6px; padding: 9px 12px; font-family: var(--sans); font-size: 14px; resize: none; outline: none; transition: border-color 0.15s; height: 42px; }
     .msg-input:focus { border-color: var(--teal); }
-    .msg-send {
-      background: var(--teal); color: white; border: none; border-radius: 6px;
-      padding: 0 18px; font-size: 14px; cursor: pointer; font-family: var(--sans);
-      transition: background 0.15s; font-weight: 500;
-    }
+    .msg-send { background: var(--teal); color: white; border: none; border-radius: 6px; padding: 0 18px; font-size: 14px; cursor: pointer; font-family: var(--sans); transition: background 0.15s; font-weight: 500; }
     .msg-send:hover { background: var(--teal2); }
 
-    /* ── CASE FILE ── */
+    /* CASE FILE */
     .case-section { margin-bottom: 28px; }
-    .case-section h3 {
-      font-family: var(--serif); font-size: 17px; color: var(--navy);
-      margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
-    }
-    .case-entry {
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: 6px; padding: 16px 18px; margin-bottom: 10px;
-    }
+    .case-section h3 { font-family: var(--serif); font-size: 17px; color: var(--navy); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .case-entry { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 16px 18px; margin-bottom: 10px; }
     .case-entry-date { font-size: 11px; color: var(--ink3); margin-bottom: 6px; letter-spacing: 0.04em; }
     .case-entry-text { font-size: 14.5px; color: var(--ink2); line-height: 1.7; }
-    .btn-download {
-      background: var(--cream); border: 1px solid var(--border); color: var(--ink2);
-      padding: 8px 18px; border-radius: 4px; font-size: 13.5px; cursor: pointer;
-      font-family: var(--sans); transition: background 0.15s; margin-top: 12px;
-    }
-    .btn-download:hover { background: var(--cream2, #eee); }
+    .btn-download { background: var(--cream); border: 1px solid var(--border); color: var(--ink2); padding: 8px 18px; border-radius: 4px; font-size: 13.5px; cursor: pointer; font-family: var(--sans); transition: background 0.15s; margin-top: 12px; }
+    .btn-download:hover { background: #e8e5dc; }
 
-    /* ── FORUM ── */
+    /* FORUM */
     .forum-categories { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; }
-    .forum-cat {
-      background: var(--white); border: 1px solid var(--border); border-radius: 8px;
-      padding: 18px 16px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;
-      text-decoration: none; display: block;
-    }
+    .forum-cat { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 18px 16px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; text-decoration: none; display: block; }
     .forum-cat:hover { border-color: var(--teal); box-shadow: 0 2px 12px rgba(28,107,90,0.08); }
     .forum-cat h4 { font-family: var(--serif); font-size: 16px; color: var(--navy); margin-bottom: 4px; }
     .forum-cat p  { font-size: 13px; color: var(--ink3); }
     .forum-threads { display: flex; flex-direction: column; gap: 0; }
-    .thread-item {
-      padding: 14px 0; border-bottom: 1px solid var(--border);
-      cursor: pointer; transition: background 0.1s;
-    }
+    .thread-item { padding: 14px 0; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
     .thread-item:last-child { border-bottom: none; }
     .thread-title { font-size: 15px; color: var(--navy); font-weight: 500; margin-bottom: 4px; }
     .thread-meta  { font-size: 12px; color: var(--ink3); }
-    .thread-status-pending { font-size: 11px; color: #c8600a; background: rgba(200,96,10,0.08); padding: 2px 8px; border-radius: 10px; }
-    .new-post-btn {
-      background: var(--teal); color: white; border: none; border-radius: 4px;
-      padding: 10px 20px; font-size: 14px; cursor: pointer; font-family: var(--sans);
-      font-weight: 500; margin-bottom: 18px; transition: background 0.15s;
-    }
+    .new-post-btn { background: var(--teal); color: white; border: none; border-radius: 4px; padding: 10px 20px; font-size: 14px; cursor: pointer; font-family: var(--sans); font-weight: 500; margin-bottom: 18px; transition: background 0.15s; }
     .new-post-btn:hover { background: var(--teal2); }
     .post-form { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-    .post-form textarea {
-      width: 100%; border: 1px solid var(--border); border-radius: 4px;
-      padding: 10px 12px; font-family: var(--sans); font-size: 14px;
-      resize: none; height: 90px; outline: none; margin-bottom: 10px;
-    }
-    .post-form input[type=text] {
-      width: 100%; border: 1px solid var(--border); border-radius: 4px;
-      padding: 10px 12px; font-family: var(--sans); font-size: 14px;
-      outline: none; margin-bottom: 10px;
-    }
+    .post-form textarea { width: 100%; border: 1px solid var(--border); border-radius: 4px; padding: 10px 12px; font-family: var(--sans); font-size: 14px; resize: none; height: 90px; outline: none; margin-bottom: 10px; }
+    .post-form input[type=text] { width: 100%; border: 1px solid var(--border); border-radius: 4px; padding: 10px 12px; font-family: var(--sans); font-size: 14px; outline: none; margin-bottom: 10px; }
     .post-note { font-size: 12px; color: var(--ink3); margin-bottom: 10px; }
 
-    /* language switcher */
+    /* LANG */
     .lang-bar { display: flex; gap: 8px; margin-bottom: 20px; }
-    .lang-btn {
-      padding: 5px 14px; border: 1px solid var(--border); border-radius: 20px;
-      font-size: 12.5px; cursor: pointer; background: var(--white); color: var(--ink2);
-      font-family: var(--sans); transition: all 0.15s;
-    }
+    .lang-btn { padding: 5px 14px; border: 1px solid var(--border); border-radius: 20px; font-size: 12.5px; cursor: pointer; background: var(--white); color: var(--ink2); font-family: var(--sans); transition: all 0.15s; }
     .lang-btn.active { background: var(--teal); color: white; border-color: var(--teal); }
 
-    /* empty state */
     .empty { text-align: center; padding: 48px 24px; color: var(--ink3); font-size: 14px; }
     .empty-icon { font-size: 36px; margin-bottom: 12px; }
 
     @media (max-width: 640px) {
-      .sidebar {
-        display: flex !important;
-        flex-direction: row;
-        width: 100%;
-        min-height: unset;
-        height: auto;
-        border-right: none;
-        border-top: 1px solid var(--border);
-        position: fixed;
-        bottom: 0; left: 0; right: 0;
-        overflow-x: auto;
-        padding: 0;
-        z-index: 50;
-        background: var(--white);
-      }
-      .nav-item {
-        flex-direction: column;
-        gap: 2px;
-        padding: 8px 10px;
-        font-size: 10px;
-        min-width: 60px;
-        text-align: center;
-        border-left: none;
-        border-top: 2px solid transparent;
-      }
-      .nav-item.active {
-        border-left: none;
-        border-top-color: var(--teal);
-      }
+      .sidebar { display: flex !important; flex-direction: row; width: 100%; min-height: unset; height: auto; border-right: none; border-top: 1px solid var(--border); position: fixed; bottom: 0; left: 0; right: 0; overflow-x: auto; padding: 0; z-index: 50; background: var(--white); }
+      .nav-item { flex-direction: column; gap: 2px; padding: 8px 10px; font-size: 10px; min-width: 60px; text-align: center; border-left: none; border-top: 2px solid transparent; }
+      .nav-item.active { border-left: none; border-top-color: var(--teal); }
       .nav-icon { font-size: 20px; }
       .portal-body { flex-direction: column; }
       .portal-content { padding: 16px 14px 80px; }
       .forum-categories { grid-template-columns: 1fr; }
+      .msg-row { max-width: 88%; }
     }
   </style>
 </head>
 <body>
 
-<!-- ══ LOGIN SCREEN ══ -->
+<!-- LOGIN SCREEN -->
 <div class="login-wrap" id="loginScreen">
   <div class="login-box">
     <div class="login-logo">Punarvasu Clinic</div>
@@ -275,10 +151,9 @@
   </div>
 </div>
 
-<!-- ══ PORTAL ══ -->
+<!-- PORTAL -->
 <div class="portal" id="portalScreen">
 
-  <!-- Topbar -->
   <div class="topbar">
     <div class="topbar-logo">Punarvasu Clinic</div>
     <div class="topbar-right">
@@ -289,41 +164,26 @@
 
   <div class="portal-body">
 
-    <!-- Sidebar -->
     <div class="sidebar">
-      <div class="nav-item active" data-panel="dashboard">
-        <span class="nav-icon">🏠</span> Dashboard
-      </div>
-      <div class="nav-item" data-panel="messenger">
-        <span class="nav-icon">💬</span> Messages
-      </div>
-      <div class="nav-item" data-panel="casefile">
-        <span class="nav-icon">📋</span> My Case File
-      </div>
-      <div class="nav-item" data-panel="appointments">
-        <span class="nav-icon">📅</span> Appointments
-      </div>
-      <div class="nav-item" data-panel="forum">
-        <span class="nav-icon">👥</span> Community Forum
-      </div>
+      <div class="nav-item active" data-panel="dashboard"><span class="nav-icon">🏠</span> Dashboard</div>
+      <div class="nav-item" data-panel="messenger"><span class="nav-icon">💬</span> Messages</div>
+      <div class="nav-item" data-panel="casefile"><span class="nav-icon">📋</span> My Case File</div>
+      <div class="nav-item" data-panel="appointments"><span class="nav-icon">📅</span> Appointments</div>
+      <div class="nav-item" data-panel="forum"><span class="nav-icon">👥</span> Community Forum</div>
     </div>
 
-    <!-- Content -->
     <div class="portal-content">
 
-      <!-- Language switcher -->
       <div class="lang-bar">
         <button class="lang-btn active" onclick="setLang('en')">English</button>
         <button class="lang-btn" onclick="setLang('hi')">हिन्दी</button>
         <button class="lang-btn" onclick="setLang('gu')">ગુજરાતી</button>
       </div>
 
-      <!-- ── DASHBOARD ── -->
+      <!-- DASHBOARD -->
       <div class="panel active" id="panel-dashboard">
         <div class="panel-title" id="dash-greeting">Good day</div>
         <div class="panel-sub">Welcome to your patient portal.</div>
-
-        <!-- Install prompt -->
         <div id="installPrompt" style="display:none;background:var(--teal);color:white;border-radius:8px;padding:14px 18px;margin-bottom:16px;align-items:center;justify-content:space-between;gap:12px;">
           <span style="font-size:14px;">📱 Save this portal to your home screen for quick access</span>
           <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
@@ -331,7 +191,6 @@
             <button onclick="document.getElementById('installPrompt').style.display='none'" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:4px;padding:7px 10px;font-size:16px;cursor:pointer;line-height:1;">✕</button>
           </div>
         </div>
-
         <div class="info-card">
           <h3>Account status</h3>
           <p>Your account is active. <span class="badge badge-active">Active</span></p>
@@ -346,12 +205,12 @@
         </div>
       </div>
 
-      <!-- ── MESSENGER ── -->
+      <!-- MESSENGER -->
       <div class="panel" id="panel-messenger">
         <div class="panel-title">Messages</div>
-        <div class="panel-sub">Private conversation with Dr. Yogeshwar Tiwari</div>
+        <div class="panel-sub">Your conversation with Punarvasu Clinic</div>
         <div class="msg-wrap">
-          <div class="msg-header">Dr. Yogeshwar Tiwari · Punarvasu Clinic · Messages are private</div>
+          <div class="msg-header">Punarvasu Clinic · Dr. Yogeshwar Tiwari &amp; Care Team · Messages are private</div>
           <div class="msg-list" id="msgList">
             <div class="empty"><div class="empty-icon">💬</div>No messages yet. Send your first message below.</div>
           </div>
@@ -362,7 +221,7 @@
         </div>
       </div>
 
-      <!-- ── CASE FILE ── -->
+      <!-- CASE FILE -->
       <div class="panel" id="panel-casefile">
         <div class="panel-title">My Case File</div>
         <div class="panel-sub">Notes, prescriptions and follow-up records from Dr. Tiwari</div>
@@ -372,7 +231,7 @@
         <button class="btn-download" id="downloadCaseBtn" style="display:none;" onclick="downloadCaseFile()">⬇ Download my case file (PDF)</button>
       </div>
 
-      <!-- ── APPOINTMENTS ── -->
+      <!-- APPOINTMENTS -->
       <div class="panel" id="panel-appointments">
         <div class="panel-title">Appointments</div>
         <div class="panel-sub">Your appointment and follow-up history</div>
@@ -381,13 +240,11 @@
         </div>
       </div>
 
-      <!-- ── FORUM ── -->
+      <!-- FORUM -->
       <div class="panel" id="panel-forum">
         <div class="panel-title">Community Forum</div>
         <div class="panel-sub">Share your experiences. Read others. Open to all.</div>
-
         <button class="new-post-btn" id="newPostBtn" onclick="showNewPostForm()">+ New Post</button>
-
         <div class="post-form" id="newPostForm" style="display:none;">
           <input type="text" id="postTitle" placeholder="Title of your post"/>
           <select id="postCategory" style="width:100%;border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-family:var(--sans);font-size:14px;outline:none;margin-bottom:10px;">
@@ -401,7 +258,6 @@
           <button class="msg-send" style="padding:10px 20px;" onclick="submitPost()">Submit for approval</button>
           <button onclick="hideNewPostForm()" style="background:none;border:none;color:var(--ink3);font-size:13px;cursor:pointer;margin-left:12px;">Cancel</button>
         </div>
-
         <div id="forumContent">
           <div class="empty"><div class="empty-icon">👥</div>Loading forum posts...</div>
         </div>
@@ -411,12 +267,11 @@
   </div>
 </div>
 
-<!-- Firebase SDKs -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, push, onValue, set, get, serverTimestamp, query, orderByChild }
+import { getDatabase, ref, push, onValue, set, get, query, orderByChild }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
@@ -433,31 +288,14 @@ const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getDatabase(app);
 
-const ADMIN_EMAIL = "dr.yogeshwartiwari4@gmail.com";
+let currentUser = null;
+let currentLang = 'en';
 
-let currentUser  = null;
-let currentLang  = 'en';
-
-// ── TRANSLATIONS ──
+// TRANSLATIONS
 const T = {
-  en: {
-    greeting: "Good day", dashboard: "Dashboard", messages: "Messages",
-    casefile: "My Case File", appointments: "Appointments", forum: "Community Forum",
-    signout: "Sign out", send: "Send", newpost: "+ New Post",
-    pending: "Awaiting approval", approve: "Approve", delete: "Delete"
-  },
-  hi: {
-    greeting: "नमस्ते", dashboard: "डैशबोर्ड", messages: "संदेश",
-    casefile: "मेरी केस फ़ाइल", appointments: "अपॉइंटमेंट", forum: "सामुदायिक फ़ोरम",
-    signout: "साइन आउट", send: "भेजें", newpost: "+ नई पोस्ट",
-    pending: "अनुमोदन की प्रतीक्षा", approve: "स्वीकृत करें", delete: "हटाएं"
-  },
-  gu: {
-    greeting: "નમસ્તે", dashboard: "ડેશબોર્ડ", messages: "સંદેશા",
-    casefile: "મારી કેસ ફાઈલ", appointments: "એપોઈન્ટમેન્ટ", forum: "સામુદાયિક ફોરમ",
-    signout: "સાઈન આઉટ", send: "મોકલો", newpost: "+ નવી પોસ્ટ",
-    pending: "મંજૂરીની રાહ", approve: "મંજૂર કરો", delete: "કાઢી નાખો"
-  }
+  en: { greeting:"Good day", dashboard:"Dashboard", messages:"Messages", casefile:"My Case File", appointments:"Appointments", forum:"Community Forum", signout:"Sign out", send:"Send", newpost:"+ New Post" },
+  hi: { greeting:"नमस्ते", dashboard:"डैशबोर्ड", messages:"संदेश", casefile:"मेरी केस फ़ाइल", appointments:"अपॉइंटमेंट", forum:"सामुदायिक फ़ोरम", signout:"साइन आउट", send:"भेजें", newpost:"+ नई पोस्ट" },
+  gu: { greeting:"નમસ્તે", dashboard:"ડેશબોર્ડ", messages:"સંદેશા", casefile:"મારી કેસ ફાઈલ", appointments:"એપોઈન્ટમેન્ટ", forum:"સામુદાયિક ફોરમ", signout:"સાઈન આઉટ", send:"મોકલો", newpost:"+ નવી પોસ્ટ" }
 };
 
 window.setLang = function(lang) {
@@ -470,31 +308,29 @@ window.setLang = function(lang) {
 function applyTranslations() {
   const t = T[currentLang];
   document.getElementById('dash-greeting').textContent = t.greeting + (currentUser ? ', ' + (currentUser.displayName || currentUser.email.split('@')[0]) : '');
-  document.querySelector('[data-panel="dashboard"]').innerHTML = `<span class="nav-icon">🏠</span> ${t.dashboard}`;
-  document.querySelector('[data-panel="messenger"]').innerHTML = `<span class="nav-icon">💬</span> ${t.messages}`;
-  document.querySelector('[data-panel="casefile"]').innerHTML  = `<span class="nav-icon">📋</span> ${t.casefile}`;
+  document.querySelector('[data-panel="dashboard"]').innerHTML  = `<span class="nav-icon">🏠</span> ${t.dashboard}`;
+  document.querySelector('[data-panel="messenger"]').innerHTML  = `<span class="nav-icon">💬</span> ${t.messages}`;
+  document.querySelector('[data-panel="casefile"]').innerHTML   = `<span class="nav-icon">📋</span> ${t.casefile}`;
   document.querySelector('[data-panel="appointments"]').innerHTML = `<span class="nav-icon">📅</span> ${t.appointments}`;
-  document.querySelector('[data-panel="forum"]').innerHTML     = `<span class="nav-icon">👥</span> ${t.forum}`;
-  document.getElementById('logoutBtn').textContent = t.signout;
-  document.getElementById('msgSendBtn').textContent = t.send;
-  document.getElementById('newPostBtn').textContent = t.newpost;
+  document.querySelector('[data-panel="forum"]').innerHTML      = `<span class="nav-icon">👥</span> ${t.forum}`;
+  document.getElementById('logoutBtn').textContent   = t.signout;
+  document.getElementById('msgSendBtn').textContent  = t.send;
+  document.getElementById('newPostBtn').textContent  = t.newpost;
 }
 
-
-// ── MAGIC LINK AUTO LOGIN ──
+// MAGIC LINK AUTO LOGIN
 (async function() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const token     = urlParams.get('token');
-  const uid       = urlParams.get('uid');
-
+  const params = new URLSearchParams(window.location.search);
+  const token  = params.get('token');
+  const uid    = params.get('uid');
   if (token && uid) {
     document.getElementById('loginLoading').style.display = 'block';
     document.getElementById('loginForm').style.display    = 'none';
     try {
-      const decoded = atob(token);
+      const decoded  = atob(token);
       const colonIdx = decoded.indexOf(':');
-      const email = decoded.substring(0, colonIdx);
-      const pass  = decoded.substring(colonIdx + 1);
+      const email    = decoded.substring(0, colonIdx);
+      const pass     = decoded.substring(colonIdx + 1);
       await signInWithEmailAndPassword(auth, email, pass);
       window.history.replaceState({}, document.title, '/patient-portal.html');
     } catch(e) {
@@ -510,17 +346,16 @@ document.getElementById('logoutBtn').addEventListener('click', () => signOut(aut
 onAuthStateChanged(auth, async user => {
   if (user) {
     currentUser = user;
-    // Check if account is active
     const snap = await get(ref(db, `patients/${user.uid}/status`));
     if (snap.exists() && snap.val() === 'disabled') {
       await signOut(auth);
       document.getElementById('loginErr').textContent = 'Your account has been deactivated. Please contact the clinic.';
       return;
     }
-    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('loginScreen').style.display  = 'none';
     document.getElementById('portalScreen').style.display = 'flex';
     document.getElementById('topbarUser').textContent = user.email;
-    document.getElementById('dash-greeting').textContent = 'Good day, ' + (user.displayName || user.email.split('@')[0]);
+    document.getElementById('dash-greeting').textContent  = 'Good day, ' + (user.displayName || user.email.split('@')[0]);
     loadDashboard();
     loadMessages();
     loadCaseFile();
@@ -529,12 +364,12 @@ onAuthStateChanged(auth, async user => {
     applyTranslations();
   } else {
     currentUser = null;
-    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('loginScreen').style.display  = 'flex';
     document.getElementById('portalScreen').style.display = 'none';
   }
 });
 
-// ── NAVIGATION ──
+// NAV
 document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', () => {
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
@@ -544,15 +379,15 @@ document.querySelectorAll('.nav-item').forEach(item => {
   });
 });
 
-// ── DASHBOARD ──
+// DASHBOARD
 function loadDashboard() {
-  // Next appointment
   onValue(ref(db, `patients/${currentUser.uid}/appointments`), snap => {
     if (snap.exists()) {
-      const appts = Object.values(snap.val()).filter(a => a.date >= new Date().toISOString().split('T')[0]);
-      if (appts.length > 0) {
-        appts.sort((a,b) => a.date.localeCompare(b.date));
-        document.getElementById('next-appt-text').textContent = `${appts[0].date} — ${appts[0].note || 'Follow-up'}`;
+      const today = new Date().toISOString().split('T')[0];
+      const upcoming = Object.values(snap.val()).filter(a => a.date >= today);
+      if (upcoming.length > 0) {
+        upcoming.sort((a,b) => a.date.localeCompare(b.date));
+        document.getElementById('next-appt-text').textContent = `${upcoming[0].date} — ${upcoming[0].note || 'Follow-up'}`;
       } else {
         document.getElementById('next-appt-text').textContent = 'No upcoming appointments scheduled.';
       }
@@ -560,13 +395,14 @@ function loadDashboard() {
       document.getElementById('next-appt-text').textContent = 'No appointments yet.';
     }
   });
-  // Unread messages
+
   onValue(ref(db, `messages/${currentUser.uid}`), snap => {
     if (snap.exists()) {
       const msgs = Object.values(snap.val());
-      const unread = msgs.filter(m => m.from === 'doctor' && !m.read).length;
+      // Count unread from BOTH doctor and coordinator
+      const unread = msgs.filter(m => (m.from === 'doctor' || m.from === 'coordinator') && !m.read).length;
       document.getElementById('unread-text').textContent = unread > 0
-        ? `You have ${unread} unread message(s) from Dr. Tiwari.`
+        ? `You have ${unread} unread message(s).`
         : 'No new messages.';
     } else {
       document.getElementById('unread-text').textContent = 'No messages yet.';
@@ -574,10 +410,9 @@ function loadDashboard() {
   });
 }
 
-// ── MESSENGER ──
+// MESSAGES — 3-way rendering
 function loadMessages() {
-  const msgRef = ref(db, `messages/${currentUser.uid}`);
-  onValue(query(msgRef, orderByChild('timestamp')), snap => {
+  onValue(query(ref(db, `messages/${currentUser.uid}`), orderByChild('timestamp')), snap => {
     const list = document.getElementById('msgList');
     if (!snap.exists()) {
       list.innerHTML = '<div class="empty"><div class="empty-icon">💬</div>No messages yet. Send your first message below.</div>';
@@ -585,14 +420,66 @@ function loadMessages() {
     }
     list.innerHTML = '';
     snap.forEach(child => {
-      const m = child.val();
-      const div = document.createElement('div');
-      div.className = `msg-bubble ${m.from === 'patient' ? 'from-patient' : 'from-doctor'}`;
+      const m    = child.val();
       const time = m.timestamp ? new Date(m.timestamp).toLocaleString('en-IN', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
-      div.innerHTML = `${m.text}<div class="msg-meta">${time}</div>`;
-      list.appendChild(div);
-      // Mark doctor messages as read
-      if (m.from === 'doctor' && !m.read) {
+
+      const row = document.createElement('div');
+
+      if (m.from === 'patient') {
+        // Patient's own messages — simple right-aligned teal bubble
+        row.className = 'msg-row from-patient';
+        const bubble = document.createElement('div');
+        bubble.className = 'msg-bubble from-patient';
+        const textDiv = document.createElement('div');
+        textDiv.textContent = m.text || '';
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'msg-meta';
+        metaDiv.textContent = time;
+        bubble.appendChild(textDiv);
+        bubble.appendChild(metaDiv);
+        row.appendChild(bubble);
+
+      } else if (m.from === 'coordinator') {
+        // Coordinator messages — soft orange, left-aligned, with sender name
+        row.className = 'msg-row from-coordinator';
+        const senderDiv = document.createElement('div');
+        senderDiv.className = 'msg-sender';
+        senderDiv.textContent = m.senderName || 'Your Care Coordinator';
+        const bubble = document.createElement('div');
+        bubble.className = 'msg-bubble from-coordinator';
+        const textDiv = document.createElement('div');
+        textDiv.textContent = m.text || '';
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'msg-meta';
+        metaDiv.textContent = time;
+        bubble.appendChild(textDiv);
+        bubble.appendChild(metaDiv);
+        row.appendChild(senderDiv);
+        row.appendChild(bubble);
+
+      } else {
+        // Doctor messages — cream, left-aligned, with sender name
+        row.className = 'msg-row from-doctor';
+        const senderDiv = document.createElement('div');
+        senderDiv.className = 'msg-sender';
+        senderDiv.textContent = 'Dr. Yogeshwar Tiwari';
+        const bubble = document.createElement('div');
+        bubble.className = 'msg-bubble from-doctor';
+        const textDiv = document.createElement('div');
+        textDiv.textContent = m.text || '';
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'msg-meta';
+        metaDiv.textContent = time;
+        bubble.appendChild(textDiv);
+        bubble.appendChild(metaDiv);
+        row.appendChild(senderDiv);
+        row.appendChild(bubble);
+      }
+
+      list.appendChild(row);
+
+      // Mark doctor + coordinator messages as read
+      if ((m.from === 'doctor' || m.from === 'coordinator') && !m.read) {
         set(ref(db, `messages/${currentUser.uid}/${child.key}/read`), true);
       }
     });
@@ -612,18 +499,17 @@ async function sendMessage() {
   await push(ref(db, `messages/${currentUser.uid}`), {
     text, from: 'patient', timestamp: Date.now(), read: false
   });
-  // Notify admin
-  await push(ref(db, `notifications/admin`), {
+  await push(ref(db, 'notifications/admin'), {
     type: 'message', from: currentUser.uid, email: currentUser.email,
     preview: text.substring(0, 60), timestamp: Date.now(), read: false
   });
   input.value = '';
 }
 
-// ── CASE FILE ──
+// CASE FILE
 function loadCaseFile() {
   onValue(ref(db, `patients/${currentUser.uid}/casefile`), snap => {
-    const el = document.getElementById('caseFileContent');
+    const el    = document.getElementById('caseFileContent');
     const dlBtn = document.getElementById('downloadCaseBtn');
     if (!snap.exists()) {
       el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div>Your case file will appear here as your treatment progresses.</div>';
@@ -633,24 +519,24 @@ function loadCaseFile() {
     dlBtn.style.display = 'block';
     window._caseData = snap.val();
     let html = '';
-    const sections = snap.val();
-    if (sections.notes) {
+    const s = snap.val();
+    if (s.notes) {
       html += '<div class="case-section"><h3>Clinical Notes</h3>';
-      Object.values(sections.notes).forEach(n => {
+      Object.values(s.notes).forEach(n => {
         html += `<div class="case-entry"><div class="case-entry-date">${n.date}</div><div class="case-entry-text">${n.text}</div></div>`;
       });
       html += '</div>';
     }
-    if (sections.prescriptions) {
+    if (s.prescriptions) {
       html += '<div class="case-section"><h3>Prescriptions</h3>';
-      Object.values(sections.prescriptions).forEach(p => {
+      Object.values(s.prescriptions).forEach(p => {
         html += `<div class="case-entry"><div class="case-entry-date">${p.date}</div><div class="case-entry-text"><strong>Medicine:</strong> ${p.medicine}<br/><strong>Dose:</strong> ${p.dose}<br/>${p.notes ? '<strong>Notes:</strong> '+p.notes : ''}</div></div>`;
       });
       html += '</div>';
     }
-    if (sections.followups) {
+    if (s.followups) {
       html += '<div class="case-section"><h3>Follow-up Records</h3>';
-      Object.values(sections.followups).forEach(f => {
+      Object.values(s.followups).forEach(f => {
         html += `<div class="case-entry"><div class="case-entry-date">${f.date}</div><div class="case-entry-text">${f.text}</div></div>`;
       });
       html += '</div>';
@@ -669,7 +555,7 @@ window.downloadCaseFile = function() {
   a.click();
 };
 
-// ── APPOINTMENTS ──
+// APPOINTMENTS
 function loadAppointments() {
   onValue(ref(db, `patients/${currentUser.uid}/appointments`), snap => {
     const el = document.getElementById('appointmentsContent');
@@ -686,7 +572,7 @@ function loadAppointments() {
   });
 }
 
-// ── FORUM ──
+// FORUM
 function loadForum() {
   onValue(ref(db, 'forum'), snap => {
     const el = document.getElementById('forumContent');
@@ -722,8 +608,7 @@ window.submitPost = async function() {
     title, body, category,
     authorUid: currentUser.uid,
     authorName: currentUser.displayName || currentUser.email.split('@')[0],
-    timestamp: Date.now(),
-    status: 'pending'
+    timestamp: Date.now(), status: 'pending'
   });
   await push(ref(db, 'notifications/admin'), {
     type: 'forum_post', title, timestamp: Date.now(), read: false
@@ -735,9 +620,7 @@ window.submitPost = async function() {
 };
 
 window.openThread = function(postId) {
-  // Navigate to thread view — simple alert for now, full thread page coming in admin build
-  const threadRef = ref(db, `forum/${postId}`);
-  get(threadRef).then(snap => {
+  get(ref(db, `forum/${postId}`)).then(snap => {
     if (!snap.exists()) return;
     const post = snap.val();
     let replies = post.replies ? Object.values(post.replies).map(r => `\n${r.authorName}: ${r.body}`).join('') : '\n(No replies yet)';
@@ -747,8 +630,7 @@ window.openThread = function(postId) {
         body: reply.trim(),
         authorUid: currentUser.uid,
         authorName: currentUser.displayName || currentUser.email.split('@')[0],
-        timestamp: Date.now(),
-        status: 'pending'
+        timestamp: Date.now(), status: 'pending'
       });
       push(ref(db, 'notifications/admin'), {
         type: 'forum_reply', postId, timestamp: Date.now(), read: false
@@ -758,7 +640,7 @@ window.openThread = function(postId) {
   });
 };
 
-// ── PWA INSTALL PROMPT ──
+// PWA INSTALL PROMPT
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
@@ -766,37 +648,22 @@ window.addEventListener('beforeinstallprompt', (e) => {
   const prompt = document.getElementById('installPrompt');
   if (prompt) prompt.style.display = 'flex';
 });
-
 const installBtn = document.getElementById('installBtn');
 if (installBtn) {
   installBtn.addEventListener('click', async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      deferredPrompt = null;
-    }
+    if (deferredPrompt) { deferredPrompt.prompt(); const { outcome } = await deferredPrompt.userChoice; deferredPrompt = null; }
     document.getElementById('installPrompt').style.display = 'none';
   });
 }
-
-// Hide for this session only when X is clicked — reappears on next login
-document.querySelector('#installPrompt button[onclick]')?.addEventListener('click', () => {
-  sessionStorage.setItem('installDismissed', 'true');
-});
-
-// Check if dismissed this session
 if (sessionStorage.getItem('installDismissed')) {
   const prompt = document.getElementById('installPrompt');
   if (prompt) prompt.style.display = 'none';
 }
-
-// Hide if already installed
 window.addEventListener('appinstalled', () => {
   const prompt = document.getElementById('installPrompt');
   if (prompt) prompt.style.display = 'none';
   sessionStorage.removeItem('installDismissed');
 });
-
 </script>
 </body>
 </html>
