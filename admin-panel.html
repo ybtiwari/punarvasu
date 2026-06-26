@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -169,8 +170,17 @@
     <div class="login-logo">Punarvasu Clinic</div>
     <div class="login-sub">Dr. Yogeshwar Tiwari</div>
     <div class="admin-badge">Admin Access Only</div>
-    <div class="login-title" id="loginStatusText">Signing in…</div>
+    <div class="login-title" id="loginStatusText">Sign in</div>
+    <form id="adminLoginForm" style="display:flex;flex-direction:column;gap:10px;margin-top:14px;">
+      <input type="email" id="adminEmailInput" placeholder="Admin email" autocomplete="username" required
+             style="padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-family:var(--sans);font-size:14px;">
+      <input type="password" id="adminPasswordInput" placeholder="Password" autocomplete="current-password" required
+             style="padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-family:var(--sans);font-size:14px;">
+      <button type="submit" class="btn-sm" style="background:var(--ink);color:white;padding:10px;border-radius:6px;border:none;font-size:14px;cursor:pointer;">Sign in</button>
+    </form>
+    <a href="#" id="forgotPasswordLink" style="display:block;text-align:center;margin-top:10px;font-size:13px;color:var(--ink2);text-decoration:underline;">Forgot password?</a>
     <div class="login-err" id="adminErr"></div>
+    <div id="resetStatus" style="font-size:13px;color:var(--green,#1a7a3a);margin-top:6px;min-height:18px;"></div>
   </div>
 </div>
 
@@ -421,7 +431,7 @@
 <!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, updateProfile }
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getDatabase, ref, push, onValue, set, get, update, remove, serverTimestamp, query, orderByChild }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -455,20 +465,49 @@ let coordinatorSearchTerm = '';
 let forumFilter    = 'pending';
 
 // ── AUTH ──
-const ADMIN_PASSWORD = "Punarvasu@1141";
+// SECURITY: no password is stored in this file. The admin types it each
+// time they sign in; Firebase Authentication is the only place the real
+// credential is checked. ADMIN_EMAIL above is just used to restrict which
+// account is treated as admin after a successful sign-in — it is not a
+// secret, the same way a username isn't a secret.
 
-async function autoLogin() {
+document.getElementById('adminEmailInput').value = ADMIN_EMAIL;
+
+document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
   const errEl = document.getElementById('adminErr');
   errEl.textContent = '';
+  const email = document.getElementById('adminEmailInput').value.trim();
+  const password = document.getElementById('adminPasswordInput').value;
+  document.getElementById('loginStatusText').textContent = 'Signing in…';
   try {
-    await signInWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
-  } catch(e) {
-    document.getElementById('loginStatusText').textContent = 'Sign-in failed';
-    errEl.textContent = 'Could not sign in automatically: ' + e.message;
+    await signInWithEmailAndPassword(auth, email, password);
+    // onAuthStateChanged below handles showing the panel and re-checks
+    // that this email matches ADMIN_EMAIL before granting access.
+  } catch (err) {
+    document.getElementById('loginStatusText').textContent = 'Sign in';
+    errEl.textContent = 'Sign-in failed: ' + err.message;
   }
-}
+});
 
 document.getElementById('adminLogoutBtn').addEventListener('click', () => signOut(auth));
+
+document.getElementById('forgotPasswordLink').addEventListener('click', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('adminErr');
+  const statusEl = document.getElementById('resetStatus');
+  errEl.textContent = '';
+  statusEl.textContent = '';
+  // Always send the reset email to the known admin address, regardless of
+  // what's currently typed in the email field — this page should not be
+  // usable to trigger reset emails to arbitrary addresses.
+  try {
+    await sendPasswordResetEmail(auth, ADMIN_EMAIL);
+    statusEl.textContent = 'Password reset email sent to ' + ADMIN_EMAIL + '. Check your inbox (and spam folder).';
+  } catch (err) {
+    errEl.textContent = 'Could not send reset email: ' + err.message;
+  }
+});
 
 onAuthStateChanged(auth, user => {
   if (user && user.email === ADMIN_EMAIL) {
@@ -481,9 +520,8 @@ onAuthStateChanged(auth, user => {
   } else {
     document.getElementById('loginScreen').style.display = 'flex';
     document.getElementById('adminScreen').style.display = 'none';
-    document.getElementById('loginStatusText').textContent = 'Signing in…';
+    document.getElementById('loginStatusText').textContent = 'Sign in';
     document.getElementById('adminErr').textContent = '';
-    autoLogin();
   }
 });
 
