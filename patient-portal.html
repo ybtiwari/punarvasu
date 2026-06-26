@@ -319,6 +319,15 @@ function applyTranslations() {
 }
 
 // MAGIC LINK AUTO LOGIN
+// SECURITY: this page must only show portal content for a session that was
+// established by THIS page load's own valid token — never for a Firebase
+// session left over from a different page (admin panel, coordinator panel,
+// or a different patient) that happens to share this browser. Without this
+// guard, opening patient-portal.html with no token in a browser that still
+// has ANY logged-in Firebase session would silently show that session's
+// data here, regardless of who it belongs to.
+let validatedThisPageLoad = false;
+
 (async function() {
   const params = new URLSearchParams(window.location.search);
   const token  = params.get('token');
@@ -332,11 +341,20 @@ function applyTranslations() {
       const email    = decoded.substring(0, colonIdx);
       const pass     = decoded.substring(colonIdx + 1);
       await signInWithEmailAndPassword(auth, email, pass);
+      validatedThisPageLoad = true;
       window.history.replaceState({}, document.title, '/patient-portal.html');
     } catch(e) {
       document.getElementById('loginLoading').style.display = 'none';
       document.getElementById('loginForm').style.display    = 'block';
       document.getElementById('loginErr').textContent = 'This login link has expired or is invalid. Please contact the clinic for a new link.';
+    }
+  } else {
+    // No token on this page load. If a Firebase session already exists in
+    // this browser (left over from another portal/role), sign it out — this
+    // page must never display someone else's session just because it was
+    // already active in this browser.
+    if (auth.currentUser) {
+      await signOut(auth);
     }
   }
 })();
@@ -344,7 +362,7 @@ function applyTranslations() {
 document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
 
 onAuthStateChanged(auth, async user => {
-  if (user) {
+  if (user && validatedThisPageLoad) {
     currentUser = user;
     const snap = await get(ref(db, `patients/${user.uid}/status`));
     if (snap.exists() && snap.val() === 'disabled') {
@@ -362,6 +380,15 @@ onAuthStateChanged(auth, async user => {
     loadAppointments();
     loadForum();
     applyTranslations();
+  } else if (user && !validatedThisPageLoad) {
+    // A session exists but it was never validated by THIS page's own token
+    // check (e.g. a race where onAuthStateChanged fired before our signOut
+    // above completed). Sign it out and show the login screen rather than
+    // ever display portal content for an unverified session.
+    await signOut(auth);
+    currentUser = null;
+    document.getElementById('loginScreen').style.display  = 'flex';
+    document.getElementById('portalScreen').style.display = 'none';
   } else {
     currentUser = null;
     document.getElementById('loginScreen').style.display  = 'flex';
