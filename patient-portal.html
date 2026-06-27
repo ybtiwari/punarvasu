@@ -325,6 +325,18 @@ function applyTranslations() {
 // guard, opening patient-portal.html with no token in a browser that still
 // has ANY logged-in Firebase session would silently show that session's
 // data here, regardless of who it belongs to.
+//
+// PERSISTENCE: the magic link's token/uid are stripped from the URL after
+// first use (so the link can't be replayed/shared from browser history).
+// That means a later page load — after the tab was backgrounded, reloaded,
+// or the browser's Firebase session was otherwise lost — has no token left
+// to authenticate with. To keep the patient logged in across those normal
+// interruptions, the token is also saved to localStorage on first successful
+// login, scoped to THIS uid, and reused (silently) if the page ever finds
+// itself with no active session and no token in the URL.
+const LS_TOKEN_KEY = 'punarvasu_patient_token';
+const LS_UID_KEY   = 'punarvasu_patient_uid';
+
 let validatedThisPageLoad = false;
 let loginAttemptInProgress = false;
 
@@ -348,54 +360,101 @@ async function showPortalForUser(user) {
   applyTranslations();
 }
 
-(async function() {
-  const params = new URLSearchParams(window.location.search);
-  const token  = params.get('token');
-  const uid    = params.get('uid');
-  if (token && uid) {
-    loginAttemptInProgress = true;
-    document.getElementById('loginLoading').style.display = 'block';
-    document.getElementById('loginForm').style.display    = 'none';
-    let signInSucceeded = false;
-    let signedInUser = null;
+async function attemptTokenSignIn(token, uid) {
+  loginAttemptInProgress = true;
+  document.getElementById('loginLoading').style.display = 'block';
+  document.getElementById('loginForm').style.display    = 'none';
+  let signInSucceeded = false;
+  let signedInUser = null;
+  try {
+    const decoded  = atob(token);
+    const colonIdx = decoded.indexOf(':');
+    const email    = decoded.substring(0, colonIdx);
+    const pass     = decoded.substring(colonIdx + 1);
+    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    validatedThisPageLoad = true;
+    signInSucceeded = true;
+    signedInUser = cred.user;
+    // Save for silent re-login on future visits/reloads (see PERSISTENCE note
+    // above). Only saved AFTER a real sign-in succeeds, scoped to this uid.
     try {
-      const decoded  = atob(token);
-      const colonIdx = decoded.indexOf(':');
-      const email    = decoded.substring(0, colonIdx);
-      const pass     = decoded.substring(colonIdx + 1);
-      const cred = await signInWithEmailAndPassword(auth, email, pass);
-      validatedThisPageLoad = true;
-      signInSucceeded = true;
-      signedInUser = cred.user;
-      window.history.replaceState({}, document.title, '/patient-portal.html');
-    } catch(e) {
-      document.getElementById('loginLoading').style.display = 'none';
-      document.getElementById('loginForm').style.display    = 'block';
-      document.getElementById('loginErr').textContent = 'This login link has expired or is invalid. Please contact the clinic for a new link.';
-    } finally {
-      loginAttemptInProgress = false;
+      localStorage.setItem(LS_TOKEN_KEY, token);
+      localStorage.setItem(LS_UID_KEY, uid);
+    } catch(storageErr) {
+      // localStorage can throw in some private-browsing modes — non-fatal,
+      // it just means persistence across reloads won't work this session.
     }
-    if (signInSucceeded) {
-      // Show the portal immediately — do not rely on onAuthStateChanged firing
-      // again. Firebase may have already fired it once (with this same user)
-      // in the gap before validatedThisPageLoad was set above, and it will not
-      // necessarily fire a second time just because the flag changed. This
-      // call is outside the try/catch above so that an error inside
-      // showPortalForUser is never mistaken for a failed sign-in.
-      await showPortalForUser(signedInUser);
-    }
-  } else {
-    // No token on this page load. If a Firebase session already exists in
-    // this browser (left over from another portal/role), sign it out — this
-    // page must never display someone else's session just because it was
-    // already active in this browser.
-    if (auth.currentUser) {
-      await signOut(auth);
-    }
+  } catch(e) {
+    document.getElementById('loginLoading').style.display = 'none';
+    document.getElementById('loginForm').style.display    = 'block';
+    document.getElementById('loginErr').textContent = 'This login link has expired or is invalid. Please contact the clinic for a new link.';
+  } finally {
+    loginAttemptInProgress = false;
+  }
+  if (signInSucceeded) {
+    // Show the portal immediately — do not rely on onAuthStateChanged firing
+    // again. Firebase may have already fired it once (with this same user)
+    // in the gap before validatedThisPageLoad was set above, and it will not
+    // necessarily fire a second time just because the flag changed. This
+    // call is outside the try/catch above so that an error inside
+    // showPortalForUser is never mistaken for a failed sign-in.
+    await showPortalForUser(signedInUser);
+  }
+  return signInSucceeded;
+}
+
+(async function() {
+  const params   = new URLSearchParams(window.location.search);
+  const urlToken = params.get('token');
+  const urlUid   = params.get('uid');
+
+  if (urlToken && urlUid) {
+    window.history.replaceState({}, document.title, '/patient-portal.html');
+    await attemptTokenSignIn(urlToken, urlUid);
+    return;
+  }
+
+  // No token in the URL on this page load. Before falling back to "no
+  // session", try a previously-saved token from an earlier successful login
+  // on this device — this is what keeps the patient logged in across tab
+  // switches, reloads, and the browser backgrounding/killing the page.
+  let savedToken, savedUid;
+  try {
+    savedToken = localStorage.getItem(LS_TOKEN_KEY);
+    savedUid   = localStorage.getItem(LS_UID_KEY);
+  } catch(storageErr) {
+    savedToken = null; savedUid = null;
+  }
+
+  if (savedToken && savedUid) {
+    const ok = await attemptTokenSignIn(savedToken, savedUid);
+    if (ok) return;
+    // Saved token no longer works (e.g. password was reset by the clinic) —
+    // clear it so we don't keep retrying a dead credential on every load.
+    try {
+      localStorage.removeItem(LS_TOKEN_KEY);
+      localStorage.removeItem(LS_UID_KEY);
+    } catch(storageErr) {}
+    return;
+  }
+
+  // No URL token, no saved token. If a Firebase session already exists in
+  // this browser (left over from another portal/role, e.g. admin or
+  // coordinator sharing the same browser), sign it out — this page must
+  // never display someone else's session just because it was already
+  // active in this browser.
+  if (auth.currentUser) {
+    await signOut(auth);
   }
 })();
 
-document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  try {
+    localStorage.removeItem(LS_TOKEN_KEY);
+    localStorage.removeItem(LS_UID_KEY);
+  } catch(storageErr) {}
+  signOut(auth);
+});
 
 onAuthStateChanged(auth, async user => {
   if (user && validatedThisPageLoad) {
@@ -558,14 +617,26 @@ async function sendMessage() {
   const input = document.getElementById('msgInput');
   const text  = input.value.trim();
   if (!text) return;
-  await push(ref(db, `messages/${currentUser.uid}`), {
-    text, from: 'patient', timestamp: Date.now(), read: false
-  });
-  await push(ref(db, 'notifications/admin'), {
-    type: 'message', from: currentUser.uid, email: currentUser.email,
-    preview: text.substring(0, 60), timestamp: Date.now(), read: false
-  });
+  try {
+    await push(ref(db, `messages/${currentUser.uid}`), {
+      text, from: 'patient', timestamp: Date.now(), read: false
+    });
+  } catch(e) {
+    alert('Your message could not be sent. Please check your connection and try again.');
+    return;
+  }
   input.value = '';
+  // Best-effort notification to the clinic — if this fails (e.g. a
+  // permissions rule blocks it), the message itself has already been saved
+  // above, so we don't want to alarm the patient or block their input.
+  try {
+    await push(ref(db, 'notifications/admin'), {
+      type: 'message', from: currentUser.uid, email: currentUser.email,
+      preview: text.substring(0, 60), timestamp: Date.now(), read: false
+    });
+  } catch(e) {
+    console.error('notifications/admin write failed (non-fatal):', e.code, e.message);
+  }
 }
 
 // CASE FILE
