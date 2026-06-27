@@ -327,12 +327,14 @@ function applyTranslations() {
 // has ANY logged-in Firebase session would silently show that session's
 // data here, regardless of who it belongs to.
 let validatedThisPageLoad = false;
+let loginAttemptInProgress = false;
 
 (async function() {
   const params = new URLSearchParams(window.location.search);
   const token  = params.get('token');
   const uid    = params.get('uid');
   if (token && uid) {
+    loginAttemptInProgress = true;
     document.getElementById('loginLoading').style.display = 'block';
     document.getElementById('loginForm').style.display    = 'none';
     try {
@@ -347,6 +349,8 @@ let validatedThisPageLoad = false;
       document.getElementById('loginLoading').style.display = 'none';
       document.getElementById('loginForm').style.display    = 'block';
       document.getElementById('loginErr').textContent = 'This login link has expired or is invalid. Please contact the clinic for a new link.';
+    } finally {
+      loginAttemptInProgress = false;
     }
   } else {
     // No token on this page load. If a Firebase session already exists in
@@ -381,10 +385,19 @@ onAuthStateChanged(auth, async user => {
     loadForum();
     applyTranslations();
   } else if (user && !validatedThisPageLoad) {
+    if (loginAttemptInProgress) {
+      // A token-based sign-in is currently in flight on this very page load.
+      // This callback fired in the gap between Firebase completing the sign-in
+      // and our own code finishing the await + flag assignment. Do NOT sign
+      // out here — the in-progress flow will set validatedThisPageLoad itself
+      // momentarily, and onAuthStateChanged will fire again with the correct
+      // state. Signing out here would kill a legitimate magic-link login.
+      return;
+    }
     // A session exists but it was never validated by THIS page's own token
-    // check (e.g. a race where onAuthStateChanged fired before our signOut
-    // above completed). Sign it out and show the login screen rather than
-    // ever display portal content for an unverified session.
+    // check, and no token-based login is in progress — e.g. a leftover
+    // session from a previous page load in this browser. Sign it out rather
+    // than ever display portal content for an unverified session.
     await signOut(auth);
     currentUser = null;
     document.getElementById('loginScreen').style.display  = 'flex';
