@@ -234,7 +234,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, onValue, push, set, query, orderByChild }
+import { getDatabase, ref, onValue, push, set, query, orderByChild, equalTo }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 // ── CONFIG ──
@@ -294,23 +294,6 @@ onAuthStateChanged(auth, user => {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('shell').style.display = 'flex';
     document.getElementById('coordNameDisplay').textContent = coordName;
-
-    // TEMPORARY DEBUG BANNER — remove after diagnosing the patient-list issue.
-    const dbg = document.createElement('div');
-    dbg.style = 'position:fixed;bottom:0;left:0;right:0;background:#fff3cd;border-top:2px solid #c8600a;padding:10px 16px;font-family:monospace;font-size:12px;z-index:99999;max-height:200px;overflow:auto;';
-    dbg.id = 'tempDebugBanner';
-    dbg.textContent = 'DEBUG: coordUid = ' + JSON.stringify(coordUid) + ' | user.email = ' + user.email;
-    document.body.appendChild(dbg);
-
-    onValue(ref(db, 'patients'), snap => {
-      const raw = snap.exists() ? snap.val() : {};
-      let lines = ['DEBUG: coordUid = ' + JSON.stringify(coordUid), 'DEBUG: raw patients read from DB:'];
-      Object.entries(raw).forEach(([uid, p]) => {
-        lines.push('  patient ' + uid + ' -> coordinatorId=' + JSON.stringify(p.coordinatorId) + ' (matches coordUid: ' + (p.coordinatorId === coordUid) + ')');
-      });
-      document.getElementById('tempDebugBanner').textContent = lines.join('\n');
-    }, { onlyOnce: true });
-
     loadMyPatients();
   } else {
     document.getElementById('loginScreen').style.display = 'flex';
@@ -332,13 +315,23 @@ document.querySelectorAll('.nav-item').forEach(item => {
 // Coordinators only see patients where coordinatorId === their uid
 // Firebase rules enforce this at the data layer too
 function loadMyPatients() {
-  onValue(ref(db, 'patients'), snap => {
+  // Query only patients whose coordinatorId matches this coordinator, rather
+  // than reading the entire patients node and filtering client-side. This
+  // matters for two reasons: (1) the broader "patients" Firebase rule only
+  // grants the admin account read access to the whole node — only the
+  // per-record rule allows a coordinator to read patients assigned to them,
+  // and that per-record rule only applies when querying/reading at that
+  // granularity, not when reading the whole collection at once; and
+  // (2) even if it were allowed, reading everyone's data into the browser
+  // just to filter it in JS would expose other patients' records to anyone
+  // inspecting this page, which the per-record rule is specifically designed
+  // to prevent.
+  const myPatientsQuery = query(ref(db, 'patients'), orderByChild('coordinatorId'), equalTo(coordUid));
+  onValue(myPatientsQuery, snap => {
     myPatients = {};
     if (snap.exists()) {
       Object.entries(snap.val()).forEach(([uid, p]) => {
-        if (p.coordinatorId === coordUid) {
-          myPatients[uid] = p;
-        }
+        myPatients[uid] = p;
       });
     }
 
