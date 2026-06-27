@@ -1,0 +1,723 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Patient Portal — Punarvasu Clinic</title>
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#1C6B5A"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="Punarvasu"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0F2035; --teal: #1C6B5A; --teal2: #155448;
+      --cream: #F5F2EC; --white: #FFFFFF; --ink: #0F1E2D;
+      --ink2: #2A4055; --ink3: #4A6478; --border: #D0DDE8;
+      --serif: 'Lora', Georgia, serif; --sans: 'Source Sans 3', system-ui, sans-serif;
+    }
+    body { font-family: var(--sans); background: var(--cream); color: var(--ink); min-height: 100vh; }
+
+    /* LOGIN */
+    .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .login-box { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 44px 40px; width: 100%; max-width: 400px; box-shadow: 0 4px 24px rgba(15,32,53,0.08); }
+    .login-logo { font-family: var(--serif); font-size: 22px; color: var(--navy); margin-bottom: 4px; }
+    .login-sub  { font-size: 12px; color: var(--ink3); margin-bottom: 32px; }
+    .login-title { font-family: var(--serif); font-size: 20px; color: var(--navy); margin-bottom: 22px; }
+    .fg { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+    .fg label { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); }
+    .fg input { border: 1px solid var(--border); border-radius: 4px; padding: 10px 12px; font-family: var(--sans); font-size: 15px; color: var(--ink); outline: none; transition: border-color 0.15s; }
+    .fg input:focus { border-color: var(--teal); }
+    .btn-primary { width: 100%; background: var(--teal); color: var(--white); border: none; padding: 12px; border-radius: 4px; font-family: var(--sans); font-size: 15px; font-weight: 500; cursor: pointer; transition: background 0.15s; margin-top: 6px; }
+    .btn-primary:hover { background: var(--teal2); }
+    .login-err { font-size: 13px; color: #c0392b; margin-top: 10px; min-height: 18px; }
+
+    /* PORTAL */
+    .portal { display: none; min-height: 100vh; flex-direction: column; }
+    .topbar { background: var(--navy); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+    .topbar-logo { font-family: var(--serif); font-size: 17px; color: var(--white); }
+    .topbar-right { display: flex; align-items: center; gap: 16px; }
+    .topbar-user { font-size: 13px; color: rgba(255,255,255,0.6); }
+    .btn-logout { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.8); padding: 6px 14px; border-radius: 4px; font-size: 13px; cursor: pointer; font-family: var(--sans); transition: background 0.15s; }
+    .btn-logout:hover { background: rgba(255,255,255,0.18); }
+    .portal-body { display: flex; flex: 1; }
+    .sidebar { width: 220px; background: var(--white); border-right: 1px solid var(--border); padding: 20px 0; min-height: calc(100vh - 56px); flex-shrink: 0; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 11px 20px; font-size: 14px; color: var(--ink2); cursor: pointer; border-left: 2px solid transparent; transition: all 0.15s; }
+    .nav-item:hover { background: var(--cream); color: var(--ink); }
+    .nav-item.active { color: var(--teal); border-left-color: var(--teal); background: rgba(28,107,90,0.05); font-weight: 500; }
+    .nav-icon { font-size: 16px; }
+    .portal-content { flex: 1; padding: 32px; max-width: 800px; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .panel-title { font-family: var(--serif); font-size: 24px; color: var(--navy); margin-bottom: 6px; }
+    .panel-sub { font-size: 14px; color: var(--ink3); margin-bottom: 28px; }
+    .info-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 20px 22px; margin-bottom: 16px; }
+    .info-card h3 { font-family: var(--serif); font-size: 16px; color: var(--navy); margin-bottom: 6px; }
+    .info-card p  { font-size: 14px; color: var(--ink2); line-height: 1.6; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+    .badge-active { background: rgba(28,107,90,0.1); color: var(--teal); }
+    .badge-pending { background: rgba(200,96,10,0.1); color: #c8600a; }
+
+    /* MESSENGER */
+    .msg-wrap { background: var(--white); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; height: 500px; }
+    .msg-header { padding: 14px 18px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--ink3); background: var(--cream); border-radius: 8px 8px 0 0; }
+    .msg-list { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+
+    /* 3-way bubble styles */
+    .msg-row { display: flex; flex-direction: column; max-width: 75%; }
+    .msg-row.from-patient { align-self: flex-end; align-items: flex-end; }
+    .msg-row.from-doctor  { align-self: flex-start; align-items: flex-start; }
+    .msg-row.from-coordinator { align-self: flex-start; align-items: flex-start; }
+    .msg-bubble { padding: 10px 14px; border-radius: 12px; font-size: 14.5px; line-height: 1.55; }
+    .msg-bubble.from-patient { background: var(--teal); color: white; border-bottom-right-radius: 3px; }
+    .msg-bubble.from-doctor  { background: var(--cream); color: var(--ink); border: 1px solid var(--border); border-bottom-left-radius: 3px; }
+    .msg-bubble.from-coordinator { background: #FBE9DD; color: var(--ink); border: 1px solid #F0C9AE; border-bottom-left-radius: 3px; }
+    .msg-sender { font-size: 11px; font-weight: 600; color: var(--ink3); margin-bottom: 4px; }
+    .msg-meta { font-size: 11px; opacity: 0.65; margin-top: 4px; }
+
+    .msg-input-row { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); }
+    .msg-input { flex: 1; border: 1px solid var(--border); border-radius: 6px; padding: 9px 12px; font-family: var(--sans); font-size: 14px; resize: none; outline: none; transition: border-color 0.15s; height: 42px; }
+    .msg-input:focus { border-color: var(--teal); }
+    .msg-send { background: var(--teal); color: white; border: none; border-radius: 6px; padding: 0 18px; font-size: 14px; cursor: pointer; font-family: var(--sans); transition: background 0.15s; font-weight: 500; }
+    .msg-send:hover { background: var(--teal2); }
+
+    /* CASE FILE */
+    .case-section { margin-bottom: 28px; }
+    .case-section h3 { font-family: var(--serif); font-size: 17px; color: var(--navy); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .case-entry { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 16px 18px; margin-bottom: 10px; }
+    .case-entry-date { font-size: 11px; color: var(--ink3); margin-bottom: 6px; letter-spacing: 0.04em; }
+    .case-entry-text { font-size: 14.5px; color: var(--ink2); line-height: 1.7; }
+    .btn-download { background: var(--cream); border: 1px solid var(--border); color: var(--ink2); padding: 8px 18px; border-radius: 4px; font-size: 13.5px; cursor: pointer; font-family: var(--sans); transition: background 0.15s; margin-top: 12px; }
+    .btn-download:hover { background: #e8e5dc; }
+
+    /* FORUM */
+    .forum-categories { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+    .forum-cat { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 18px 16px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; text-decoration: none; display: block; }
+    .forum-cat:hover { border-color: var(--teal); box-shadow: 0 2px 12px rgba(28,107,90,0.08); }
+    .forum-cat h4 { font-family: var(--serif); font-size: 16px; color: var(--navy); margin-bottom: 4px; }
+    .forum-cat p  { font-size: 13px; color: var(--ink3); }
+    .forum-threads { display: flex; flex-direction: column; gap: 0; }
+    .thread-item { padding: 14px 0; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
+    .thread-item:last-child { border-bottom: none; }
+    .thread-title { font-size: 15px; color: var(--navy); font-weight: 500; margin-bottom: 4px; }
+    .thread-meta  { font-size: 12px; color: var(--ink3); }
+    .new-post-btn { background: var(--teal); color: white; border: none; border-radius: 4px; padding: 10px 20px; font-size: 14px; cursor: pointer; font-family: var(--sans); font-weight: 500; margin-bottom: 18px; transition: background 0.15s; }
+    .new-post-btn:hover { background: var(--teal2); }
+    .post-form { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .post-form textarea { width: 100%; border: 1px solid var(--border); border-radius: 4px; padding: 10px 12px; font-family: var(--sans); font-size: 14px; resize: none; height: 90px; outline: none; margin-bottom: 10px; }
+    .post-form input[type=text] { width: 100%; border: 1px solid var(--border); border-radius: 4px; padding: 10px 12px; font-family: var(--sans); font-size: 14px; outline: none; margin-bottom: 10px; }
+    .post-note { font-size: 12px; color: var(--ink3); margin-bottom: 10px; }
+
+    /* LANG */
+    .lang-bar { display: flex; gap: 8px; margin-bottom: 20px; }
+    .lang-btn { padding: 5px 14px; border: 1px solid var(--border); border-radius: 20px; font-size: 12.5px; cursor: pointer; background: var(--white); color: var(--ink2); font-family: var(--sans); transition: all 0.15s; }
+    .lang-btn.active { background: var(--teal); color: white; border-color: var(--teal); }
+
+    .empty { text-align: center; padding: 48px 24px; color: var(--ink3); font-size: 14px; }
+    .empty-icon { font-size: 36px; margin-bottom: 12px; }
+
+    @media (max-width: 640px) {
+      .sidebar { display: flex !important; flex-direction: row; width: 100%; min-height: unset; height: auto; border-right: none; border-top: 1px solid var(--border); position: fixed; bottom: 0; left: 0; right: 0; overflow-x: auto; padding: 0; z-index: 50; background: var(--white); }
+      .nav-item { flex-direction: column; gap: 2px; padding: 8px 10px; font-size: 10px; min-width: 60px; text-align: center; border-left: none; border-top: 2px solid transparent; }
+      .nav-item.active { border-left: none; border-top-color: var(--teal); }
+      .nav-icon { font-size: 20px; }
+      .portal-body { flex-direction: column; }
+      .portal-content { padding: 16px 14px 80px; }
+      .forum-categories { grid-template-columns: 1fr; }
+      .msg-row { max-width: 88%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-wrap" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">Punarvasu Clinic</div>
+    <div class="login-sub">Patient Portal · Ahmedabad</div>
+    <div class="login-title" id="loginTitle">Welcome</div>
+    <div id="loginLoading" style="text-align:center;padding:20px;color:var(--ink3);font-size:14px;display:none;">
+      🔐 Logging you in automatically...
+    </div>
+    <div id="loginForm">
+      <p style="font-size:14px;color:var(--ink2);margin-bottom:20px;">Please use the link sent to your WhatsApp to access your portal. If you need a new link, contact the clinic.</p>
+      <p style="font-size:13px;color:var(--ink3);">📞 <strong>+91 92747 91141</strong><br/>dr.yogeshwar@punarvasu.clinic</p>
+    </div>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- PORTAL -->
+<div class="portal" id="portalScreen">
+
+  <div class="topbar">
+    <div class="topbar-logo">Punarvasu Clinic</div>
+    <div class="topbar-right">
+      <span class="topbar-user" id="topbarUser"></span>
+      <button class="btn-logout" id="logoutBtn">Sign out</button>
+    </div>
+  </div>
+
+  <div class="portal-body">
+
+    <div class="sidebar">
+      <div class="nav-item active" data-panel="dashboard"><span class="nav-icon">🏠</span> Dashboard</div>
+      <div class="nav-item" data-panel="messenger"><span class="nav-icon">💬</span> Messages</div>
+      <div class="nav-item" data-panel="casefile"><span class="nav-icon">📋</span> My Case File</div>
+      <div class="nav-item" data-panel="appointments"><span class="nav-icon">📅</span> Appointments</div>
+      <div class="nav-item" data-panel="forum"><span class="nav-icon">👥</span> Community Forum</div>
+    </div>
+
+    <div class="portal-content">
+
+      <div class="lang-bar">
+        <button class="lang-btn active" onclick="setLang('en')">English</button>
+        <button class="lang-btn" onclick="setLang('hi')">हिन्दी</button>
+        <button class="lang-btn" onclick="setLang('gu')">ગુજરાતી</button>
+      </div>
+
+      <!-- DASHBOARD -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="panel-title" id="dash-greeting">Good day</div>
+        <div class="panel-sub">Welcome to your patient portal.</div>
+        <div id="installPrompt" style="display:none;background:var(--teal);color:white;border-radius:8px;padding:14px 18px;margin-bottom:16px;align-items:center;justify-content:space-between;gap:12px;">
+          <span style="font-size:14px;">📱 Save this portal to your home screen for quick access</span>
+          <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+            <button id="installBtn" style="background:white;color:var(--teal);border:none;border-radius:4px;padding:7px 16px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;">Add to Home Screen</button>
+            <button onclick="document.getElementById('installPrompt').style.display='none'" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:4px;padding:7px 10px;font-size:16px;cursor:pointer;line-height:1;">✕</button>
+          </div>
+        </div>
+        <div class="info-card">
+          <h3>Account status</h3>
+          <p>Your account is active. <span class="badge badge-active">Active</span></p>
+        </div>
+        <div class="info-card" id="dash-next-appt">
+          <h3>Next appointment</h3>
+          <p id="next-appt-text">Loading...</p>
+        </div>
+        <div class="info-card" id="dash-unread">
+          <h3>Messages</h3>
+          <p id="unread-text">Loading...</p>
+        </div>
+      </div>
+
+      <!-- MESSENGER -->
+      <div class="panel" id="panel-messenger">
+        <div class="panel-title">Messages</div>
+        <div class="panel-sub">Your conversation with Punarvasu Clinic</div>
+        <div class="msg-wrap">
+          <div class="msg-header">Punarvasu Clinic · Dr. Yogeshwar Tiwari &amp; Care Team · Messages are private</div>
+          <div class="msg-list" id="msgList">
+            <div class="empty"><div class="empty-icon">💬</div>No messages yet. Send your first message below.</div>
+          </div>
+          <div class="msg-input-row">
+            <textarea class="msg-input" id="msgInput" placeholder="Type your message..." rows="1"></textarea>
+            <button class="msg-send" id="msgSendBtn">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CASE FILE -->
+      <div class="panel" id="panel-casefile">
+        <div class="panel-title">My Case File</div>
+        <div class="panel-sub">Notes, prescriptions and follow-up records from Dr. Tiwari</div>
+        <div id="caseFileContent">
+          <div class="empty"><div class="empty-icon">📋</div>Your case file will appear here as your treatment progresses.</div>
+        </div>
+        <button class="btn-download" id="downloadCaseBtn" style="display:none;" onclick="downloadCaseFile()">⬇ Download my case file (PDF)</button>
+      </div>
+
+      <!-- APPOINTMENTS -->
+      <div class="panel" id="panel-appointments">
+        <div class="panel-title">Appointments</div>
+        <div class="panel-sub">Your appointment and follow-up history</div>
+        <div id="appointmentsContent">
+          <div class="empty"><div class="empty-icon">📅</div>Your appointment history will appear here.</div>
+        </div>
+      </div>
+
+      <!-- FORUM -->
+      <div class="panel" id="panel-forum">
+        <div class="panel-title">Community Forum</div>
+        <div class="panel-sub">Share your experiences. Read others. Open to all.</div>
+        <button class="new-post-btn" id="newPostBtn" onclick="showNewPostForm()">+ New Post</button>
+        <div class="post-form" id="newPostForm" style="display:none;">
+          <input type="text" id="postTitle" placeholder="Title of your post"/>
+          <select id="postCategory" style="width:100%;border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-family:var(--sans);font-size:14px;outline:none;margin-bottom:10px;">
+            <option value="experience">My Experience</option>
+            <option value="question">Question</option>
+            <option value="recovery">Recovery Story</option>
+            <option value="general">General</option>
+          </select>
+          <textarea id="postBody" placeholder="Write your post here..."></textarea>
+          <p class="post-note">⚠ Your post will appear after Dr. Tiwari approves it.</p>
+          <button class="msg-send" style="padding:10px 20px;" onclick="submitPost()">Submit for approval</button>
+          <button onclick="hideNewPostForm()" style="background:none;border:none;color:var(--ink3);font-size:13px;cursor:pointer;margin-left:12px;">Cancel</button>
+        </div>
+        <div id="forumContent">
+          <div class="empty"><div class="empty-icon">👥</div>Loading forum posts...</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, push, onValue, set, get, query, orderByChild }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAqzKPqBzNoBJc5FWjnVXMER4prgrbhqag",
+  authDomain: "punarvasu-790a8.firebaseapp.com",
+  databaseURL: "https://punarvasu-790a8-default-rtdb.firebaseio.com",
+  projectId: "punarvasu-790a8",
+  storageBucket: "punarvasu-790a8.firebasestorage.app",
+  messagingSenderId: "774115339459",
+  appId: "1:774115339459:web:4ee1f45e1e25d61666c676"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getDatabase(app);
+
+let currentUser = null;
+let currentLang = 'en';
+
+// TRANSLATIONS
+const T = {
+  en: { greeting:"Good day", dashboard:"Dashboard", messages:"Messages", casefile:"My Case File", appointments:"Appointments", forum:"Community Forum", signout:"Sign out", send:"Send", newpost:"+ New Post" },
+  hi: { greeting:"नमस्ते", dashboard:"डैशबोर्ड", messages:"संदेश", casefile:"मेरी केस फ़ाइल", appointments:"अपॉइंटमेंट", forum:"सामुदायिक फ़ोरम", signout:"साइन आउट", send:"भेजें", newpost:"+ नई पोस्ट" },
+  gu: { greeting:"નમસ્તે", dashboard:"ડેશબોર્ડ", messages:"સંદેશા", casefile:"મારી કેસ ફાઈલ", appointments:"એપોઈન્ટમેન્ટ", forum:"સામુદાયિક ફોરમ", signout:"સાઈન આઉટ", send:"મોકલો", newpost:"+ નવી પોસ્ટ" }
+};
+
+window.setLang = function(lang) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  applyTranslations();
+};
+
+function applyTranslations() {
+  const t = T[currentLang];
+  document.getElementById('dash-greeting').textContent = t.greeting + (currentUser ? ', ' + (currentUser.displayName || currentUser.email.split('@')[0]) : '');
+  document.querySelector('[data-panel="dashboard"]').innerHTML  = `<span class="nav-icon">🏠</span> ${t.dashboard}`;
+  document.querySelector('[data-panel="messenger"]').innerHTML  = `<span class="nav-icon">💬</span> ${t.messages}`;
+  document.querySelector('[data-panel="casefile"]').innerHTML   = `<span class="nav-icon">📋</span> ${t.casefile}`;
+  document.querySelector('[data-panel="appointments"]').innerHTML = `<span class="nav-icon">📅</span> ${t.appointments}`;
+  document.querySelector('[data-panel="forum"]').innerHTML      = `<span class="nav-icon">👥</span> ${t.forum}`;
+  document.getElementById('logoutBtn').textContent   = t.signout;
+  document.getElementById('msgSendBtn').textContent  = t.send;
+  document.getElementById('newPostBtn').textContent  = t.newpost;
+}
+
+// MAGIC LINK AUTO LOGIN
+// SECURITY: this page must only show portal content for a session that was
+// established by THIS page load's own valid token — never for a Firebase
+// session left over from a different page (admin panel, coordinator panel,
+// or a different patient) that happens to share this browser. Without this
+// guard, opening patient-portal.html with no token in a browser that still
+// has ANY logged-in Firebase session would silently show that session's
+// data here, regardless of who it belongs to.
+let validatedThisPageLoad = false;
+let loginAttemptInProgress = false;
+
+(async function() {
+  console.log('[DEBUG] IIFE started. Full URL:', window.location.href);
+  console.log('[DEBUG] Full search string:', window.location.search);
+  const params = new URLSearchParams(window.location.search);
+  const token  = params.get('token');
+  const uid    = params.get('uid');
+  console.log('[DEBUG] Parsed token:', token, '| Parsed uid:', uid);
+  if (token && uid) {
+    loginAttemptInProgress = true;
+    console.log('[DEBUG] loginAttemptInProgress set TRUE');
+    document.getElementById('loginLoading').style.display = 'block';
+    document.getElementById('loginForm').style.display    = 'none';
+    try {
+      const decoded  = atob(token);
+      const colonIdx = decoded.indexOf(':');
+      const email    = decoded.substring(0, colonIdx);
+      const pass     = decoded.substring(colonIdx + 1);
+      console.log('[DEBUG] decoded email:', email, '| pass length:', pass.length);
+      console.log('[DEBUG] calling signInWithEmailAndPassword NOW');
+      await signInWithEmailAndPassword(auth, email, pass);
+      console.log('[DEBUG] signInWithEmailAndPassword SUCCEEDED, auth.currentUser:', auth.currentUser ? auth.currentUser.uid : null);
+      validatedThisPageLoad = true;
+      console.log('[DEBUG] validatedThisPageLoad set TRUE');
+      window.history.replaceState({}, document.title, '/patient-portal.html');
+    } catch(e) {
+      console.log('[DEBUG] signInWithEmailAndPassword FAILED. code:', e.code, '| message:', e.message);
+      document.getElementById('loginLoading').style.display = 'none';
+      document.getElementById('loginForm').style.display    = 'block';
+      document.getElementById('loginErr').textContent = 'This login link has expired or is invalid. Please contact the clinic for a new link.';
+    } finally {
+      loginAttemptInProgress = false;
+      console.log('[DEBUG] loginAttemptInProgress set FALSE (finally block)');
+    }
+  } else {
+    console.log('[DEBUG] No token/uid found in URL. auth.currentUser at this point:', auth.currentUser ? auth.currentUser.uid : null);
+    // No token on this page load. If a Firebase session already exists in
+    // this browser (left over from another portal/role), sign it out — this
+    // page must never display someone else's session just because it was
+    // already active in this browser.
+    if (auth.currentUser) {
+      console.log('[DEBUG] Signing out leftover session');
+      await signOut(auth);
+    }
+  }
+  console.log('[DEBUG] IIFE finished. loginAttemptInProgress:', loginAttemptInProgress, '| validatedThisPageLoad:', validatedThisPageLoad);
+})();
+
+document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
+
+onAuthStateChanged(auth, async user => {
+  console.log('[DEBUG] onAuthStateChanged FIRED. user:', user ? user.uid : null, '| validatedThisPageLoad:', validatedThisPageLoad, '| loginAttemptInProgress:', loginAttemptInProgress, '| timestamp:', Date.now());
+  if (user && validatedThisPageLoad) {
+    currentUser = user;
+    const snap = await get(ref(db, `patients/${user.uid}/status`));
+    if (snap.exists() && snap.val() === 'disabled') {
+      await signOut(auth);
+      document.getElementById('loginErr').textContent = 'Your account has been deactivated. Please contact the clinic.';
+      return;
+    }
+    document.getElementById('loginScreen').style.display  = 'none';
+    document.getElementById('portalScreen').style.display = 'flex';
+    document.getElementById('topbarUser').textContent = user.email;
+    document.getElementById('dash-greeting').textContent  = 'Good day, ' + (user.displayName || user.email.split('@')[0]);
+    loadDashboard();
+    loadMessages();
+    loadCaseFile();
+    loadAppointments();
+    loadForum();
+    applyTranslations();
+  } else if (user && !validatedThisPageLoad) {
+    if (loginAttemptInProgress) {
+      // A token-based sign-in is currently in flight on this very page load.
+      // This callback fired in the gap between Firebase completing the sign-in
+      // and our own code finishing the await + flag assignment. Do NOT sign
+      // out here — the in-progress flow will set validatedThisPageLoad itself
+      // momentarily, and onAuthStateChanged will fire again with the correct
+      // state. Signing out here would kill a legitimate magic-link login.
+      return;
+    }
+    // A session exists but it was never validated by THIS page's own token
+    // check, and no token-based login is in progress — e.g. a leftover
+    // session from a previous page load in this browser. Sign it out rather
+    // than ever display portal content for an unverified session.
+    await signOut(auth);
+    currentUser = null;
+    document.getElementById('loginScreen').style.display  = 'flex';
+    document.getElementById('portalScreen').style.display = 'none';
+  } else {
+    currentUser = null;
+    document.getElementById('loginScreen').style.display  = 'flex';
+    document.getElementById('portalScreen').style.display = 'none';
+  }
+});
+
+// NAV
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    item.classList.add('active');
+    document.getElementById('panel-' + item.dataset.panel).classList.add('active');
+  });
+});
+
+// DASHBOARD
+function loadDashboard() {
+  onValue(ref(db, `patients/${currentUser.uid}/appointments`), snap => {
+    if (snap.exists()) {
+      const today = new Date().toISOString().split('T')[0];
+      const upcoming = Object.values(snap.val()).filter(a => a.date >= today);
+      if (upcoming.length > 0) {
+        upcoming.sort((a,b) => a.date.localeCompare(b.date));
+        document.getElementById('next-appt-text').textContent = `${upcoming[0].date} — ${upcoming[0].note || 'Follow-up'}`;
+      } else {
+        document.getElementById('next-appt-text').textContent = 'No upcoming appointments scheduled.';
+      }
+    } else {
+      document.getElementById('next-appt-text').textContent = 'No appointments yet.';
+    }
+  });
+
+  onValue(ref(db, `messages/${currentUser.uid}`), snap => {
+    if (snap.exists()) {
+      const msgs = Object.values(snap.val());
+      // Count unread from BOTH doctor and coordinator
+      const unread = msgs.filter(m => (m.from === 'doctor' || m.from === 'coordinator') && !m.read).length;
+      document.getElementById('unread-text').textContent = unread > 0
+        ? `You have ${unread} unread message(s).`
+        : 'No new messages.';
+    } else {
+      document.getElementById('unread-text').textContent = 'No messages yet.';
+    }
+  });
+}
+
+// MESSAGES — 3-way rendering
+function loadMessages() {
+  onValue(query(ref(db, `messages/${currentUser.uid}`), orderByChild('timestamp')), snap => {
+    const list = document.getElementById('msgList');
+    if (!snap.exists()) {
+      list.innerHTML = '<div class="empty"><div class="empty-icon">💬</div>No messages yet. Send your first message below.</div>';
+      return;
+    }
+    list.innerHTML = '';
+    snap.forEach(child => {
+      const m    = child.val();
+      const time = m.timestamp ? new Date(m.timestamp).toLocaleString('en-IN', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+
+      const row = document.createElement('div');
+
+      if (m.from === 'patient') {
+        // Patient's own messages — simple right-aligned teal bubble
+        row.className = 'msg-row from-patient';
+        const bubble = document.createElement('div');
+        bubble.className = 'msg-bubble from-patient';
+        const textDiv = document.createElement('div');
+        textDiv.textContent = m.text || '';
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'msg-meta';
+        metaDiv.textContent = time;
+        bubble.appendChild(textDiv);
+        bubble.appendChild(metaDiv);
+        row.appendChild(bubble);
+
+      } else if (m.from === 'coordinator') {
+        // Coordinator messages — soft orange, left-aligned, with sender name
+        row.className = 'msg-row from-coordinator';
+        const senderDiv = document.createElement('div');
+        senderDiv.className = 'msg-sender';
+        senderDiv.textContent = m.senderName || 'Your Care Coordinator';
+        const bubble = document.createElement('div');
+        bubble.className = 'msg-bubble from-coordinator';
+        const textDiv = document.createElement('div');
+        textDiv.textContent = m.text || '';
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'msg-meta';
+        metaDiv.textContent = time;
+        bubble.appendChild(textDiv);
+        bubble.appendChild(metaDiv);
+        row.appendChild(senderDiv);
+        row.appendChild(bubble);
+
+      } else {
+        // Doctor messages — cream, left-aligned, with sender name
+        row.className = 'msg-row from-doctor';
+        const senderDiv = document.createElement('div');
+        senderDiv.className = 'msg-sender';
+        senderDiv.textContent = 'Dr. Yogeshwar Tiwari';
+        const bubble = document.createElement('div');
+        bubble.className = 'msg-bubble from-doctor';
+        const textDiv = document.createElement('div');
+        textDiv.textContent = m.text || '';
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'msg-meta';
+        metaDiv.textContent = time;
+        bubble.appendChild(textDiv);
+        bubble.appendChild(metaDiv);
+        row.appendChild(senderDiv);
+        row.appendChild(bubble);
+      }
+
+      list.appendChild(row);
+
+      // Mark doctor + coordinator messages as read
+      if ((m.from === 'doctor' || m.from === 'coordinator') && !m.read) {
+        set(ref(db, `messages/${currentUser.uid}/${child.key}/read`), true);
+      }
+    });
+    list.scrollTop = list.scrollHeight;
+  });
+}
+
+document.getElementById('msgSendBtn').addEventListener('click', sendMessage);
+document.getElementById('msgInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+async function sendMessage() {
+  const input = document.getElementById('msgInput');
+  const text  = input.value.trim();
+  if (!text) return;
+  await push(ref(db, `messages/${currentUser.uid}`), {
+    text, from: 'patient', timestamp: Date.now(), read: false
+  });
+  await push(ref(db, 'notifications/admin'), {
+    type: 'message', from: currentUser.uid, email: currentUser.email,
+    preview: text.substring(0, 60), timestamp: Date.now(), read: false
+  });
+  input.value = '';
+}
+
+// CASE FILE
+function loadCaseFile() {
+  onValue(ref(db, `patients/${currentUser.uid}/casefile`), snap => {
+    const el    = document.getElementById('caseFileContent');
+    const dlBtn = document.getElementById('downloadCaseBtn');
+    if (!snap.exists()) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div>Your case file will appear here as your treatment progresses.</div>';
+      dlBtn.style.display = 'none';
+      return;
+    }
+    dlBtn.style.display = 'block';
+    window._caseData = snap.val();
+    let html = '';
+    const s = snap.val();
+    if (s.notes) {
+      html += '<div class="case-section"><h3>Clinical Notes</h3>';
+      Object.values(s.notes).forEach(n => {
+        html += `<div class="case-entry"><div class="case-entry-date">${n.date}</div><div class="case-entry-text">${n.text}</div></div>`;
+      });
+      html += '</div>';
+    }
+    if (s.prescriptions) {
+      html += '<div class="case-section"><h3>Prescriptions</h3>';
+      Object.values(s.prescriptions).forEach(p => {
+        html += `<div class="case-entry"><div class="case-entry-date">${p.date}</div><div class="case-entry-text"><strong>Medicine:</strong> ${p.medicine}<br/><strong>Dose:</strong> ${p.dose}<br/>${p.notes ? '<strong>Notes:</strong> '+p.notes : ''}</div></div>`;
+      });
+      html += '</div>';
+    }
+    if (s.followups) {
+      html += '<div class="case-section"><h3>Follow-up Records</h3>';
+      Object.values(s.followups).forEach(f => {
+        html += `<div class="case-entry"><div class="case-entry-date">${f.date}</div><div class="case-entry-text">${f.text}</div></div>`;
+      });
+      html += '</div>';
+    }
+    el.innerHTML = html || '<div class="empty">No records yet.</div>';
+  });
+}
+
+window.downloadCaseFile = function() {
+  if (!window._caseData) return;
+  const text = JSON.stringify(window._caseData, null, 2);
+  const blob = new Blob([text], {type: 'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `punarvasu-casefile-${currentUser.email.split('@')[0]}.txt`;
+  a.click();
+};
+
+// APPOINTMENTS
+function loadAppointments() {
+  onValue(ref(db, `patients/${currentUser.uid}/appointments`), snap => {
+    const el = document.getElementById('appointmentsContent');
+    if (!snap.exists()) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">📅</div>No appointments recorded yet.</div>';
+      return;
+    }
+    let html = '';
+    const appts = Object.values(snap.val()).sort((a,b) => b.date.localeCompare(a.date));
+    appts.forEach(a => {
+      html += `<div class="case-entry"><div class="case-entry-date">${a.date}</div><div class="case-entry-text">${a.note || 'Consultation'} <span class="badge badge-active">${a.status || 'Completed'}</span></div></div>`;
+    });
+    el.innerHTML = html;
+  });
+}
+
+// FORUM
+function loadForum() {
+  onValue(ref(db, 'forum'), snap => {
+    const el = document.getElementById('forumContent');
+    if (!snap.exists()) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">👥</div>No posts yet. Be the first to share your experience.</div>';
+      return;
+    }
+    let html = '<div class="forum-threads">';
+    const posts = [];
+    snap.forEach(child => { posts.push({id: child.key, ...child.val()}); });
+    posts.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+    posts.filter(p => p.status === 'approved').forEach(p => {
+      const replyCount = p.replies ? Object.keys(p.replies).length : 0;
+      html += `<div class="thread-item" onclick="openThread('${p.id}')">
+        <div class="thread-title">${p.title}</div>
+        <div class="thread-meta">${p.category || 'General'} · ${replyCount} reply/replies · ${p.authorName || 'Patient'}</div>
+      </div>`;
+    });
+    html += '</div>';
+    el.innerHTML = html || '<div class="empty">No approved posts yet.</div>';
+  });
+}
+
+window.showNewPostForm = function() { document.getElementById('newPostForm').style.display = 'block'; };
+window.hideNewPostForm = function() { document.getElementById('newPostForm').style.display = 'none'; };
+
+window.submitPost = async function() {
+  const title    = document.getElementById('postTitle').value.trim();
+  const body     = document.getElementById('postBody').value.trim();
+  const category = document.getElementById('postCategory').value;
+  if (!title || !body) { alert('Please fill in both title and content.'); return; }
+  await push(ref(db, 'forum'), {
+    title, body, category,
+    authorUid: currentUser.uid,
+    authorName: currentUser.displayName || currentUser.email.split('@')[0],
+    timestamp: Date.now(), status: 'pending'
+  });
+  await push(ref(db, 'notifications/admin'), {
+    type: 'forum_post', title, timestamp: Date.now(), read: false
+  });
+  document.getElementById('postTitle').value = '';
+  document.getElementById('postBody').value  = '';
+  document.getElementById('newPostForm').style.display = 'none';
+  alert('Your post has been submitted and will appear after approval by Dr. Tiwari.');
+};
+
+window.openThread = function(postId) {
+  get(ref(db, `forum/${postId}`)).then(snap => {
+    if (!snap.exists()) return;
+    const post = snap.val();
+    let replies = post.replies ? Object.values(post.replies).map(r => `\n${r.authorName}: ${r.body}`).join('') : '\n(No replies yet)';
+    const reply = prompt(`${post.title}\n\n${post.body}${replies}\n\n─────\nType your reply (or cancel):`);
+    if (reply && reply.trim()) {
+      push(ref(db, `forum/${postId}/replies`), {
+        body: reply.trim(),
+        authorUid: currentUser.uid,
+        authorName: currentUser.displayName || currentUser.email.split('@')[0],
+        timestamp: Date.now(), status: 'pending'
+      });
+      push(ref(db, 'notifications/admin'), {
+        type: 'forum_reply', postId, timestamp: Date.now(), read: false
+      });
+      alert('Your reply has been submitted and will appear after approval.');
+    }
+  });
+};
+
+// PWA INSTALL PROMPT
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const prompt = document.getElementById('installPrompt');
+  if (prompt) prompt.style.display = 'flex';
+});
+const installBtn = document.getElementById('installBtn');
+if (installBtn) {
+  installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) { deferredPrompt.prompt(); const { outcome } = await deferredPrompt.userChoice; deferredPrompt = null; }
+    document.getElementById('installPrompt').style.display = 'none';
+  });
+}
+if (sessionStorage.getItem('installDismissed')) {
+  const prompt = document.getElementById('installPrompt');
+  if (prompt) prompt.style.display = 'none';
+}
+window.addEventListener('appinstalled', () => {
+  const prompt = document.getElementById('installPrompt');
+  if (prompt) prompt.style.display = 'none';
+  sessionStorage.removeItem('installDismissed');
+});
+</script>
+</body>
+</html>
