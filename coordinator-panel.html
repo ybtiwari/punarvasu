@@ -294,6 +294,23 @@ onAuthStateChanged(auth, user => {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('shell').style.display = 'flex';
     document.getElementById('coordNameDisplay').textContent = coordName;
+
+    // TEMPORARY DEBUG BANNER — remove after diagnosing the patient-list issue.
+    const dbg = document.createElement('div');
+    dbg.style = 'position:fixed;bottom:0;left:0;right:0;background:#fff3cd;border-top:2px solid #c8600a;padding:10px 16px;font-family:monospace;font-size:12px;z-index:99999;max-height:200px;overflow:auto;';
+    dbg.id = 'tempDebugBanner';
+    dbg.textContent = 'DEBUG: coordUid = ' + JSON.stringify(coordUid) + ' | user.email = ' + user.email;
+    document.body.appendChild(dbg);
+
+    onValue(ref(db, 'patients'), snap => {
+      const raw = snap.exists() ? snap.val() : {};
+      let lines = ['DEBUG: coordUid = ' + JSON.stringify(coordUid), 'DEBUG: raw patients read from DB:'];
+      Object.entries(raw).forEach(([uid, p]) => {
+        lines.push('  patient ' + uid + ' -> coordinatorId=' + JSON.stringify(p.coordinatorId) + ' (matches coordUid: ' + (p.coordinatorId === coordUid) + ')');
+      });
+      document.getElementById('tempDebugBanner').textContent = lines.join('\n');
+    }, { onlyOnce: true });
+
     loadMyPatients();
   } else {
     document.getElementById('loginScreen').style.display = 'flex';
