@@ -250,52 +250,38 @@ const CHAPTERS = [
   { id: "blood",    en: "Blood",    hi: "रक्त",        region: "whole_body", icon: "🩸" },
 ];
 
-const REGIONS = [
-  { id: "mind_sensorium",        en: "Mind & Sensorium",        hi: "मन और संवेदना",        icon: "🧘" },
-  { id: "head_senses",           en: "Head & Senses",           hi: "सिर और इंद्रियां",       icon: "🧠" },
-  { id: "respiratory_chest",     en: "Respiratory & Chest",     hi: "श्वास और छाती",        icon: "🫁" },
-  { id: "digestion",             en: "Digestion",                hi: "पाचन",                icon: "🍽" },
-  { id: "urinary_reproductive",  en: "Urinary & Reproductive",  hi: "मूत्र और प्रजनन तंत्र", icon: "🩺" },
-  { id: "limbs_back",            en: "Limbs & Back",             hi: "अंग और पीठ",           icon: "🦴" },
-  { id: "whole_body",            en: "Whole-body & General",    hi: "सम्पूर्ण शरीर व सामान्य", icon: "🌐" },
-];
+// ALL_RUBRICS holds the ENTIRE repertory's worth of searchable rubrics in
+// one flat array — every chapter, every depth, no category grouping —
+// loaded ONCE, up front, rather than per-chapter. This is a deliberate
+// trade-off: true "search the whole repertory from the first keystroke"
+// requires the whole dataset in memory; per-chapter lazy-loading and
+// global search are mutually exclusive. The combined file is ~24.6MB raw,
+// but compresses to ~3.2MB over the wire (gzip, which GitHub Pages and
+// virtually all static hosts apply automatically) — closer in real-world
+// cost to a few photos than to "the 50MB problem" this whole project
+// started out trying to avoid.
+let ALL_RUBRICS = [];
+let globalLoadState = 'idle'; // 'idle' | 'loading' | 'loaded' | 'error'
 
-// CHAPTER_RUBRICS holds one FLAT array per chapter — every rubric at any
-// depth (main rubric or sub-rubric), all together, no category grouping at
-// all. This replaces the earlier MAIN_RUBRICS + DRILLDOWN split: per the
-// confirmed design, there is no more category-by-category drill-down — one
-// search box per chapter searches everything at once, exactly matching the
-// standalone repertory tool's own keyword search (just scoped to one
-// chapter's data instead of the full 74,667-rubric database, to keep the
-// lazy-loading per-chapter cost the same as before).
-const CHAPTER_RUBRICS = {};
-const chapterLoadState = {}; // chapterId -> 'loading' | 'loaded' | 'error'
-
-async function loadChapterData(chapterId) {
-  if (chapterLoadState[chapterId] === 'loaded') return true;
-  chapterLoadState[chapterId] = 'loading';
+async function loadAllRubrics() {
+  if (globalLoadState === 'loaded' || globalLoadState === 'loading') return;
+  globalLoadState = 'loading';
   render();
   try {
-    const res = await fetch(`chapter_data/${chapterId}.json`);
+    const res = await fetch('chapter_data/_all_rubrics.json');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    CHAPTER_RUBRICS[chapterId] = data.rubrics || [];
-    chapterLoadState[chapterId] = 'loaded';
-    return true;
+    ALL_RUBRICS = await res.json();
+    globalLoadState = 'loaded';
   } catch (e) {
-    console.error('Failed to load chapter data for', chapterId, ':', e);
-    chapterLoadState[chapterId] = 'error';
-    return false;
+    console.error('Failed to load repertory data:', e);
+    globalLoadState = 'error';
   }
+  render();
 }
 
 // ── STATE ──
 let lang = 'en';
-let step = 'remarks'; // remarks -> lock -> region -> chapter -> mainrubric -> drilldown -> loopcheck -> generals -> review -> done
-let expandedRegion = null; // which region's accordion panel is currently open (only one at a time)
-let chapterQueue = [];          // chapter ids detected and waiting to be walked through
-let completedChapterIds = [];   // chapter ids already fully handled this session (avoid re-queuing)
-let extraMentionInput = '';     // the "anything else?" follow-up free-text box
+let step = 'remarks'; // remarks -> lock -> search -> generals -> review -> done
 let patientName = '';
 let reasonForConsultation = '';
 let isUnlocked = false;
@@ -306,21 +292,21 @@ let couponError = '';
 // hardcoded list. Case-insensitive on entry.
 const VALID_TEST_COUPONS = ['WELCOME2026', 'PUNARVASU1', 'TESTFREE'];
 
-// DATA MODEL: one entry per CHAPTER the patient has gone through.
-// complaints = [{
-//   chapterId,
-//   rubrics: [{ path, en, hi, roman, isChief }]
-// }]
-// CHIEF COMPLAINT: exactly one rubric across the ENTIRE session — the
-// earliest-added one that is STILL currently selected — is tagged isChief:
-// true. Every other selected rubric is an "Additional Complaint". This is
-// recomputed dynamically (see recomputeChiefComplaint()) every time a
-// selection changes, so deselecting the current chief correctly hands the
-// title to whichever remaining selection was added next-earliest, rather
-// than leaving the session with no chief complaint at all.
-let complaints = [];
-let currentChapterEntry = null;   // the in-progress entry for the CURRENT chapter: { chapterId, rubrics: [] }
-let chapterSearchFilter = '';     // what the patient has typed in this chapter's search box
+// DATA MODEL: ONE flat list of every rubric the patient has selected,
+// across the entire repertory — no chapter grouping at all during
+// selection (chapterId is kept per rubric only so the review screen can
+// still show which chapter each one came from).
+// selectedRubrics = [{ chapterId, path, en, hi, roman, isChief, seq }]
+//
+// CHIEF COMPLAINT: the earliest-added rubric that is STILL currently
+// selected is tagged isChief: true; every other selected rubric is an
+// "Additional Complaint". Recomputed dynamically (recomputeChiefComplaint())
+// every time a selection changes, so deselecting the current chief
+// correctly hands the title to whichever remaining selection was added
+// next-earliest, rather than leaving the session with no chief complaint.
+let selectedRubrics = [];
+let nextRubricSeq = 1;
+let globalSearchFilter = '';     // what the patient has typed in the one global search box
 
 // NOTE: search language is no longer independent state — searchTextFor()
 // below derives it directly from the display `lang` variable, so the two
@@ -443,96 +429,38 @@ function searchMatches(item, query) {
   return tokens.every(tok => text.includes(tok));
 }
 
-// ── CHAPTER AUTO-DETECTION ──
-// Scans free text (the opening "reason for consultation", or a single
-// drill-down option the patient just selected) for mentions of chapter
-// names, and returns matching chapter ids to auto-queue.
-//
-// Matching rule: space-padded whole-word match (" head " inside " text "),
-// NOT bare substring — this avoids false hits like "ear" inside "pears" or
-// "bearing". "back" is deliberately excluded from the detectable word list
-// entirely: testing against the real dataset showed it produces far more
-// noise than signal (idioms like "comes back"/"held back", and "back of
-// the head/knee/neck" phrases that are actually about a DIFFERENT chapter's
-// anatomy, not the Back chapter itself).
-//
-// COMPOUND-WORD ALIASES: the whole-word rule alone misses common compound
-// symptom words like "headache" or "toothache" (no space between "head"
-// and "ache"), which real patients and real rubric text use very
-// frequently (2,142 occurrences of "headache" alone in this dataset). Each
-// alias below maps a compound word to the chapter it should still trigger.
-const CHAPTER_WORD_ALIASES = {
-  'headache': 'head', 'toothache': 'teeth', 'earache': 'ear', 'stomachache': 'stomach',
-  'backache': null, // deliberately not mapped - "back" stays excluded entirely
-};
-
-const DETECTABLE_CHAPTERS = CHAPTERS.filter(c => c.id !== 'back').map(c => ({
-  id: c.id,
-  word: c.en.toLowerCase().replace(/&/g, 'and'), // "Heart & Circulation" -> "heart and circulation"
-}));
-
-function detectChaptersInText(text, excludeChapterId) {
-  if (!text) return [];
-  const lower = text.toLowerCase().replace(/&/g, 'and');
-  const padded = ' ' + lower + ' ';
-  const found = new Set();
-  for (const ch of DETECTABLE_CHAPTERS) {
-    if (ch.id === excludeChapterId) continue; // cross-chapter-only: a chapter's own rubric text mentioning itself doesn't count
-    if (padded.includes(' ' + ch.word + ' ')) {
-      found.add(ch.id);
-    }
-  }
-  for (const [alias, chapterId] of Object.entries(CHAPTER_WORD_ALIASES)) {
-    if (!chapterId || chapterId === excludeChapterId) continue;
-    if (lower.includes(alias)) {
-      found.add(chapterId);
-    }
-  }
-  return Array.from(found);
-}
-
-function enqueueChapters(chapterIds) {
-  for (const id of chapterIds) {
-    if (chapterQueue.includes(id)) continue; // no duplicates
-    if (completedChapterIds.includes(id)) continue; // already done this session
-    chapterQueue.push(id);
-  }
-}
-
-// Called when the patient taps a rubric row in the chapter's search results
-// pane. Toggles it in or out of this chapter's selection, exactly like the
-// standalone tool's addRubric()/removeRubric() pair — tapping an unselected
-// row adds it (and runs Trigger-2 chapter detection on its text), tapping an
-// already-selected row removes it again.
+// Called when the patient taps a rubric row in the global search results
+// pane. Toggles it in or out of the selection, exactly like the standalone
+// tool's addRubric()/removeRubric() pair — tapping an unselected row adds
+// it, tapping an already-selected row removes it again. Since search now
+// reaches the entire repertory at once, there is no more per-chapter
+// context to auto-detect OTHER chapters from — the patient can simply type
+// whatever they mean directly, so the earlier chapter-auto-detection
+// feature is no longer needed and has been removed along with it.
 //
 // CHIEF COMPLAINT: each selected rubric carries a `seq` (the order it was
-// added in, across the whole session). Chief status is always recomputed
-// from whichever CURRENTLY SELECTED rubric has the lowest seq — so if the
-// patient deselects what was the chief complaint, whatever they selected
-// next earliest correctly becomes chief instead, rather than the session
-// ending up with no chief complaint at all.
-let nextRubricSeq = 1;
+// added in). Chief status is always recomputed from whichever CURRENTLY
+// SELECTED rubric has the lowest seq — so if the patient deselects what was
+// the chief complaint, whatever they selected next earliest correctly
+// becomes chief instead, rather than the session ending up with no chief
+// complaint at all.
 function toggleRubricSelection(path) {
-  const rubric = (CHAPTER_RUBRICS[currentChapterEntry.chapterId] || []).find(r => r.path === path);
+  const rubric = ALL_RUBRICS.find(r => r.path === path);
   if (!rubric) return;
-  const existingIdx = currentChapterEntry.rubrics.findIndex(r => r.path === path);
+  const existingIdx = selectedRubrics.findIndex(r => r.path === path);
   if (existingIdx !== -1) {
-    currentChapterEntry.rubrics.splice(existingIdx, 1);
+    selectedRubrics.splice(existingIdx, 1);
   } else {
-    currentChapterEntry.rubrics.push({ ...rubric, seq: nextRubricSeq++ });
-    enqueueChapters(detectChaptersInText(rubric.en, currentChapterEntry.chapterId));
+    selectedRubrics.push({ ...rubric, seq: nextRubricSeq++ });
   }
   recomputeChiefComplaint();
   render();
 }
-// Scans every selected rubric across every chapter (completed entries plus
-// the in-progress one) and marks the single lowest-seq one as isChief.
+// Scans every selected rubric and marks the single lowest-seq one as isChief.
 function recomputeChiefComplaint() {
-  const allSelected = complaints.flatMap(c => c.rubrics)
-    .concat(currentChapterEntry ? currentChapterEntry.rubrics : []);
-  if (!allSelected.length) return;
-  const chief = allSelected.reduce((a, b) => (a.seq < b.seq ? a : b));
-  allSelected.forEach(r => { r.isChief = (r === chief); });
+  if (!selectedRubrics.length) return;
+  const chief = selectedRubrics.reduce((a, b) => (a.seq < b.seq ? a : b));
+  selectedRubrics.forEach(r => { r.isChief = (r === chief); });
 }
 
 // Defensive escaping: real Kent rubric text can contain apostrophes, quotes,
@@ -706,68 +634,43 @@ function render() {
       </div>`;
   }
 
-  else if (step === 'region') {
-    html = `
-      <div class="qstep active">
-        <button class="btn-back" onclick="goBack()">← ${t('back')}</button>
-        <h2 class="qtitle">${t('chapterTitle')}</h2>
-        <p class="qsub">${t('chapterSub')}</p>
-        <div id="regionList">
-          ${REGIONS.map((r, idx) => {
-            const isExpanded = expandedRegion === r.id;
-            const chaptersInRegion = CHAPTERS.filter(c => c.region === r.id);
-            return `
-            <div class="region-accordion-item ${isExpanded ? 'expanded' : ''}">
-              <div class="region-card" data-region-index="${idx}">
-                <div class="region-card-icon">${r.icon}</div>
-                <div class="region-card-label">${escapeHtml(chT(r))}</div>
-                <div class="region-card-arrow">›</div>
-              </div>
-              <div class="region-accordion-panel">
-                <div class="accordion-chapter-grid">
-                  ${chaptersInRegion.map((c, cidx) => `
-                    <div class="accordion-chapter-card" data-chapter-region="${r.id}" data-chapter-id="${c.id}">
-                      <div class="accordion-chapter-card-icon">${c.icon}</div>
-                      <div class="accordion-chapter-card-label">${escapeHtml(chT(c))}</div>
-                    </div>`).join('')}
-                </div>
-              </div>
-            </div>`;
-          }).join('')}
-        </div>
-      </div>`;
-  }
-
-  else if (step === 'mainrubric') {
-    const chapter = CHAPTERS.find(c => c.id === currentChapterEntry.chapterId);
-    const loadState = chapterLoadState[currentChapterEntry.chapterId];
-    const allRubrics = CHAPTER_RUBRICS[currentChapterEntry.chapterId] || [];
-    const filterText = (chapterSearchFilter || '').trim();
-    const selectedPaths = new Set(currentChapterEntry.rubrics.map(r => r.path));
+  else if (step === 'search') {
+    const filterText = (globalSearchFilter || '').trim();
+    const selectedPaths = new Set(selectedRubrics.map(r => r.path));
     // Persistent results pane: ALWAYS shows every matching rubric (or, with
-    // no search text yet, the full list) — selection never removes a row
-    // from view or navigates away. Tapping a row just toggles its state.
-    const resultRubrics = filterText ? allRubrics.filter(r => searchMatches(r, filterText)) : allRubrics;
+    // no search text yet, nothing — see below) — selection never removes a
+    // row from view or navigates away. Tapping a row just toggles its state.
+    const resultRubricsAll = filterText ? ALL_RUBRICS.filter(r => searchMatches(r, filterText)) : [];
+    // Cap how many rows actually get rendered into the DOM at once — with
+    // 73,951 rubrics across the whole repertory, even a short/common
+    // keyword could match thousands of entries, which is genuinely slow to
+    // paint on a budget phone. Narrowing the search naturally brings the
+    // real match count below this cap.
+    const RESULTS_RENDER_CAP = 150;
+    const resultRubrics = resultRubricsAll.slice(0, RESULTS_RENDER_CAP);
     window._currentResultRubrics = resultRubrics;
 
     let bodyHtml;
-    if (loadState === 'loading') {
-      bodyHtml = `<div class="loading-wrap"><div class="loading-spinner"></div>${chT({en:'Loading...', hi:'लोड हो रहा है...'})}</div>`;
-    } else if (loadState === 'error') {
-      bodyHtml = `<div class="load-error">${chT({en:'Could not load this chapter. Please check your connection.', hi:'यह अध्याय लोड नहीं हो सका। कृपया अपना कनेक्शन जाँचें।'})}<br/><button class="btn-retry" id="retryLoadBtn">${chT({en:'Try again', hi:'फिर कोशिश करें'})}</button></div>`;
+    if (globalLoadState === 'loading') {
+      bodyHtml = `<div class="loading-wrap"><div class="loading-spinner"></div>${chT({en:'Loading the repertory... this happens once.', hi:'रिपर्टरी लोड हो रही है... यह एक बार होता है।'})}</div>`;
+    } else if (globalLoadState === 'error') {
+      bodyHtml = `<div class="load-error">${chT({en:'Could not load the repertory. Please check your connection.', hi:'रिपर्टरी लोड नहीं हो सकी। कृपया अपना कनेक्शन जाँचें।'})}<br/><button class="btn-retry" id="retryLoadBtn">${chT({en:'Try again', hi:'फिर कोशिश करें'})}</button></div>`;
     } else {
       bodyHtml = `
         <div class="search-input-wrap">
-          <input class="option-search" id="chapterSearch" placeholder="${escapeAttr(lang==='hi' ? chT({en:'Type Hindi in Roman letters... e.g. jalan', hi:'रोमन में हिंदी टाइप करें... जैसे jalan'}) : chT({en:'Type keywords... e.g. burning after eating', hi:'मुख्य शब्द टाइप करें...'}))}" value="${escapeAttr(chapterSearchFilter||'')}"/>
-          <button class="search-clear-btn ${chapterSearchFilter ? 'visible' : ''}" id="chapterSearchClear">×</button>
-          <div class="ac-dropdown" id="chapterSearchDropdown"></div>
+          <input class="option-search" id="globalSearch" placeholder="${escapeAttr(lang==='hi' ? chT({en:'Type Hindi in Roman letters... e.g. jalan', hi:'रोमन में हिंदी टाइप करें... जैसे jalan'}) : chT({en:'Type keywords... e.g. burning after eating', hi:'मुख्य शब्द टाइप करें...'}))}" value="${escapeAttr(globalSearchFilter||'')}"/>
+          <button class="search-clear-btn ${globalSearchFilter ? 'visible' : ''}" id="globalSearchClear">×</button>
+          <div class="ac-dropdown" id="globalSearchDropdown"></div>
         </div>
         <div class="option-count">
-          ${currentChapterEntry.rubrics.length} ${chT({en:'selected', hi:'चयनित'})} ·
-          ${resultRubrics.length} ${chT({en:'shown', hi:'दिखाए गए'})}
+          ${selectedRubrics.length} ${chT({en:'selected', hi:'चयनित'})}
+          ${filterText ? ` · ${resultRubricsAll.length > RESULTS_RENDER_CAP
+            ? chT({en:`showing first ${RESULTS_RENDER_CAP} of ${resultRubricsAll.length} matches — type more to narrow down`, hi:`${resultRubricsAll.length} में से पहले ${RESULTS_RENDER_CAP} दिखाए गए — और शब्द टाइप करें`})
+            : `${resultRubricsAll.length} ${chT({en:'shown', hi:'दिखाए गए'})}`}` : ''}
         </div>
         <div class="rubric-list" id="rubricResultsPane">
-          ${resultRubrics.length ? resultRubrics.map((r, idx) => `
+          ${!filterText ? `<div class="option-empty">${chT({en:'Start typing to search the entire repertory.', hi:'पूरी रिपर्टरी खोजने के लिए टाइप करना शुरू करें।'})}</div>` :
+            resultRubrics.length ? resultRubrics.map((r, idx) => `
             <div class="rubric-option ${selectedPaths.has(r.path) ? 'rubric-selected' : ''}" data-rubric-index="${idx}">
               <span class="rubric-check">${selectedPaths.has(r.path) ? '✓' : ''}</span>
               <span class="rubric-option-text">${escapeHtml(lang === 'hi' ? r.hi : r.en)}</span>
@@ -777,30 +680,9 @@ function render() {
     html = `
       <div class="qstep active">
         <button class="btn-back" onclick="goBack()">← ${t('back')}</button>
-        <h2 class="qtitle">${escapeHtml(chT(chapter))}</h2>
+        <h2 class="qtitle">${chT({en:'Search your symptoms', hi:'अपने लक्षण खोजें'})}</h2>
         <p class="qsub">${chT({en:'Search and tap every symptom that applies. Tap again to remove it.', hi:'जो भी लक्षण लागू हो उसे खोजें और टैप करें। हटाने के लिए फिर से टैप करें।'})}</p>
         ${bodyHtml}
-      </div>`;
-  }
-
-  else if (step === 'loopcheck') {
-    html = `
-      <div class="qstep active">
-        <div class="loop-icon">💬</div>
-        <h2 class="qtitle" style="text-align:center;">${t('anythingElseTitle')}</h2>
-        <div class="btn-row">
-          <button class="btn-primary" onclick="addAnotherComplaint()">${t('addAnother')}</button>
-          <button class="btn-secondary" onclick="goToGenerals()">${t('finish')}</button>
-        </div>
-      </div>`;
-  }
-
-  else if (step === 'extramention') {
-    html = `
-      <div class="qstep active">
-        <button class="btn-back" onclick="goBack()">← ${t('back')}</button>
-        <h2 class="qtitle">${t('anythingElseTitle')}</h2>
-        <input class="remarks-input" id="extraMentionInput" placeholder="${escapeAttr(t('reasonPlaceholder'))}" value="${escapeAttr(extraMentionInput)}"/>
       </div>`;
   }
 
@@ -821,21 +703,14 @@ function render() {
   }
 
   else if (step === 'review') {
-    // Flatten every selected rubric across every chapter into one list,
-    // each tagged with which chapter it came from, then split by isChief
-    // so the one true Chief Complaint is shown separately from everything else.
-    const allEntries = [];
-    complaints.forEach(entry => {
-      const chapter = CHAPTERS.find(ch => ch.id === entry.chapterId);
-      entry.rubrics.forEach(r => allEntries.push({ chapter, rubric: r }));
-    });
-    const chiefEntry = allEntries.find(e => e.rubric.isChief);
-    const additionalEntries = allEntries.filter(e => !e.rubric.isChief);
+    const chiefRubric = selectedRubrics.find(r => r.isChief);
+    const additionalRubrics = selectedRubrics.filter(r => !r.isChief);
 
-    function renderComplaintBlock({ chapter, rubric }) {
+    function renderComplaintBlock(rubric) {
+      const chapter = CHAPTERS.find(ch => ch.id === rubric.chapterId);
       return `
         <div class="review-complaint">
-          <div class="review-complaint-chapter">${escapeHtml(chT(chapter))}</div>
+          <div class="review-complaint-chapter">${chapter ? escapeHtml(chT(chapter)) : ''}</div>
           <div class="review-complaint-detail">${escapeHtml(lang === 'hi' ? rubric.hi : rubric.en)}</div>
         </div>`;
     }
@@ -849,12 +724,12 @@ function render() {
           <div class="review-complaint-chapter">${escapeHtml(t('nameLabel'))}: ${escapeHtml(patientName)}</div>
           ${reasonForConsultation ? `<div class="review-complaint-detail">${escapeHtml(t('reasonLabel'))}: ${escapeHtml(reasonForConsultation)}</div>` : ''}
         </div>
-        ${chiefEntry ? `
+        ${chiefRubric ? `
         <div class="review-section-title">${chT({en:'Chief Complaint', hi:'मुख्य शिकायत'})}</div>
-        ${renderComplaintBlock(chiefEntry)}` : ''}
-        ${additionalEntries.length ? `
+        ${renderComplaintBlock(chiefRubric)}` : ''}
+        ${additionalRubrics.length ? `
         <div class="review-section-title">${chT({en:'Additional Complaints', hi:'अतिरिक्त शिकायतें'})}</div>
-        ${additionalEntries.map(renderComplaintBlock).join('')}` : ''}
+        ${additionalRubrics.map(renderComplaintBlock).join('')}` : ''}
       </div>`;
   }
 
@@ -910,13 +785,6 @@ function attachStepListeners() {
       updateReason();
     }
   }
-  if (step === 'extramention') {
-    const extraInput = document.getElementById('extraMentionInput');
-    if (extraInput) {
-      extraInput.addEventListener('input', () => { extraMentionInput = extraInput.value; });
-      extraInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitExtraMention(); });
-    }
-  }
   if (step === 'lock') {
     const couponField = document.getElementById('couponInputField');
     const applyBtn = document.getElementById('applyCouponBtn');
@@ -939,47 +807,29 @@ function attachStepListeners() {
       });
     }
   }
-  if (step === 'region') {
-    const list = document.getElementById('regionList');
-    if (list) {
-      list.addEventListener('click', (e) => {
-        const chapterEl = e.target.closest('[data-chapter-id]');
-        if (chapterEl) {
-          selectChapter(chapterEl.dataset.chapterId);
-          return;
-        }
-        const regionEl = e.target.closest('[data-region-index]');
-        if (regionEl) {
-          const idx = parseInt(regionEl.dataset.regionIndex, 10);
-          const region = REGIONS[idx];
-          if (region) toggleRegionAccordion(region.id);
-        }
-      });
-    }
-  }
-  if (step === 'mainrubric') {
+  if (step === 'search') {
     const retryBtn = document.getElementById('retryLoadBtn');
     if (retryBtn) {
-      retryBtn.addEventListener('click', async () => {
-        chapterLoadState[currentChapterEntry.chapterId] = undefined;
-        await selectChapter(currentChapterEntry.chapterId);
+      retryBtn.addEventListener('click', () => {
+        globalLoadState = 'idle';
+        loadAllRubrics();
       });
     }
-    const search = document.getElementById('chapterSearch');
+    const search = document.getElementById('globalSearch');
     if (search) {
       search.addEventListener('input', () => {
-        chapterSearchFilter = search.value;
+        globalSearchFilter = search.value;
         render();
-        const reInput = document.getElementById('chapterSearch');
+        const reInput = document.getElementById('globalSearch');
         if (reInput) {
           reInput.focus();
           reInput.setSelectionRange(reInput.value.length, reInput.value.length);
         }
       });
-      setupAutocomplete('chapterSearch', 'chapterSearchDropdown', 'chapterSearchClear',
-        () => CHAPTER_RUBRICS[currentChapterEntry.chapterId] || [],
+      setupAutocomplete('globalSearch', 'globalSearchDropdown', 'globalSearchClear',
+        () => ALL_RUBRICS,
         (item) => {
-          if (item === null) { chapterSearchFilter = ''; render(); return; }
+          if (item === null) { globalSearchFilter = ''; render(); return; }
           toggleRubricSelection(item.path);
         }
       );
@@ -998,7 +848,7 @@ function attachStepListeners() {
 }
 
 function renderFooter() {
-  // Footer buttons handled inline per step mostly; primary CTA for remarks/mainrubric-less steps:
+  // Footer buttons handled inline per step mostly; primary CTA for remarks/search/generals/review steps:
   let footer = document.querySelector('.qfooter');
   if (footer) footer.remove();
   if (step === 'remarks') {
@@ -1007,18 +857,11 @@ function renderFooter() {
     f.innerHTML = `<button class="btn-primary" onclick="goToChapter()">${chT({en:'Continue', hi:'जारी रखें'})}</button>`;
     document.getElementById('app').insertBefore(f, document.getElementById('basketBar'));
   }
-  if (step === 'extramention') {
-    const f = document.createElement('div');
-    f.className = 'qfooter';
-    f.innerHTML = `<button class="btn-primary" onclick="submitExtraMention()">${chT({en:'Continue', hi:'जारी रखें'})}</button>`;
-    document.getElementById('app').insertBefore(f, document.getElementById('basketBar'));
-  }
-  if (step === 'mainrubric') {
-    const loadState = chapterLoadState[currentChapterEntry ? currentChapterEntry.chapterId : null];
-    if (loadState === 'loaded') {
+  if (step === 'search') {
+    if (globalLoadState === 'loaded') {
       const f = document.createElement('div');
       f.className = 'qfooter';
-      f.innerHTML = `<button class="btn-primary" onclick="finishCurrentChapterEntry()">${chT({en:'Done with this chapter', hi:'इस अध्याय के साथ समाप्त'})}</button>`;
+      f.innerHTML = `<button class="btn-primary" onclick="goToGenerals()">${chT({en:'Done — Continue', hi:'पूर्ण — जारी रखें'})}</button>`;
       document.getElementById('app').insertBefore(f, document.getElementById('basketBar'));
     }
   }
@@ -1038,13 +881,10 @@ function renderFooter() {
 
 function renderBasket() {
   const bar = document.getElementById('basketBar');
-  const completedCount = complaints.reduce((sum, c) => sum + c.rubrics.length, 0);
-  const inProgressCount = currentChapterEntry ? currentChapterEntry.rubrics.length : 0;
-  const totalSelected = completedCount + inProgressCount;
-  if (totalSelected > 0 && step !== 'done') {
+  if (selectedRubrics.length > 0 && step !== 'done') {
     bar.style.display = 'flex';
     document.getElementById('basketLabel').textContent = lang === 'hi' ? 'दर्ज किए गए लक्षण' : 'symptoms recorded';
-    document.getElementById('basketCount').textContent = totalSelected;
+    document.getElementById('basketCount').textContent = selectedRubrics.length;
   } else {
     bar.style.display = 'none';
   }
@@ -1059,28 +899,18 @@ function goToChapter() {
     if (input) input.focus();
     return;
   }
-  enqueueChapters(detectChaptersInText(reasonForConsultation, null));
   // Skip the lock screen entirely if already unlocked this session (e.g.
   // patient went back to edit their name/reason after unlocking).
   if (isUnlocked) {
-    proceedFromUnlockOrQueue();
+    step = 'search';
   } else {
     step = 'lock';
-    render();
+    // Start fetching the full repertory NOW, in the background, while the
+    // patient is busy entering a coupon code — by the time they reach the
+    // search screen, the data has likely already arrived.
+    loadAllRubrics();
   }
-}
-// Called right after unlocking (coupon/token), and also whenever the queue
-// needs to be (re)checked before showing a screen — routes to the next
-// queued chapter's Step 2 directly if one is waiting, otherwise falls back
-// to manual region/chapter browsing.
-function proceedFromUnlockOrQueue() {
-  if (chapterQueue.length > 0) {
-    const nextChapterId = chapterQueue.shift();
-    selectChapter(nextChapterId);
-  } else {
-    step = 'region';
-    render();
-  }
+  render();
 }
 function applyCoupon() {
   const code = (couponInput || '').trim().toUpperCase();
@@ -1092,7 +922,8 @@ function applyCoupon() {
   if (VALID_TEST_COUPONS.includes(code)) {
     isUnlocked = true;
     couponError = '';
-    proceedFromUnlockOrQueue();
+    step = 'search';
+    render();
   } else {
     couponError = t('couponInvalid');
     render();
@@ -1100,60 +931,12 @@ function applyCoupon() {
     if (field) field.focus();
   }
 }
-function toggleRegionAccordion(regionId) {
-  expandedRegion = (expandedRegion === regionId) ? null : regionId;
-  render();
-}
-async function selectChapter(chapterId) {
-  currentChapterEntry = { chapterId, rubrics: [] };
-  chapterSearchFilter = '';
-  step = 'mainrubric';
-  render(); // shows loading state immediately via chapterLoadState
-  await loadChapterData(chapterId);
-  render(); // re-render once data has arrived (or failed)
-}
-// Called when the patient taps "Done with this chapter" — finalizes
-// whatever's been selected (possibly nothing, if they didn't find anything
-// relevant) and moves to the next queued chapter, or to the "anything
-// else?" prompt if the queue is empty.
-function finishCurrentChapterEntry() {
-  if (currentChapterEntry && currentChapterEntry.rubrics.length > 0) {
-    complaints.push(currentChapterEntry);
-  }
-  if (currentChapterEntry) completedChapterIds.push(currentChapterEntry.chapterId);
-  currentChapterEntry = null;
-  if (chapterQueue.length > 0) {
-    const nextChapterId = chapterQueue.shift();
-    selectChapter(nextChapterId);
-    return;
-  }
-  step = 'loopcheck';
-  render();
-}
-function addAnotherComplaint() {
-  extraMentionInput = '';
-  step = 'extramention';
-  render();
-}
-function submitExtraMention() {
-  const detected = detectChaptersInText(extraMentionInput, null);
-  enqueueChapters(detected);
-  if (chapterQueue.length > 0) {
-    const nextChapterId = chapterQueue.shift();
-    selectChapter(nextChapterId);
-  } else {
-    // Nothing detected from their text — fall back to manual browsing so
-    // they can still find and add a complaint themselves.
-    step = 'region';
-    render();
-  }
-}
 function goToGenerals() {
   step = 'generals'; render();
 }
 function goToReview() { step = 'review'; render(); }
 function goBack() {
-  const order = ['remarks','lock','region','mainrubric','loopcheck','extramention','generals','review'];
+  const order = ['remarks','lock','search','generals','review'];
   const idx = order.indexOf(step);
   if (idx > 0) {
     let prevIdx = idx - 1;
@@ -1167,7 +950,7 @@ function goBack() {
 }
 function submitAll() {
   // PROTOTYPE: log to console. Real build will write to Firebase pending-intake node.
-  console.log('SUBMISSION', { patientName, reasonForConsultation, complaints, generals: generalsState });
+  console.log('SUBMISSION', { patientName, reasonForConsultation, selectedRubrics, generals: generalsState });
   step = 'done'; render();
 }
 
