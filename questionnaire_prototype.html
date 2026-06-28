@@ -127,6 +127,16 @@
   .gen-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
   .gen-chip { padding: 7px 14px; border: 1px solid var(--border); border-radius: 20px; font-size: 13px; color: var(--ink2); cursor: pointer; background: var(--white); transition: all 0.15s; }
   .gen-chip.selected { background: var(--teal); color: white; border-color: var(--teal); }
+
+  /* MULTI-SELECT PICK CHIPS — shown for already-added main rubrics / drilldown options */
+  .pick-chips-wrap { margin-bottom: 14px; }
+  .pick-chips-label { font-size: 12px; color: var(--ink3); margin-bottom: 8px; }
+  .pick-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pick-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px 6px 14px; border-radius: 20px; background: var(--teal); color: white; font-size: 13px; max-width: 100%; }
+  .pick-chip-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+  .pick-chip-remove { background: rgba(255,255,255,0.25); border: none; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 13px; line-height: 1; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .pick-chip-remove:hover { background: rgba(255,255,255,0.4); }
+  .pick-empty-hint { font-size: 12.5px; color: var(--ink3); margin-bottom: 14px; }
   .gen-freetext { border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; font-family: var(--sans); font-size: 14px; width: 100%; resize: none; height: 70px; outline: none; }
   .gen-freetext:focus { border-color: var(--teal); }
 
@@ -286,12 +296,27 @@ let couponError = '';
 // generated/managed by the doctor (e.g. via the admin panel), not a
 // hardcoded list. Case-insensitive on entry.
 const VALID_TEST_COUPONS = ['WELCOME2026', 'PUNARVASU1', 'TESTFREE'];
-let complaints = []; // [{chapterId, mainRubricId, answers: {qid: {value, skipped}}}]
-let currentComplaint = null;
-let drilldownQueue = [];
+
+// DATA MODEL: one entry per CHAPTER the patient has gone through.
+// complaints = [{
+//   chapterId,
+//   mainRubrics: [{ id, en, hi, roman, answers: { category: [path, path, ...] } }]
+// }]
+// Each main rubric the patient selected can have MULTIPLE selected options
+// per drilldown category (multi-select throughout, per explicit decision —
+// a real symptom is rarely captured by a single tap).
+let complaints = [];
+let currentChapterEntry = null;   // the in-progress entry for the CURRENT chapter: { chapterId, mainRubrics: [] }
+let selectedMainRubrics = [];     // main rubrics picked in Step 2 for the current chapter, queued to drill into one by one
+let currentMainRubric = null;     // the one currently being drilled into: { id, en, hi, roman, answers: {} }
+let mainRubricFilter = '';
+let mainRubricPicks = [];         // chips shown in Step 2: main rubrics selected so far for THIS chapter, before "Next"
+
+let drilldownQueue = [];          // categories to walk through for currentMainRubric: [{category, items}]
 let drilldownIndex = 0;
 let drilldownFilter = '';
-let mainRubricFilter = '';
+let drilldownPicks = [];          // chips shown in the current drilldown category screen: items selected so far for THIS category
+
 // NOTE: search language is no longer independent state — searchTextFor()
 // below derives it directly from the display `lang` variable, so the two
 // toggles can never disagree or be confused with each other.
@@ -676,11 +701,13 @@ function render() {
   }
 
   else if (step === 'mainrubric') {
-    const chapter = CHAPTERS.find(c => c.id === currentComplaint.chapterId);
-    const loadState = chapterLoadState[currentComplaint.chapterId];
-    const rubrics = MAIN_RUBRICS[currentComplaint.chapterId] || [];
+    const chapter = CHAPTERS.find(c => c.id === currentChapterEntry.chapterId);
+    const loadState = chapterLoadState[currentChapterEntry.chapterId];
+    const rubrics = MAIN_RUBRICS[currentChapterEntry.chapterId] || [];
     const filterText = (mainRubricFilter || '').trim();
-    const filteredRubrics = filterText ? rubrics.filter(r => searchMatches(r, filterText)) : rubrics;
+    const pickedIds = new Set(mainRubricPicks.map(p => p.id));
+    const filteredRubrics = (filterText ? rubrics.filter(r => searchMatches(r, filterText)) : rubrics)
+      .filter(r => !pickedIds.has(r.id)); // don't show already-picked items again in the list
     window._currentFilteredRubrics = filteredRubrics;
 
     let bodyHtml;
@@ -690,7 +717,18 @@ function render() {
       bodyHtml = `<div class="load-error">${chT({en:'Could not load this chapter. Please check your connection.', hi:'यह अध्याय लोड नहीं हो सका। कृपया अपना कनेक्शन जाँचें।'})}<br/><button class="btn-retry" id="retryLoadBtn">${chT({en:'Try again', hi:'फिर कोशिश करें'})}</button></div>`;
     } else {
       bodyHtml = `
-        ${rubrics.length > 8 ? `
+        ${mainRubricPicks.length ? `
+        <div class="pick-chips-wrap">
+          <div class="pick-chips-label">${chT({en:'Selected so far:', hi:'अब तक चुने गए:'})}</div>
+          <div class="pick-chip-row" id="mainRubricPickChips">
+            ${mainRubricPicks.map((p, idx) => `
+              <div class="pick-chip">
+                <span class="pick-chip-text">${escapeHtml(mrT(p))}</span>
+                <button class="pick-chip-remove" data-remove-pick-index="${idx}">×</button>
+              </div>`).join('')}
+          </div>
+        </div>` : `<div class="pick-empty-hint">${chT({en:'Search and select every symptom that applies — you can add as many as you need.', hi:'जो भी लक्षण लागू हो उसे खोजें और चुनें — आप जितने चाहें जोड़ सकते हैं।'})}</div>`}
+        ${rubrics.length > 8 || mainRubricPicks.length ? `
         <div class="search-input-wrap">
           <input class="option-search" id="mainRubricSearch" placeholder="${escapeAttr(lang==='hi' ? chT({en:'Type Hindi in Roman letters... e.g. jalan', hi:'रोमन में हिंदी टाइप करें... जैसे jalan'}) : chT({en:'Type to search...', hi:'खोजने के लिए टाइप करें...'}))}" value="${escapeAttr(mainRubricFilter||'')}"/>
           <button class="search-clear-btn ${mainRubricFilter ? 'visible' : ''}" id="mainRubricClear">×</button>
@@ -700,8 +738,8 @@ function render() {
         <div class="rubric-list" id="rubricList">
           ${filteredRubrics.length ? filteredRubrics.map((r, idx) => `
             <div class="rubric-option" data-rubric-index="${idx}">
-              <span>${escapeHtml(mrT(r))}</span><span class="rubric-option-arrow">›</span>
-            </div>`).join('') : `<div class="option-empty">${chT({en:'No matches. Try a different word.', hi:'कोई परिणाम नहीं। दूसरा शब्द आज़माएं।'})}</div>`}
+              <span>${escapeHtml(mrT(r))}</span><span class="rubric-option-arrow">+</span>
+            </div>`).join('') : `<div class="option-empty">${chT({en:'No more matches.', hi:'कोई और परिणाम नहीं।'})}</div>`}
         </div>`;
     }
     html = `
@@ -716,16 +754,26 @@ function render() {
   else if (step === 'drilldown') {
     const q = drilldownQueue[drilldownIndex];
     if (!q) { step = 'loopcheck'; render(); return; }
-    const answered = currentComplaint.answers[q.category];
+    const pickedPaths = new Set(drilldownPicks.map(p => p.path));
     const filterText = (drilldownFilter || '').trim();
-    const filteredItems = filterText
-      ? q.items.filter(it => searchMatches(it, filterText))
-      : q.items;
-    const showSearch = q.items.length > 8;
+    const filteredItems = (filterText ? q.items.filter(it => searchMatches(it, filterText)) : q.items)
+      .filter(it => !pickedPaths.has(it.path));
+    const showSearch = q.items.length > 8 || drilldownPicks.length > 0;
     html = `
       <div class="qstep active">
         <button class="btn-back" onclick="goBack()">← ${t('back')}</button>
         <h2 class="qtitle">${escapeHtml(chT({en:q.category, hi:q.categoryHi || q.category}))}</h2>
+        ${drilldownPicks.length ? `
+        <div class="pick-chips-wrap">
+          <div class="pick-chips-label">${chT({en:'Selected so far:', hi:'अब तक चुने गए:'})}</div>
+          <div class="pick-chip-row" id="drilldownPickChips">
+            ${drilldownPicks.map((p, idx) => `
+              <div class="pick-chip">
+                <span class="pick-chip-text">${escapeHtml(lang === 'hi' ? p.hi : p.en)}</span>
+                <button class="pick-chip-remove" data-remove-drilldown-pick-index="${idx}">×</button>
+              </div>`).join('')}
+          </div>
+        </div>` : `<div class="pick-empty-hint">${chT({en:'Search and select every option that applies, or skip this question.', hi:'जो भी विकल्प लागू हो उसे खोजें और चुनें, या यह सवाल छोड़ें।'})}</div>`}
         ${showSearch ? `
         <div class="search-input-wrap">
           <input class="option-search" id="drilldownSearch" placeholder="${escapeAttr(lang==='hi' ? chT({en:'Type Hindi in Roman letters... e.g. jalan', hi:'रोमन में हिंदी टाइप करें... जैसे jalan'}) : chT({en:'Type to search...', hi:'खोजने के लिए टाइप करें...'}))}" value="${escapeAttr(drilldownFilter||'')}"/>
@@ -735,9 +783,9 @@ function render() {
         <div class="option-count">${filteredItems.length} ${chT({en:'option(s)', hi:'विकल्प'})}</div>
         <div class="option-scroll" id="optionScroll">
           ${filteredItems.length ? filteredItems.map((it, idx) => `
-            <button class="option-btn ${answered && answered.value === it.path ? 'selected' : ''}" data-item-index="${idx}">
+            <button class="option-btn" data-item-index="${idx}">
               ${escapeHtml(lang === 'hi' ? it.hi : it.en)}
-            </button>`).join('') : `<div class="option-empty">${chT({en:'No matches. Try a different word, or skip.', hi:'कोई परिणाम नहीं। दूसरा शब्द आज़माएं या छोड़ दें।'})}</div>`}
+            </button>`).join('') : `<div class="option-empty">${chT({en:'No more matches.', hi:'कोई और परिणाम नहीं।'})}</div>`}
         </div>
         <div class="skip-link" onclick="skipDrilldown()">${t('skip')}</div>
       </div>`;
@@ -794,22 +842,29 @@ function render() {
           <div class="review-complaint-chapter">${escapeHtml(t('nameLabel'))}: ${escapeHtml(patientName)}</div>
           ${reasonForConsultation ? `<div class="review-complaint-detail">${escapeHtml(t('reasonLabel'))}: ${escapeHtml(reasonForConsultation)}</div>` : ''}
         </div>
-        ${complaints.map(c => {
-          const chapter = CHAPTERS.find(ch => ch.id === c.chapterId);
-          const mr = (MAIN_RUBRICS[c.chapterId]||[]).find(m => m.id === c.mainRubricId);
-          const rawDrilldown = DRILLDOWN[c.chapterId+'|'+c.mainRubricId] || {};
-          const answerLines = Object.entries(c.answers).map(([category, a]) => {
-            if (a.skipped) return `<div>${escapeHtml(category)}: <span class="review-skip-tag">${t('skippedTag')}</span></div>`;
-            const items = rawDrilldown[category] || [];
-            const matched = items.find(it => it.path === a.value);
-            if (!matched) return '';
-            return `<div>${escapeHtml(lang==='hi'?matched.hi:matched.en)}</div>`;
+        ${complaints.map(entry => {
+          const chapter = CHAPTERS.find(ch => ch.id === entry.chapterId);
+          const mainRubricBlocks = entry.mainRubrics.map(mr => {
+            const answerLines = Object.entries(mr.answers || {}).map(([category, a]) => {
+              if (a.skipped || !a.values || !a.values.length) {
+                return `<div>${escapeHtml(category)}: <span class="review-skip-tag">${t('skippedTag')}</span></div>`;
+              }
+              const rawDrilldown = DRILLDOWN[entry.chapterId + '|' + mr.id] || {};
+              const items = rawDrilldown[category] || [];
+              const matchedTexts = a.values
+                .map(path => items.find(it => it.path === path))
+                .filter(Boolean)
+                .map(m => escapeHtml(lang === 'hi' ? m.hi : m.en));
+              if (!matchedTexts.length) return '';
+              return matchedTexts.map(txt => `<div>${txt}</div>`).join('');
+            }).join('');
+            return `
+              <div class="review-complaint">
+                <div class="review-complaint-chapter">${escapeHtml(chT(chapter))} — ${escapeHtml(mrT(mr))}</div>
+                <div class="review-complaint-detail">${answerLines}</div>
+              </div>`;
           }).join('');
-          return `
-            <div class="review-complaint">
-              <div class="review-complaint-chapter">${escapeHtml(chT(chapter))} — ${escapeHtml(mr ? mrT(mr) : c.mainRubricId)}</div>
-              <div class="review-complaint-detail">${answerLines}</div>
-            </div>`;
+          return mainRubricBlocks;
         }).join('')}
       </div>`;
   }
@@ -924,8 +979,8 @@ function attachStepListeners() {
     const retryBtn = document.getElementById('retryLoadBtn');
     if (retryBtn) {
       retryBtn.addEventListener('click', async () => {
-        chapterLoadState[currentComplaint.chapterId] = undefined;
-        await selectChapter(currentComplaint.chapterId);
+        chapterLoadState[currentChapterEntry.chapterId] = undefined;
+        await selectChapter(currentChapterEntry.chapterId);
       });
     }
     const search = document.getElementById('mainRubricSearch');
@@ -940,10 +995,10 @@ function attachStepListeners() {
         }
       });
       setupAutocomplete('mainRubricSearch', 'mainRubricDropdown', 'mainRubricClear',
-        () => MAIN_RUBRICS[currentComplaint.chapterId] || [],
+        () => (MAIN_RUBRICS[currentChapterEntry.chapterId] || []).filter(r => !mainRubricPicks.some(p => p.id === r.id)),
         (item) => {
           if (item === null) { mainRubricFilter = ''; render(); return; }
-          selectMainRubric(item.id);
+          addMainRubricPick(item.id);
         }
       );
     }
@@ -954,7 +1009,15 @@ function attachStepListeners() {
         if (!el) return;
         const idx = parseInt(el.dataset.rubricIndex, 10);
         const rubric = (window._currentFilteredRubrics || [])[idx];
-        if (rubric) selectMainRubric(rubric.id);
+        if (rubric) addMainRubricPick(rubric.id);
+      });
+    }
+    const pickChips = document.getElementById('mainRubricPickChips');
+    if (pickChips) {
+      pickChips.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-remove-pick-index]');
+        if (!btn) return;
+        removeMainRubricPick(parseInt(btn.dataset.removePickIndex, 10));
       });
     }
   }
@@ -971,10 +1034,10 @@ function attachStepListeners() {
         }
       });
       setupAutocomplete('drilldownSearch', 'drilldownDropdown', 'drilldownClear',
-        () => (drilldownQueue[drilldownIndex] || {}).items || [],
+        () => ((drilldownQueue[drilldownIndex] || {}).items || []).filter(it => !drilldownPicks.some(p => p.path === it.path)),
         (item) => {
           if (item === null) { drilldownFilter = ''; render(); return; }
-          answerDrilldown(item.path);
+          addDrilldownPick(item.path);
         }
       );
     }
@@ -985,7 +1048,15 @@ function attachStepListeners() {
         if (!btn) return;
         const idx = parseInt(btn.dataset.itemIndex, 10);
         const item = (window._currentFilteredItems || [])[idx];
-        if (item) answerDrilldown(item.path);
+        if (item) addDrilldownPick(item.path);
+      });
+    }
+    const pickChips = document.getElementById('drilldownPickChips');
+    if (pickChips) {
+      pickChips.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-remove-drilldown-pick-index]');
+        if (!btn) return;
+        removeDrilldownPick(parseInt(btn.dataset.removeDrilldownPickIndex, 10));
       });
     }
   }
@@ -1007,12 +1078,21 @@ function renderFooter() {
     f.innerHTML = `<button class="btn-primary" onclick="submitExtraMention()">${chT({en:'Continue', hi:'जारी रखें'})}</button>`;
     document.getElementById('app').insertBefore(f, document.getElementById('basketBar'));
   }
+  if (step === 'mainrubric') {
+    const loadState = chapterLoadState[currentChapterEntry ? currentChapterEntry.chapterId : null];
+    if (loadState === 'loaded') {
+      const f = document.createElement('div');
+      f.className = 'qfooter';
+      f.innerHTML = `<button class="btn-primary" onclick="confirmMainRubricPicks()">${chT({en:'Next', hi:'आगे'})}</button>`;
+      document.getElementById('app').insertBefore(f, document.getElementById('basketBar'));
+    }
+  }
   if (step === 'drilldown') {
     const q = drilldownQueue[drilldownIndex];
     if (q) {
       const f = document.createElement('div');
       f.className = 'qfooter';
-      f.innerHTML = `<button class="btn-primary" onclick="nextDrilldown()">${chT({en:'Next', hi:'आगे'})}</button>`;
+      f.innerHTML = `<button class="btn-primary" onclick="confirmDrilldownPicks()">${chT({en:'Next', hi:'आगे'})}</button>`;
       document.getElementById('app').insertBefore(f, document.getElementById('basketBar'));
     }
   }
@@ -1032,10 +1112,11 @@ function renderFooter() {
 
 function renderBasket() {
   const bar = document.getElementById('basketBar');
-  if (complaints.length > 0 && step !== 'done') {
+  const totalMainRubrics = complaints.reduce((sum, c) => sum + c.mainRubrics.length, 0);
+  if (totalMainRubrics > 0 && step !== 'done') {
     bar.style.display = 'flex';
-    document.getElementById('basketLabel').textContent = lang === 'hi' ? 'दर्ज की गई शिकायतें' : 'complaints recorded';
-    document.getElementById('basketCount').textContent = complaints.length;
+    document.getElementById('basketLabel').textContent = lang === 'hi' ? 'दर्ज किए गए लक्षण' : 'symptoms recorded';
+    document.getElementById('basketCount').textContent = totalMainRubrics;
   } else {
     bar.style.display = 'none';
   }
@@ -1096,72 +1177,123 @@ function selectRegion(regionId) {
   step = 'chapter'; render();
 }
 async function selectChapter(chapterId) {
-  currentComplaint = { chapterId, mainRubricId: null, answers: {} };
+  currentChapterEntry = { chapterId, mainRubrics: [] };
+  mainRubricPicks = [];
   mainRubricFilter = '';
   step = 'mainrubric';
   render(); // shows loading state immediately via chapterLoadState
   await loadChapterData(chapterId);
   render(); // re-render once data has arrived (or failed)
 }
-function selectMainRubric(mainRubricId) {
-  currentComplaint.mainRubricId = mainRubricId;
-  const key = currentComplaint.chapterId + '|' + mainRubricId;
-  const raw = DRILLDOWN[key] || {}; // { categoryName: [ {path, en, hi}, ... ], ... }
+function addMainRubricPick(mainRubricId) {
+  const rubrics = MAIN_RUBRICS[currentChapterEntry.chapterId] || [];
+  const mr = rubrics.find(r => r.id === mainRubricId);
+  if (!mr) return;
+  if (mainRubricPicks.some(p => p.id === mainRubricId)) return; // already added
+  mainRubricPicks.push(mr);
+  mainRubricFilter = '';
+  render();
+}
+function removeMainRubricPick(idx) {
+  mainRubricPicks.splice(idx, 1);
+  render();
+}
+// Called when the patient taps "Next" after picking one or more main
+// rubrics in Step 2 — queues each picked rubric to be drilled into in turn.
+function confirmMainRubricPicks() {
+  if (mainRubricPicks.length === 0) {
+    // Nothing picked — treat like "nothing to add for this chapter" and
+    // move straight on, same as if the chapter had been skipped.
+    finishCurrentChapterEntry();
+    return;
+  }
+  selectedMainRubrics = mainRubricPicks.map(mr => ({ ...mr, answers: {} }));
+  mainRubricPicks = [];
+  startNextMainRubricDrilldown();
+}
+function startNextMainRubricDrilldown() {
+  if (selectedMainRubrics.length === 0) {
+    finishCurrentChapterEntry();
+    return;
+  }
+  currentMainRubric = selectedMainRubrics.shift();
+  const key = currentChapterEntry.chapterId + '|' + currentMainRubric.id;
+  const raw = DRILLDOWN[key] || {};
   drilldownQueue = Object.keys(raw).map(cat => ({ category: cat, items: raw[cat] }));
   drilldownIndex = 0;
   drilldownFilter = '';
+  drilldownPicks = [];
   if (drilldownQueue.length === 0) {
     // Leaf rubric (e.g. a promoted single-child rubric) — no further
     // drill-down questions. Run Trigger-2 detection on ITS OWN text, since
-    // this is the only "selected option" text this complaint will ever have.
-    const mr = (MAIN_RUBRICS[currentComplaint.chapterId] || []).find(m => m.id === mainRubricId);
-    if (mr) enqueueChapters(detectChaptersInText(mr.en, currentComplaint.chapterId));
-    completedChapterIds.push(currentComplaint.chapterId);
-    complaints.push(currentComplaint);
-    if (chapterQueue.length > 0) {
-      const nextChapterId = chapterQueue.shift();
-      selectChapter(nextChapterId);
-      return;
-    }
-    step = 'loopcheck';
-  } else {
-    step = 'drilldown';
+    // this is the only text this main rubric will ever contribute.
+    enqueueChapters(detectChaptersInText(currentMainRubric.en, currentChapterEntry.chapterId));
+    currentChapterEntry.mainRubrics.push(currentMainRubric);
+    startNextMainRubricDrilldown(); // move on to the next queued main rubric, if any
+    return;
   }
+  step = 'drilldown';
   render();
 }
-function answerDrilldown(path) {
+function addDrilldownPick(path) {
   const q = drilldownQueue[drilldownIndex];
-  currentComplaint.answers[q.category] = { value: path, skipped: false };
+  const item = q.items.find(it => it.path === path);
+  if (!item) return;
+  if (drilldownPicks.some(p => p.path === path)) return; // already added
+  drilldownPicks.push(item);
   // Trigger 2: scan ONLY the option text the patient actually selected (not
   // anything else visible in the search dropdown while they were typing)
   // for mentions of OTHER chapters, and queue any found. Cross-chapter-only:
   // excludes the current chapter so a Stomach rubric mentioning "stomach"
   // never self-triggers.
-  const selectedItem = q.items.find(it => it.path === path);
-  if (selectedItem) {
-    enqueueChapters(detectChaptersInText(selectedItem.en, currentComplaint.chapterId));
-  }
+  enqueueChapters(detectChaptersInText(item.en, currentChapterEntry.chapterId));
   drilldownFilter = '';
-  nextDrilldown();
+  render();
 }
-function skipDrilldown() {
+function removeDrilldownPick(idx) {
+  drilldownPicks.splice(idx, 1);
+  render();
+}
+// Called when the patient taps "Next" on a drilldown category screen —
+// commits whatever was picked (possibly nothing, if skipped) and advances
+// to the next category, or finishes this main rubric if categories are done.
+function confirmDrilldownPicks() {
   const q = drilldownQueue[drilldownIndex];
-  currentComplaint.answers[q.category] = { value: null, skipped: true };
+  if (drilldownPicks.length > 0) {
+    currentMainRubric.answers[q.category] = { values: drilldownPicks.map(p => p.path), skipped: false };
+  } else {
+    currentMainRubric.answers[q.category] = { values: [], skipped: true };
+  }
+  drilldownPicks = [];
   drilldownFilter = '';
-  nextDrilldown();
-}
-function nextDrilldown() {
   drilldownIndex++;
   if (drilldownIndex >= drilldownQueue.length) {
-    completedChapterIds.push(currentComplaint.chapterId);
-    complaints.push(currentComplaint);
-    if (chapterQueue.length > 0) {
-      const nextChapterId = chapterQueue.shift();
-      selectChapter(nextChapterId);
-      return;
-    }
-    step = 'loopcheck';
+    currentChapterEntry.mainRubrics.push(currentMainRubric);
+    startNextMainRubricDrilldown(); // next queued main rubric for this chapter, if any
+    return;
   }
+  render();
+}
+function skipDrilldown() {
+  drilldownPicks = [];
+  confirmDrilldownPicks();
+}
+// Called once every main rubric for the current chapter has been fully
+// drilled into (or the patient picked none at all) — finalizes this
+// chapter's entry and moves to the next queued chapter, or to the
+// "anything else?" prompt if the queue is empty.
+function finishCurrentChapterEntry() {
+  if (currentChapterEntry && currentChapterEntry.mainRubrics.length > 0) {
+    complaints.push(currentChapterEntry);
+  }
+  if (currentChapterEntry) completedChapterIds.push(currentChapterEntry.chapterId);
+  currentChapterEntry = null;
+  if (chapterQueue.length > 0) {
+    const nextChapterId = chapterQueue.shift();
+    selectChapter(nextChapterId);
+    return;
+  }
+  step = 'loopcheck';
   render();
 }
 function addAnotherComplaint() {
@@ -1183,7 +1315,6 @@ function submitExtraMention() {
   }
 }
 function goToGenerals() {
-  if (currentComplaint && !complaints.includes(currentComplaint)) complaints.push(currentComplaint);
   step = 'generals'; render();
 }
 function goToReview() { step = 'review'; render(); }
