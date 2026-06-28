@@ -94,10 +94,13 @@
   .chapter-card-label { font-size: 13px; color: var(--ink2); font-weight: 500; line-height: 1.3; }
 
   /* MAIN RUBRIC LIST */
-  .rubric-list { display: flex; flex-direction: column; gap: 8px; }
-  .rubric-option { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; font-size: 15px; color: var(--ink2); cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: space-between; }
+  .rubric-list { display: flex; flex-direction: column; gap: 8px; max-height: 55vh; overflow-y: auto; }
+  .rubric-option { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-size: 14.5px; color: var(--ink2); cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 10px; }
   .rubric-option:hover { border-color: var(--teal); background: rgba(28,107,90,0.04); }
-  .rubric-option-arrow { color: var(--teal); font-size: 16px; }
+  .rubric-option.rubric-selected { background: var(--teal); border-color: var(--teal); color: white; }
+  .rubric-check { width: 18px; height: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; border: 1.5px solid var(--border); border-radius: 4px; color: transparent; }
+  .rubric-option.rubric-selected .rubric-check { border-color: white; background: rgba(255,255,255,0.2); color: white; }
+  .rubric-option-text { flex: 1; line-height: 1.4; }
 
   /* DRILLDOWN OPTIONS */
   .option-grid { display: flex; flex-direction: column; gap: 10px; }
@@ -257,15 +260,15 @@ const REGIONS = [
   { id: "whole_body",            en: "Whole-body & General",    hi: "सम्पूर्ण शरीर व सामान्य", icon: "🌐" },
 ];
 
-// MAIN_RUBRICS and DRILLDOWN are no longer embedded inline — at 22.8MB for
-// all 40 real chapters combined, that's far too much to load up front for
-// every patient on every visit. Instead, each chapter's data lives in its
-// own file (chapter_data/<chapterId>.json, e.g. chapter_data/stomach.json)
-// and is fetched lazily the moment a patient selects that chapter — see
-// loadChapterData() below. These objects act as an in-memory cache so a
-// chapter already fetched once this session isn't re-downloaded.
-const MAIN_RUBRICS = {};
-const DRILLDOWN = {};
+// CHAPTER_RUBRICS holds one FLAT array per chapter — every rubric at any
+// depth (main rubric or sub-rubric), all together, no category grouping at
+// all. This replaces the earlier MAIN_RUBRICS + DRILLDOWN split: per the
+// confirmed design, there is no more category-by-category drill-down — one
+// search box per chapter searches everything at once, exactly matching the
+// standalone repertory tool's own keyword search (just scoped to one
+// chapter's data instead of the full 74,667-rubric database, to keep the
+// lazy-loading per-chapter cost the same as before).
+const CHAPTER_RUBRICS = {};
 const chapterLoadState = {}; // chapterId -> 'loading' | 'loaded' | 'error'
 
 async function loadChapterData(chapterId) {
@@ -276,14 +279,7 @@ async function loadChapterData(chapterId) {
     const res = await fetch(`chapter_data/${chapterId}.json`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    MAIN_RUBRICS[chapterId] = data.mainRubrics || [];
-    // data.drilldown is keyed by full path ("Stomach, pain"); re-key by
-    // mainRubricId so the rest of the app's lookups (DRILLDOWN[chapterId+'|'+mainId]) keep working unchanged.
-    Object.entries(data.drilldown || {}).forEach(([fullPath, categories]) => {
-      const parts = fullPath.split(', ');
-      const mainId = parts.slice(1).join(', '); // everything after the chapter name
-      DRILLDOWN[chapterId + '|' + mainId] = categories;
-    });
+    CHAPTER_RUBRICS[chapterId] = data.rubrics || [];
     chapterLoadState[chapterId] = 'loaded';
     return true;
   } catch (e) {
@@ -313,29 +309,18 @@ const VALID_TEST_COUPONS = ['WELCOME2026', 'PUNARVASU1', 'TESTFREE'];
 // DATA MODEL: one entry per CHAPTER the patient has gone through.
 // complaints = [{
 //   chapterId,
-//   mainRubrics: [{ id, en, hi, roman, isChief, answers: { category: [path, path, ...] } }]
+//   rubrics: [{ path, en, hi, roman, isChief }]
 // }]
-// Each main rubric the patient selected can have MULTIPLE selected options
-// per drilldown category (multi-select throughout, per explicit decision —
-// a real symptom is rarely captured by a single tap).
-//
-// CHIEF COMPLAINT: exactly one main rubric across the ENTIRE session — the
-// very first one the patient finishes (across any chapter) — is tagged
-// isChief: true. Every main rubric after that, in any chapter, is an
-// "Additional Complaint" (isChief: false). This is decided automatically by
-// arrival order, never asked of the patient directly.
-let chiefComplaintAssigned = false;
+// CHIEF COMPLAINT: exactly one rubric across the ENTIRE session — the
+// earliest-added one that is STILL currently selected — is tagged isChief:
+// true. Every other selected rubric is an "Additional Complaint". This is
+// recomputed dynamically (see recomputeChiefComplaint()) every time a
+// selection changes, so deselecting the current chief correctly hands the
+// title to whichever remaining selection was added next-earliest, rather
+// than leaving the session with no chief complaint at all.
 let complaints = [];
-let currentChapterEntry = null;   // the in-progress entry for the CURRENT chapter: { chapterId, mainRubrics: [] }
-let selectedMainRubrics = [];     // main rubrics picked in Step 2 for the current chapter, queued to drill into one by one
-let currentMainRubric = null;     // the one currently being drilled into: { id, en, hi, roman, isChief, answers: {} }
-let mainRubricFilter = '';
-let mainRubricPicks = [];         // chips shown in Step 2: main rubrics selected so far for THIS chapter, before "Next"
-
-let drilldownQueue = [];          // categories to walk through for currentMainRubric: [{category, items}]
-let drilldownIndex = 0;
-let drilldownFilter = '';
-let drilldownPicks = [];          // chips shown in the current drilldown category screen: items selected so far for THIS category
+let currentChapterEntry = null;   // the in-progress entry for the CURRENT chapter: { chapterId, rubrics: [] }
+let chapterSearchFilter = '';     // what the patient has typed in this chapter's search box
 
 // NOTE: search language is no longer independent state — searchTextFor()
 // below derives it directly from the display `lang` variable, so the two
@@ -514,15 +499,40 @@ function enqueueChapters(chapterIds) {
   }
 }
 
-// Called every time a main rubric is fully finished (either a leaf with no
-// drilldown, or one that's been through its full drilldown cycle) and is
-// about to be pushed into the current chapter's entry. Tags it as the Chief
-// Complaint if and only if it's the very first main rubric finished across
-// the WHOLE session — every one after that is an Additional Complaint.
-function finalizeMainRubric(mainRubric) {
-  mainRubric.isChief = !chiefComplaintAssigned;
-  chiefComplaintAssigned = true;
-  currentChapterEntry.mainRubrics.push(mainRubric);
+// Called when the patient taps a rubric row in the chapter's search results
+// pane. Toggles it in or out of this chapter's selection, exactly like the
+// standalone tool's addRubric()/removeRubric() pair — tapping an unselected
+// row adds it (and runs Trigger-2 chapter detection on its text), tapping an
+// already-selected row removes it again.
+//
+// CHIEF COMPLAINT: each selected rubric carries a `seq` (the order it was
+// added in, across the whole session). Chief status is always recomputed
+// from whichever CURRENTLY SELECTED rubric has the lowest seq — so if the
+// patient deselects what was the chief complaint, whatever they selected
+// next earliest correctly becomes chief instead, rather than the session
+// ending up with no chief complaint at all.
+let nextRubricSeq = 1;
+function toggleRubricSelection(path) {
+  const rubric = (CHAPTER_RUBRICS[currentChapterEntry.chapterId] || []).find(r => r.path === path);
+  if (!rubric) return;
+  const existingIdx = currentChapterEntry.rubrics.findIndex(r => r.path === path);
+  if (existingIdx !== -1) {
+    currentChapterEntry.rubrics.splice(existingIdx, 1);
+  } else {
+    currentChapterEntry.rubrics.push({ ...rubric, seq: nextRubricSeq++ });
+    enqueueChapters(detectChaptersInText(rubric.en, currentChapterEntry.chapterId));
+  }
+  recomputeChiefComplaint();
+  render();
+}
+// Scans every selected rubric across every chapter (completed entries plus
+// the in-progress one) and marks the single lowest-seq one as isChief.
+function recomputeChiefComplaint() {
+  const allSelected = complaints.flatMap(c => c.rubrics)
+    .concat(currentChapterEntry ? currentChapterEntry.rubrics : []);
+  if (!allSelected.length) return;
+  const chief = allSelected.reduce((a, b) => (a.seq < b.seq ? a : b));
+  allSelected.forEach(r => { r.isChief = (r === chief); });
 }
 
 // Defensive escaping: real Kent rubric text can contain apostrophes, quotes,
@@ -731,12 +741,14 @@ function render() {
   else if (step === 'mainrubric') {
     const chapter = CHAPTERS.find(c => c.id === currentChapterEntry.chapterId);
     const loadState = chapterLoadState[currentChapterEntry.chapterId];
-    const rubrics = MAIN_RUBRICS[currentChapterEntry.chapterId] || [];
-    const filterText = (mainRubricFilter || '').trim();
-    const pickedIds = new Set(mainRubricPicks.map(p => p.id));
-    const filteredRubrics = (filterText ? rubrics.filter(r => searchMatches(r, filterText)) : rubrics)
-      .filter(r => !pickedIds.has(r.id)); // don't show already-picked items again in the list
-    window._currentFilteredRubrics = filteredRubrics;
+    const allRubrics = CHAPTER_RUBRICS[currentChapterEntry.chapterId] || [];
+    const filterText = (chapterSearchFilter || '').trim();
+    const selectedPaths = new Set(currentChapterEntry.rubrics.map(r => r.path));
+    // Persistent results pane: ALWAYS shows every matching rubric (or, with
+    // no search text yet, the full list) — selection never removes a row
+    // from view or navigates away. Tapping a row just toggles its state.
+    const resultRubrics = filterText ? allRubrics.filter(r => searchMatches(r, filterText)) : allRubrics;
+    window._currentResultRubrics = resultRubrics;
 
     let bodyHtml;
     if (loadState === 'loading') {
@@ -745,82 +757,30 @@ function render() {
       bodyHtml = `<div class="load-error">${chT({en:'Could not load this chapter. Please check your connection.', hi:'यह अध्याय लोड नहीं हो सका। कृपया अपना कनेक्शन जाँचें।'})}<br/><button class="btn-retry" id="retryLoadBtn">${chT({en:'Try again', hi:'फिर कोशिश करें'})}</button></div>`;
     } else {
       bodyHtml = `
-        ${mainRubricPicks.length ? `
-        <div class="pick-chips-wrap">
-          <div class="pick-chips-label">${chT({en:'Selected so far:', hi:'अब तक चुने गए:'})}</div>
-          <div class="pick-chip-row" id="mainRubricPickChips">
-            ${mainRubricPicks.map((p, idx) => `
-              <div class="pick-chip">
-                <span class="pick-chip-text">${escapeHtml(mrT(p))}</span>
-                <button class="pick-chip-remove" data-remove-pick-index="${idx}">×</button>
-              </div>`).join('')}
-          </div>
-        </div>` : `<div class="pick-empty-hint">${chT({en:'Search and select every symptom that applies — you can add as many as you need.', hi:'जो भी लक्षण लागू हो उसे खोजें और चुनें — आप जितने चाहें जोड़ सकते हैं।'})}</div>`}
-        ${rubrics.length > 8 || mainRubricPicks.length ? `
         <div class="search-input-wrap">
-          <input class="option-search" id="mainRubricSearch" placeholder="${escapeAttr(lang==='hi' ? chT({en:'Type Hindi in Roman letters... e.g. jalan', hi:'रोमन में हिंदी टाइप करें... जैसे jalan'}) : chT({en:'Type to search...', hi:'खोजने के लिए टाइप करें...'}))}" value="${escapeAttr(mainRubricFilter||'')}"/>
-          <button class="search-clear-btn ${mainRubricFilter ? 'visible' : ''}" id="mainRubricClear">×</button>
-          <div class="ac-dropdown" id="mainRubricDropdown"></div>
-        </div>` : ''}
-        <div class="option-count">${filteredRubrics.length} ${chT({en:'option(s)', hi:'विकल्प'})}</div>
-        <div class="rubric-list" id="rubricList">
-          ${filteredRubrics.length ? filteredRubrics.map((r, idx) => `
-            <div class="rubric-option" data-rubric-index="${idx}">
-              <span>${escapeHtml(mrT(r))}</span><span class="rubric-option-arrow">+</span>
-            </div>`).join('') : `<div class="option-empty">${chT({en:'No more matches.', hi:'कोई और परिणाम नहीं।'})}</div>`}
+          <input class="option-search" id="chapterSearch" placeholder="${escapeAttr(lang==='hi' ? chT({en:'Type Hindi in Roman letters... e.g. jalan', hi:'रोमन में हिंदी टाइप करें... जैसे jalan'}) : chT({en:'Type keywords... e.g. burning after eating', hi:'मुख्य शब्द टाइप करें...'}))}" value="${escapeAttr(chapterSearchFilter||'')}"/>
+          <button class="search-clear-btn ${chapterSearchFilter ? 'visible' : ''}" id="chapterSearchClear">×</button>
+          <div class="ac-dropdown" id="chapterSearchDropdown"></div>
+        </div>
+        <div class="option-count">
+          ${currentChapterEntry.rubrics.length} ${chT({en:'selected', hi:'चयनित'})} ·
+          ${resultRubrics.length} ${chT({en:'shown', hi:'दिखाए गए'})}
+        </div>
+        <div class="rubric-list" id="rubricResultsPane">
+          ${resultRubrics.length ? resultRubrics.map((r, idx) => `
+            <div class="rubric-option ${selectedPaths.has(r.path) ? 'rubric-selected' : ''}" data-rubric-index="${idx}">
+              <span class="rubric-check">${selectedPaths.has(r.path) ? '✓' : ''}</span>
+              <span class="rubric-option-text">${escapeHtml(lang === 'hi' ? r.hi : r.en)}</span>
+            </div>`).join('') : `<div class="option-empty">${chT({en:'No matches. Try different keywords.', hi:'कोई परिणाम नहीं। दूसरे शब्द आज़माएं।'})}</div>`}
         </div>`;
     }
     html = `
       <div class="qstep active">
         <button class="btn-back" onclick="goBack()">← ${t('back')}</button>
-        <h2 class="qtitle">${t('mainRubricTitle')}</h2>
-        <p class="qsub">${escapeHtml(chT(chapter))} — ${t('mainRubricSub')}</p>
+        <h2 class="qtitle">${escapeHtml(chT(chapter))}</h2>
+        <p class="qsub">${chT({en:'Search and tap every symptom that applies. Tap again to remove it.', hi:'जो भी लक्षण लागू हो उसे खोजें और टैप करें। हटाने के लिए फिर से टैप करें।'})}</p>
         ${bodyHtml}
       </div>`;
-  }
-
-  else if (step === 'drilldown') {
-    const q = drilldownQueue[drilldownIndex];
-    if (!q) { step = 'loopcheck'; render(); return; }
-    const pickedPaths = new Set(drilldownPicks.map(p => p.path));
-    const filterText = (drilldownFilter || '').trim();
-    const filteredItems = (filterText ? q.items.filter(it => searchMatches(it, filterText)) : q.items)
-      .filter(it => !pickedPaths.has(it.path));
-    const showSearch = q.items.length > 8 || drilldownPicks.length > 0;
-    html = `
-      <div class="qstep active">
-        <button class="btn-back" onclick="goBack()">← ${t('back')}</button>
-        <h2 class="qtitle">${escapeHtml(chT({en:q.category, hi:q.categoryHi || q.category}))}</h2>
-        ${drilldownPicks.length ? `
-        <div class="pick-chips-wrap">
-          <div class="pick-chips-label">${chT({en:'Selected so far:', hi:'अब तक चुने गए:'})}</div>
-          <div class="pick-chip-row" id="drilldownPickChips">
-            ${drilldownPicks.map((p, idx) => `
-              <div class="pick-chip">
-                <span class="pick-chip-text">${escapeHtml(lang === 'hi' ? p.hi : p.en)}</span>
-                <button class="pick-chip-remove" data-remove-drilldown-pick-index="${idx}">×</button>
-              </div>`).join('')}
-          </div>
-        </div>` : `<div class="pick-empty-hint">${chT({en:'Search and select every option that applies, or skip this question.', hi:'जो भी विकल्प लागू हो उसे खोजें और चुनें, या यह सवाल छोड़ें।'})}</div>`}
-        ${showSearch ? `
-        <div class="search-input-wrap">
-          <input class="option-search" id="drilldownSearch" placeholder="${escapeAttr(lang==='hi' ? chT({en:'Type Hindi in Roman letters... e.g. jalan', hi:'रोमन में हिंदी टाइप करें... जैसे jalan'}) : chT({en:'Type to search...', hi:'खोजने के लिए टाइप करें...'}))}" value="${escapeAttr(drilldownFilter||'')}"/>
-          <button class="search-clear-btn ${drilldownFilter ? 'visible' : ''}" id="drilldownClear">×</button>
-          <div class="ac-dropdown" id="drilldownDropdown"></div>
-        </div>` : ''}
-        <div class="option-count">${filteredItems.length} ${chT({en:'option(s)', hi:'विकल्प'})}</div>
-        <div class="option-scroll" id="optionScroll">
-          ${filteredItems.length ? filteredItems.map((it, idx) => `
-            <button class="option-btn" data-item-index="${idx}">
-              ${escapeHtml(lang === 'hi' ? it.hi : it.en)}
-            </button>`).join('') : `<div class="option-empty">${chT({en:'No more matches.', hi:'कोई और परिणाम नहीं।'})}</div>`}
-        </div>
-        <div class="skip-link" onclick="skipDrilldown()">${t('skip')}</div>
-      </div>`;
-    // stash the currently-filtered list so the event-delegated click handler
-    // (attached in attachStepListeners) can map a clicked index back to its
-    // real item without ever interpolating its text/path into HTML/JS strings.
-    window._currentFilteredItems = filteredItems;
   }
 
   else if (step === 'loopcheck') {
@@ -861,37 +821,22 @@ function render() {
   }
 
   else if (step === 'review') {
-    // Flatten every main rubric across every chapter into one list, each
-    // tagged with which chapter it came from, then split by isChief so the
-    // one true Chief Complaint is shown separately from everything else.
+    // Flatten every selected rubric across every chapter into one list,
+    // each tagged with which chapter it came from, then split by isChief
+    // so the one true Chief Complaint is shown separately from everything else.
     const allEntries = [];
     complaints.forEach(entry => {
       const chapter = CHAPTERS.find(ch => ch.id === entry.chapterId);
-      entry.mainRubrics.forEach(mr => allEntries.push({ chapter, entry, mr }));
+      entry.rubrics.forEach(r => allEntries.push({ chapter, rubric: r }));
     });
-    const chiefEntry = allEntries.find(e => e.mr.isChief);
-    const additionalEntries = allEntries.filter(e => !e.mr.isChief);
+    const chiefEntry = allEntries.find(e => e.rubric.isChief);
+    const additionalEntries = allEntries.filter(e => !e.rubric.isChief);
 
-    function renderAnswerLines(entry, mr) {
-      return Object.entries(mr.answers || {}).map(([category, a]) => {
-        if (a.skipped || !a.values || !a.values.length) {
-          return `<div>${escapeHtml(category)}: <span class="review-skip-tag">${t('skippedTag')}</span></div>`;
-        }
-        const rawDrilldown = DRILLDOWN[entry.chapterId + '|' + mr.id] || {};
-        const items = rawDrilldown[category] || [];
-        const matchedTexts = a.values
-          .map(path => items.find(it => it.path === path))
-          .filter(Boolean)
-          .map(m => escapeHtml(lang === 'hi' ? m.hi : m.en));
-        if (!matchedTexts.length) return '';
-        return matchedTexts.map(txt => `<div>${txt}</div>`).join('');
-      }).join('');
-    }
-    function renderComplaintBlock({ chapter, entry, mr }) {
+    function renderComplaintBlock({ chapter, rubric }) {
       return `
         <div class="review-complaint">
-          <div class="review-complaint-chapter">${escapeHtml(chT(chapter))} — ${escapeHtml(mrT(mr))}</div>
-          <div class="review-complaint-detail">${renderAnswerLines(entry, mr)}</div>
+          <div class="review-complaint-chapter">${escapeHtml(chT(chapter))}</div>
+          <div class="review-complaint-detail">${escapeHtml(lang === 'hi' ? rubric.hi : rubric.en)}</div>
         </div>`;
     }
 
@@ -1020,80 +965,33 @@ function attachStepListeners() {
         await selectChapter(currentChapterEntry.chapterId);
       });
     }
-    const search = document.getElementById('mainRubricSearch');
+    const search = document.getElementById('chapterSearch');
     if (search) {
       search.addEventListener('input', () => {
-        mainRubricFilter = search.value;
+        chapterSearchFilter = search.value;
         render();
-        const reInput = document.getElementById('mainRubricSearch');
+        const reInput = document.getElementById('chapterSearch');
         if (reInput) {
           reInput.focus();
           reInput.setSelectionRange(reInput.value.length, reInput.value.length);
         }
       });
-      setupAutocomplete('mainRubricSearch', 'mainRubricDropdown', 'mainRubricClear',
-        () => (MAIN_RUBRICS[currentChapterEntry.chapterId] || []).filter(r => !mainRubricPicks.some(p => p.id === r.id)),
+      setupAutocomplete('chapterSearch', 'chapterSearchDropdown', 'chapterSearchClear',
+        () => CHAPTER_RUBRICS[currentChapterEntry.chapterId] || [],
         (item) => {
-          if (item === null) { mainRubricFilter = ''; render(); return; }
-          addMainRubricPick(item.id);
+          if (item === null) { chapterSearchFilter = ''; render(); return; }
+          toggleRubricSelection(item.path);
         }
       );
     }
-    const list = document.getElementById('rubricList');
-    if (list) {
-      list.addEventListener('click', (e) => {
+    const pane = document.getElementById('rubricResultsPane');
+    if (pane) {
+      pane.addEventListener('click', (e) => {
         const el = e.target.closest('[data-rubric-index]');
         if (!el) return;
         const idx = parseInt(el.dataset.rubricIndex, 10);
-        const rubric = (window._currentFilteredRubrics || [])[idx];
-        if (rubric) addMainRubricPick(rubric.id);
-      });
-    }
-    const pickChips = document.getElementById('mainRubricPickChips');
-    if (pickChips) {
-      pickChips.addEventListener('click', (e) => {
-        const btn = e.target.closest('[data-remove-pick-index]');
-        if (!btn) return;
-        removeMainRubricPick(parseInt(btn.dataset.removePickIndex, 10));
-      });
-    }
-  }
-  if (step === 'drilldown') {
-    const search = document.getElementById('drilldownSearch');
-    if (search) {
-      search.addEventListener('input', () => {
-        drilldownFilter = search.value;
-        render();
-        const reInput = document.getElementById('drilldownSearch');
-        if (reInput) {
-          reInput.focus();
-          reInput.setSelectionRange(reInput.value.length, reInput.value.length);
-        }
-      });
-      setupAutocomplete('drilldownSearch', 'drilldownDropdown', 'drilldownClear',
-        () => ((drilldownQueue[drilldownIndex] || {}).items || []).filter(it => !drilldownPicks.some(p => p.path === it.path)),
-        (item) => {
-          if (item === null) { drilldownFilter = ''; render(); return; }
-          addDrilldownPick(item.path);
-        }
-      );
-    }
-    const scroll = document.getElementById('optionScroll');
-    if (scroll) {
-      scroll.addEventListener('click', (e) => {
-        const btn = e.target.closest('[data-item-index]');
-        if (!btn) return;
-        const idx = parseInt(btn.dataset.itemIndex, 10);
-        const item = (window._currentFilteredItems || [])[idx];
-        if (item) addDrilldownPick(item.path);
-      });
-    }
-    const pickChips = document.getElementById('drilldownPickChips');
-    if (pickChips) {
-      pickChips.addEventListener('click', (e) => {
-        const btn = e.target.closest('[data-remove-drilldown-pick-index]');
-        if (!btn) return;
-        removeDrilldownPick(parseInt(btn.dataset.removeDrilldownPickIndex, 10));
+        const rubric = (window._currentResultRubrics || [])[idx];
+        if (rubric) toggleRubricSelection(rubric.path);
       });
     }
   }
@@ -1120,16 +1018,7 @@ function renderFooter() {
     if (loadState === 'loaded') {
       const f = document.createElement('div');
       f.className = 'qfooter';
-      f.innerHTML = `<button class="btn-primary" onclick="confirmMainRubricPicks()">${chT({en:'Next', hi:'आगे'})}</button>`;
-      document.getElementById('app').insertBefore(f, document.getElementById('basketBar'));
-    }
-  }
-  if (step === 'drilldown') {
-    const q = drilldownQueue[drilldownIndex];
-    if (q) {
-      const f = document.createElement('div');
-      f.className = 'qfooter';
-      f.innerHTML = `<button class="btn-primary" onclick="confirmDrilldownPicks()">${chT({en:'Next', hi:'आगे'})}</button>`;
+      f.innerHTML = `<button class="btn-primary" onclick="finishCurrentChapterEntry()">${chT({en:'Done with this chapter', hi:'इस अध्याय के साथ समाप्त'})}</button>`;
       document.getElementById('app').insertBefore(f, document.getElementById('basketBar'));
     }
   }
@@ -1149,11 +1038,13 @@ function renderFooter() {
 
 function renderBasket() {
   const bar = document.getElementById('basketBar');
-  const totalMainRubrics = complaints.reduce((sum, c) => sum + c.mainRubrics.length, 0);
-  if (totalMainRubrics > 0 && step !== 'done') {
+  const completedCount = complaints.reduce((sum, c) => sum + c.rubrics.length, 0);
+  const inProgressCount = currentChapterEntry ? currentChapterEntry.rubrics.length : 0;
+  const totalSelected = completedCount + inProgressCount;
+  if (totalSelected > 0 && step !== 'done') {
     bar.style.display = 'flex';
     document.getElementById('basketLabel').textContent = lang === 'hi' ? 'दर्ज किए गए लक्षण' : 'symptoms recorded';
-    document.getElementById('basketCount').textContent = totalMainRubrics;
+    document.getElementById('basketCount').textContent = totalSelected;
   } else {
     bar.style.display = 'none';
   }
@@ -1214,113 +1105,19 @@ function toggleRegionAccordion(regionId) {
   render();
 }
 async function selectChapter(chapterId) {
-  currentChapterEntry = { chapterId, mainRubrics: [] };
-  mainRubricPicks = [];
-  mainRubricFilter = '';
+  currentChapterEntry = { chapterId, rubrics: [] };
+  chapterSearchFilter = '';
   step = 'mainrubric';
   render(); // shows loading state immediately via chapterLoadState
   await loadChapterData(chapterId);
   render(); // re-render once data has arrived (or failed)
 }
-function addMainRubricPick(mainRubricId) {
-  const rubrics = MAIN_RUBRICS[currentChapterEntry.chapterId] || [];
-  const mr = rubrics.find(r => r.id === mainRubricId);
-  if (!mr) return;
-  if (mainRubricPicks.some(p => p.id === mainRubricId)) return; // already added
-  mainRubricPicks.push(mr);
-  mainRubricFilter = '';
-  render();
-}
-function removeMainRubricPick(idx) {
-  mainRubricPicks.splice(idx, 1);
-  render();
-}
-// Called when the patient taps "Next" after picking one or more main
-// rubrics in Step 2 — queues each picked rubric to be drilled into in turn.
-function confirmMainRubricPicks() {
-  if (mainRubricPicks.length === 0) {
-    // Nothing picked — treat like "nothing to add for this chapter" and
-    // move straight on, same as if the chapter had been skipped.
-    finishCurrentChapterEntry();
-    return;
-  }
-  selectedMainRubrics = mainRubricPicks.map(mr => ({ ...mr, answers: {} }));
-  mainRubricPicks = [];
-  startNextMainRubricDrilldown();
-}
-function startNextMainRubricDrilldown() {
-  if (selectedMainRubrics.length === 0) {
-    finishCurrentChapterEntry();
-    return;
-  }
-  currentMainRubric = selectedMainRubrics.shift();
-  const key = currentChapterEntry.chapterId + '|' + currentMainRubric.id;
-  const raw = DRILLDOWN[key] || {};
-  drilldownQueue = Object.keys(raw).map(cat => ({ category: cat, items: raw[cat] }));
-  drilldownIndex = 0;
-  drilldownFilter = '';
-  drilldownPicks = [];
-  if (drilldownQueue.length === 0) {
-    // Leaf rubric (e.g. a promoted single-child rubric) — no further
-    // drill-down questions. Run Trigger-2 detection on ITS OWN text, since
-    // this is the only text this main rubric will ever contribute.
-    enqueueChapters(detectChaptersInText(currentMainRubric.en, currentChapterEntry.chapterId));
-    finalizeMainRubric(currentMainRubric);
-    startNextMainRubricDrilldown(); // move on to the next queued main rubric, if any
-    return;
-  }
-  step = 'drilldown';
-  render();
-}
-function addDrilldownPick(path) {
-  const q = drilldownQueue[drilldownIndex];
-  const item = q.items.find(it => it.path === path);
-  if (!item) return;
-  if (drilldownPicks.some(p => p.path === path)) return; // already added
-  drilldownPicks.push(item);
-  // Trigger 2: scan ONLY the option text the patient actually selected (not
-  // anything else visible in the search dropdown while they were typing)
-  // for mentions of OTHER chapters, and queue any found. Cross-chapter-only:
-  // excludes the current chapter so a Stomach rubric mentioning "stomach"
-  // never self-triggers.
-  enqueueChapters(detectChaptersInText(item.en, currentChapterEntry.chapterId));
-  drilldownFilter = '';
-  render();
-}
-function removeDrilldownPick(idx) {
-  drilldownPicks.splice(idx, 1);
-  render();
-}
-// Called when the patient taps "Next" on a drilldown category screen —
-// commits whatever was picked (possibly nothing, if skipped) and advances
-// to the next category, or finishes this main rubric if categories are done.
-function confirmDrilldownPicks() {
-  const q = drilldownQueue[drilldownIndex];
-  if (drilldownPicks.length > 0) {
-    currentMainRubric.answers[q.category] = { values: drilldownPicks.map(p => p.path), skipped: false };
-  } else {
-    currentMainRubric.answers[q.category] = { values: [], skipped: true };
-  }
-  drilldownPicks = [];
-  drilldownFilter = '';
-  drilldownIndex++;
-  if (drilldownIndex >= drilldownQueue.length) {
-    finalizeMainRubric(currentMainRubric);
-    startNextMainRubricDrilldown(); // next queued main rubric for this chapter, if any
-    return;
-  }
-  render();
-}
-function skipDrilldown() {
-  drilldownPicks = [];
-  confirmDrilldownPicks();
-}
-// Called once every main rubric for the current chapter has been fully
-// drilled into (or the patient picked none at all) — finalizes this
-// chapter's entry and moves to the next queued chapter, or to the
-// "anything else?" prompt if the queue is empty.
+// Called when the patient taps "Done with this chapter" — finalizes
+// whatever's been selected (possibly nothing, if they didn't find anything
+// relevant) and moves to the next queued chapter, or to the "anything
+// else?" prompt if the queue is empty.
 function finishCurrentChapterEntry() {
-  if (currentChapterEntry && currentChapterEntry.mainRubrics.length > 0) {
+  if (currentChapterEntry && currentChapterEntry.rubrics.length > 0) {
     complaints.push(currentChapterEntry);
   }
   if (currentChapterEntry) completedChapterIds.push(currentChapterEntry.chapterId);
@@ -1356,7 +1153,7 @@ function goToGenerals() {
 }
 function goToReview() { step = 'review'; render(); }
 function goBack() {
-  const order = ['remarks','lock','region','mainrubric','drilldown','loopcheck','extramention','generals','review'];
+  const order = ['remarks','lock','region','mainrubric','loopcheck','extramention','generals','review'];
   const idx = order.indexOf(step);
   if (idx > 0) {
     let prevIdx = idx - 1;
