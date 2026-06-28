@@ -69,11 +69,23 @@
   .btn-stub:hover { background: var(--cream); }
 
   /* CHAPTER SELECTION — region-grouped card grid */
-  .region-card { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 18px 16px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+  .region-card { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 18px 16px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 14px; }
   .region-card:hover { border-color: var(--teal); box-shadow: 0 2px 10px rgba(28,107,90,0.08); }
   .region-card-icon { font-size: 26px; flex-shrink: 0; }
   .region-card-label { font-family: var(--serif); font-size: 16px; color: var(--navy); flex: 1; }
-  .region-card-arrow { color: var(--teal); font-size: 18px; }
+  .region-card-arrow { color: var(--teal); font-size: 18px; transition: transform 0.2s; }
+
+  /* ACCORDION */
+  .region-accordion-item { margin-bottom: 10px; }
+  .region-accordion-item.expanded .region-card { border-color: var(--teal); border-bottom-left-radius: 0; border-bottom-right-radius: 0; box-shadow: 0 2px 10px rgba(28,107,90,0.08); }
+  .region-accordion-item.expanded .region-card-arrow { transform: rotate(90deg); }
+  .region-accordion-panel { background: var(--cream); border: 1px solid var(--teal); border-top: none; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; padding: 14px; display: none; }
+  .region-accordion-item.expanded .region-accordion-panel { display: block; }
+  .accordion-chapter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .accordion-chapter-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 12px 10px; text-align: center; cursor: pointer; transition: all 0.15s; }
+  .accordion-chapter-card:hover { border-color: var(--teal); box-shadow: 0 2px 8px rgba(28,107,90,0.08); }
+  .accordion-chapter-card-icon { font-size: 20px; margin-bottom: 4px; }
+  .accordion-chapter-card-label { font-size: 12.5px; color: var(--ink2); font-weight: 500; line-height: 1.3; }
 
   .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .chapter-card { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 14px 12px; text-align: center; cursor: pointer; transition: all 0.15s; }
@@ -144,6 +156,7 @@
   .review-complaint { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
   .review-complaint-chapter { font-family: var(--serif); font-size: 14.5px; color: var(--navy); margin-bottom: 4px; }
   .review-complaint-detail { font-size: 13px; color: var(--ink3); line-height: 1.6; }
+  .review-section-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--teal2); font-weight: 600; margin: 18px 0 8px; }
   .review-skip-tag { display: inline-block; font-size: 11px; color: #c8600a; background: rgba(200,96,10,0.1); border-radius: 10px; padding: 2px 8px; margin-top: 4px; }
 
   /* BUTTONS */
@@ -283,7 +296,7 @@ async function loadChapterData(chapterId) {
 // ── STATE ──
 let lang = 'en';
 let step = 'remarks'; // remarks -> lock -> region -> chapter -> mainrubric -> drilldown -> loopcheck -> generals -> review -> done
-let currentRegion = null;
+let expandedRegion = null; // which region's accordion panel is currently open (only one at a time)
 let chapterQueue = [];          // chapter ids detected and waiting to be walked through
 let completedChapterIds = [];   // chapter ids already fully handled this session (avoid re-queuing)
 let extraMentionInput = '';     // the "anything else?" follow-up free-text box
@@ -300,15 +313,22 @@ const VALID_TEST_COUPONS = ['WELCOME2026', 'PUNARVASU1', 'TESTFREE'];
 // DATA MODEL: one entry per CHAPTER the patient has gone through.
 // complaints = [{
 //   chapterId,
-//   mainRubrics: [{ id, en, hi, roman, answers: { category: [path, path, ...] } }]
+//   mainRubrics: [{ id, en, hi, roman, isChief, answers: { category: [path, path, ...] } }]
 // }]
 // Each main rubric the patient selected can have MULTIPLE selected options
 // per drilldown category (multi-select throughout, per explicit decision —
 // a real symptom is rarely captured by a single tap).
+//
+// CHIEF COMPLAINT: exactly one main rubric across the ENTIRE session — the
+// very first one the patient finishes (across any chapter) — is tagged
+// isChief: true. Every main rubric after that, in any chapter, is an
+// "Additional Complaint" (isChief: false). This is decided automatically by
+// arrival order, never asked of the patient directly.
+let chiefComplaintAssigned = false;
 let complaints = [];
 let currentChapterEntry = null;   // the in-progress entry for the CURRENT chapter: { chapterId, mainRubrics: [] }
 let selectedMainRubrics = [];     // main rubrics picked in Step 2 for the current chapter, queued to drill into one by one
-let currentMainRubric = null;     // the one currently being drilled into: { id, en, hi, roman, answers: {} }
+let currentMainRubric = null;     // the one currently being drilled into: { id, en, hi, roman, isChief, answers: {} }
 let mainRubricFilter = '';
 let mainRubricPicks = [];         // chips shown in Step 2: main rubrics selected so far for THIS chapter, before "Next"
 
@@ -494,6 +514,17 @@ function enqueueChapters(chapterIds) {
   }
 }
 
+// Called every time a main rubric is fully finished (either a leaf with no
+// drilldown, or one that's been through its full drilldown cycle) and is
+// about to be pushed into the current chapter's entry. Tags it as the Chief
+// Complaint if and only if it's the very first main rubric finished across
+// the WHOLE session — every one after that is an Additional Complaint.
+function finalizeMainRubric(mainRubric) {
+  mainRubric.isChief = !chiefComplaintAssigned;
+  chiefComplaintAssigned = true;
+  currentChapterEntry.mainRubrics.push(mainRubric);
+}
+
 // Defensive escaping: real Kent rubric text can contain apostrophes, quotes,
 // or other characters (e.g. "Addison's disease", "Parkinson's disease").
 // Since strings are interpolated into HTML markup and attribute values
@@ -672,30 +703,27 @@ function render() {
         <h2 class="qtitle">${t('chapterTitle')}</h2>
         <p class="qsub">${t('chapterSub')}</p>
         <div id="regionList">
-          ${REGIONS.map((r, idx) => `
-            <div class="region-card" data-region-index="${idx}">
-              <div class="region-card-icon">${r.icon}</div>
-              <div class="region-card-label">${escapeHtml(chT(r))}</div>
-              <div class="region-card-arrow">›</div>
-            </div>`).join('')}
-        </div>
-      </div>`;
-  }
-
-  else if (step === 'chapter') {
-    const region = REGIONS.find(r => r.id === currentRegion);
-    const chaptersInRegion = CHAPTERS.filter(c => c.region === currentRegion);
-    html = `
-      <div class="qstep active">
-        <button class="btn-back" onclick="goBack()">← ${t('back')}</button>
-        <h2 class="qtitle">${escapeHtml(chT(region))}</h2>
-        <p class="qsub">${t('chapterSub')}</p>
-        <div class="card-grid" id="chapterList">
-          ${chaptersInRegion.map((c, idx) => `
-            <div class="chapter-card" data-chapter-index="${idx}">
-              <div class="chapter-card-icon">${c.icon}</div>
-              <div class="chapter-card-label">${escapeHtml(chT(c))}</div>
-            </div>`).join('')}
+          ${REGIONS.map((r, idx) => {
+            const isExpanded = expandedRegion === r.id;
+            const chaptersInRegion = CHAPTERS.filter(c => c.region === r.id);
+            return `
+            <div class="region-accordion-item ${isExpanded ? 'expanded' : ''}">
+              <div class="region-card" data-region-index="${idx}">
+                <div class="region-card-icon">${r.icon}</div>
+                <div class="region-card-label">${escapeHtml(chT(r))}</div>
+                <div class="region-card-arrow">›</div>
+              </div>
+              <div class="region-accordion-panel">
+                <div class="accordion-chapter-grid">
+                  ${chaptersInRegion.map((c, cidx) => `
+                    <div class="accordion-chapter-card" data-chapter-region="${r.id}" data-chapter-id="${c.id}">
+                      <div class="accordion-chapter-card-icon">${c.icon}</div>
+                      <div class="accordion-chapter-card-label">${escapeHtml(chT(c))}</div>
+                    </div>`).join('')}
+                </div>
+              </div>
+            </div>`;
+          }).join('')}
         </div>
       </div>`;
   }
@@ -833,6 +861,40 @@ function render() {
   }
 
   else if (step === 'review') {
+    // Flatten every main rubric across every chapter into one list, each
+    // tagged with which chapter it came from, then split by isChief so the
+    // one true Chief Complaint is shown separately from everything else.
+    const allEntries = [];
+    complaints.forEach(entry => {
+      const chapter = CHAPTERS.find(ch => ch.id === entry.chapterId);
+      entry.mainRubrics.forEach(mr => allEntries.push({ chapter, entry, mr }));
+    });
+    const chiefEntry = allEntries.find(e => e.mr.isChief);
+    const additionalEntries = allEntries.filter(e => !e.mr.isChief);
+
+    function renderAnswerLines(entry, mr) {
+      return Object.entries(mr.answers || {}).map(([category, a]) => {
+        if (a.skipped || !a.values || !a.values.length) {
+          return `<div>${escapeHtml(category)}: <span class="review-skip-tag">${t('skippedTag')}</span></div>`;
+        }
+        const rawDrilldown = DRILLDOWN[entry.chapterId + '|' + mr.id] || {};
+        const items = rawDrilldown[category] || [];
+        const matchedTexts = a.values
+          .map(path => items.find(it => it.path === path))
+          .filter(Boolean)
+          .map(m => escapeHtml(lang === 'hi' ? m.hi : m.en));
+        if (!matchedTexts.length) return '';
+        return matchedTexts.map(txt => `<div>${txt}</div>`).join('');
+      }).join('');
+    }
+    function renderComplaintBlock({ chapter, entry, mr }) {
+      return `
+        <div class="review-complaint">
+          <div class="review-complaint-chapter">${escapeHtml(chT(chapter))} — ${escapeHtml(mrT(mr))}</div>
+          <div class="review-complaint-detail">${renderAnswerLines(entry, mr)}</div>
+        </div>`;
+    }
+
     html = `
       <div class="qstep active">
         <button class="btn-back" onclick="goBack()">← ${t('back')}</button>
@@ -842,30 +904,12 @@ function render() {
           <div class="review-complaint-chapter">${escapeHtml(t('nameLabel'))}: ${escapeHtml(patientName)}</div>
           ${reasonForConsultation ? `<div class="review-complaint-detail">${escapeHtml(t('reasonLabel'))}: ${escapeHtml(reasonForConsultation)}</div>` : ''}
         </div>
-        ${complaints.map(entry => {
-          const chapter = CHAPTERS.find(ch => ch.id === entry.chapterId);
-          const mainRubricBlocks = entry.mainRubrics.map(mr => {
-            const answerLines = Object.entries(mr.answers || {}).map(([category, a]) => {
-              if (a.skipped || !a.values || !a.values.length) {
-                return `<div>${escapeHtml(category)}: <span class="review-skip-tag">${t('skippedTag')}</span></div>`;
-              }
-              const rawDrilldown = DRILLDOWN[entry.chapterId + '|' + mr.id] || {};
-              const items = rawDrilldown[category] || [];
-              const matchedTexts = a.values
-                .map(path => items.find(it => it.path === path))
-                .filter(Boolean)
-                .map(m => escapeHtml(lang === 'hi' ? m.hi : m.en));
-              if (!matchedTexts.length) return '';
-              return matchedTexts.map(txt => `<div>${txt}</div>`).join('');
-            }).join('');
-            return `
-              <div class="review-complaint">
-                <div class="review-complaint-chapter">${escapeHtml(chT(chapter))} — ${escapeHtml(mrT(mr))}</div>
-                <div class="review-complaint-detail">${answerLines}</div>
-              </div>`;
-          }).join('');
-          return mainRubricBlocks;
-        }).join('')}
+        ${chiefEntry ? `
+        <div class="review-section-title">${chT({en:'Chief Complaint', hi:'मुख्य शिकायत'})}</div>
+        ${renderComplaintBlock(chiefEntry)}` : ''}
+        ${additionalEntries.length ? `
+        <div class="review-section-title">${chT({en:'Additional Complaints', hi:'अतिरिक्त शिकायतें'})}</div>
+        ${additionalEntries.map(renderComplaintBlock).join('')}` : ''}
       </div>`;
   }
 
@@ -954,24 +998,17 @@ function attachStepListeners() {
     const list = document.getElementById('regionList');
     if (list) {
       list.addEventListener('click', (e) => {
-        const el = e.target.closest('[data-region-index]');
-        if (!el) return;
-        const idx = parseInt(el.dataset.regionIndex, 10);
-        const region = REGIONS[idx];
-        if (region) selectRegion(region.id);
-      });
-    }
-  }
-  if (step === 'chapter') {
-    const list = document.getElementById('chapterList');
-    if (list) {
-      const chaptersInRegion = CHAPTERS.filter(c => c.region === currentRegion);
-      list.addEventListener('click', (e) => {
-        const el = e.target.closest('[data-chapter-index]');
-        if (!el) return;
-        const idx = parseInt(el.dataset.chapterIndex, 10);
-        const chapter = chaptersInRegion[idx];
-        if (chapter) selectChapter(chapter.id);
+        const chapterEl = e.target.closest('[data-chapter-id]');
+        if (chapterEl) {
+          selectChapter(chapterEl.dataset.chapterId);
+          return;
+        }
+        const regionEl = e.target.closest('[data-region-index]');
+        if (regionEl) {
+          const idx = parseInt(regionEl.dataset.regionIndex, 10);
+          const region = REGIONS[idx];
+          if (region) toggleRegionAccordion(region.id);
+        }
       });
     }
   }
@@ -1172,9 +1209,9 @@ function applyCoupon() {
     if (field) field.focus();
   }
 }
-function selectRegion(regionId) {
-  currentRegion = regionId;
-  step = 'chapter'; render();
+function toggleRegionAccordion(regionId) {
+  expandedRegion = (expandedRegion === regionId) ? null : regionId;
+  render();
 }
 async function selectChapter(chapterId) {
   currentChapterEntry = { chapterId, mainRubrics: [] };
@@ -1228,7 +1265,7 @@ function startNextMainRubricDrilldown() {
     // drill-down questions. Run Trigger-2 detection on ITS OWN text, since
     // this is the only text this main rubric will ever contribute.
     enqueueChapters(detectChaptersInText(currentMainRubric.en, currentChapterEntry.chapterId));
-    currentChapterEntry.mainRubrics.push(currentMainRubric);
+    finalizeMainRubric(currentMainRubric);
     startNextMainRubricDrilldown(); // move on to the next queued main rubric, if any
     return;
   }
@@ -1268,7 +1305,7 @@ function confirmDrilldownPicks() {
   drilldownFilter = '';
   drilldownIndex++;
   if (drilldownIndex >= drilldownQueue.length) {
-    currentChapterEntry.mainRubrics.push(currentMainRubric);
+    finalizeMainRubric(currentMainRubric);
     startNextMainRubricDrilldown(); // next queued main rubric for this chapter, if any
     return;
   }
@@ -1319,7 +1356,7 @@ function goToGenerals() {
 }
 function goToReview() { step = 'review'; render(); }
 function goBack() {
-  const order = ['remarks','lock','region','chapter','mainrubric','drilldown','loopcheck','extramention','generals','review'];
+  const order = ['remarks','lock','region','mainrubric','drilldown','loopcheck','extramention','generals','review'];
   const idx = order.indexOf(step);
   if (idx > 0) {
     let prevIdx = idx - 1;
