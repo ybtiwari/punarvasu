@@ -268,7 +268,7 @@ async function loadAllRubrics() {
   globalLoadState = 'loading';
   render();
   try {
-    const res = await fetch('chapter_data/_all_rubrics.json');
+    const res = await fetch('chapter_data/all_rubrics.json');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     ALL_RUBRICS = await res.json();
     globalLoadState = 'loaded';
