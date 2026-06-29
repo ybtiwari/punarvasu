@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Symptom Questionnaire — Punarvasu Clinic (Prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Source+Sans+3:wght@300;400;500;600&family=Noto+Sans+Devanagari:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #0F2035; --teal: #1C6B5A; --teal2: #155448;
+    --cream: #F5F2EC; --white: #FFFFFF; --ink: #0F1E2D;
+    --ink2: #2A4055; --ink3: #4A6478; --border: #D0DDE8;
+    --serif: 'Lora', Georgia, serif; --sans: 'Source Sans 3', system-ui, sans-serif;
+    --devanagari: 'Noto Sans Devanagari', sans-serif;
+  }
+  body { font-family: var(--sans); background: var(--cream); color: var(--ink); min-height: 100vh; }
+
+  .app { max-width: 480px; margin: 0 auto; min-height: 100vh; background: var(--white); display: flex; flex-direction: column; box-shadow: 0 0 30px rgba(15,32,53,0.06); }
+
+  /* TOP BAR */
+  .qtopbar { background: var(--navy); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .qtopbar-title { font-family: var(--serif); font-size: 16px; color: var(--white); }
+  .qtopbar-lang { display: flex; gap: 6px; }
+  .lang-pill { padding: 4px 10px; border: 1px solid rgba(255,255,255,0.25); border-radius: 20px; font-size: 11.5px; color: rgba(255,255,255,0.7); cursor: pointer; background: transparent; font-family: var(--sans); transition: all 0.15s; }
+  .lang-pill.active { background: var(--teal); border-color: var(--teal); color: white; }
+
+  /* PROGRESS */
+  .qprogress { padding: 10px 20px 0; font-size: 12px; color: var(--ink3); display: flex; align-items: center; gap: 8px; }
+  .qprogress-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
+  .qprogress-dot.done { background: var(--teal); }
+
+  .qbody { flex: 1; padding: 20px; display: flex; flex-direction: column; }
+  .qstep { display: none; flex-direction: column; flex: 1; }
+  .qstep.active { display: flex; }
+
+  .qtitle { font-family: var(--serif); font-size: 21px; color: var(--navy); margin-bottom: 6px; line-height: 1.3; }
+  .qsub { font-size: 13.5px; color: var(--ink3); margin-bottom: 22px; line-height: 1.5; }
+
+  /* INTAKE FORM (name + reason) */
+  .form-field { margin-bottom: 16px; }
+  .form-label { font-size: 12.5px; font-weight: 500; color: var(--ink2); margin-bottom: 6px; display: block; }
+  .remarks-input { border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; font-family: var(--sans); font-size: 15px; width: 100%; outline: none; transition: border-color 0.15s; }
+  .remarks-input:focus { border-color: var(--teal); }
+  .form-textarea { border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; font-family: var(--sans); font-size: 15px; width: 100%; outline: none; transition: border-color 0.15s; resize: none; height: 80px; }
+  .form-textarea:focus { border-color: var(--teal); }
+  .char-count { font-size: 11.5px; color: var(--ink3); text-align: right; margin-top: 6px; }
+  .char-count.warn { color: #c8600a; }
+  .field-err { font-size: 12.5px; color: #c0392b; margin-top: 6px; min-height: 16px; }
+
+  /* LOCK / PAYWALL SCREEN */
+  .lock-icon-wrap { text-align: center; margin: 8px 0 20px; }
+  .lock-icon { font-size: 44px; }
+  .lock-card { background: var(--cream); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 14px; }
+  .lock-card-title { font-family: var(--serif); font-size: 15.5px; color: var(--navy); margin-bottom: 10px; }
+  .coupon-row { display: flex; gap: 8px; }
+  .coupon-row input { flex: 1; border: 1px solid var(--border); border-radius: 6px; padding: 11px 14px; font-family: var(--sans); font-size: 15px; outline: none; text-transform: uppercase; transition: border-color 0.15s; }
+  .coupon-row input:focus { border-color: var(--teal); }
+  .btn-apply { background: var(--teal); color: white; border: none; padding: 0 18px; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.15s; }
+  .btn-apply:hover { background: var(--teal2); }
+  .lock-or { text-align: center; font-size: 12.5px; color: var(--ink3); margin: 14px 0; position: relative; }
+  .lock-or::before, .lock-or::after { content: ''; position: absolute; top: 50%; width: 40%; height: 1px; background: var(--border); }
+  .lock-or::before { left: 0; }
+  .lock-or::after { right: 0; }
+  .token-price { font-family: var(--serif); font-size: 22px; color: var(--navy); margin-bottom: 4px; }
+  .token-note { font-size: 12.5px; color: var(--ink3); margin-bottom: 14px; }
+  .btn-stub { width: 100%; background: var(--white); color: var(--ink3); border: 1.5px dashed var(--border); padding: 12px; border-radius: 6px; font-family: var(--sans); font-size: 14.5px; cursor: pointer; text-align: center; }
+  .btn-stub:hover { background: var(--cream); }
+
+  /* CHAPTER SELECTION — region-grouped card grid */
+  .region-card { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 18px 16px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 14px; }
+  .region-card:hover { border-color: var(--teal); box-shadow: 0 2px 10px rgba(28,107,90,0.08); }
+  .region-card-icon { font-size: 26px; flex-shrink: 0; }
+  .region-card-label { font-family: var(--serif); font-size: 16px; color: var(--navy); flex: 1; }
+  .region-card-arrow { color: var(--teal); font-size: 18px; transition: transform 0.2s; }
+
+  /* ACCORDION */
+  .region-accordion-item { margin-bottom: 10px; }
+  .region-accordion-item.expanded .region-card { border-color: var(--teal); border-bottom-left-radius: 0; border-bottom-right-radius: 0; box-shadow: 0 2px 10px rgba(28,107,90,0.08); }
+  .region-accordion-item.expanded .region-card-arrow { transform: rotate(90deg); }
+  .region-accordion-panel { background: var(--cream); border: 1px solid var(--teal); border-top: none; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; padding: 14px; display: none; }
+  .region-accordion-item.expanded .region-accordion-panel { display: block; }
+  .accordion-chapter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .accordion-chapter-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 12px 10px; text-align: center; cursor: pointer; transition: all 0.15s; }
+  .accordion-chapter-card:hover { border-color: var(--teal); box-shadow: 0 2px 8px rgba(28,107,90,0.08); }
+  .accordion-chapter-card.chapter-selected { background: var(--teal); border-color: var(--teal); }
+  .accordion-chapter-card.chapter-selected .accordion-chapter-card-label { color: white; }
+  .accordion-chapter-card-icon { font-size: 20px; margin-bottom: 4px; }
+  .accordion-chapter-card-label { font-size: 12.5px; color: var(--ink2); font-weight: 500; line-height: 1.3; }
+  .selected-chapters-bar { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: var(--ink2); }
+  .selected-chapters-bar strong { color: var(--teal2); }
+
+  .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .chapter-card { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 14px 12px; text-align: center; cursor: pointer; transition: all 0.15s; }
+  .chapter-card:hover { border-color: var(--teal); box-shadow: 0 2px 8px rgba(28,107,90,0.08); }
+  .chapter-card-icon { font-size: 24px; margin-bottom: 6px; }
+  .chapter-card-label { font-size: 13px; color: var(--ink2); font-weight: 500; line-height: 1.3; }
+
+  /* MAIN RUBRIC LIST */
+  .rubric-list { display: flex; flex-direction: column; gap: 8px; max-height: 55vh; overflow-y: auto; }
+  .rubric-option { position: relative; background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-size: 14.5px; color: var(--ink2); cursor: pointer; transition: all 0.15s; display: flex; align-items: flex-start; gap: 10px; }
+  .rubric-option:hover { border-color: var(--teal); background: rgba(28,107,90,0.04); }
+  .rubric-option.rubric-queued { background: rgba(28,107,90,0.1); border-color: var(--teal); }
+  .rubric-option.rubric-added { background: var(--cream); border-color: var(--border); opacity: 0.85; }
+  .rubric-check { width: 18px; height: 18px; margin-top: 1px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; border: 1.5px solid var(--border); border-radius: 4px; color: transparent; }
+  .rubric-option.rubric-queued .rubric-check { border-color: var(--teal); background: var(--teal); color: white; }
+  .rubric-option.rubric-added .rubric-check { border-color: var(--ink3); background: var(--ink3); color: white; }
+  .rubric-option-text { flex: 1; line-height: 1.45; }
+  .rubric-option-text mark { background: none; color: var(--teal2); font-weight: 700; }
+  .rubric-chapter-tag { display: block; font-size: 11px; margin-bottom: 2px; color: var(--ink3); font-weight: 500; }
+  .rubric-chapter-tag.tag-selected-chapter { color: var(--teal2); font-weight: 700; }
+  .added-corner-label { position: absolute; top: -8px; right: 8px; background: var(--navy); color: white; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; letter-spacing: 0.03em; }
+
+  /* DISTINGUISHER TABS */
+  .distinguisher-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .distinguisher-tab { padding: 6px 12px; border: 1px solid var(--border); border-radius: 16px; font-size: 12.5px; color: var(--ink2); cursor: pointer; background: var(--white); transition: all 0.15s; }
+  .distinguisher-tab.active { background: var(--navy); color: white; border-color: var(--navy); }
+
+  /* DRILLDOWN OPTIONS */
+  .option-grid { display: flex; flex-direction: column; gap: 10px; }
+  .option-btn { background: var(--white); border: 1.5px solid var(--border); border-radius: 8px; padding: 14px 16px; font-size: 15px; color: var(--ink); cursor: pointer; transition: all 0.15s; text-align: left; }
+  .option-btn:hover { border-color: var(--teal); background: rgba(28,107,90,0.04); }
+  .option-btn.selected { border-color: var(--teal); background: var(--teal); color: white; }
+
+  .skip-link { text-align: center; margin-top: 18px; font-size: 13.5px; color: var(--ink3); cursor: pointer; text-decoration: underline; text-decoration-color: var(--border); }
+  .skip-link:hover { color: var(--ink2); }
+
+  /* SEARCH — flying-keystroke dropdown autocomplete (language follows top-bar EN/हिं toggle) */
+  .search-input-wrap { position: relative; margin-bottom: 12px; }
+  .option-search { border: 1px solid var(--border); border-radius: 6px; padding: 10px 36px 10px 14px; font-family: var(--sans); font-size: 14.5px; width: 100%; outline: none; transition: border-color 0.15s; }
+  .option-search:focus { border-color: var(--teal); }
+  .search-clear-btn { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--ink3); font-size: 18px; cursor: pointer; padding: 4px 6px; display: none; }
+  .search-clear-btn.visible { display: block; }
+  .ac-dropdown { position: absolute; top: calc(100% + 2px); left: 0; right: 0; background: var(--white); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 4px 16px rgba(15,32,53,0.12); max-height: 240px; overflow-y: auto; z-index: 200; display: none; }
+  .ac-dropdown.open { display: block; }
+  .ac-item { padding: 9px 14px; font-size: 14px; color: var(--ink2); cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.08s; }
+  .ac-item:last-child { border-bottom: none; }
+  .ac-item:hover, .ac-item.highlighted { background: rgba(28,107,90,0.08); color: var(--teal2); }
+  .ac-item em { font-style: normal; font-weight: 700; color: var(--teal); }
+  .option-count { font-size: 12px; color: var(--ink3); margin-bottom: 10px; }
+  .option-scroll { max-height: 50vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 2px; }
+  .option-empty { text-align: center; padding: 24px; color: var(--ink3); font-size: 13.5px; }
+  .loading-wrap { text-align: center; padding: 48px 24px; color: var(--ink3); }
+  .loading-spinner { width: 30px; height: 30px; border: 3px solid var(--border); border-top-color: var(--teal); border-radius: 50%; margin: 0 auto 14px; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .load-error { text-align: center; padding: 24px; color: #c0392b; font-size: 13.5px; }
+  .btn-retry { margin-top: 10px; background: var(--white); border: 1px solid var(--border); color: var(--ink2); padding: 8px 18px; border-radius: 6px; font-size: 13.5px; cursor: pointer; }
+
+  /* LOOP / ANYTHING ELSE */
+  .loop-icon { font-size: 40px; text-align: center; margin-bottom: 16px; }
+  .btn-row { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
+
+  /* GENERALS */
+  .gen-group { margin-bottom: 18px; }
+  .gen-label { font-size: 13.5px; color: var(--ink2); font-weight: 500; margin-bottom: 8px; }
+  .gen-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .gen-chip { padding: 7px 14px; border: 1px solid var(--border); border-radius: 20px; font-size: 13px; color: var(--ink2); cursor: pointer; background: var(--white); transition: all 0.15s; }
+  .gen-chip.selected { background: var(--teal); color: white; border-color: var(--teal); }
+
+  /* MULTI-SELECT PICK CHIPS — shown for already-added main rubrics / drilldown options */
+  .pick-chips-wrap { margin-bottom: 14px; }
+  .pick-chips-label { font-size: 12px; color: var(--ink3); margin-bottom: 8px; }
+  .pick-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pick-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px 6px 14px; border-radius: 20px; background: var(--teal); color: white; font-size: 13px; max-width: 100%; }
+  .pick-chip-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+  .pick-chip-remove { background: rgba(255,255,255,0.25); border: none; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 13px; line-height: 1; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .pick-chip-remove:hover { background: rgba(255,255,255,0.4); }
+  .pick-empty-hint { font-size: 12.5px; color: var(--ink3); margin-bottom: 14px; }
+  .gen-freetext { border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; font-family: var(--sans); font-size: 14px; width: 100%; resize: none; height: 70px; outline: none; }
+  .gen-freetext:focus { border-color: var(--teal); }
+
+  /* REVIEW */
+  .review-complaint { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+  .review-complaint-chapter { font-family: var(--serif); font-size: 14.5px; color: var(--navy); margin-bottom: 4px; }
+  .review-complaint-detail { font-size: 13px; color: var(--ink3); line-height: 1.6; }
+  .review-section-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--teal2); font-weight: 600; margin: 18px 0 8px; }
+  .review-skip-tag { display: inline-block; font-size: 11px; color: #c8600a; background: rgba(200,96,10,0.1); border-radius: 10px; padding: 2px 8px; margin-top: 4px; }
+
+  /* BUTTONS */
+  .qfooter { padding: 16px 20px 22px; border-top: 1px solid var(--border); }
+  .btn-primary { width: 100%; background: var(--teal); color: var(--white); border: none; padding: 13px; border-radius: 6px; font-family: var(--sans); font-size: 15px; font-weight: 500; cursor: pointer; transition: background 0.15s; }
+  .btn-primary:hover { background: var(--teal2); }
+  .btn-secondary { width: 100%; background: var(--white); color: var(--ink2); border: 1px solid var(--border); padding: 13px; border-radius: 6px; font-family: var(--sans); font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.15s; margin-top: 8px; }
+  .btn-secondary:hover { background: var(--cream); }
+  .btn-back { background: none; border: none; color: var(--ink3); font-size: 13.5px; cursor: pointer; margin-bottom: 14px; display: flex; align-items: center; gap: 4px; align-self: flex-start; }
+  .btn-back:hover { color: var(--ink2); }
+
+  .basket-bar { position: sticky; bottom: 0; background: var(--navy); color: white; padding: 10px 20px; font-size: 13px; display: flex; align-items: center; justify-content: space-between; }
+  .basket-count { background: var(--teal); border-radius: 12px; padding: 2px 10px; font-size: 12px; font-weight: 600; }
+
+  [lang="hi"] { font-family: var(--devanagari); }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <div class="qtopbar">
+    <div class="qtopbar-title">Punarvasu Clinic</div>
+    <div class="qtopbar-lang">
+      <button class="lang-pill active" data-lang="en">EN</button>
+      <button class="lang-pill" data-lang="hi">हिं</button>
+    </div>
+  </div>
+
+  <div class="qbody" id="qbody"></div>
+
+  <div class="basket-bar" id="basketBar" style="display:none;">
+    <span id="basketLabel">0 complaints recorded</span>
+    <span class="basket-count" id="basketCount">0</span>
+  </div>
+</div>
+
+<script>
+// PLACEHOLDER sample data — 3 chapters only, for prototype purposes.
+// Real build will use actual repertory_data.js + translation files.
+
+const CHAPTERS = [
+  // Mind & Sensorium
+  { id: "mind",     en: "Mind",     hi: "मन",        region: "mind_sensorium", icon: "🧘" },
+  { id: "vertigo",  en: "Vertigo",  hi: "चक्कर",     region: "mind_sensorium", icon: "💫" },
+  // Head & Senses
+  { id: "head",     en: "Head",     hi: "सिर",        region: "head_senses", icon: "🧠" },
+  { id: "eye",      en: "Eye",      hi: "आँख",        region: "head_senses", icon: "👁" },
+  { id: "vision",   en: "Vision",   hi: "दृष्टि",      region: "head_senses", icon: "👀" },
+  { id: "ear",      en: "Ear",      hi: "कान",        region: "head_senses", icon: "👂" },
+  { id: "hearing",  en: "Hearing",  hi: "सुनना",      region: "head_senses", icon: "🔊" },
+  { id: "nose",     en: "Nose",     hi: "नाक",        region: "head_senses", icon: "👃" },
+  { id: "face",     en: "Face",     hi: "चेहरा",      region: "head_senses", icon: "🙂" },
+  { id: "mouth",    en: "Mouth",    hi: "मुँह",        region: "head_senses", icon: "👄" },
+  { id: "teeth",    en: "Teeth",    hi: "दाँत",       region: "head_senses", icon: "🦷" },
+  { id: "throat",   en: "Throat",   hi: "गला",        region: "head_senses", icon: "🗣" },
+  { id: "external_throat", en: "External throat", hi: "बाहरी गला", region: "head_senses", icon: "🧣" },
+  // Respiratory & Chest
+  { id: "larynx_trachea", en: "Larynx and trachea", hi: "स्वरयंत्र और श्वासनली", region: "respiratory_chest", icon: "🫁" },
+  { id: "respiration", en: "Respiration", hi: "श्वास",  region: "respiratory_chest", icon: "💨" },
+  { id: "cough",    en: "Cough",    hi: "खांसी",      region: "respiratory_chest", icon: "😮‍💨" },
+  { id: "expectoration", en: "Expectoration", hi: "कफ निकलना", region: "respiratory_chest", icon: "🤧" },
+  { id: "chest",    en: "Chest",    hi: "छाती",       region: "respiratory_chest", icon: "🫁" },
+  { id: "heart_circulation", en: "Heart & Circulation", hi: "हृदय और रक्त संचार", region: "respiratory_chest", icon: "❤️" },
+  // Digestion
+  { id: "stomach",  en: "Stomach",  hi: "पेट",        region: "digestion", icon: "🫃" },
+  { id: "abdomen",  en: "Abdomen",  hi: "उदर",        region: "digestion", icon: "🟫" },
+  { id: "rectum",   en: "Rectum",   hi: "मलाशय",      region: "digestion", icon: "🔵" },
+  { id: "stool",    en: "Stool",    hi: "मल",         region: "digestion", icon: "🟤" },
+  { id: "appetite", en: "Appetite", hi: "भूख",        region: "digestion", icon: "🍽" },
+  // Urinary & Reproductive
+  { id: "bladder",  en: "Bladder",  hi: "मूत्राशय",    region: "urinary_reproductive", icon: "🟡" },
+  { id: "kidneys",  en: "Kidneys",  hi: "किडनी",      region: "urinary_reproductive", icon: "🫘" },
+  { id: "prostate_gland", en: "Prostate gland", hi: "प्रोस्टेट ग्रंथि", region: "urinary_reproductive", icon: "⚪" },
+  { id: "urethra",  en: "Urethra",  hi: "मूत्रमार्ग",  region: "urinary_reproductive", icon: "➰" },
+  { id: "urine",    en: "Urine",    hi: "मूत्र",       region: "urinary_reproductive", icon: "💧" },
+  { id: "genitalia_male", en: "Genitalia male", hi: "पुरुष जननांग", region: "urinary_reproductive", icon: "♂️" },
+  { id: "genitalia_female", en: "Genitalia female", hi: "महिला जननांग", region: "urinary_reproductive", icon: "♀️" },
+  // Limbs & Back
+  { id: "back",     en: "Back",     hi: "पीठ",        region: "limbs_back", icon: "🦴" },
+  { id: "extremities", en: "Extremities", hi: "हाथ-पैर", region: "limbs_back", icon: "🦵" },
+  // Whole-body & General
+  { id: "sleep",    en: "Sleep",    hi: "नींद",        region: "whole_body", icon: "🌙" },
+  { id: "chill",    en: "Chill",    hi: "ठंड लगना",    region: "whole_body", icon: "🥶" },
+  { id: "fever",    en: "Fever",    hi: "बुखार",       region: "whole_body", icon: "🌡" },
+  { id: "perspiration", en: "Perspiration", hi: "पसीना", region: "whole_body", icon: "💦" },
+  { id: "skin",     en: "Skin",     hi: "त्वचा",       region: "whole_body", icon: "🤚" },
+  { id: "generalities", en: "Generalities", hi: "सामान्य", region: "whole_body", icon: "🌐" },
+  { id: "blood",    en: "Blood",    hi: "रक्त",        region: "whole_body", icon: "🩸" },
+];
+
+const REGIONS = [
+  { id: "mind_sensorium",        en: "Mind & Sensorium",        hi: "मन और संवेदना",        icon: "🧘" },
+  { id: "head_senses",           en: "Head & Senses",           hi: "सिर और इंद्रियां",       icon: "🧠" },
+  { id: "respiratory_chest",     en: "Respiratory & Chest",     hi: "श्वास और छाती",        icon: "🫁" },
+  { id: "digestion",             en: "Digestion",                hi: "पाचन",                icon: "🍽" },
+  { id: "urinary_reproductive",  en: "Urinary & Reproductive",  hi: "मूत्र और प्रजनन तंत्र", icon: "🩺" },
+  { id: "limbs_back",            en: "Limbs & Back",             hi: "अंग और पीठ",           icon: "🦴" },
+  { id: "whole_body",            en: "Whole-body & General",    hi: "सम्पूर्ण शरीर व सामान्य", icon: "🌐" },
+];
+
+// ALL_RUBRICS holds the ENTIRE repertory's worth of searchable rubrics in
+// one flat array — every chapter, every depth, no category grouping —
+// loaded ONCE, up front, rather than per-chapter. This is a deliberate
+// trade-off: true "search the whole repertory from the first keystroke"
+// requires the whole dataset in memory; per-chapter lazy-loading and
+// global search are mutually exclusive. The combined data is ~28MB raw,
+// but compresses to a few MB over the wire (gzip, which GitHub Pages and
+// virtually all static hosts apply automatically) — closer in real-world
+// cost to a few photos than to "the 50MB problem" this whole project
+// started out trying to avoid.
+//
+// SPLIT INTO TWO FILES: GitHub's web upload UI rejects any single file
+// over 25MB, and the combined dataset is ~28MB — just over that ceiling.
+// Rather than fight that limit, the data is split into two halves
+// (all_rubrics_1.json, all_rubrics_2.json), each comfortably under 25MB,
+// fetched in parallel and concatenated client-side into one array.
+let ALL_RUBRICS = [];
+let globalLoadState = 'idle'; // 'idle' | 'loading' | 'loaded' | 'error'
+
+async function loadAllRubrics() {
+  if (globalLoadState === 'loaded' || globalLoadState === 'loading') return;
+  globalLoadState = 'loading';
+  render();
+  try {
+    const [res1, res2] = await Promise.all([
+      fetch('chapter_data/all_rubrics_1.json'),
+      fetch('chapter_data/all_rubrics_2.json'),
+    ]);
+    if (!res1.ok) throw new Error(`HTTP ${res1.status} (part 1)`);
+    if (!res2.ok) throw new Error(`HTTP ${res2.status} (part 2)`);
+    const [part1, part2] = await Promise.all([res1.json(), res2.json()]);
+    ALL_RUBRICS = part1.concat(part2);
+    globalLoadState = 'loaded';
+  } catch (e) {
+    console.error('Failed to load repertory data:', e);
+    globalLoadState = 'error';
+  }
+  render();
+}
+
+// ── STATE ──
+let lang = 'en';
+let step = 'remarks'; // remarks -> lock -> search -> generals -> review -> done
+let patientName = '';
+let reasonForConsultation = '';
+let isUnlocked = false;
+let couponInput = '';
+let couponError = '';
+// PROTOTYPE test coupon codes — real build will validate against codes
+// generated/managed by the doctor (e.g. via the admin panel), not a
+// hardcoded list. Case-insensitive on entry.
+const VALID_TEST_COUPONS = ['WELCOME2026', 'PUNARVASU1', 'TESTFREE'];
+
+// DATA MODEL: ONE flat list of every rubric the patient has ADDED (after
+// pressing the Add button), across the entire repertory — no chapter
+// grouping during selection itself (chapterId is kept per rubric only so
+// the review screen can still show which chapter each one came from).
+// selectedRubrics = [{ chapterId, path, en, hi, roman, isChief, seq }]
+//
+// CHIEF COMPLAINT: the earliest-added rubric that is STILL currently
+// selected is tagged isChief: true; every other selected rubric is an
+// "Additional Complaint". Recomputed dynamically (recomputeChiefComplaint())
+// every time a selection changes, so deselecting the current chief
+// correctly hands the title to whichever remaining selection was added
+// next-earliest, rather than leaving the session with no chief complaint.
+let selectedRubrics = [];
+let nextRubricSeq = 1;
+let globalSearchFilter = '';     // what the patient has typed in the one global search box
+
+// CHAPTER PICKER (accordion): which chapters the patient has chosen to
+// prioritize in search results. Persists across opening/closing region
+// panels and across navigating away to search and back.
+let selectedChapterIds = [];
+let expandedRegion = null; // only one region's panel open at a time (true accordion)
+
+// QUEUE: rubrics the patient has TAPPED in the search results (moved to
+// top, highlighted) but not yet committed via the Add button. Tapping the
+// same item again while queued removes it from the queue. Pressing Add
+// moves everything here into selectedRubrics and clears the queue.
+let queuedRubrics = [];
+
+// Which of the 7 distinguisher tabs is currently active as a filter, if
+// any (null = no filter, show everything matching the typed search text).
+let activeDistinguisherFilter = null;
+
+// Virtual-scroll window: how many of the (potentially thousands of) sorted
+// matches actually get rendered as DOM rows right now. Grows as the patient
+// scrolls near the bottom of the results pane (see the scroll listener),
+// reset back to the initial window size whenever the search text changes.
+const SEARCH_RENDER_WINDOW_INITIAL = 60;
+const SEARCH_RENDER_WINDOW_STEP = 60;
+let searchRenderWindow = SEARCH_RENDER_WINDOW_INITIAL;
+
+// NOTE: search language is no longer independent state — searchTextFor()
+// below derives it directly from the display `lang` variable, so the two
+// toggles can never disagree or be confused with each other.
+let generalsState = { appetite: null, thirst: null, thermal: null, freetext: '' };
+
+const T = {
+  en: {
+    remarksTitle: "Before we begin",
+    remarksSub: "Please tell us a little about yourself.",
+    nameLabel: "Patient name",
+    namePlaceholder: "Your full name",
+    nameRequired: "Please enter your name to continue.",
+    reasonLabel: "Reason for consultation",
+    reasonPlaceholder: "e.g. Recurring stomach pain for the past 2 weeks",
+    lockTitle: "Unlock your symptom intake",
+    lockSub: "This session requires a coupon code or a one-time token.",
+    couponLabel: "Have a coupon code?",
+    couponPlaceholder: "Enter coupon code",
+    applyBtn: "Apply",
+    couponInvalid: "That code isn't valid. Please check and try again.",
+    orDivider: "OR",
+    tokenLabel: "Buy a one-time token",
+    tokenPrice: "₹—",
+    tokenNote: "Online payment is coming soon.",
+    tokenStub: "Please contact the clinic for a code",
+    chapterTitle: "Which part of the body is affected?",
+    chapterSub: "Choose the area that matches your complaint.",
+    otherTitle: "Or choose a general category",
+    mainRubricTitle: "What is the complaint?",
+    mainRubricSub: "Choose the one that best matches.",
+    skip: "Skip this question",
+    anythingElseTitle: "Is there anything else you would like to mention / add?",
+    anythingElseSub: "",
+    addAnother: "Yes, add another complaint",
+    finish: "No, I'm finished",
+    generalsTitle: "A few general questions",
+    generalsSub: "These help give a fuller picture. Skip any you're unsure about.",
+    appetite: "How is your appetite?",
+    thirst: "How is your thirst?",
+    thermal: "Do you feel more comfortable in warm or cool weather?",
+    otherProblems: "Anything else about your general health?",
+    reviewTitle: "Review your answers",
+    reviewSub: "Here's what you've told us. You can submit when ready.",
+    submit: "Submit to Dr. Tiwari",
+    back: "Back",
+    skippedTag: "Skipped",
+  },
+  hi: {
+    remarksTitle: "शुरू करने से पहले",
+    remarksSub: "कृपया अपने बारे में थोड़ी जानकारी दें।",
+    nameLabel: "रोगी का नाम",
+    namePlaceholder: "आपका पूरा नाम",
+    nameRequired: "जारी रखने के लिए कृपया अपना नाम दर्ज करें।",
+    reasonLabel: "सलाह लेने का कारण",
+    reasonPlaceholder: "जैसे - पिछले 2 हफ्तों से पेट में बार-बार दर्द",
+    lockTitle: "अपना लक्षण विवरण अनलॉक करें",
+    lockSub: "इस सत्र के लिए कूपन कोड या एक टोकन आवश्यक है।",
+    couponLabel: "क्या आपके पास कूपन कोड है?",
+    couponPlaceholder: "कूपन कोड दर्ज करें",
+    applyBtn: "लागू करें",
+    couponInvalid: "यह कोड मान्य नहीं है। कृपया जाँचें और फिर कोशिश करें।",
+    orDivider: "या",
+    tokenLabel: "एक टोकन खरीदें",
+    tokenPrice: "₹—",
+    tokenNote: "ऑनलाइन पेमेंट शीघ्र उपलब्ध होगा।",
+    tokenStub: "कृपया कोड के लिए क्लिनिक से संपर्क करें",
+    chapterTitle: "शरीर का कौन सा भाग प्रभावित है?",
+    chapterSub: "अपनी शिकायत से मिलते हिस्से पर टैप करें।",
+    otherTitle: "या एक सामान्य श्रेणी चुनें",
+    mainRubricTitle: "शिकायत क्या है?",
+    mainRubricSub: "जो सबसे उपयुक्त हो उसे चुनें।",
+    skip: "यह सवाल छोड़ें",
+    anythingElseTitle: "क्या आप कुछ और बताना / जोड़ना चाहेंगे?",
+    anythingElseSub: "",
+    addAnother: "हाँ, एक और शिकायत जोड़ें",
+    finish: "नहीं, मैं समाप्त करता/करती हूँ",
+    generalsTitle: "कुछ सामान्य सवाल",
+    generalsSub: "ये पूरी जानकारी देने में मदद करते हैं। जो समझ न आए उसे छोड़ें।",
+    appetite: "आपकी भूख कैसी है?",
+    thirst: "आपकी प्यास कैसी है?",
+    thermal: "क्या आप गर्म या ठंडे मौसम में अधिक आराम महसूस करते हैं?",
+    otherProblems: "आपके सामान्य स्वास्थ्य के बारे में कुछ और?",
+    reviewTitle: "अपने उत्तर देखें",
+    reviewSub: "आपने यह बताया है। तैयार होने पर सबमिट करें।",
+    submit: "डॉ. तिवारी को भेजें",
+    back: "वापस",
+    skippedTag: "छोड़ दिया",
+  }
+};
+
+function t(key) { return T[lang][key]; }
+function chT(ch) { return lang === 'hi' ? ch.hi : ch.en; }
+function mrT(mr) { return lang === 'hi' ? mr.hi : mr.en; }
+
+// ── SEARCH ENGINE ──
+// Mirrors the standalone repertory tool's keyword search: the patient picks
+// an explicit search language (English or Hindi/Roman) via a toggle next to
+// the box — search does not silently check both at once. Within whichever
+// language is active, every typed word must appear somewhere in that item's
+// text (AND-logic, any order) — so "after eating" matches "Stomach pain
+// that comes on after eating sour apples" via two separate word checks,
+// not one literal substring. This is the same tokenizer the standalone tool
+// uses, just scoped to whatever list is currently on screen instead of the
+// full 74,667-rubric database.
+function tokenizeQuery(q) {
+  return q.toLowerCase().split(/[,\s]+/).map(s => s.trim()).filter(Boolean);
+}
+
+// ── 7-DISTINGUISHER CLASSIFICATION ──
+// Maps each rubric's real `category` field (from the original translation
+// data) onto one of 7 broad distinguisher types, plus two heuristic checks
+// (laterality, content/subject) that aren't captured by `category` alone.
+// A complaint's available tabs are whichever of these 7 actually have at
+// least one matching child rubric — empty tabs are never shown (per
+// explicit instruction: don't suggest a distinguisher that doesn't exist
+// for this particular complaint).
+const DISTINGUISHER_LABELS = {
+  timing: { en: 'Timing', hi: 'समय' },
+  modality: { en: 'Modality', hi: 'क्या बढ़ाता/घटाता है' },
+  cause: { en: 'Cause / Trigger', hi: 'कारण' },
+  sensation: { en: 'Sensation / Location', hi: 'अनुभव / स्थान' },
+  laterality: { en: 'Side', hi: 'पक्ष (बायाँ/दायाँ)' },
+  content: { en: 'Specific detail', hi: 'विशेष विवरण' },
+  sequence: { en: 'Pattern', hi: 'क्रम' },
+};
+const CATEGORY_TO_DISTINGUISHER = {
+  'Linked to time of day': 'timing',
+  'Linked to posture/position': 'modality',
+  'Triggered by posture/position': 'modality',
+  'Triggered by weather/temperature': 'modality',
+  'Temperature sensation': 'modality',
+  'Triggered by specific actions': 'cause',
+  'Triggered by specific situations': 'cause',
+  'Linked to specific situations': 'cause',
+  'Linked to mood/emotion': 'cause',
+  'Linked to emotion/excitement': 'cause',
+  'Linked to eating/digestion': 'cause',
+  'Linked to bowel movement': 'cause',
+  'Linked to menstrual cycle': 'cause',
+  'Comes with other symptoms': 'cause',
+  'Specific body area': 'sensation',
+  'Sensation / feel of the area': 'sensation',
+  'Type of pain': 'sensation',
+  'General sensation': 'sensation',
+  'Sensation type': 'sensation',
+  'Skin/tissue changes': 'sensation',
+  'Swelling & bloating': 'sensation',
+  'Discharge': 'sensation',
+  'Bleeding': 'sensation',
+  'Inflammation': 'sensation',
+  'Sounds & movement': 'sensation',
+  'Linked to a specific organ': 'sensation',
+  'Gas & digestion': 'sensation',
+  'Hernia': 'sensation',
+  'Bowel obstruction': 'sensation',
+};
+function classifyDistinguisher(item) {
+  const lastPart = item.path.split(',').pop().trim().toLowerCase();
+  if (lastPart === 'left' || lastPart === 'right' || lastPart.startsWith('left ') || lastPart.startsWith('right ')) {
+    return 'laterality';
+  }
+  if (/delusion|dream|fear|fancies|imagines/i.test(item.path)) {
+    return 'content';
+  }
+  if (/period|alternat|follow|succession|then\b/i.test(lastPart)) {
+    return 'sequence';
+  }
+  return CATEGORY_TO_DISTINGUISHER[item.category] || null;
+}
+
+function searchTextFor(item) {
+  // Search language always follows the display language (lang) — no
+  // separate toggle. When lang is 'hi', we still match against the
+  // ROMANIZED text (never raw Devanagari), since the patient is typing on
+  // a standard Roman keyboard even while reading results in Devanagari.
+  return (lang === 'hi' ? (item.roman || '') : (item.en || '')).toLowerCase();
+}
+function searchMatches(item, query) {
+  const tokens = tokenizeQuery(query || '');
+  if (!tokens.length) return true;
+  const text = searchTextFor(item);
+  return tokens.every(tok => text.includes(tok));
+}
+
+// Called when the patient taps a rubric row in the global search results
+// pane. Tapping an unselected, not-yet-added row QUEUES it (moves to the
+// top of the sorted list, highlighted) — it is not yet part of the case
+// until the patient presses the Add button. Tapping a currently-QUEUED row
+// again removes it from the queue. Tapping an ALREADY-ADDED row does
+// nothing (it's committed; removing a committed item isn't supported here,
+// consistent with there being no "undo" affordance in this prototype).
+function toggleQueuedRubric(path) {
+  const alreadyAdded = selectedRubrics.some(r => r.path === path);
+  if (alreadyAdded) return;
+  const rubric = ALL_RUBRICS.find(r => r.path === path);
+  if (!rubric) return;
+  const existingIdx = queuedRubrics.findIndex(r => r.path === path);
+  if (existingIdx !== -1) {
+    queuedRubrics.splice(existingIdx, 1);
+  } else {
+    queuedRubrics.push(rubric);
+  }
+  render();
+}
+// Called when the patient presses the "Add N selected" button — commits
+// everything currently queued into the real selection (selectedRubrics),
+// assigns each a seq for chief-complaint tracking, then clears the queue.
+function commitQueuedRubrics() {
+  queuedRubrics.forEach(r => {
+    selectedRubrics.push({ ...r, seq: nextRubricSeq++ });
+  });
+  queuedRubrics = [];
+  recomputeChiefComplaint();
+  render();
+}
+// Scans every selected rubric and marks the single lowest-seq one as isChief.
+function recomputeChiefComplaint() {
+  if (!selectedRubrics.length) return;
+  const chief = selectedRubrics.reduce((a, b) => (a.seq < b.seq ? a : b));
+  selectedRubrics.forEach(r => { r.isChief = (r === chief); });
+}
+
+// Defensive escaping: real Kent rubric text can contain apostrophes, quotes,
+// or other characters (e.g. "Addison's disease", "Parkinson's disease").
+// Since strings are interpolated into HTML markup and attribute values
+// throughout this file, every piece of rubric-derived text must be escaped
+// before insertion — this is NOT optional once real (not placeholder) data
+// is in use, since unescaped text can break rendering or, worse, allow
+// HTML injection if the underlying data ever included markup characters.
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+function escapeAttr(str) {
+  return escapeHtml(str).replace(/"/g, '&quot;');
+}
+
+// ── AUTOCOMPLETE DROPDOWN ENGINE ──
+// Reusable "flying keystroke" search: as the patient types, a dropdown of
+// up to 20 live suggestions appears below the box (debounced), with the
+// matched portion bolded, full keyboard navigation (arrows/Enter/Escape/Tab),
+// and click-or-tap-to-select. Mirrors the standalone repertory tool's own
+// setupAutocomplete()/renderDropdown() so the interaction feels identical.
+function setupAutocomplete(inputId, dropdownId, clearBtnId, getItems, onPick) {
+  const inp = document.getElementById(inputId);
+  const dd  = document.getElementById(dropdownId);
+  const clr = document.getElementById(clearBtnId);
+  if (!inp || !dd) return;
+  let hlIdx = -1, timer;
+
+  function closeDropdown() { dd.classList.remove('open'); dd.innerHTML = ''; hlIdx = -1; }
+
+  function renderSuggestions(query) {
+    const tokens = tokenizeQuery(query);
+    if (!tokens.length) { closeDropdown(); return; }
+    const items = getItems();
+    const seen = new Set(), out = [];
+    for (const it of items) {
+      const text = searchTextFor(it);
+      if (tokens.every(tok => text.includes(tok))) {
+        const display = lang === 'hi' ? it.roman : it.en;
+        if (display && !seen.has(display)) { seen.add(display); out.push({ display, item: it }); }
+        if (out.length >= 20) break;
+      }
+    }
+    if (!out.length) { closeDropdown(); return; }
+    const firstTok = tokens[0];
+    dd.innerHTML = out.map((o, i) => {
+      const dl = o.display.toLowerCase();
+      const idx = dl.indexOf(firstTok);
+      let html = escapeHtml(o.display);
+      if (idx !== -1) {
+        html = escapeHtml(o.display.slice(0, idx)) + '<em>' + escapeHtml(o.display.slice(idx, idx + firstTok.length)) + '</em>' + escapeHtml(o.display.slice(idx + firstTok.length));
+      }
+      return `<div class="ac-item" data-idx="${i}">${html}</div>`;
+    }).join('');
+    dd.querySelectorAll('.ac-item').forEach(el => {
+      el.addEventListener('mousedown', e => {
+        e.preventDefault();
+        const idx = parseInt(el.dataset.idx, 10);
+        pick(out[idx]);
+      });
+    });
+    dd.classList.add('open');
+    window._acCurrentSuggestions = out;
+  }
+
+  function pick(o) {
+    inp.value = o.display;
+    if (clr) clr.classList.add('visible');
+    closeDropdown();
+    onPick(o.item);
+  }
+
+  inp.addEventListener('input', () => {
+    if (clr) clr.classList.toggle('visible', inp.value.length > 0);
+    clearTimeout(timer);
+    timer = setTimeout(() => renderSuggestions(inp.value.trim()), 120);
+  });
+  inp.addEventListener('keydown', e => {
+    const items = dd.querySelectorAll('.ac-item');
+    if (e.key === 'ArrowDown') { e.preventDefault(); hlIdx = Math.min(hlIdx + 1, items.length - 1); updateHighlight(items, hlIdx); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); hlIdx = Math.max(hlIdx - 1, -1); updateHighlight(items, hlIdx); }
+    else if (e.key === 'Enter') {
+      e.preventDefault();
+      const suggs = window._acCurrentSuggestions || [];
+      if (hlIdx >= 0 && suggs[hlIdx]) pick(suggs[hlIdx]);
+    } else if (e.key === 'Escape') { closeDropdown(); }
+    else if (e.key === 'Tab') {
+      const suggs = window._acCurrentSuggestions || [];
+      if (suggs.length) { e.preventDefault(); pick(suggs[0]); }
+    }
+  });
+  if (clr) {
+    clr.addEventListener('click', () => {
+      inp.value = ''; clr.classList.remove('visible'); closeDropdown(); inp.focus();
+      onPick(null); // null = cleared, caller should reset to unfiltered state
+    });
+  }
+  document.addEventListener('click', (e) => {
+    if (!inp.contains(e.target) && !dd.contains(e.target)) closeDropdown();
+  });
+}
+function updateHighlight(items, idx) {
+  items.forEach((el, i) => {
+    el.classList.toggle('highlighted', i === idx);
+    if (i === idx) el.scrollIntoView({ block: 'nearest' });
+  });
+}
+
+document.querySelectorAll('.lang-pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    lang = btn.dataset.lang;
+    document.querySelectorAll('.lang-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    render();
+  });
+});
+
+// ── RENDER ──
+function render() {
+  const body = document.getElementById('qbody');
+  document.documentElement.lang = lang;
+  let html = '';
+
+  if (step === 'remarks') {
+    html = `
+      <div class="qstep active">
+        <h2 class="qtitle">${t('remarksTitle')}</h2>
+        <p class="qsub">${t('remarksSub')}</p>
+        <div class="form-field">
+          <label class="form-label">${t('nameLabel')}</label>
+          <input class="remarks-input" id="patientNameInput" placeholder="${escapeAttr(t('namePlaceholder'))}" value="${escapeAttr(patientName)}"/>
+          <div class="field-err" id="nameErr"></div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">${t('reasonLabel')}</label>
+          <textarea class="form-textarea" id="reasonInput" maxlength="300" placeholder="${escapeAttr(t('reasonPlaceholder'))}">${escapeHtml(reasonForConsultation)}</textarea>
+          <div class="char-count" id="reasonCharCount">0/300</div>
+        </div>
+      </div>`;
+  }
+
+  else if (step === 'lock') {
+    html = `
+      <div class="qstep active">
+        <button class="btn-back" onclick="goBack()">← ${t('back')}</button>
+        <div class="lock-icon-wrap"><div class="lock-icon">🔒</div></div>
+        <h2 class="qtitle" style="text-align:center;">${t('lockTitle')}</h2>
+        <p class="qsub" style="text-align:center;">${t('lockSub')}</p>
+
+        <div class="lock-card">
+          <div class="lock-card-title">${t('couponLabel')}</div>
+          <div class="coupon-row">
+            <input id="couponInputField" placeholder="${escapeAttr(t('couponPlaceholder'))}" value="${escapeAttr(couponInput)}" maxlength="20"/>
+            <button class="btn-apply" id="applyCouponBtn">${t('applyBtn')}</button>
+          </div>
+          <div class="field-err" id="couponErr">${escapeHtml(couponError)}</div>
+        </div>
+
+        <div class="lock-or">${t('orDivider')}</div>
+
+        <div class="lock-card" style="text-align:center;">
+          <div class="lock-card-title">${t('tokenLabel')}</div>
+          <div class="token-price">${t('tokenPrice')}</div>
+          <div class="token-note">${t('tokenNote')}</div>
+          <button class="btn-stub" id="buyTokenBtn">${t('tokenStub')}</button>
+        </div>
+      </div>`;
+  }
+
+  else if (step === 'chapters') {
+    html = `
+      <div class="qstep active">
+        <button class="btn-back" onclick="goBack()">← ${t('back')}</button>
+        <h2 class="qtitle">${chT({en:'Which part of the body is affected?', hi:'शरीर का कौन सा भाग प्रभावित है?'})}</h2>
+        <p class="qsub">${chT({en:'Select one or more areas — you can change this anytime.', hi:'एक या अधिक क्षेत्र चुनें — आप इसे कभी भी बदल सकते हैं।'})}</p>
+        ${selectedChapterIds.length ? `
+        <div class="selected-chapters-bar">
+          <strong>${selectedChapterIds.length}</strong> ${chT({en:'area(s) selected', hi:'क्षेत्र चुने गए'})}: ${selectedChapterIds.map(id => escapeHtml(chT(CHAPTERS.find(c=>c.id===id)))).join(', ')}
+        </div>` : ''}
+        <div id="regionList">
+          ${REGIONS.map((r, idx) => {
+            const isExpanded = expandedRegion === r.id;
+            const chaptersInRegion = CHAPTERS.filter(c => c.region === r.id);
+            return `
+            <div class="region-accordion-item ${isExpanded ? 'expanded' : ''}">
+              <div class="region-card" data-region-index="${idx}">
+                <div class="region-card-icon">${r.icon}</div>
+                <div class="region-card-label">${escapeHtml(chT(r))}</div>
+                <div class="region-card-arrow">›</div>
+              </div>
+              <div class="region-accordion-panel">
+                <div class="accordion-chapter-grid">
+                  ${chaptersInRegion.map((c) => `
+                    <div class="accordion-chapter-card ${selectedChapterIds.includes(c.id) ? 'chapter-selected' : ''}" data-chapter-id="${c.id}">
+                      <div class="accordion-chapter-card-icon">${c.icon}</div>
+                      <div class="accordion-chapter-card-label">${escapeHtml(chT(c))}</div>
+                    </div>`).join('')}
+                </div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }
+
+  else if (step === 'search') {
+    const filterText = (globalSearchFilter || '').trim();
+    const addedPaths = new Set(selectedRubrics.map(r => r.path));
+    const queuedPaths = new Set(queuedRubrics.map(r => r.path));
+
+    let resultRubricsAll = filterText ? ALL_RUBRICS.filter(r => searchMatches(r, filterText)) : [];
+
+    // Distinguisher tabs are computed from the CURRENT search results (not
+    // the whole repertory) — only tabs that actually have at least one
+    // matching, currently-visible result are shown, so a tab never leads to
+    // an empty list. Tapping a tab narrows resultRubricsAll further.
+    const distinguisherCounts = {};
+    resultRubricsAll.forEach(r => {
+      const d = classifyDistinguisher(r);
+      if (d) distinguisherCounts[d] = (distinguisherCounts[d] || 0) + 1;
+    });
+    const availableDistinguishers = Object.keys(distinguisherCounts);
+    if (activeDistinguisherFilter && !availableDistinguishers.includes(activeDistinguisherFilter)) {
+      activeDistinguisherFilter = null; // the active filter no longer applies to this search text, reset it
+    }
+    if (activeDistinguisherFilter) {
+      resultRubricsAll = resultRubricsAll.filter(r => classifyDistinguisher(r) === activeDistinguisherFilter);
+    }
+
+    // PRIORITY SORT: matches from the patient's selected chapters first,
+    // then everything else from the rest of the repertory — within each
+    // group, queued items the patient already tapped float to the very top
+    // so they stay visible while still browsing/searching further.
+    function sortKey(r) {
+      const isQueued = queuedPaths.has(r.path) ? 0 : 1;
+      const isSelectedChapter = selectedChapterIds.includes(r.chapterId) ? 0 : 1;
+      return [isQueued, isSelectedChapter];
+    }
+    resultRubricsAll.sort((a, b) => {
+      const ka = sortKey(a), kb = sortKey(b);
+      if (ka[0] !== kb[0]) return ka[0] - kb[0];
+      if (ka[1] !== kb[1]) return ka[1] - kb[1];
+      return 0;
+    });
+
+    // Virtual-scroll-friendly rendering: keep ALL matches available (per
+    // explicit instruction — no cap on total results), but only RENDER a
+    // window of rows into the DOM at a time, growing as the patient
+    // scrolls down (see the 'scroll' listener in attachStepListeners).
+    // This avoids ever painting thousands of off-screen rows at once.
+    const renderCount = Math.min(resultRubricsAll.length, searchRenderWindow);
+    const resultRubrics = resultRubricsAll.slice(0, renderCount);
+    window._currentResultRubrics = resultRubrics;
+
+    function highlightMatch(text) {
+      const tokens = tokenizeQuery(filterText);
+      let html = escapeHtml(text);
+      tokens.forEach(tok => {
+        if (!tok) return;
+        const re = new RegExp('(' + tok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig');
+        html = html.replace(re, '<mark>$1</mark>');
+      });
+      return html;
+    }
+
+    let bodyHtml;
+    if (globalLoadState === 'loading') {
+      bodyHtml = `<div class="loading-wrap"><div class="loading-spinner"></div>${chT({en:'Loading the repertory... this happens once.', hi:'रिपर्टरी लोड हो रही है... यह एक बार होता है।'})}</div>`;
+    } else if (globalLoadState === 'error') {
+      bodyHtml = `<div class="load-error">${chT({en:'Could not load the repertory. Please check your connection.', hi:'रिपर्टरी लोड नहीं हो सकी। कृपया अपना कनेक्शन जाँचें।'})}<br/><button class="btn-retry" id="retryLoadBtn">${chT({en:'Try again', hi:'फिर कोशिश करें'})}</button></div>`;
+    } else {
+      bodyHtml = `
+        <div class="selected-chapters-bar">
+          ${selectedChapterIds.length
+            ? chT({en:'Prioritizing: ', hi:'प्राथमिकता: '}) + selectedChapterIds.map(id => escapeHtml(chT(CHAPTERS.find(c=>c.id===id)))).join(', ')
+            : chT({en:'No areas selected yet — searching the whole repertory equally.', hi:'अभी तक कोई क्षेत्र नहीं चुना गया — पूरी रिपर्टरी समान रूप से खोजी जा रही है।'})}
+          <a href="#" id="backToChaptersLink" style="margin-left:8px; color:var(--teal2); font-weight:600;">${chT({en:'Change', hi:'बदलें'})}</a>
+        </div>
+        <div class="search-input-wrap">
+          <input class="option-search" id="globalSearch" placeholder="${escapeAttr(lang==='hi' ? chT({en:'Type Hindi in Roman letters... e.g. jalan', hi:'रोमन में हिंदी टाइप करें... जैसे jalan'}) : chT({en:'Type keywords... e.g. burning after eating', hi:'मुख्य शब्द टाइप करें...'}))}" value="${escapeAttr(globalSearchFilter||'')}"/>
+          <button class="search-clear-btn ${globalSearchFilter ? 'visible' : ''}" id="globalSearchClear">×</button>
+          <div class="ac-dropdown" id="globalSearchDropdown"></div>
+        </div>
+        ${filterText && availableDistinguishers.length ? `
+        <div class="distinguisher-tabs" id="distinguisherTabs">
+          ${availableDistinguishers.map(d => `
+            <div class="distinguisher-tab ${activeDistinguisherFilter === d ? 'active' : ''}" data-distinguisher="${d}">
+              ${escapeHtml(lang==='hi' ? DISTINGUISHER_LABELS[d].hi : DISTINGUISHER_LABELS[d].en)} (${distinguisherCounts[d]})
+            </div>`).join('')}
+        </div>` : ''}
+        <div class="option-count">
+          ${selectedRubrics.length} ${chT({en:'added', hi:'जोड़ा गया'})}
+          ${queuedRubrics.length ? ` · ${queuedRubrics.length} ${chT({en:'queued', hi:'कतार में'})}` : ''}
+          ${filterText ? ` · ${resultRubricsAll.length} ${chT({en:'match(es)', hi:'परिणाम'})}` : ''}
+        </div>
+        <div class="rubric-list" id="rubricResultsPane">
+          ${!filterText ? `<div class="option-empty">${chT({en:'Start typing to search the entire repertory.', hi:'पूरी रिपर्टरी खोजने के लिए टाइप करना शुरू करें।'})}</div>` :
+            resultRubrics.length ? resultRubrics.map((r, idx) => {
+              const isAdded = addedPaths.has(r.path);
+              const isQueued = queuedPaths.has(r.path);
+              const isFromSelectedChapter = selectedChapterIds.includes(r.chapterId);
+              const chapterObj = CHAPTERS.find(c => c.id === r.chapterId);
+              return `
+              <div class="rubric-option ${isQueued ? 'rubric-queued' : ''} ${isAdded ? 'rubric-added' : ''}" data-rubric-index="${idx}">
+                ${isAdded ? `<div class="added-corner-label">${chT({en:'Added', hi:'जोड़ा गया'})}</div>` : ''}
+                <span class="rubric-check">${isAdded || isQueued ? '✓' : ''}</span>
+                <span class="rubric-option-text">
+                  <span class="rubric-chapter-tag ${isFromSelectedChapter ? 'tag-selected-chapter' : ''}">${chapterObj ? escapeHtml(chT(chapterObj)) : ''}</span>
+                  ${highlightMatch(lang === 'hi' ? r.hi : r.en)}
+                </span>
+              </div>`;
+            }).join('') : `<div class="option-empty">${chT({en:'No matches. Try different keywords.', hi:'कोई परिणाम नहीं। दूसरे शब्द आज़माएं।'})}</div>`}
+        </div>
+        ${queuedRubrics.length ? `<button class="btn-primary" id="addQueuedBtn" style="margin-top:14px;">${chT({en:`Add ${queuedRubrics.length} selected`, hi:`${queuedRubrics.length} चयनित जोड़ें`})}</button>` : ''}`;
+    }
+    html = `
+      <div class="qstep active">
+        <button class="btn-back" onclick="goBack()">← ${t('back')}</button>
+        <h2 class="qtitle">${chT({en:'Search your symptoms', hi:'अपने लक्षण खोजें'})}</h2>
+        <p class="qsub">${chT({en:'Search and tap every symptom that applies. Tap again to remove it.', hi:'जो भी लक्षण लागू हो उसे खोजें और टैप करें। हटाने के लिए फिर से टैप करें।'})}</p>
+        ${bodyHtml}
+      </div>`;
+  }
+
+  else if (step === 'generals') {
+    html = `
+      <div class="qstep active">
+        <button class="btn-back" onclick="goBack()">← ${t('back')}</button>
+        <h2 class="qtitle">${t('generalsTitle')}</h2>
+        <p class="qsub">${t('generalsSub')}</p>
+        ${renderGenChips('appetite', t('appetite'), ['Good','Reduced','Excessive'], ['अच्छी','कम','अधिक'])}
+        ${renderGenChips('thirst', t('thirst'), ['Normal','Increased','Reduced'], ['सामान्य','बढ़ी हुई','कम'])}
+        ${renderGenChips('thermal', t('thermal'), ['Warm weather','Cool weather','No preference'], ['गर्म मौसम','ठंडा मौसम','कोई पसंद नहीं'])}
+        <div class="gen-group">
+          <div class="gen-label">${t('otherProblems')}</div>
+          <textarea class="gen-freetext" id="genFreetext" oninput="generalsState.freetext=this.value">${escapeHtml(generalsState.freetext)}</textarea>
+        </div>
+      </div>`;
+  }
+
+  else if (step === 'review') {
+    const chiefRubric = selectedRubrics.find(r => r.isChief);
+    const additionalRubrics = selectedRubrics.filter(r => !r.isChief);
+
+    function renderComplaintBlock(rubric) {
+      const chapter = CHAPTERS.find(ch => ch.id === rubric.chapterId);
+      return `
+        <div class="review-complaint">
+          <div class="review-complaint-chapter">${chapter ? escapeHtml(chT(chapter)) : ''}</div>
+          <div class="review-complaint-detail">${escapeHtml(lang === 'hi' ? rubric.hi : rubric.en)}</div>
+        </div>`;
+    }
+
+    html = `
+      <div class="qstep active">
+        <button class="btn-back" onclick="goBack()">← ${t('back')}</button>
+        <h2 class="qtitle">${t('reviewTitle')}</h2>
+        <p class="qsub">${t('reviewSub')}</p>
+        <div class="review-complaint">
+          <div class="review-complaint-chapter">${escapeHtml(t('nameLabel'))}: ${escapeHtml(patientName)}</div>
+          ${reasonForConsultation ? `<div class="review-complaint-detail">${escapeHtml(t('reasonLabel'))}: ${escapeHtml(reasonForConsultation)}</div>` : ''}
+        </div>
+        ${chiefRubric ? `
+        <div class="review-section-title">${chT({en:'Chief Complaint', hi:'मुख्य शिकायत'})}</div>
+        ${renderComplaintBlock(chiefRubric)}` : ''}
+        ${additionalRubrics.length ? `
+        <div class="review-section-title">${chT({en:'Additional Complaints', hi:'अतिरिक्त शिकायतें'})}</div>
+        ${additionalRubrics.map(renderComplaintBlock).join('')}` : ''}
+      </div>`;
+  }
+
+  else if (step === 'done') {
+    html = `
+      <div class="qstep active" style="align-items:center; justify-content:center; text-align:center;">
+        <div style="font-size:48px; margin-bottom:16px;">✅</div>
+        <h2 class="qtitle">${chT({en:"Submitted", hi:"भेज दिया गया"})}</h2>
+        <p class="qsub">${chT({en:"Dr. Tiwari will review this before your next visit.", hi:"डॉ. तिवारी आपकी अगली मुलाकात से पहले इसकी जाँच करेंगे।"})}</p>
+      </div>`;
+  }
+
+  body.innerHTML = html;
+  attachStepListeners();
+  renderFooter();
+  renderBasket();
+}
+
+function renderGenChips(key, label, optsEn, optsHi) {
+  return `
+    <div class="gen-group">
+      <div class="gen-label">${label}</div>
+      <div class="gen-chip-row">
+        ${optsEn.map((o, i) => `
+          <div class="gen-chip ${generalsState[key]===i?'selected':''}" onclick="setGen('${key}',${i})">
+            ${lang==='hi'?optsHi[i]:o}
+          </div>`).join('')}
+        <div class="gen-chip ${generalsState[key]==='skip'?'selected':''}" onclick="setGen('${key}','skip')">${t('skip')}</div>
+      </div>
+    </div>`;
+}
+function setGen(key, val) { generalsState[key] = val; render(); }
+
+function attachStepListeners() {
+  if (step === 'remarks') {
+    const nameInput = document.getElementById('patientNameInput');
+    const nameErr = document.getElementById('nameErr');
+    if (nameInput) {
+      nameInput.addEventListener('input', () => {
+        patientName = nameInput.value;
+        if (nameErr) nameErr.textContent = '';
+      });
+    }
+    const reasonInput = document.getElementById('reasonInput');
+    const reasonCount = document.getElementById('reasonCharCount');
+    if (reasonInput) {
+      const updateReason = () => {
+        reasonForConsultation = reasonInput.value;
+        reasonCount.textContent = `${reasonInput.value.length}/300`;
+        reasonCount.classList.toggle('warn', reasonInput.value.length >= 270);
+      };
+      reasonInput.addEventListener('input', updateReason);
+      updateReason();
+    }
+  }
+  if (step === 'lock') {
+    const couponField = document.getElementById('couponInputField');
+    const applyBtn = document.getElementById('applyCouponBtn');
+    const couponErr = document.getElementById('couponErr');
+    if (couponField) {
+      couponField.addEventListener('input', () => {
+        couponInput = couponField.value;
+        couponError = '';
+        if (couponErr) couponErr.textContent = '';
+      });
+      couponField.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') applyCoupon();
+      });
+    }
+    if (applyBtn) applyBtn.addEventListener('click', applyCoupon);
+    const tokenBtn = document.getElementById('buyTokenBtn');
+    if (tokenBtn) {
+      tokenBtn.addEventListener('click', () => {
+        alert(chT({en:'Online payment is not yet available. Please contact the clinic directly for a coupon code.', hi:'ऑनलाइन पेमेंट अभी उपलब्ध नहीं है। कृपया कूपन कोड के लिए सीधे क्लिनिक से संपर्क करें।'}));
+      });
+    }
+  }
+  if (step === 'chapters') {
+    const list = document.getElementById('regionList');
+    if (list) {
+      list.addEventListener('click', (e) => {
+        const chapterEl = e.target.closest('[data-chapter-id]');
+        if (chapterEl) {
+          toggleChapterSelection(chapterEl.dataset.chapterId);
+          return;
+        }
+        const regionEl = e.target.closest('[data-region-index]');
+        if (regionEl) {
+          const idx = parseInt(regionEl.dataset.regionIndex, 10);
+          const region = REGIONS[idx];
+          if (region) toggleRegionAccordion(region.id);
+        }
+      });
+    }
+  }
+  if (step === 'search') {
+    const retryBtn = document.getElementById('retryLoadBtn');
+    if (retryBtn) {
+      retryBtn.addEventListener('click', () => {
+        globalLoadState = 'idle';
+        loadAllRubrics();
+      });
+    }
+    const search = document.getElementById('globalSearch');
+    if (search) {
+      search.addEventListener('input', () => {
+        globalSearchFilter = search.value;
+        searchRenderWindow = SEARCH_RENDER_WINDOW_INITIAL; // reset virtual-scroll window on every new search
+        render();
+        const reInput = document.getElementById('globalSearch');
+        if (reInput) {
+          reInput.focus();
+          reInput.setSelectionRange(reInput.value.length, reInput.value.length);
+        }
+      });
+      setupAutocomplete('globalSearch', 'globalSearchDropdown', 'globalSearchClear',
+        () => ALL_RUBRICS,
+        (item) => {
+          if (item === null) { globalSearchFilter = ''; render(); return; }
+          toggleQueuedRubric(item.path);
+        }
+      );
+    }
+    const pane = document.getElementById('rubricResultsPane');
+    if (pane) {
+      pane.addEventListener('click', (e) => {
+        const el = e.target.closest('[data-rubric-index]');
+        if (!el) return;
+        const idx = parseInt(el.dataset.rubricIndex, 10);
+        const rubric = (window._currentResultRubrics || [])[idx];
+        if (rubric) toggleQueuedRubric(rubric.path);
+      });
+      // Virtual scroll: grow the render window as the patient nears the
+      // bottom of the currently-rendered rows, rather than ever rendering
+      // every match (which, for a common keyword, can be in the thousands).
+      pane.addEventListener('scroll', () => {
+        const nearBottom = pane.scrollTop + pane.clientHeight >= pane.scrollHeight - 80;
+        if (nearBottom) {
+          searchRenderWindow += SEARCH_RENDER_WINDOW_STEP;
+          render();
+        }
+      });
+    }
+    const tabs = document.getElementById('distinguisherTabs');
+    if (tabs) {
+      tabs.addEventListener('click', (e) => {
+        const el = e.target.closest('[data-distinguisher]');
+        if (!el) return;
+        const d = el.dataset.distinguisher;
+        activeDistinguisherFilter = (activeDistinguisherFilter === d) ? null : d;
+        searchRenderWindow = SEARCH_RENDER_WINDOW_INITIAL;
+        render();
+      });
+    }
+    const addBtn = document.getElementById('addQueuedBtn');
+    if (addBtn) addBtn.addEventListener('click', commitQueuedRubrics);
+    const backLink = document.getElementById('backToChaptersLink');
+    if (backLink) {
+      backLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        step = 'chapters';
+        render();
+      });
+    }
+  }
+}
+
+function renderFooter() {
+  // Footer buttons handled inline per step mostly; primary CTA for remarks/search/generals/review steps:
+  let footer = document.querySelector('.qfooter');
+  if (footer) footer.remove();
+  if (step === 'remarks') {
+    const f = document.createElement('div');
+    f.className = 'qfooter';
+    f.innerHTML = `<button class="btn-primary" onclick="goToChapter()">${chT({en:'Continue', hi:'जारी रखें'})}</button>`;
+    document.getElementById('app').insertBefore(f, document.getElementById('basketBar'));
+  }
+  if (step === 'chapters') {
+    const f = document.createElement('div');
+    f.className = 'qfooter';
+    f.innerHTML = `<button class="btn-primary" onclick="goToSearch()">${chT({en:'Continue to search', hi:'खोज पर जारी रखें'})}</button>`;
+    document.getElementById('app').insertBefore(f, document.getElementById('basketBar'));
+  }
+  if (step === 'search') {
+    if (globalLoadState === 'loaded') {
+      const f = document.createElement('div');
+      f.className = 'qfooter';
+      f.innerHTML = `<button class="btn-primary" onclick="goToGenerals()">${chT({en:'Done — Continue', hi:'पूर्ण — जारी रखें'})}</button>`;
+      document.getElementById('app').insertBefore(f, document.getElementById('basketBar'));
+    }
+  }
+  if (step === 'generals') {
+    const f = document.createElement('div');
+    f.className = 'qfooter';
+    f.innerHTML = `<button class="btn-primary" onclick="goToReview()">${chT({en:'Review answers', hi:'उत्तर देखें'})}</button>`;
+    document.getElementById('app').insertBefore(f, document.getElementById('basketBar'));
+  }
+  if (step === 'review') {
+    const f = document.createElement('div');
+    f.className = 'qfooter';
+    f.innerHTML = `<button class="btn-primary" onclick="submitAll()">${t('submit')}</button>`;
+    document.getElementById('app').insertBefore(f, document.getElementById('basketBar'));
+  }
+}
+
+function renderBasket() {
+  const bar = document.getElementById('basketBar');
+  if (selectedRubrics.length > 0 && step !== 'done') {
+    bar.style.display = 'flex';
+    document.getElementById('basketLabel').textContent = lang === 'hi' ? 'दर्ज किए गए लक्षण' : 'symptoms recorded';
+    document.getElementById('basketCount').textContent = selectedRubrics.length;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+// ── NAVIGATION ──
+function goToChapter() {
+  if (!patientName.trim()) {
+    const err = document.getElementById('nameErr');
+    if (err) err.textContent = t('nameRequired');
+    const input = document.getElementById('patientNameInput');
+    if (input) input.focus();
+    return;
+  }
+  // Skip the lock screen entirely if already unlocked this session (e.g.
+  // patient went back to edit their name/reason after unlocking).
+  if (isUnlocked) {
+    step = 'chapters';
+  } else {
+    step = 'lock';
+    // Start fetching the full repertory NOW, in the background, while the
+    // patient is busy entering a coupon code — by the time they reach the
+    // chapter-picker/search screens, the data has likely already arrived.
+    loadAllRubrics();
+  }
+  render();
+}
+function applyCoupon() {
+  const code = (couponInput || '').trim().toUpperCase();
+  if (!code) {
+    couponError = t('couponInvalid');
+    render();
+    return;
+  }
+  if (VALID_TEST_COUPONS.includes(code)) {
+    isUnlocked = true;
+    couponError = '';
+    step = 'chapters';
+    render();
+  } else {
+    couponError = t('couponInvalid');
+    render();
+    const field = document.getElementById('couponInputField');
+    if (field) field.focus();
+  }
+}
+function toggleRegionAccordion(regionId) {
+  expandedRegion = (expandedRegion === regionId) ? null : regionId; // true accordion, only one open at a time
+  render();
+}
+function toggleChapterSelection(chapterId) {
+  const idx = selectedChapterIds.indexOf(chapterId);
+  if (idx !== -1) {
+    selectedChapterIds.splice(idx, 1);
+  } else {
+    selectedChapterIds.push(chapterId);
+  }
+  render();
+}
+function goToSearch() {
+  step = 'search';
+  render();
+}
+function goToGenerals() {
+  step = 'generals'; render();
+}
+function goToReview() { step = 'review'; render(); }
+function goBack() {
+  const order = ['remarks','lock','chapters','search','generals','review'];
+  const idx = order.indexOf(step);
+  if (idx > 0) {
+    let prevIdx = idx - 1;
+    // If already unlocked, going "back" from region should skip the lock
+    // screen and land on the intake form instead — there's no reason to
+    // show a now-irrelevant lock screen when backing up.
+    if (order[prevIdx] === 'lock' && isUnlocked) prevIdx -= 1;
+    step = order[prevIdx];
+    render();
+  }
+}
+function submitAll() {
+  // PROTOTYPE: log to console. Real build will write to Firebase pending-intake node.
+  console.log('SUBMISSION', { patientName, reasonForConsultation, selectedRubrics, generals: generalsState });
+  step = 'done'; render();
+}
+
+render();
+</script>
+</body>
+</html>
