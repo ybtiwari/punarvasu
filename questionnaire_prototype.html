@@ -300,8 +300,8 @@ async function loadAllRubrics() {
   render();
   try {
     const [res1, res2] = await Promise.all([
-      fetch('chapter_data/all_rubrics_1.json'),
-      fetch('chapter_data/all_rubrics_2.json'),
+      fetch('all_rubrics_1.json'),
+      fetch('all_rubrics_2.json'),
     ]);
     if (!res1.ok) throw new Error(`HTTP ${res1.status} (part 1)`);
     if (!res2.ok) throw new Error(`HTTP ${res2.status} (part 2)`);
