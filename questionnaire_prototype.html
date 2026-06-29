@@ -84,8 +84,12 @@
   .accordion-chapter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .accordion-chapter-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 12px 10px; text-align: center; cursor: pointer; transition: all 0.15s; }
   .accordion-chapter-card:hover { border-color: var(--teal); box-shadow: 0 2px 8px rgba(28,107,90,0.08); }
+  .accordion-chapter-card.chapter-selected { background: var(--teal); border-color: var(--teal); }
+  .accordion-chapter-card.chapter-selected .accordion-chapter-card-label { color: white; }
   .accordion-chapter-card-icon { font-size: 20px; margin-bottom: 4px; }
   .accordion-chapter-card-label { font-size: 12.5px; color: var(--ink2); font-weight: 500; line-height: 1.3; }
+  .selected-chapters-bar { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: var(--ink2); }
+  .selected-chapters-bar strong { color: var(--teal2); }
 
   .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .chapter-card { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 14px 12px; text-align: center; cursor: pointer; transition: all 0.15s; }
@@ -95,12 +99,23 @@
 
   /* MAIN RUBRIC LIST */
   .rubric-list { display: flex; flex-direction: column; gap: 8px; max-height: 55vh; overflow-y: auto; }
-  .rubric-option { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-size: 14.5px; color: var(--ink2); cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 10px; }
+  .rubric-option { position: relative; background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-size: 14.5px; color: var(--ink2); cursor: pointer; transition: all 0.15s; display: flex; align-items: flex-start; gap: 10px; }
   .rubric-option:hover { border-color: var(--teal); background: rgba(28,107,90,0.04); }
-  .rubric-option.rubric-selected { background: var(--teal); border-color: var(--teal); color: white; }
-  .rubric-check { width: 18px; height: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; border: 1.5px solid var(--border); border-radius: 4px; color: transparent; }
-  .rubric-option.rubric-selected .rubric-check { border-color: white; background: rgba(255,255,255,0.2); color: white; }
-  .rubric-option-text { flex: 1; line-height: 1.4; }
+  .rubric-option.rubric-queued { background: rgba(28,107,90,0.1); border-color: var(--teal); }
+  .rubric-option.rubric-added { background: var(--cream); border-color: var(--border); opacity: 0.85; }
+  .rubric-check { width: 18px; height: 18px; margin-top: 1px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; border: 1.5px solid var(--border); border-radius: 4px; color: transparent; }
+  .rubric-option.rubric-queued .rubric-check { border-color: var(--teal); background: var(--teal); color: white; }
+  .rubric-option.rubric-added .rubric-check { border-color: var(--ink3); background: var(--ink3); color: white; }
+  .rubric-option-text { flex: 1; line-height: 1.45; }
+  .rubric-option-text mark { background: none; color: var(--teal2); font-weight: 700; }
+  .rubric-chapter-tag { display: block; font-size: 11px; margin-bottom: 2px; color: var(--ink3); font-weight: 500; }
+  .rubric-chapter-tag.tag-selected-chapter { color: var(--teal2); font-weight: 700; }
+  .added-corner-label { position: absolute; top: -8px; right: 8px; background: var(--navy); color: white; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; letter-spacing: 0.03em; }
+
+  /* DISTINGUISHER TABS */
+  .distinguisher-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .distinguisher-tab { padding: 6px 12px; border: 1px solid var(--border); border-radius: 16px; font-size: 12.5px; color: var(--ink2); cursor: pointer; background: var(--white); transition: all 0.15s; }
+  .distinguisher-tab.active { background: var(--navy); color: white; border-color: var(--navy); }
 
   /* DRILLDOWN OPTIONS */
   .option-grid { display: flex; flex-direction: column; gap: 10px; }
@@ -250,16 +265,32 @@ const CHAPTERS = [
   { id: "blood",    en: "Blood",    hi: "रक्त",        region: "whole_body", icon: "🩸" },
 ];
 
+const REGIONS = [
+  { id: "mind_sensorium",        en: "Mind & Sensorium",        hi: "मन और संवेदना",        icon: "🧘" },
+  { id: "head_senses",           en: "Head & Senses",           hi: "सिर और इंद्रियां",       icon: "🧠" },
+  { id: "respiratory_chest",     en: "Respiratory & Chest",     hi: "श्वास और छाती",        icon: "🫁" },
+  { id: "digestion",             en: "Digestion",                hi: "पाचन",                icon: "🍽" },
+  { id: "urinary_reproductive",  en: "Urinary & Reproductive",  hi: "मूत्र और प्रजनन तंत्र", icon: "🩺" },
+  { id: "limbs_back",            en: "Limbs & Back",             hi: "अंग और पीठ",           icon: "🦴" },
+  { id: "whole_body",            en: "Whole-body & General",    hi: "सम्पूर्ण शरीर व सामान्य", icon: "🌐" },
+];
+
 // ALL_RUBRICS holds the ENTIRE repertory's worth of searchable rubrics in
 // one flat array — every chapter, every depth, no category grouping —
 // loaded ONCE, up front, rather than per-chapter. This is a deliberate
 // trade-off: true "search the whole repertory from the first keystroke"
 // requires the whole dataset in memory; per-chapter lazy-loading and
-// global search are mutually exclusive. The combined file is ~24.6MB raw,
-// but compresses to ~3.2MB over the wire (gzip, which GitHub Pages and
+// global search are mutually exclusive. The combined data is ~28MB raw,
+// but compresses to a few MB over the wire (gzip, which GitHub Pages and
 // virtually all static hosts apply automatically) — closer in real-world
 // cost to a few photos than to "the 50MB problem" this whole project
 // started out trying to avoid.
+//
+// SPLIT INTO TWO FILES: GitHub's web upload UI rejects any single file
+// over 25MB, and the combined dataset is ~28MB — just over that ceiling.
+// Rather than fight that limit, the data is split into two halves
+// (all_rubrics_1.json, all_rubrics_2.json), each comfortably under 25MB,
+// fetched in parallel and concatenated client-side into one array.
 let ALL_RUBRICS = [];
 let globalLoadState = 'idle'; // 'idle' | 'loading' | 'loaded' | 'error'
 
@@ -268,9 +299,14 @@ async function loadAllRubrics() {
   globalLoadState = 'loading';
   render();
   try {
-    const res = await fetch('chapter_data/all_rubrics.json');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    ALL_RUBRICS = await res.json();
+    const [res1, res2] = await Promise.all([
+      fetch('chapter_data/all_rubrics_1.json'),
+      fetch('chapter_data/all_rubrics_2.json'),
+    ]);
+    if (!res1.ok) throw new Error(`HTTP ${res1.status} (part 1)`);
+    if (!res2.ok) throw new Error(`HTTP ${res2.status} (part 2)`);
+    const [part1, part2] = await Promise.all([res1.json(), res2.json()]);
+    ALL_RUBRICS = part1.concat(part2);
     globalLoadState = 'loaded';
   } catch (e) {
     console.error('Failed to load repertory data:', e);
@@ -292,10 +328,10 @@ let couponError = '';
 // hardcoded list. Case-insensitive on entry.
 const VALID_TEST_COUPONS = ['WELCOME2026', 'PUNARVASU1', 'TESTFREE'];
 
-// DATA MODEL: ONE flat list of every rubric the patient has selected,
-// across the entire repertory — no chapter grouping at all during
-// selection (chapterId is kept per rubric only so the review screen can
-// still show which chapter each one came from).
+// DATA MODEL: ONE flat list of every rubric the patient has ADDED (after
+// pressing the Add button), across the entire repertory — no chapter
+// grouping during selection itself (chapterId is kept per rubric only so
+// the review screen can still show which chapter each one came from).
 // selectedRubrics = [{ chapterId, path, en, hi, roman, isChief, seq }]
 //
 // CHIEF COMPLAINT: the earliest-added rubric that is STILL currently
@@ -307,6 +343,30 @@ const VALID_TEST_COUPONS = ['WELCOME2026', 'PUNARVASU1', 'TESTFREE'];
 let selectedRubrics = [];
 let nextRubricSeq = 1;
 let globalSearchFilter = '';     // what the patient has typed in the one global search box
+
+// CHAPTER PICKER (accordion): which chapters the patient has chosen to
+// prioritize in search results. Persists across opening/closing region
+// panels and across navigating away to search and back.
+let selectedChapterIds = [];
+let expandedRegion = null; // only one region's panel open at a time (true accordion)
+
+// QUEUE: rubrics the patient has TAPPED in the search results (moved to
+// top, highlighted) but not yet committed via the Add button. Tapping the
+// same item again while queued removes it from the queue. Pressing Add
+// moves everything here into selectedRubrics and clears the queue.
+let queuedRubrics = [];
+
+// Which of the 7 distinguisher tabs is currently active as a filter, if
+// any (null = no filter, show everything matching the typed search text).
+let activeDistinguisherFilter = null;
+
+// Virtual-scroll window: how many of the (potentially thousands of) sorted
+// matches actually get rendered as DOM rows right now. Grows as the patient
+// scrolls near the bottom of the results pane (see the scroll listener),
+// reset back to the initial window size whenever the search text changes.
+const SEARCH_RENDER_WINDOW_INITIAL = 60;
+const SEARCH_RENDER_WINDOW_STEP = 60;
+let searchRenderWindow = SEARCH_RENDER_WINDOW_INITIAL;
 
 // NOTE: search language is no longer independent state — searchTextFor()
 // below derives it directly from the display `lang` variable, so the two
@@ -415,6 +475,69 @@ function mrT(mr) { return lang === 'hi' ? mr.hi : mr.en; }
 function tokenizeQuery(q) {
   return q.toLowerCase().split(/[,\s]+/).map(s => s.trim()).filter(Boolean);
 }
+
+// ── 7-DISTINGUISHER CLASSIFICATION ──
+// Maps each rubric's real `category` field (from the original translation
+// data) onto one of 7 broad distinguisher types, plus two heuristic checks
+// (laterality, content/subject) that aren't captured by `category` alone.
+// A complaint's available tabs are whichever of these 7 actually have at
+// least one matching child rubric — empty tabs are never shown (per
+// explicit instruction: don't suggest a distinguisher that doesn't exist
+// for this particular complaint).
+const DISTINGUISHER_LABELS = {
+  timing: { en: 'Timing', hi: 'समय' },
+  modality: { en: 'Modality', hi: 'क्या बढ़ाता/घटाता है' },
+  cause: { en: 'Cause / Trigger', hi: 'कारण' },
+  sensation: { en: 'Sensation / Location', hi: 'अनुभव / स्थान' },
+  laterality: { en: 'Side', hi: 'पक्ष (बायाँ/दायाँ)' },
+  content: { en: 'Specific detail', hi: 'विशेष विवरण' },
+  sequence: { en: 'Pattern', hi: 'क्रम' },
+};
+const CATEGORY_TO_DISTINGUISHER = {
+  'Linked to time of day': 'timing',
+  'Linked to posture/position': 'modality',
+  'Triggered by posture/position': 'modality',
+  'Triggered by weather/temperature': 'modality',
+  'Temperature sensation': 'modality',
+  'Triggered by specific actions': 'cause',
+  'Triggered by specific situations': 'cause',
+  'Linked to specific situations': 'cause',
+  'Linked to mood/emotion': 'cause',
+  'Linked to emotion/excitement': 'cause',
+  'Linked to eating/digestion': 'cause',
+  'Linked to bowel movement': 'cause',
+  'Linked to menstrual cycle': 'cause',
+  'Comes with other symptoms': 'cause',
+  'Specific body area': 'sensation',
+  'Sensation / feel of the area': 'sensation',
+  'Type of pain': 'sensation',
+  'General sensation': 'sensation',
+  'Sensation type': 'sensation',
+  'Skin/tissue changes': 'sensation',
+  'Swelling & bloating': 'sensation',
+  'Discharge': 'sensation',
+  'Bleeding': 'sensation',
+  'Inflammation': 'sensation',
+  'Sounds & movement': 'sensation',
+  'Linked to a specific organ': 'sensation',
+  'Gas & digestion': 'sensation',
+  'Hernia': 'sensation',
+  'Bowel obstruction': 'sensation',
+};
+function classifyDistinguisher(item) {
+  const lastPart = item.path.split(',').pop().trim().toLowerCase();
+  if (lastPart === 'left' || lastPart === 'right' || lastPart.startsWith('left ') || lastPart.startsWith('right ')) {
+    return 'laterality';
+  }
+  if (/delusion|dream|fear|fancies|imagines/i.test(item.path)) {
+    return 'content';
+  }
+  if (/period|alternat|follow|succession|then\b/i.test(lastPart)) {
+    return 'sequence';
+  }
+  return CATEGORY_TO_DISTINGUISHER[item.category] || null;
+}
+
 function searchTextFor(item) {
   // Search language always follows the display language (lang) — no
   // separate toggle. When lang is 'hi', we still match against the
@@ -430,29 +553,33 @@ function searchMatches(item, query) {
 }
 
 // Called when the patient taps a rubric row in the global search results
-// pane. Toggles it in or out of the selection, exactly like the standalone
-// tool's addRubric()/removeRubric() pair — tapping an unselected row adds
-// it, tapping an already-selected row removes it again. Since search now
-// reaches the entire repertory at once, there is no more per-chapter
-// context to auto-detect OTHER chapters from — the patient can simply type
-// whatever they mean directly, so the earlier chapter-auto-detection
-// feature is no longer needed and has been removed along with it.
-//
-// CHIEF COMPLAINT: each selected rubric carries a `seq` (the order it was
-// added in). Chief status is always recomputed from whichever CURRENTLY
-// SELECTED rubric has the lowest seq — so if the patient deselects what was
-// the chief complaint, whatever they selected next earliest correctly
-// becomes chief instead, rather than the session ending up with no chief
-// complaint at all.
-function toggleRubricSelection(path) {
+// pane. Tapping an unselected, not-yet-added row QUEUES it (moves to the
+// top of the sorted list, highlighted) — it is not yet part of the case
+// until the patient presses the Add button. Tapping a currently-QUEUED row
+// again removes it from the queue. Tapping an ALREADY-ADDED row does
+// nothing (it's committed; removing a committed item isn't supported here,
+// consistent with there being no "undo" affordance in this prototype).
+function toggleQueuedRubric(path) {
+  const alreadyAdded = selectedRubrics.some(r => r.path === path);
+  if (alreadyAdded) return;
   const rubric = ALL_RUBRICS.find(r => r.path === path);
   if (!rubric) return;
-  const existingIdx = selectedRubrics.findIndex(r => r.path === path);
+  const existingIdx = queuedRubrics.findIndex(r => r.path === path);
   if (existingIdx !== -1) {
-    selectedRubrics.splice(existingIdx, 1);
+    queuedRubrics.splice(existingIdx, 1);
   } else {
-    selectedRubrics.push({ ...rubric, seq: nextRubricSeq++ });
+    queuedRubrics.push(rubric);
   }
+  render();
+}
+// Called when the patient presses the "Add N selected" button — commits
+// everything currently queued into the real selection (selectedRubrics),
+// assigns each a seq for chief-complaint tracking, then clears the queue.
+function commitQueuedRubrics() {
+  queuedRubrics.forEach(r => {
+    selectedRubrics.push({ ...r, seq: nextRubricSeq++ });
+  });
+  queuedRubrics = [];
   recomputeChiefComplaint();
   render();
 }
@@ -634,21 +761,101 @@ function render() {
       </div>`;
   }
 
+  else if (step === 'chapters') {
+    html = `
+      <div class="qstep active">
+        <button class="btn-back" onclick="goBack()">← ${t('back')}</button>
+        <h2 class="qtitle">${chT({en:'Which part of the body is affected?', hi:'शरीर का कौन सा भाग प्रभावित है?'})}</h2>
+        <p class="qsub">${chT({en:'Select one or more areas — you can change this anytime.', hi:'एक या अधिक क्षेत्र चुनें — आप इसे कभी भी बदल सकते हैं।'})}</p>
+        ${selectedChapterIds.length ? `
+        <div class="selected-chapters-bar">
+          <strong>${selectedChapterIds.length}</strong> ${chT({en:'area(s) selected', hi:'क्षेत्र चुने गए'})}: ${selectedChapterIds.map(id => escapeHtml(chT(CHAPTERS.find(c=>c.id===id)))).join(', ')}
+        </div>` : ''}
+        <div id="regionList">
+          ${REGIONS.map((r, idx) => {
+            const isExpanded = expandedRegion === r.id;
+            const chaptersInRegion = CHAPTERS.filter(c => c.region === r.id);
+            return `
+            <div class="region-accordion-item ${isExpanded ? 'expanded' : ''}">
+              <div class="region-card" data-region-index="${idx}">
+                <div class="region-card-icon">${r.icon}</div>
+                <div class="region-card-label">${escapeHtml(chT(r))}</div>
+                <div class="region-card-arrow">›</div>
+              </div>
+              <div class="region-accordion-panel">
+                <div class="accordion-chapter-grid">
+                  ${chaptersInRegion.map((c) => `
+                    <div class="accordion-chapter-card ${selectedChapterIds.includes(c.id) ? 'chapter-selected' : ''}" data-chapter-id="${c.id}">
+                      <div class="accordion-chapter-card-icon">${c.icon}</div>
+                      <div class="accordion-chapter-card-label">${escapeHtml(chT(c))}</div>
+                    </div>`).join('')}
+                </div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }
+
   else if (step === 'search') {
     const filterText = (globalSearchFilter || '').trim();
-    const selectedPaths = new Set(selectedRubrics.map(r => r.path));
-    // Persistent results pane: ALWAYS shows every matching rubric (or, with
-    // no search text yet, nothing — see below) — selection never removes a
-    // row from view or navigates away. Tapping a row just toggles its state.
-    const resultRubricsAll = filterText ? ALL_RUBRICS.filter(r => searchMatches(r, filterText)) : [];
-    // Cap how many rows actually get rendered into the DOM at once — with
-    // 73,951 rubrics across the whole repertory, even a short/common
-    // keyword could match thousands of entries, which is genuinely slow to
-    // paint on a budget phone. Narrowing the search naturally brings the
-    // real match count below this cap.
-    const RESULTS_RENDER_CAP = 150;
-    const resultRubrics = resultRubricsAll.slice(0, RESULTS_RENDER_CAP);
+    const addedPaths = new Set(selectedRubrics.map(r => r.path));
+    const queuedPaths = new Set(queuedRubrics.map(r => r.path));
+
+    let resultRubricsAll = filterText ? ALL_RUBRICS.filter(r => searchMatches(r, filterText)) : [];
+
+    // Distinguisher tabs are computed from the CURRENT search results (not
+    // the whole repertory) — only tabs that actually have at least one
+    // matching, currently-visible result are shown, so a tab never leads to
+    // an empty list. Tapping a tab narrows resultRubricsAll further.
+    const distinguisherCounts = {};
+    resultRubricsAll.forEach(r => {
+      const d = classifyDistinguisher(r);
+      if (d) distinguisherCounts[d] = (distinguisherCounts[d] || 0) + 1;
+    });
+    const availableDistinguishers = Object.keys(distinguisherCounts);
+    if (activeDistinguisherFilter && !availableDistinguishers.includes(activeDistinguisherFilter)) {
+      activeDistinguisherFilter = null; // the active filter no longer applies to this search text, reset it
+    }
+    if (activeDistinguisherFilter) {
+      resultRubricsAll = resultRubricsAll.filter(r => classifyDistinguisher(r) === activeDistinguisherFilter);
+    }
+
+    // PRIORITY SORT: matches from the patient's selected chapters first,
+    // then everything else from the rest of the repertory — within each
+    // group, queued items the patient already tapped float to the very top
+    // so they stay visible while still browsing/searching further.
+    function sortKey(r) {
+      const isQueued = queuedPaths.has(r.path) ? 0 : 1;
+      const isSelectedChapter = selectedChapterIds.includes(r.chapterId) ? 0 : 1;
+      return [isQueued, isSelectedChapter];
+    }
+    resultRubricsAll.sort((a, b) => {
+      const ka = sortKey(a), kb = sortKey(b);
+      if (ka[0] !== kb[0]) return ka[0] - kb[0];
+      if (ka[1] !== kb[1]) return ka[1] - kb[1];
+      return 0;
+    });
+
+    // Virtual-scroll-friendly rendering: keep ALL matches available (per
+    // explicit instruction — no cap on total results), but only RENDER a
+    // window of rows into the DOM at a time, growing as the patient
+    // scrolls down (see the 'scroll' listener in attachStepListeners).
+    // This avoids ever painting thousands of off-screen rows at once.
+    const renderCount = Math.min(resultRubricsAll.length, searchRenderWindow);
+    const resultRubrics = resultRubricsAll.slice(0, renderCount);
     window._currentResultRubrics = resultRubrics;
+
+    function highlightMatch(text) {
+      const tokens = tokenizeQuery(filterText);
+      let html = escapeHtml(text);
+      tokens.forEach(tok => {
+        if (!tok) return;
+        const re = new RegExp('(' + tok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig');
+        html = html.replace(re, '<mark>$1</mark>');
+      });
+      return html;
+    }
 
     let bodyHtml;
     if (globalLoadState === 'loading') {
@@ -657,25 +864,48 @@ function render() {
       bodyHtml = `<div class="load-error">${chT({en:'Could not load the repertory. Please check your connection.', hi:'रिपर्टरी लोड नहीं हो सकी। कृपया अपना कनेक्शन जाँचें।'})}<br/><button class="btn-retry" id="retryLoadBtn">${chT({en:'Try again', hi:'फिर कोशिश करें'})}</button></div>`;
     } else {
       bodyHtml = `
+        <div class="selected-chapters-bar">
+          ${selectedChapterIds.length
+            ? chT({en:'Prioritizing: ', hi:'प्राथमिकता: '}) + selectedChapterIds.map(id => escapeHtml(chT(CHAPTERS.find(c=>c.id===id)))).join(', ')
+            : chT({en:'No areas selected yet — searching the whole repertory equally.', hi:'अभी तक कोई क्षेत्र नहीं चुना गया — पूरी रिपर्टरी समान रूप से खोजी जा रही है।'})}
+          <a href="#" id="backToChaptersLink" style="margin-left:8px; color:var(--teal2); font-weight:600;">${chT({en:'Change', hi:'बदलें'})}</a>
+        </div>
         <div class="search-input-wrap">
           <input class="option-search" id="globalSearch" placeholder="${escapeAttr(lang==='hi' ? chT({en:'Type Hindi in Roman letters... e.g. jalan', hi:'रोमन में हिंदी टाइप करें... जैसे jalan'}) : chT({en:'Type keywords... e.g. burning after eating', hi:'मुख्य शब्द टाइप करें...'}))}" value="${escapeAttr(globalSearchFilter||'')}"/>
           <button class="search-clear-btn ${globalSearchFilter ? 'visible' : ''}" id="globalSearchClear">×</button>
           <div class="ac-dropdown" id="globalSearchDropdown"></div>
         </div>
+        ${filterText && availableDistinguishers.length ? `
+        <div class="distinguisher-tabs" id="distinguisherTabs">
+          ${availableDistinguishers.map(d => `
+            <div class="distinguisher-tab ${activeDistinguisherFilter === d ? 'active' : ''}" data-distinguisher="${d}">
+              ${escapeHtml(lang==='hi' ? DISTINGUISHER_LABELS[d].hi : DISTINGUISHER_LABELS[d].en)} (${distinguisherCounts[d]})
+            </div>`).join('')}
+        </div>` : ''}
         <div class="option-count">
-          ${selectedRubrics.length} ${chT({en:'selected', hi:'चयनित'})}
-          ${filterText ? ` · ${resultRubricsAll.length > RESULTS_RENDER_CAP
-            ? chT({en:`showing first ${RESULTS_RENDER_CAP} of ${resultRubricsAll.length} matches — type more to narrow down`, hi:`${resultRubricsAll.length} में से पहले ${RESULTS_RENDER_CAP} दिखाए गए — और शब्द टाइप करें`})
-            : `${resultRubricsAll.length} ${chT({en:'shown', hi:'दिखाए गए'})}`}` : ''}
+          ${selectedRubrics.length} ${chT({en:'added', hi:'जोड़ा गया'})}
+          ${queuedRubrics.length ? ` · ${queuedRubrics.length} ${chT({en:'queued', hi:'कतार में'})}` : ''}
+          ${filterText ? ` · ${resultRubricsAll.length} ${chT({en:'match(es)', hi:'परिणाम'})}` : ''}
         </div>
         <div class="rubric-list" id="rubricResultsPane">
           ${!filterText ? `<div class="option-empty">${chT({en:'Start typing to search the entire repertory.', hi:'पूरी रिपर्टरी खोजने के लिए टाइप करना शुरू करें।'})}</div>` :
-            resultRubrics.length ? resultRubrics.map((r, idx) => `
-            <div class="rubric-option ${selectedPaths.has(r.path) ? 'rubric-selected' : ''}" data-rubric-index="${idx}">
-              <span class="rubric-check">${selectedPaths.has(r.path) ? '✓' : ''}</span>
-              <span class="rubric-option-text">${escapeHtml(lang === 'hi' ? r.hi : r.en)}</span>
-            </div>`).join('') : `<div class="option-empty">${chT({en:'No matches. Try different keywords.', hi:'कोई परिणाम नहीं। दूसरे शब्द आज़माएं।'})}</div>`}
-        </div>`;
+            resultRubrics.length ? resultRubrics.map((r, idx) => {
+              const isAdded = addedPaths.has(r.path);
+              const isQueued = queuedPaths.has(r.path);
+              const isFromSelectedChapter = selectedChapterIds.includes(r.chapterId);
+              const chapterObj = CHAPTERS.find(c => c.id === r.chapterId);
+              return `
+              <div class="rubric-option ${isQueued ? 'rubric-queued' : ''} ${isAdded ? 'rubric-added' : ''}" data-rubric-index="${idx}">
+                ${isAdded ? `<div class="added-corner-label">${chT({en:'Added', hi:'जोड़ा गया'})}</div>` : ''}
+                <span class="rubric-check">${isAdded || isQueued ? '✓' : ''}</span>
+                <span class="rubric-option-text">
+                  <span class="rubric-chapter-tag ${isFromSelectedChapter ? 'tag-selected-chapter' : ''}">${chapterObj ? escapeHtml(chT(chapterObj)) : ''}</span>
+                  ${highlightMatch(lang === 'hi' ? r.hi : r.en)}
+                </span>
+              </div>`;
+            }).join('') : `<div class="option-empty">${chT({en:'No matches. Try different keywords.', hi:'कोई परिणाम नहीं। दूसरे शब्द आज़माएं।'})}</div>`}
+        </div>
+        ${queuedRubrics.length ? `<button class="btn-primary" id="addQueuedBtn" style="margin-top:14px;">${chT({en:`Add ${queuedRubrics.length} selected`, hi:`${queuedRubrics.length} चयनित जोड़ें`})}</button>` : ''}`;
     }
     html = `
       <div class="qstep active">
@@ -807,6 +1037,24 @@ function attachStepListeners() {
       });
     }
   }
+  if (step === 'chapters') {
+    const list = document.getElementById('regionList');
+    if (list) {
+      list.addEventListener('click', (e) => {
+        const chapterEl = e.target.closest('[data-chapter-id]');
+        if (chapterEl) {
+          toggleChapterSelection(chapterEl.dataset.chapterId);
+          return;
+        }
+        const regionEl = e.target.closest('[data-region-index]');
+        if (regionEl) {
+          const idx = parseInt(regionEl.dataset.regionIndex, 10);
+          const region = REGIONS[idx];
+          if (region) toggleRegionAccordion(region.id);
+        }
+      });
+    }
+  }
   if (step === 'search') {
     const retryBtn = document.getElementById('retryLoadBtn');
     if (retryBtn) {
@@ -819,6 +1067,7 @@ function attachStepListeners() {
     if (search) {
       search.addEventListener('input', () => {
         globalSearchFilter = search.value;
+        searchRenderWindow = SEARCH_RENDER_WINDOW_INITIAL; // reset virtual-scroll window on every new search
         render();
         const reInput = document.getElementById('globalSearch');
         if (reInput) {
@@ -830,7 +1079,7 @@ function attachStepListeners() {
         () => ALL_RUBRICS,
         (item) => {
           if (item === null) { globalSearchFilter = ''; render(); return; }
-          toggleRubricSelection(item.path);
+          toggleQueuedRubric(item.path);
         }
       );
     }
@@ -841,7 +1090,38 @@ function attachStepListeners() {
         if (!el) return;
         const idx = parseInt(el.dataset.rubricIndex, 10);
         const rubric = (window._currentResultRubrics || [])[idx];
-        if (rubric) toggleRubricSelection(rubric.path);
+        if (rubric) toggleQueuedRubric(rubric.path);
+      });
+      // Virtual scroll: grow the render window as the patient nears the
+      // bottom of the currently-rendered rows, rather than ever rendering
+      // every match (which, for a common keyword, can be in the thousands).
+      pane.addEventListener('scroll', () => {
+        const nearBottom = pane.scrollTop + pane.clientHeight >= pane.scrollHeight - 80;
+        if (nearBottom) {
+          searchRenderWindow += SEARCH_RENDER_WINDOW_STEP;
+          render();
+        }
+      });
+    }
+    const tabs = document.getElementById('distinguisherTabs');
+    if (tabs) {
+      tabs.addEventListener('click', (e) => {
+        const el = e.target.closest('[data-distinguisher]');
+        if (!el) return;
+        const d = el.dataset.distinguisher;
+        activeDistinguisherFilter = (activeDistinguisherFilter === d) ? null : d;
+        searchRenderWindow = SEARCH_RENDER_WINDOW_INITIAL;
+        render();
+      });
+    }
+    const addBtn = document.getElementById('addQueuedBtn');
+    if (addBtn) addBtn.addEventListener('click', commitQueuedRubrics);
+    const backLink = document.getElementById('backToChaptersLink');
+    if (backLink) {
+      backLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        step = 'chapters';
+        render();
       });
     }
   }
@@ -855,6 +1135,12 @@ function renderFooter() {
     const f = document.createElement('div');
     f.className = 'qfooter';
     f.innerHTML = `<button class="btn-primary" onclick="goToChapter()">${chT({en:'Continue', hi:'जारी रखें'})}</button>`;
+    document.getElementById('app').insertBefore(f, document.getElementById('basketBar'));
+  }
+  if (step === 'chapters') {
+    const f = document.createElement('div');
+    f.className = 'qfooter';
+    f.innerHTML = `<button class="btn-primary" onclick="goToSearch()">${chT({en:'Continue to search', hi:'खोज पर जारी रखें'})}</button>`;
     document.getElementById('app').insertBefore(f, document.getElementById('basketBar'));
   }
   if (step === 'search') {
@@ -902,12 +1188,12 @@ function goToChapter() {
   // Skip the lock screen entirely if already unlocked this session (e.g.
   // patient went back to edit their name/reason after unlocking).
   if (isUnlocked) {
-    step = 'search';
+    step = 'chapters';
   } else {
     step = 'lock';
     // Start fetching the full repertory NOW, in the background, while the
     // patient is busy entering a coupon code — by the time they reach the
-    // search screen, the data has likely already arrived.
+    // chapter-picker/search screens, the data has likely already arrived.
     loadAllRubrics();
   }
   render();
@@ -922,7 +1208,7 @@ function applyCoupon() {
   if (VALID_TEST_COUPONS.includes(code)) {
     isUnlocked = true;
     couponError = '';
-    step = 'search';
+    step = 'chapters';
     render();
   } else {
     couponError = t('couponInvalid');
@@ -931,12 +1217,29 @@ function applyCoupon() {
     if (field) field.focus();
   }
 }
+function toggleRegionAccordion(regionId) {
+  expandedRegion = (expandedRegion === regionId) ? null : regionId; // true accordion, only one open at a time
+  render();
+}
+function toggleChapterSelection(chapterId) {
+  const idx = selectedChapterIds.indexOf(chapterId);
+  if (idx !== -1) {
+    selectedChapterIds.splice(idx, 1);
+  } else {
+    selectedChapterIds.push(chapterId);
+  }
+  render();
+}
+function goToSearch() {
+  step = 'search';
+  render();
+}
 function goToGenerals() {
   step = 'generals'; render();
 }
 function goToReview() { step = 'review'; render(); }
 function goBack() {
-  const order = ['remarks','lock','search','generals','review'];
+  const order = ['remarks','lock','chapters','search','generals','review'];
   const idx = order.indexOf(step);
   if (idx > 0) {
     let prevIdx = idx - 1;
