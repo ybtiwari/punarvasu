@@ -101,10 +101,8 @@
   .rubric-list { display: flex; flex-direction: column; gap: 8px; max-height: 55vh; overflow-y: auto; }
   .rubric-option { position: relative; background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-size: 14.5px; color: var(--ink2); cursor: pointer; transition: all 0.15s; display: flex; align-items: flex-start; gap: 10px; }
   .rubric-option:hover { border-color: var(--teal); background: rgba(28,107,90,0.04); }
-  .rubric-option.rubric-queued { background: rgba(28,107,90,0.1); border-color: var(--teal); }
   .rubric-option.rubric-added { background: var(--cream); border-color: var(--border); opacity: 0.85; }
   .rubric-check { width: 18px; height: 18px; margin-top: 1px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; border: 1.5px solid var(--border); border-radius: 4px; color: transparent; }
-  .rubric-option.rubric-queued .rubric-check { border-color: var(--teal); background: var(--teal); color: white; }
   .rubric-option.rubric-added .rubric-check { border-color: var(--ink3); background: var(--ink3); color: white; }
   .rubric-option-text { flex: 1; line-height: 1.45; }
   .rubric-option-text mark { background: none; color: var(--teal2); font-weight: 700; }
@@ -975,17 +973,26 @@ function render() {
           ${queuedRubrics.length ? ` · ${queuedRubrics.length} ${chT({en:'selected', hi:'चयनित'})}` : ''}
           ${filterText ? ` · ${resultRubricsAll.length} ${chT({en:'match(es)', hi:'परिणाम'})}` : ''}
         </div>
+        ${queuedRubrics.length ? `
+        <div class="pick-chips-wrap">
+          <div class="pick-chip-row" id="queuedChipRow">
+            ${queuedRubrics.map((r, idx) => `
+              <div class="pick-chip">
+                <span class="pick-chip-text">${escapeHtml(lang === 'hi' ? r.hi : r.en)}</span>
+                <button class="pick-chip-remove" data-remove-queued-index="${idx}">×</button>
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
         <div class="rubric-list" id="rubricResultsPane">
           ${!filterText && !queuedRubrics.length ? `<div class="option-empty">${chT({en:'Start typing to search the entire repertory.', hi:'पूरी रिपर्टरी खोजने के लिए टाइप करना शुरू करें।'})}</div>` :
             resultRubrics.length ? resultRubrics.map((r, idx) => {
               const isAdded = addedPaths.has(r.path);
-              const isQueued = queuedPaths.has(r.path);
               const isFromSelectedChapter = selectedChapterIds.includes(r.chapterId);
               const chapterObj = CHAPTERS.find(c => c.id === r.chapterId);
               return `
-              <div class="rubric-option ${isQueued ? 'rubric-queued' : ''} ${isAdded ? 'rubric-added' : ''}" data-rubric-index="${idx}">
+              <div class="rubric-option ${isAdded ? 'rubric-added' : ''}" data-rubric-index="${idx}">
                 ${isAdded ? `<div class="added-corner-label">${chT({en:'Added', hi:'जोड़ा गया'})}</div>` : ''}
-                <span class="rubric-check">${isAdded || isQueued ? '✓' : ''}</span>
+                <span class="rubric-check">${isAdded ? '✓' : ''}</span>
                 <span class="rubric-option-text">
                   <span class="rubric-chapter-tag ${isFromSelectedChapter ? 'tag-selected-chapter' : ''}" style="color:${chapterColor(r.chapterId)}">${chapterObj ? escapeHtml(chT(chapterObj)) : ''}</span>
                   ${highlightMatch(lang === 'hi' ? r.hi : r.en)}
@@ -1204,6 +1211,16 @@ function attachStepListeners() {
     }
     const addBtn = document.getElementById('addQueuedBtn');
     if (addBtn) addBtn.addEventListener('click', commitQueuedRubrics);
+    const chipRow = document.getElementById('queuedChipRow');
+    if (chipRow) {
+      chipRow.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-remove-queued-index]');
+        if (!btn) return;
+        const idx = parseInt(btn.dataset.removeQueuedIndex, 10);
+        const item = queuedRubrics[idx];
+        if (item) toggleQueuedRubric(item.path); // same toggle used in the results list - removes it from the queue
+      });
+    }
     const backLink = document.getElementById('backToChaptersLink');
     if (backLink) {
       backLink.addEventListener('click', (e) => {
