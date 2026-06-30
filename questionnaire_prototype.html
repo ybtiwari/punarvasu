@@ -853,10 +853,41 @@ function render() {
       resultRubricsAll = resultRubricsAll.filter(r => queuedPaths.has(r.path) || classifyDistinguisher(r) === activeDistinguisherFilter);
     }
 
-    // PRIORITY SORT: matches from the patient's selected chapters first,
-    // then everything else from the rest of the repertory — within each
-    // group, queued items the patient already tapped float to the very top
-    // so they stay visible while still browsing/searching further.
+    // RELEVANCE SCORING: within each chapter-priority tier, results are
+    // ordered by how strongly the match relates to what the patient
+    // actually typed — NOT by Kent's classical chapter sequence (Mind,
+    // Head, Eye...), which is meaningful structure for a trained
+    // homeopath but arbitrary-feeling to a patient with no reason to know
+    // or expect it. A short, direct match ("A burning headache.") scores
+    // higher than the same keyword buried inside a longer, more specific
+    // compound symptom ("...followed by a burning feeling.").
+    // Combines two signals: MATCH DENSITY (what fraction of the text's
+    // characters are part of the match — denser = more central to the
+    // complaint) and POSITION (how early the first match starts — earlier
+    // = more likely to be the main subject of the sentence, not a
+    // trailing modifier).
+    function relevanceScore(item, tokens) {
+      const text = (lang === 'hi' ? (item.roman || '') : (item.en || '')).toLowerCase();
+      if (!text || !tokens.length) return 0;
+      let totalMatchedChars = 0;
+      let earliestPos = text.length;
+      tokens.forEach(tok => {
+        const idx = text.indexOf(tok);
+        if (idx !== -1) {
+          totalMatchedChars += tok.length;
+          if (idx < earliestPos) earliestPos = idx;
+        }
+      });
+      const density = totalMatchedChars / text.length;
+      const positionScore = 1 - (earliestPos / text.length);
+      return density * 0.6 + positionScore * 0.4;
+    }
+    const relevanceTokens = tokenizeQuery(filterText);
+
+    // PRIORITY SORT: queued items always float to the very top (so they
+    // stay visible while still browsing), then matches from the patient's
+    // selected chapters, then everything else — and WITHIN each of those
+    // groups, ordered by relevance score (highest first), not chapter order.
     function sortKey(r) {
       const isQueued = queuedPaths.has(r.path) ? 0 : 1;
       const isSelectedChapter = selectedChapterIds.includes(r.chapterId) ? 0 : 1;
@@ -866,7 +897,7 @@ function render() {
       const ka = sortKey(a), kb = sortKey(b);
       if (ka[0] !== kb[0]) return ka[0] - kb[0];
       if (ka[1] !== kb[1]) return ka[1] - kb[1];
-      return 0;
+      return relevanceScore(b, relevanceTokens) - relevanceScore(a, relevanceTokens);
     });
 
     // Virtual-scroll-friendly rendering: keep ALL matches available (per
