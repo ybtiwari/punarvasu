@@ -388,6 +388,19 @@ const SEARCH_RENDER_WINDOW_INITIAL = 60;
 const SEARCH_RENDER_WINDOW_STEP = 60;
 let searchRenderWindow = SEARCH_RENDER_WINDOW_INITIAL;
 
+// SORT-ORDER CACHE: re-sorting the results list every time the patient
+// TAPS a row (to select/deselect it) made the list visually jump — the
+// tapped item would relocate to a new sorted position immediately, which
+// is disorienting while still reading through several results. Instead,
+// the sort order is computed ONCE per search (cached here, keyed by the
+// search text + chapter selection it was computed for) and REUSED on every
+// re-render that selection-tapping triggers — it's only recomputed when
+// the search text or selected chapters actually change, or distinguisher
+// filter changes. This keeps a tapped item exactly where it was, just
+// visually marked as selected, until the patient changes their search.
+let cachedSortKey = null;   // a string fingerprinting what the cache was built for
+let cachedSortedPaths = []; // the ordered list of paths from that computation
+
 // NOTE: search language is no longer independent state — searchTextFor()
 // below derives it directly from the display `lang` variable, so the two
 // toggles can never disagree or be confused with each other.
@@ -853,7 +866,7 @@ function render() {
       resultRubricsAll = resultRubricsAll.filter(r => queuedPaths.has(r.path) || classifyDistinguisher(r) === activeDistinguisherFilter);
     }
 
-    // RELEVANCE SCORING: within each chapter-priority tier, results are
+    // RELEVANCE SCORING: within the chapter-priority tier, results are
     // ordered by how strongly the match relates to what the patient
     // actually typed — NOT by Kent's classical chapter sequence (Mind,
     // Head, Eye...), which is meaningful structure for a trained
@@ -861,11 +874,6 @@ function render() {
     // or expect it. A short, direct match ("A burning headache.") scores
     // higher than the same keyword buried inside a longer, more specific
     // compound symptom ("...followed by a burning feeling.").
-    // Combines two signals: MATCH DENSITY (what fraction of the text's
-    // characters are part of the match — denser = more central to the
-    // complaint) and POSITION (how early the first match starts — earlier
-    // = more likely to be the main subject of the sentence, not a
-    // trailing modifier).
     function relevanceScore(item, tokens) {
       const text = (lang === 'hi' ? (item.roman || '') : (item.en || '')).toLowerCase();
       if (!text || !tokens.length) return 0;
@@ -882,22 +890,39 @@ function render() {
       const positionScore = 1 - (earliestPos / text.length);
       return density * 0.6 + positionScore * 0.4;
     }
-    const relevanceTokens = tokenizeQuery(filterText);
 
-    // PRIORITY SORT: queued items always float to the very top (so they
-    // stay visible while still browsing), then matches from the patient's
-    // selected chapters, then everything else — and WITHIN each of those
-    // groups, ordered by relevance score (highest first), not chapter order.
-    function sortKey(r) {
-      const isQueued = queuedPaths.has(r.path) ? 0 : 1;
-      const isSelectedChapter = selectedChapterIds.includes(r.chapterId) ? 0 : 1;
-      return [isQueued, isSelectedChapter];
+    // SORT-ORDER CACHING: selecting/deselecting a row must NEVER move it to
+    // a new position mid-browse — that visual jump pulls focus away from
+    // whatever else the patient was still reading. So the sort is computed
+    // ONCE per distinct search context (fingerprinted by search text +
+    // selected chapters + distinguisher filter + display language) and then
+    // REUSED across every render that selecting a row triggers. It only
+    // recomputes when the patient actually changes what they're searching
+    // for — at which point a fresh, re-sorted list is exactly what's wanted.
+    const sortCacheKey = JSON.stringify([filterText, selectedChapterIds.slice().sort(), activeDistinguisherFilter, lang]);
+    if (cachedSortKey !== sortCacheKey) {
+      const relevanceTokens = tokenizeQuery(filterText);
+      function sortTier(r) {
+        return selectedChapterIds.includes(r.chapterId) ? 0 : 1;
+      }
+      const freshlySorted = resultRubricsAll.slice().sort((a, b) => {
+        const ta = sortTier(a), tb = sortTier(b);
+        if (ta !== tb) return ta - tb;
+        return relevanceScore(b, relevanceTokens) - relevanceScore(a, relevanceTokens);
+      });
+      cachedSortedPaths = freshlySorted.map(r => r.path);
+      cachedSortKey = sortCacheKey;
     }
+    // Re-order resultRubricsAll to match the cached order. Any item present
+    // now but NOT in the cache (e.g. a queued item that, on a later render,
+    // is still present but the cache predates it slightly) is appended at
+    // the end — this only happens transiently and self-corrects the next
+    // time the cache legitimately recomputes.
+    const cacheIndex = new Map(cachedSortedPaths.map((p, i) => [p, i]));
     resultRubricsAll.sort((a, b) => {
-      const ka = sortKey(a), kb = sortKey(b);
-      if (ka[0] !== kb[0]) return ka[0] - kb[0];
-      if (ka[1] !== kb[1]) return ka[1] - kb[1];
-      return relevanceScore(b, relevanceTokens) - relevanceScore(a, relevanceTokens);
+      const ia = cacheIndex.has(a.path) ? cacheIndex.get(a.path) : Infinity;
+      const ib = cacheIndex.has(b.path) ? cacheIndex.get(b.path) : Infinity;
+      return ia - ib;
     });
 
     // Virtual-scroll-friendly rendering: keep ALL matches available (per
