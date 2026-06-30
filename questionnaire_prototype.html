@@ -108,8 +108,8 @@
   .rubric-option.rubric-added .rubric-check { border-color: var(--ink3); background: var(--ink3); color: white; }
   .rubric-option-text { flex: 1; line-height: 1.45; }
   .rubric-option-text mark { background: none; color: var(--teal2); font-weight: 700; }
-  .rubric-chapter-tag { display: block; font-size: 11px; margin-bottom: 2px; color: var(--ink3); font-weight: 500; }
-  .rubric-chapter-tag.tag-selected-chapter { color: var(--teal2); font-weight: 700; }
+  .rubric-chapter-tag { display: block; font-size: 11px; margin-bottom: 2px; font-weight: 600; }
+  .rubric-chapter-tag.tag-selected-chapter { font-weight: 700; text-decoration: underline; text-decoration-color: currentColor; text-decoration-thickness: 2px; }
   .added-corner-label { position: absolute; top: -8px; right: 8px; background: var(--navy); color: white; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; letter-spacing: 0.03em; }
 
   /* DISTINGUISHER TABS */
@@ -218,7 +218,7 @@
 const CHAPTERS = [
   // Mind & Sensorium
   { id: "mind",     en: "Mind",     hi: "मन",        region: "mind_sensorium", icon: "🧘" },
-  { id: "vertigo",  en: "Vertigo",  hi: "चक्कर",     region: "mind_sensorium", icon: "💫" },
+  { id: "vertigo",  en: "Dizziness",  hi: "चक्कर",     region: "mind_sensorium", icon: "💫" },
   // Head & Senses
   { id: "head",     en: "Head",     hi: "सिर",        region: "head_senses", icon: "🧠" },
   { id: "eye",      en: "Eye",      hi: "आँख",        region: "head_senses", icon: "👁" },
@@ -229,44 +229,44 @@ const CHAPTERS = [
   { id: "face",     en: "Face",     hi: "चेहरा",      region: "head_senses", icon: "🙂" },
   { id: "mouth",    en: "Mouth",    hi: "मुँह",        region: "head_senses", icon: "👄" },
   { id: "teeth",    en: "Teeth",    hi: "दाँत",       region: "head_senses", icon: "🦷" },
-  { id: "throat",   en: "Throat",   hi: "गला",        region: "head_senses", icon: "🗣" },
-  { id: "external_throat", en: "External throat", hi: "बाहरी गला", region: "head_senses", icon: "🧣" },
+  { id: "throat",   en: "Throat (inside)",   hi: "गला (भीतर)",        region: "head_senses", icon: "🗣" },
+  { id: "external_throat", en: "Throat (outside)", hi: "गला (बाहर)", region: "head_senses", icon: "🧣" },
   // Respiratory & Chest
-  { id: "larynx_trachea", en: "Larynx and trachea", hi: "स्वरयंत्र और श्वासनली", region: "respiratory_chest", icon: "🫁" },
-  { id: "respiration", en: "Respiration", hi: "श्वास",  region: "respiratory_chest", icon: "💨" },
+  { id: "larynx_trachea", en: "Voice box & windpipe", hi: "स्वरयंत्र और श्वासनली", region: "respiratory_chest", icon: "🫁" },
+  { id: "respiration", en: "Breathing", hi: "श्वास",  region: "respiratory_chest", icon: "💨" },
   { id: "cough",    en: "Cough",    hi: "खांसी",      region: "respiratory_chest", icon: "😮‍💨" },
-  { id: "expectoration", en: "Expectoration", hi: "कफ निकलना", region: "respiratory_chest", icon: "🤧" },
+  { id: "expectoration", en: "Coughed-up mucus", hi: "कफ निकलना", region: "respiratory_chest", icon: "🤧" },
   { id: "chest",    en: "Chest",    hi: "छाती",       region: "respiratory_chest", icon: "🫁" },
-  { id: "heart_circulation", en: "Heart & Circulation", hi: "हृदय और रक्त संचार", region: "respiratory_chest", icon: "❤️" },
+  { id: "heart_circulation", en: "Heart & blood flow", hi: "हृदय और रक्त संचार", region: "respiratory_chest", icon: "❤️" },
   // Digestion
   { id: "stomach",  en: "Stomach",  hi: "पेट",        region: "digestion", icon: "🫃" },
   { id: "abdomen",  en: "Abdomen",  hi: "उदर",        region: "digestion", icon: "🟫" },
-  { id: "rectum",   en: "Rectum",   hi: "मलाशय",      region: "digestion", icon: "🔵" },
+  { id: "rectum",   en: "Back passage (rectum)",   hi: "मलाशय",      region: "digestion", icon: "🔵" },
   { id: "stool",    en: "Stool",    hi: "मल",         region: "digestion", icon: "🟤" },
   { id: "appetite", en: "Appetite", hi: "भूख",        region: "digestion", icon: "🍽" },
   // Urinary & Reproductive
-  { id: "bladder",  en: "Bladder",  hi: "मूत्राशय",    region: "urinary_reproductive", icon: "🟡" },
+  { id: "bladder",  en: "Urine bag (bladder)",  hi: "मूत्राशय",    region: "urinary_reproductive", icon: "🟡" },
   { id: "kidneys",  en: "Kidneys",  hi: "किडनी",      region: "urinary_reproductive", icon: "🫘" },
-  { id: "prostate_gland", en: "Prostate gland", hi: "प्रोस्टेट ग्रंथि", region: "urinary_reproductive", icon: "⚪" },
-  { id: "urethra",  en: "Urethra",  hi: "मूत्रमार्ग",  region: "urinary_reproductive", icon: "➰" },
+  { id: "prostate_gland", en: "Prostate", hi: "प्रोस्टेट ग्रंथि", region: "urinary_reproductive", icon: "⚪" },
+  { id: "urethra",  en: "Urine pipe (urethra)",  hi: "मूत्रमार्ग",  region: "urinary_reproductive", icon: "➰" },
   { id: "urine",    en: "Urine",    hi: "मूत्र",       region: "urinary_reproductive", icon: "💧" },
-  { id: "genitalia_male", en: "Genitalia male", hi: "पुरुष जननांग", region: "urinary_reproductive", icon: "♂️" },
-  { id: "genitalia_female", en: "Genitalia female", hi: "महिला जननांग", region: "urinary_reproductive", icon: "♀️" },
+  { id: "genitalia_male", en: "Male private parts", hi: "पुरुष जननांग", region: "urinary_reproductive", icon: "♂️" },
+  { id: "genitalia_female", en: "Female private parts", hi: "महिला जननांग", region: "urinary_reproductive", icon: "♀️" },
   // Limbs & Back
   { id: "back",     en: "Back",     hi: "पीठ",        region: "limbs_back", icon: "🦴" },
-  { id: "extremities", en: "Extremities", hi: "हाथ-पैर", region: "limbs_back", icon: "🦵" },
+  { id: "extremities", en: "Arms & legs", hi: "हाथ-पैर", region: "limbs_back", icon: "🦵" },
   // Whole-body & General
   { id: "sleep",    en: "Sleep",    hi: "नींद",        region: "whole_body", icon: "🌙" },
   { id: "chill",    en: "Chill",    hi: "ठंड लगना",    region: "whole_body", icon: "🥶" },
   { id: "fever",    en: "Fever",    hi: "बुखार",       region: "whole_body", icon: "🌡" },
-  { id: "perspiration", en: "Perspiration", hi: "पसीना", region: "whole_body", icon: "💦" },
+  { id: "perspiration", en: "Sweating", hi: "पसीना", region: "whole_body", icon: "💦" },
   { id: "skin",     en: "Skin",     hi: "त्वचा",       region: "whole_body", icon: "🤚" },
-  { id: "generalities", en: "Generalities", hi: "सामान्य", region: "whole_body", icon: "🌐" },
+  { id: "generalities", en: "Whole-body symptoms", hi: "सामान्य", region: "whole_body", icon: "🌐" },
   { id: "blood",    en: "Blood",    hi: "रक्त",        region: "whole_body", icon: "🩸" },
 ];
 
 const REGIONS = [
-  { id: "mind_sensorium",        en: "Mind & Sensorium",        hi: "मन और संवेदना",        icon: "🧘" },
+  { id: "mind_sensorium",        en: "Mind & Senses",        hi: "मन और संवेदना",        icon: "🧘" },
   { id: "head_senses",           en: "Head & Senses",           hi: "सिर और इंद्रियां",       icon: "🧠" },
   { id: "respiratory_chest",     en: "Respiratory & Chest",     hi: "श्वास और छाती",        icon: "🫁" },
   { id: "digestion",             en: "Digestion",                hi: "पाचन",                icon: "🍽" },
@@ -274,6 +274,26 @@ const REGIONS = [
   { id: "limbs_back",            en: "Limbs & Back",             hi: "अंग और पीठ",           icon: "🦴" },
   { id: "whole_body",            en: "Whole-body & General",    hi: "सम्पूर्ण शरीर व सामान्य", icon: "🌐" },
 ];
+
+// CHAPTER COLORS: a fixed, hand-picked palette of 40 visually distinct,
+// readable-on-white colors, assigned to chapters in the order CHAPTERS is
+// defined above — so the same chapter always shows the same color
+// throughout a session (and across sessions, since the order is fixed),
+// making it easy for a patient to visually group results coming from the
+// same body area at a glance, per explicit instruction.
+const CHAPTER_COLOR_PALETTE = [
+  '#1C6B5A', '#C8600A', '#7B3FA0', '#1565C0', '#B71C1C', '#2E7D32', '#5D4037',
+  '#AD1457', '#00838F', '#6A4C93', '#D84315', '#283593', '#558B2F', '#8E24AA',
+  '#0277BD', '#C62828', '#00695C', '#F57F17', '#4527A0', '#37474F', '#9E5C00',
+  '#1B5E20', '#880E4F', '#01579B', '#BF360C', '#4A148C', '#33691E', '#6D4C41',
+  '#827717', '#3E2723', '#004D40', '#E65100', '#311B92', '#1A237E', '#7C2D12',
+  '#14532D', '#78350F', '#9D174D', '#155E75', '#5B21B6',
+];
+const CHAPTER_COLOR_MAP = {};
+CHAPTERS.forEach((c, i) => { CHAPTER_COLOR_MAP[c.id] = CHAPTER_COLOR_PALETTE[i % CHAPTER_COLOR_PALETTE.length]; });
+function chapterColor(chapterId) {
+  return CHAPTER_COLOR_MAP[chapterId] || 'var(--ink3)';
+}
 
 // ALL_RUBRICS holds the ENTIRE repertory's worth of searchable rubrics in
 // one flat array — every chapter, every depth, no category grouping —
@@ -485,13 +505,13 @@ function tokenizeQuery(q) {
 // explicit instruction: don't suggest a distinguisher that doesn't exist
 // for this particular complaint).
 const DISTINGUISHER_LABELS = {
-  timing: { en: 'Timing', hi: 'समय' },
-  modality: { en: 'Modality', hi: 'क्या बढ़ाता/घटाता है' },
-  cause: { en: 'Cause / Trigger', hi: 'कारण' },
-  sensation: { en: 'Sensation / Location', hi: 'अनुभव / स्थान' },
-  laterality: { en: 'Side', hi: 'पक्ष (बायाँ/दायाँ)' },
-  content: { en: 'Specific detail', hi: 'विशेष विवरण' },
-  sequence: { en: 'Pattern', hi: 'क्रम' },
+  timing: { en: 'When it happens', hi: 'कब होता है' },
+  modality: { en: 'What makes it better or worse', hi: 'क्या बढ़ाता/घटाता है' },
+  cause: { en: 'What brought it on', hi: 'किस कारण से हुआ' },
+  sensation: { en: 'What it feels like', hi: 'कैसा महसूस होता है' },
+  laterality: { en: 'Which side', hi: 'कौन सा पक्ष' },
+  content: { en: 'More detail', hi: 'अधिक जानकारी' },
+  sequence: { en: 'How it comes and goes', hi: 'कैसे आता-जाता है' },
 };
 const CATEGORY_TO_DISTINGUISHER = {
   'Linked to time of day': 'timing',
@@ -911,7 +931,7 @@ function render() {
                 ${isAdded ? `<div class="added-corner-label">${chT({en:'Added', hi:'जोड़ा गया'})}</div>` : ''}
                 <span class="rubric-check">${isAdded || isQueued ? '✓' : ''}</span>
                 <span class="rubric-option-text">
-                  <span class="rubric-chapter-tag ${isFromSelectedChapter ? 'tag-selected-chapter' : ''}">${chapterObj ? escapeHtml(chT(chapterObj)) : ''}</span>
+                  <span class="rubric-chapter-tag ${isFromSelectedChapter ? 'tag-selected-chapter' : ''}" style="color:${chapterColor(r.chapterId)}">${chapterObj ? escapeHtml(chT(chapterObj)) : ''}</span>
                   ${highlightMatch(lang === 'hi' ? r.hi : r.en)}
                 </span>
               </div>`;
