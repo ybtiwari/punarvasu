@@ -802,7 +802,16 @@ function render() {
     const addedPaths = new Set(selectedRubrics.map(r => r.path));
     const queuedPaths = new Set(queuedRubrics.map(r => r.path));
 
-    let resultRubricsAll = filterText ? ALL_RUBRICS.filter(r => searchMatches(r, filterText)) : [];
+    // Queued items must ALWAYS stay visible, regardless of the current
+    // search text — clearing the search box (or typing something new that
+    // doesn't match them) must never make an already-queued rubric vanish.
+    // So the visible list is: every queued item, PLUS whatever the current
+    // search text matches (deduplicated).
+    const searchMatchesNow = filterText ? ALL_RUBRICS.filter(r => searchMatches(r, filterText)) : [];
+    const seenPaths = new Set();
+    let resultRubricsAll = [];
+    queuedRubrics.forEach(r => { if (!seenPaths.has(r.path)) { seenPaths.add(r.path); resultRubricsAll.push(r); } });
+    searchMatchesNow.forEach(r => { if (!seenPaths.has(r.path)) { seenPaths.add(r.path); resultRubricsAll.push(r); } });
 
     // Distinguisher tabs are computed from the CURRENT search results (not
     // the whole repertory) — only tabs that actually have at least one
@@ -818,7 +827,10 @@ function render() {
       activeDistinguisherFilter = null; // the active filter no longer applies to this search text, reset it
     }
     if (activeDistinguisherFilter) {
-      resultRubricsAll = resultRubricsAll.filter(r => classifyDistinguisher(r) === activeDistinguisherFilter);
+      // Never filter OUT a queued item just because it doesn't match the
+      // active distinguisher tab — the tab narrows fresh search matches,
+      // it must not hide something the patient already selected.
+      resultRubricsAll = resultRubricsAll.filter(r => queuedPaths.has(r.path) || classifyDistinguisher(r) === activeDistinguisherFilter);
     }
 
     // PRIORITY SORT: matches from the patient's selected chapters first,
@@ -884,11 +896,11 @@ function render() {
         </div>` : ''}
         <div class="option-count">
           ${selectedRubrics.length} ${chT({en:'added', hi:'जोड़ा गया'})}
-          ${queuedRubrics.length ? ` · ${queuedRubrics.length} ${chT({en:'queued', hi:'कतार में'})}` : ''}
+          ${queuedRubrics.length ? ` · ${queuedRubrics.length} ${chT({en:'selected', hi:'चयनित'})}` : ''}
           ${filterText ? ` · ${resultRubricsAll.length} ${chT({en:'match(es)', hi:'परिणाम'})}` : ''}
         </div>
         <div class="rubric-list" id="rubricResultsPane">
-          ${!filterText ? `<div class="option-empty">${chT({en:'Start typing to search the entire repertory.', hi:'पूरी रिपर्टरी खोजने के लिए टाइप करना शुरू करें।'})}</div>` :
+          ${!filterText && !queuedRubrics.length ? `<div class="option-empty">${chT({en:'Start typing to search the entire repertory.', hi:'पूरी रिपर्टरी खोजने के लिए टाइप करना शुरू करें।'})}</div>` :
             resultRubrics.length ? resultRubrics.map((r, idx) => {
               const isAdded = addedPaths.has(r.path);
               const isQueued = queuedPaths.has(r.path);
