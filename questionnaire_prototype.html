@@ -1018,7 +1018,7 @@ function render() {
         <div class="distinguisher-tabs" id="distinguisherTabs">
           ${availableDistinguishers.map(d => `
             <div class="distinguisher-tab ${activeDistinguisherFilter === d ? 'active' : ''}" data-distinguisher="${d}">
-              ${escapeHtml(lang==='hi' ? DISTINGUISHER_LABELS[d].hi : DISTINGUISHER_LABELS[d].en)} (${distinguisherCounts[d]})
+              ${escapeHtml(DISTINGUISHER_LABELS[d].en)} · ${escapeHtml(DISTINGUISHER_LABELS[d].hi)} (${distinguisherCounts[d]})
             </div>`).join('')}
         </div>` : ''}
         <div class="option-count">
