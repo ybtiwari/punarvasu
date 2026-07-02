@@ -1242,6 +1242,27 @@ function renderGenChips(key, label, optsEn, optsHi) {
       </div>
     </div>`;
 }
+// Composes the three chip groups + freetext box into the generals step.
+// This was being called (as renderGeneralsQuestionnaire()) but was never
+// actually defined anywhere in the file — a ReferenceError inside render()
+// whenever the patient reached this step, which aborted the render
+// silently and made "Done — Continue" look like a dead button.
+function renderGeneralsQuestionnaire() {
+  return `
+    ${renderGenChips('appetite', t('appetite'),
+      ['Increased', 'Decreased', 'Normal'],
+      ['बढ़ी हुई', 'कम', 'सामान्य'])}
+    ${renderGenChips('thirst', t('thirst'),
+      ['Increased', 'Decreased', 'Normal'],
+      ['बढ़ी हुई', 'कम', 'सामान्य'])}
+    ${renderGenChips('thermal', t('thermal'),
+      ['Prefer warmth', 'Prefer cool', 'No particular preference'],
+      ['गर्म पसंद', 'ठंडा पसंद', 'कोई खास पसंद नहीं'])}
+    <div class="gen-group">
+      <div class="gen-label">${chT({en:'Anything else you would like to mention?', hi:'कुछ और जो आप बताना चाहें?'})}</div>
+      <textarea class="gen-freetext" id="generalsFreetext" placeholder="${escapeAttr(chT({en:'Optional', hi:'वैकल्पिक'}))}">${escapeHtml(generalsState.freetext)}</textarea>
+    </div>`;
+}
 function setGen(key, val) { generalsState[key] = val; render(); }
 
 function attachStepListeners() {
@@ -1478,6 +1499,10 @@ function renderFooter() {
     if (ds) {
       ds.addEventListener('input', () => setGenDreamSearch(ds.value));
       ds.addEventListener('click', (e) => e.stopPropagation());
+    }
+    const freetext = document.getElementById('generalsFreetext');
+    if (freetext) {
+      freetext.addEventListener('input', () => { generalsState.freetext = freetext.value; });
     }
     const f = document.createElement('div');
     f.className = 'qfooter';
