@@ -822,6 +822,17 @@ function render() {
   document.documentElement.lang = lang;
   let html = '';
 
+  // render() rebuilds the entire step's DOM from scratch on every call —
+  // triggered by scrolling, tapping a rubric, committing the queue,
+  // deleting a rubric, switching a distinguisher tab, etc. A fresh DOM
+  // node always starts at scrollTop 0, which was silently snapping the
+  // results list back to the top and derailing the patient's focus no
+  // matter which of those actions triggered it. Captured here, once, so
+  // EVERY render() call preserves it — not just the one or two call
+  // sites we happened to remember to patch.
+  const existingPane = document.getElementById('rubricResultsPane');
+  const preservedScrollTop = existingPane ? existingPane.scrollTop : null;
+
   if (step === 'remarks') {
     html = `
       <div class="qstep active">
@@ -1188,6 +1199,11 @@ function render() {
 
   body.innerHTML = html;
   attachStepListeners();
+
+  if (preservedScrollTop !== null) {
+    const newPane = document.getElementById('rubricResultsPane');
+    if (newPane) newPane.scrollTop = preservedScrollTop;
+  }
   renderFooter();
   renderBasket();
 }
@@ -1283,6 +1299,11 @@ function attachStepListeners() {
             reInput.focus();
             reInput.setSelectionRange(reInput.value.length, reInput.value.length);
           }
+          // New search text means a genuinely new result set — this should
+          // start at the top, unlike tapping/scrolling within an existing
+          // list, so explicitly override render()'s general scroll-preserve.
+          const freshPane = document.getElementById('rubricResultsPane');
+          if (freshPane) freshPane.scrollTop = 0;
         }, 180);
       });
       setupAutocomplete('globalSearch', 'globalSearchDropdown', 'globalSearchClear',
@@ -1308,15 +1329,8 @@ function attachStepListeners() {
       pane.addEventListener('scroll', () => {
         const nearBottom = pane.scrollTop + pane.clientHeight >= pane.scrollHeight - 80;
         if (nearBottom && searchRenderWindow < (window._currentResultRubricsAllCount || 0)) {
-          // render() rebuilds #qbody from scratch, which would otherwise
-          // reset the results pane's scrollTop to 0 — that's the "jumps
-          // back to top" bug. Capture the scroll position first and
-          // restore it on the freshly-rendered pane right after.
-          const preservedScrollTop = pane.scrollTop;
           searchRenderWindow += SEARCH_RENDER_WINDOW_STEP;
-          render();
-          const newPane = document.getElementById('rubricResultsPane');
-          if (newPane) newPane.scrollTop = preservedScrollTop;
+          render(); // scroll position is preserved automatically inside render()
         }
       });
     }
@@ -1329,6 +1343,10 @@ function attachStepListeners() {
         activeDistinguisherFilter = (activeDistinguisherFilter === d) ? null : d;
         searchRenderWindow = SEARCH_RENDER_WINDOW_INITIAL;
         render();
+        // New filter means a genuinely new result set — start at top,
+        // overriding render()'s general scroll-preserve.
+        const freshPane = document.getElementById('rubricResultsPane');
+        if (freshPane) freshPane.scrollTop = 0;
       });
     }
     const addBtn = document.getElementById('addQueuedBtn');
