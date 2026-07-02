@@ -373,6 +373,8 @@ const WORSE_FROM = [
 let ALL_RUBRICS = [];
 let pendingDeletePath = null;
 let wizardActive = false;
+let SEARCH_INDEX = [];   // pre-built lowercase search text per rubric (built once on data load)
+let searchDebounceTimer = null;
 let wizardLocked = true;
 let wizardStep = 0;
 let wizardSubLocs = [];
@@ -392,6 +394,13 @@ async function loadAllRubrics() {
     if (!res2.ok) throw new Error(`HTTP ${res2.status} (part 2)`);
     const [part1, part2] = await Promise.all([res1.json(), res2.json()]);
     ALL_RUBRICS = part1.concat(part2);
+    // Pre-build search index once: concatenated lowercase text per rubric.
+    // Eliminates string ops (concat + toLowerCase) on every rubric per keystroke.
+    SEARCH_INDEX = new Array(ALL_RUBRICS.length);
+    for (let i = 0; i < ALL_RUBRICS.length; i++) {
+      ALL_RUBRICS[i]._idx = i;
+      SEARCH_INDEX[i] = ((ALL_RUBRICS[i].en || '') + ' ' + (ALL_RUBRICS[i].roman || '')).toLowerCase();
+    }
     globalLoadState = 'loaded';
   } catch (e) {
     console.error('Failed to load repertory data:', e);
@@ -637,9 +646,8 @@ function classifyDistinguisher(item) {
 }
 
 function searchTextFor(item) {
-  // Always search across BOTH English and Romanized Hindi simultaneously.
-  // A patient can type "burning" or "jalan" and hit the same rubric.
-  return ((item.en || '') + ' ' + (item.roman || '')).toLowerCase();
+  // Use pre-built index if available (O(1)), else compute on the fly (fallback).
+  return item._idx !== undefined ? SEARCH_INDEX[item._idx] : ((item.en||'') + ' ' + (item.roman||'')).toLowerCase();
 }
 function searchMatches(item, query) {
   const tokens = tokenizeQuery(query || '');
@@ -890,7 +898,13 @@ function render() {
     // doesn't match them) must never make an already-queued rubric vanish.
     // So the visible list is: every queued item, PLUS whatever the current
     // search text matches (deduplicated).
-    const searchMatchesNow = filterText ? ALL_RUBRICS.filter(r => searchMatches(r, filterText)) : [];
+    // Pre-tokenize query once (not inside every filter iteration).
+    // Use SEARCH_INDEX[i] for O(1) text lookup instead of string ops per rubric.
+    const queryTokens = filterText ? tokenizeQuery(filterText) : [];
+    const searchMatchesNow = filterText ? ALL_RUBRICS.filter((r, i) => {
+      const text = (i < SEARCH_INDEX.length) ? SEARCH_INDEX[i] : searchTextFor(r);
+      return queryTokens.every(t => text.includes(t));
+    }) : [];
     const seenPaths = new Set();
     let resultRubricsAll = [];
     queuedRubrics.forEach(r => { if (!seenPaths.has(r.path)) { seenPaths.add(r.path); resultRubricsAll.push(r); } });
@@ -925,7 +939,7 @@ function render() {
     // higher than the same keyword buried inside a longer, more specific
     // compound symptom ("...followed by a burning feeling.").
     function relevanceScore(item, tokens) {
-      const text = ((item.en || '') + ' ' + (item.roman || '')).toLowerCase();
+      const text = item._idx !== undefined ? SEARCH_INDEX[item._idx] : ((item.en||'') + ' ' + (item.roman||'')).toLowerCase();
       if (!text || !tokens.length) return 0;
       let totalMatchedChars = 0;
       let earliestPos = text.length;
@@ -1221,13 +1235,18 @@ function attachStepListeners() {
     if (search) {
       search.addEventListener('input', () => {
         globalSearchFilter = search.value;
-        searchRenderWindow = SEARCH_RENDER_WINDOW_INITIAL; // reset virtual-scroll window on every new search
-        render();
-        const reInput = document.getElementById('globalSearch');
-        if (reInput) {
-          reInput.focus();
-          reInput.setSelectionRange(reInput.value.length, reInput.value.length);
-        }
+        searchRenderWindow = SEARCH_RENDER_WINDOW_INITIAL;
+        // Debounce: wait 180ms after last keystroke before re-rendering.
+        // Prevents expensive 73k-rubric filter from firing on every keypress.
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+          render();
+          const reInput = document.getElementById('globalSearch');
+          if (reInput) {
+            reInput.focus();
+            reInput.setSelectionRange(reInput.value.length, reInput.value.length);
+          }
+        }, 180);
       });
       setupAutocomplete('globalSearch', 'globalSearchDropdown', 'globalSearchClear',
         () => ALL_RUBRICS,
