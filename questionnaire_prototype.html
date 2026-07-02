@@ -114,6 +114,8 @@
   .rubric-chapter-tag { display: block; font-size: 11px; margin-bottom: 2px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
   .rubric-chapter-tag.tag-selected-chapter { text-decoration: underline; text-decoration-color: currentColor; text-decoration-thickness: 2px; }
   .added-corner-label { position: absolute; top: -8px; right: 8px; background: var(--navy); color: white; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; letter-spacing: 0.03em; }
+  .rubric-section-header { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink3); padding: 10px 2px 5px; border-bottom: 1px solid var(--border); margin-bottom: 2px; }
+  .rubric-section-header:first-child { padding-top: 0; }
 
   /* DISTINGUISHER TABS */
   .distinguisher-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
@@ -966,14 +968,22 @@ function render() {
     const sortCacheKey = JSON.stringify([filterText, selectedChapterIds.slice().sort(), activeDistinguisherFilter, lang]);
     if (cachedSortKey !== sortCacheKey) {
       const relevanceTokens = tokenizeQuery(filterText);
-      // Sort purely by relevance — no tier separation by selected chapters.
-      // Color (PRIORITY_COLOR vs black) already differentiates selected from
-      // non-selected chapters visually. Sorting by tier was hiding non-selected
-      // results below the fold; pure relevance puts the best matches first
-      // regardless of which chapter they belong to.
-      const freshlySorted = resultRubricsAll.slice().sort((a, b) =>
-        relevanceScore(b, relevanceTokens) - relevanceScore(a, relevanceTokens)
-      );
+      // TIERED SORT: when the patient has prioritized one or more chapters,
+      // every matching rubric from those chapters is grouped together at
+      // the TOP of the list (tier 0), followed by every other matching
+      // chapter's rubrics below (tier 1) — per explicit instruction, so the
+      // prioritized areas read as a distinct block rather than just being
+      // color-tagged and scattered throughout. Relevance still governs the
+      // order WITHIN each tier. With no chapters selected, this collapses
+      // back to a single tier — pure relevance, same as before.
+      const freshlySorted = resultRubricsAll.slice().sort((a, b) => {
+        if (selectedChapterIds.length) {
+          const tierA = selectedChapterIds.includes(a.chapterId) ? 0 : 1;
+          const tierB = selectedChapterIds.includes(b.chapterId) ? 0 : 1;
+          if (tierA !== tierB) return tierA - tierB;
+        }
+        return relevanceScore(b, relevanceTokens) - relevanceScore(a, relevanceTokens);
+      });
       cachedSortedPaths = freshlySorted.map(r => r.path);
       cachedSortKey = sortCacheKey;
     }
@@ -997,6 +1007,21 @@ function render() {
     const renderCount = Math.min(resultRubricsAll.length, searchRenderWindow);
     const resultRubrics = resultRubricsAll.slice(0, renderCount);
     window._currentResultRubrics = resultRubrics;
+    window._currentResultRubricsAllCount = resultRubricsAll.length;
+
+    // Boundary between tier 0 (selected-chapter matches) and tier 1 (every
+    // other chapter's matches) in resultRubricsAll, used to drop a section
+    // divider into the list at the right spot. Since resultRubricsAll is
+    // already tier-sorted, tier 0 is a contiguous run starting at index 0.
+    let tierBoundaryIndex = 0;
+    if (selectedChapterIds.length && filterText) {
+      while (tierBoundaryIndex < resultRubricsAll.length &&
+             selectedChapterIds.includes(resultRubricsAll[tierBoundaryIndex].chapterId)) {
+        tierBoundaryIndex++;
+      }
+    }
+    const showTierHeaders = selectedChapterIds.length > 0 && filterText &&
+      tierBoundaryIndex > 0 && tierBoundaryIndex < resultRubricsAll.length;
 
     function highlightMatch(text) {
       const tokens = tokenizeQuery(filterText);
@@ -1057,8 +1082,19 @@ function render() {
               const isQueued = queuedPaths.has(r.path);
               const isFromSelectedChapter = selectedChapterIds.includes(r.chapterId);
               const chapterObj = CHAPTERS.find(c => c.id === r.chapterId);
+              // Section dividers: dropped in right before the first tier-0
+              // row and right before the first tier-1 row, using the
+              // resultRubricsAll index (which equals idx here, since
+              // resultRubrics is a front slice of resultRubricsAll).
+              let sectionHeader = '';
+              if (showTierHeaders && idx === 0) {
+                sectionHeader = `<div class="rubric-section-header" style="color:${PRIORITY_COLOR};border-bottom-color:${PRIORITY_COLOR};">${chT({en:'In your selected areas', hi:'आपके चुने गए क्षेत्रों में'})}</div>`;
+              } else if (showTierHeaders && idx === tierBoundaryIndex) {
+                sectionHeader = `<div class="rubric-section-header">${chT({en:'In other areas', hi:'अन्य क्षेत्रों में'})}</div>`;
+              }
               return `
-              <div class="rubric-option ${isAdded ? 'rubric-added' : (isQueued ? 'rubric-queued' : '')}" data-rubric-index="${idx}">
+              ${sectionHeader}
+              <div class="rubric-option ${isAdded ? 'rubric-added' : (isQueued ? 'rubric-queued' : '')}" data-rubric-index="${idx}" ${isFromSelectedChapter ? `style="border-left:3px solid ${PRIORITY_COLOR};background:rgba(200,96,10,0.04);"` : ''}>
                 ${isAdded ? `<div class="added-corner-label">${chT({en:'Added', hi:'जोड़ा गया'})}</div>` : ''}
                 <span class="rubric-check">${(isAdded || isQueued) ? '✓' : ''}</span>
                 <span class="rubric-option-text">
@@ -1268,9 +1304,16 @@ function attachStepListeners() {
       // every match (which, for a common keyword, can be in the thousands).
       pane.addEventListener('scroll', () => {
         const nearBottom = pane.scrollTop + pane.clientHeight >= pane.scrollHeight - 80;
-        if (nearBottom) {
+        if (nearBottom && searchRenderWindow < (window._currentResultRubricsAllCount || 0)) {
+          // render() rebuilds #qbody from scratch, which would otherwise
+          // reset the results pane's scrollTop to 0 — that's the "jumps
+          // back to top" bug. Capture the scroll position first and
+          // restore it on the freshly-rendered pane right after.
+          const preservedScrollTop = pane.scrollTop;
           searchRenderWindow += SEARCH_RENDER_WINDOW_STEP;
           render();
+          const newPane = document.getElementById('rubricResultsPane');
+          if (newPane) newPane.scrollTop = preservedScrollTop;
         }
       });
     }
