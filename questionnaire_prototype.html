@@ -734,7 +734,7 @@ function setupAutocomplete(inputId, dropdownId, clearBtnId, getItems, onPick) {
     for (const it of items) {
       const text = searchTextFor(it);
       if (tokens.every(tok => text.includes(tok))) {
-        const display = it.en + (it.roman ? '  ·  ' + it.roman : '');
+        const display = it.en + (it.hi ? '  ·  ' + it.hi : '');
         if (display && !seen.has(display)) { seen.add(display); out.push({ display, item: it }); }
         if (out.length >= 20) break;
       }
@@ -1085,15 +1085,13 @@ function render() {
     html = `
       <div class="qstep active">
         <button class="btn-back" onclick="goBack()">← ${t('back')}</button>
-        <h2 class="qtitle">${t('generalsTitle')}</h2>
-        <p class="qsub">${t('generalsSub')}</p>
-        ${renderGenChips('appetite', t('appetite'), ['Good','Reduced','Excessive'], ['अच्छी','कम','अधिक'])}
-        ${renderGenChips('thirst', t('thirst'), ['Normal','Increased','Reduced'], ['सामान्य','बढ़ी हुई','कम'])}
-        ${renderGenChips('thermal', t('thermal'), ['Warm weather','Cool weather','No preference'], ['गर्म मौसम','ठंडा मौसम','कोई पसंद नहीं'])}
-        <div class="gen-group">
-          <div class="gen-label">${t('otherProblems')}</div>
-          <textarea class="gen-freetext" id="genFreetext" oninput="generalsState.freetext=this.value">${escapeHtml(generalsState.freetext)}</textarea>
-        </div>
+        <h2 class="qtitle">A few general questions<br>
+          <span style="font-size:15px;font-weight:400;color:var(--ink2);">कुछ सामान्य सवाल</span>
+        </h2>
+        <p class="qsub">Select everything that applies — these help narrow down the remedy.<br>
+          <span style="font-size:12px;">जो भी लागू हो चुनें — ये उपचार खोजने में मदद करते हैं।</span>
+        </p>
+        ${renderGeneralsQuestionnaire()}
       </div>`;
   }
 
@@ -1375,6 +1373,19 @@ function renderFooter() {
     }
   }
   if (step === 'generals') {
+    // Rubric chip clicks in generals questionnaire
+    const genBody = document.querySelector('.qstep.active');
+    if (genBody) {
+      genBody.addEventListener('click', (e) => {
+        const chip = e.target.closest('[data-gen-path]');
+        if (chip) { toggleGenRubric(chip.dataset.genPath); return; }
+      });
+    }
+    const ds = document.getElementById('genDreamSearchInput');
+    if (ds) {
+      ds.addEventListener('input', () => setGenDreamSearch(ds.value));
+      ds.addEventListener('click', (e) => e.stopPropagation());
+    }
     const f = document.createElement('div');
     f.className = 'qfooter';
     f.innerHTML = `<button class="btn-primary" onclick="goToReview()">${chT({en:'Review answers', hi:'उत्तर देखें'})}</button>`;
