@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Pain Wizard — Punarvasu Clinic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600&family=Noto+Sans+Devanagari:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --teal: #1C6B5A; --teal2: #2E7D32; --navy: #1a2744;
+    --ink: #1a1a1a; --ink2: #444; --ink3: #888;
+    --border: #e0e0e0; --border-strong: #b0b0b0;
+    --white: #ffffff; --cream: #f7f5f0; --bg: #f2f0eb;
+    --amber: #C8600A; --amber-bg: #FDF3E8; --amber-border: #C8600A;
+    --success: #2E7D32; --success-bg: #E8F5E9;
+    --radius: 10px;
+    --font: 'Source Sans 3', 'Noto Sans Devanagari', system-ui, sans-serif;
+  }
+  body { font-family: var(--font); background: var(--bg); color: var(--ink); min-height: 100vh; }
+  .app { max-width: 480px; margin: 0 auto; min-height: 100vh; background: var(--white); display: flex; flex-direction: column; }
+
+  /* ── Top bar ─────────────────────────────────────────────── */
+  .topbar { background: var(--teal); color: white; padding: 12px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .topbar-title { font-size: 15px; font-weight: 600; flex: 1; }
+  .topbar-sub { font-size: 11px; opacity: .8; display: block; margin-top: 1px; }
+
+  /* ── Content area ────────────────────────────────────────── */
+  .content { flex: 1; overflow-y: auto; padding: 16px; }
+
+  /* ── Loading ─────────────────────────────────────────────── */
+  .loading-wrap { text-align: center; padding: 60px 20px; }
+  .loading-icon { font-size: 36px; margin-bottom: 14px; }
+  .loading-bar { width: 200px; height: 4px; background: var(--border); border-radius: 2px; margin: 14px auto 0; overflow: hidden; }
+  .loading-progress { height: 100%; background: var(--teal); border-radius: 2px; animation: loadAnim 2s ease-in-out infinite; }
+  @keyframes loadAnim { 0%{width:0%} 50%{width:80%} 100%{width:100%} }
+  .loading-msg { font-size: 13px; color: var(--ink3); margin-top: 10px; }
+
+  /* ── Screen title ────────────────────────────────────────── */
+  .screen-title { font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+  .screen-title-hi { font-size: 13px; color: var(--ink2); display: block; margin-bottom: 14px; }
+  .screen-sub { font-size: 12.5px; color: var(--ink3); margin-bottom: 16px; line-height: 1.5; }
+
+  /* ── Chapter grid ────────────────────────────────────────── */
+  .ch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ch-card { border: 1.5px solid var(--border); border-radius: var(--radius); padding: 11px 10px; cursor: pointer; background: var(--white); transition: all .12s; text-align: center; }
+  .ch-card:active { transform: scale(.97); }
+  .ch-card.sel { border-color: var(--amber); background: var(--amber-bg); }
+  .ch-icon { font-size: 22px; margin-bottom: 5px; }
+  .ch-en { display: block; font-size: 12px; font-weight: 600; color: var(--ink); }
+  .ch-hi { display: block; font-size: 11px; color: var(--ink3); margin-top: 2px; }
+
+  /* ── Navigator header ────────────────────────────────────── */
+  .nav-header { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .btn-back { font-size: 13px; font-weight: 600; color: var(--teal); background: none; border: none; cursor: pointer; padding: 0; white-space: nowrap; flex-shrink: 0; }
+  .nav-crumb { font-size: 12px; color: var(--ink3); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nav-sel-badge { background: var(--amber); color: white; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px; white-space: nowrap; cursor: pointer; flex-shrink: 0; }
+
+  /* ── Rubric groups ────────────────────────────────────────── */
+  .group-wrap { margin-bottom: 16px; }
+  .group-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--teal2); margin-bottom: 8px; }
+  .group-lbl-hi { font-size: 11px; font-weight: 400; color: var(--ink3); margin-left: 4px; letter-spacing: 0; text-transform: none; }
+
+  /* ── Rubric chip ─────────────────────────────────────────── */
+  .rub { display: flex; align-items: flex-start; gap: 8px; padding: 9px 10px; border: 1.5px solid var(--border); border-radius: 9px; margin-bottom: 6px; cursor: pointer; background: var(--white); transition: all .12s; }
+  .rub:active { transform: scale(.98); }
+  .rub.sel { border-color: var(--amber); background: var(--amber-bg); }
+  .rub-chk { width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid var(--border-strong); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; margin-top: 2px; color: transparent; }
+  .rub.sel .rub-chk { background: var(--amber); border-color: var(--amber); color: white; }
+  .rub-body { flex: 1; min-width: 0; }
+  .rub-en { font-size: 13px; color: var(--ink); line-height: 1.4; }
+  .rub-hi { font-size: 12px; color: var(--ink3); margin-top: 2px; line-height: 1.35; }
+  .rub-path { font-size: 10.5px; color: var(--ink3); margin-top: 3px; font-style: italic; }
+  .rub-drill { font-size: 20px; color: var(--teal); cursor: pointer; padding: 0 4px; flex-shrink: 0; line-height: 1; opacity: .7; }
+  .rub-drill:active { opacity: 1; }
+  .no-children { text-align: center; padding: 24px 0; font-size: 13px; color: var(--ink3); }
+
+  /* ── Floating basket bar ─────────────────────────────────── */
+  .basket-bar { position: sticky; bottom: 0; background: white; border-top: 1px solid var(--border); padding: 10px 16px; display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+  .basket-bar.hidden { display: none; }
+  .basket-count { font-size: 13px; color: var(--ink2); flex: 1; }
+  .basket-count strong { color: var(--amber); }
+  .btn-review { background: var(--amber); color: white; border: none; border-radius: 8px; padding: 10px 18px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn-review:active { opacity: .85; }
+
+  /* ── Review screen ────────────────────────────────────────── */
+  .review-item { border: 1.5px solid var(--border); border-radius: 9px; padding: 10px 12px; margin-bottom: 8px; position: relative; }
+  .review-item-ch { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--amber); margin-bottom: 4px; }
+  .review-item-en { font-size: 13px; color: var(--ink); line-height: 1.4; }
+  .review-item-hi { font-size: 12px; color: var(--ink3); margin-top: 2px; }
+  .review-item-path { font-size: 10.5px; color: var(--ink3); margin-top: 4px; font-style: italic; }
+  .review-remove { position: absolute; top: 8px; right: 10px; font-size: 16px; color: var(--ink3); cursor: pointer; line-height: 1; }
+  .review-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .btn-primary { background: var(--teal); color: white; border: none; border-radius: 8px; padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer; flex: 1; }
+  .btn-secondary { background: none; border: 1.5px solid var(--border); color: var(--ink2); border-radius: 8px; padding: 12px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+  /* ── Done screen ─────────────────────────────────────────── */
+  .done-wrap { text-align: center; padding: 40px 20px; }
+  .done-icon { font-size: 48px; margin-bottom: 16px; }
+  .done-title { font-size: 18px; font-weight: 600; color: var(--teal); margin-bottom: 8px; }
+  .done-sub { font-size: 13px; color: var(--ink2); line-height: 1.6; }
+  .done-json { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-top: 20px; text-align: left; font-size: 11px; color: var(--ink3); font-family: monospace; white-space: pre-wrap; word-break: break-all; max-height: 250px; overflow-y: auto; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <span class="topbar-title">🩹 Pain Symptom Guide</span>
+      <span class="topbar-sub">दर्द विवरण सहायक — Punarvasu Clinic</span>
+    </div>
+  </div>
+  <div class="content" id="content"></div>
+  <div class="basket-bar hidden" id="basketBar">
+    <div class="basket-count"><strong id="selCount">0</strong> rubric(s) selected</div>
+    <button class="btn-review" id="reviewBtn">Review →</button>
+  </div>
+</div>
+
+<script>
+// ── Data & State ───────────────────────────────────────────────
+let ALL_RUBRICS = [];
+let SEARCH_INDEX = [];
+let loadState = 'idle'; // idle | loading | loaded | error
+
+// Chapter definitions — only those with pain rubrics in Kent
+const CHAPTERS = [
+  {id:'head',               kent:'Head',               en:'Head',                hi:'सिर',          icon:'🧠'},
+  {id:'face',               kent:'Face',               en:'Face',                hi:'चेहरा',         icon:'😶'},
+  {id:'eye',                kent:'Eye',                en:'Eye',                 hi:'आँख',           icon:'👁️'},
+  {id:'ear',                kent:'Ear',                en:'Ear',                 hi:'कान',           icon:'👂'},
+  {id:'nose',               kent:'Nose',               en:'Nose',                hi:'नाक',           icon:'👃'},
+  {id:'mouth',              kent:'Mouth',              en:'Mouth',               hi:'मुंह',           icon:'👄'},
+  {id:'teeth',              kent:'Teeth',              en:'Teeth',               hi:'दाँत',           icon:'🦷'},
+  {id:'throat',             kent:'Throat',             en:'Throat',              hi:'गला',            icon:'👅'},
+  {id:'external-throat',   kent:'External throat',    en:'Throat (outside)',    hi:'गला (बाहर)',    icon:'🧣'},
+  {id:'larynx-and-trachea',kent:'Larynx and trachea', en:'Voice box',           hi:'स्वरयंत्र',      icon:'🫁'},
+  {id:'chest',              kent:'Chest',              en:'Chest',               hi:'छाती',           icon:'🫀'},
+  {id:'heart-and-circulation',kent:'Heart & Circulation',en:'Heart',            hi:'हृदय',           icon:'❤️'},
+  {id:'respiration',        kent:'Respiration',        en:'Breathing',           hi:'श्वास',          icon:'💨'},
+  {id:'cough',              kent:'Cough',              en:'Cough',               hi:'खांसी',          icon:'😮‍💨'},
+  {id:'stomach',            kent:'Stomach',            en:'Stomach',             hi:'पेट',            icon:'🩷'},
+  {id:'abdomen',            kent:'Abdomen',            en:'Abdomen',             hi:'उदर',            icon:'🫃'},
+  {id:'rectum',             kent:'Rectum',             en:'Anus & Rectum',       hi:'गुदा और मलाशय', icon:'🔴'},
+  {id:'appetite',           kent:'Appetite',           en:'Appetite',            hi:'भूख',            icon:'🍽️'},
+  {id:'back',               kent:'Back',               en:'Back',                hi:'पीठ',            icon:'🦴'},
+  {id:'extremities',        kent:'Extremities',        en:'Arms & Legs',         hi:'हाथ-पैर',       icon:'💪🦵'},
+  {id:'skin',               kent:'Skin',               en:'Skin',                hi:'त्वचा',          icon:'🟫'},
+  {id:'bladder',            kent:'Bladder',            en:'Bladder',             hi:'मूत्राशय',       icon:'🟡'},
+  {id:'kidneys',            kent:'Kidneys',            en:'Kidneys',             hi:'किडनी',          icon:'🫘'},
+  {id:'urethra',            kent:'Urethra',            en:'Urine pipe',          hi:'मूत्रमार्ग',     icon:'➰'},
+  {id:'prostate-gland',    kent:'Prostate gland',     en:'Prostate',            hi:'प्रोस्टेट',      icon:'⚪'},
+  {id:'genitalia-female',  kent:'Genitalia female',   en:'Female genitalia',    hi:'महिला जननांग',  icon:'♀️'},
+  {id:'genitalia-male',    kent:'Genitalia male',     en:'Male genitalia',      hi:'पुरुष जननांग',  icon:'♂️'},
+  {id:'mind',               kent:'Mind',               en:'Mind',                hi:'मन',             icon:'🧘'},
+  {id:'fever',              kent:'Fever',              en:'Fever',               hi:'बुखार',          icon:'🌡️'},
+  {id:'chill',              kent:'Chill',              en:'Chill',               hi:'ठंड',            icon:'⚡'},
+  {id:'sleep',              kent:'Sleep',              en:'Sleep',               hi:'नींद',            icon:'🌙'},
+  {id:'vertigo',            kent:'Vertigo',            en:'Dizziness',           hi:'चक्कर',          icon:'💫'},
+  {id:'generalities',      kent:'Generalities',       en:'Whole-body',          hi:'सामान्य',        icon:'🌐'},
+];
+
+// Segment classifier
+const TYPE_SEGS = new Set([
+  'pressing','stitching','tearing','drawing','burning','sore','boring','shooting',
+  'aching','bursting','cutting','gnawing','throbbing','cramping','lancinating',
+  'burrowing','neuralgic','bruised','screwing','stinging','pinching','digging',
+  'lacerating','wrenching','jerking','rending','constricting','sprained','rawness',
+  'pulsating','sharp','dull','violent','distending','twinging','dragging','pressive',
+  'paralytic','ulcerative','corrosive','stunning','splinter like','lightning like','colicky',
+]);
+const TIMING_SEGS = new Set([
+  'morning','night','evening','afternoon','forenoon','midnight','noon','daytime',
+  'constant','periodical','alternating','intermittent','sudden','paroxysmal',
+  'menses','eating','motion','waking','sleeping','dinner','breakfast','before','after',
+  'rest','cold','warmth','heat','touch','pressure','lying','sitting',
+  'cold air','warm room','exertion','motion agg','motion amel',
+]);
+function segClass(seg) {
+  const s = seg.trim().toLowerCase();
+  if (s === 'left' || s === 'right' || s === 'both sides' || s === 'sides') return 'side';
+  if (TYPE_SEGS.has(s) || s.endsWith(' agg.') || s.endsWith(' amel.') || s.includes('agg') || s.includes('amel')) return 'timing';
+  if (TIMING_SEGS.has(s)) return 'timing';
+  return 'location';
+}
+
+const GROUP_META = {
+  type:     {en:'Nature / feel of pain',     hi:'दर्द का स्वभाव / प्रकृति'},
+  location: {en:'Where exactly',             hi:'ठीक कहाँ'},
+  side:     {en:'Which side',                hi:'कौन सी तरफ'},
+  timing:   {en:'When / what makes it better or worse', hi:'कब / किससे बेहतर या बुरा'},
+};
+
+// Navigation state
+let screen = 'loading';   // loading | chapters | navigate | review | done
+let navChapter = null;    // {id, kent, en, hi, icon}
+let navPath = null;       // current rubric path being browsed
+let selections = new Set(); // selected rubric paths
+
+// ── Data loading ───────────────────────────────────────────────
+async function loadData() {
+  screen = 'loading'; render();
+  try {
+    const [r1, r2] = await Promise.all([fetch('all_rubrics_1.json'), fetch('all_rubrics_2.json')]);
+    if (!r1.ok) throw new Error('File 1 not found');
+    if (!r2.ok) throw new Error('File 2 not found');
+    const [p1, p2] = await Promise.all([r1.json(), r2.json()]);
+    ALL_RUBRICS = p1.concat(p2);
+    // Pre-build search index
+    for (let i = 0; i < ALL_RUBRICS.length; i++) ALL_RUBRICS[i]._i = i;
+    loadState = 'loaded';
+    screen = 'chapters';
+  } catch(e) {
+    loadState = 'error';
+    console.error(e);
+  }
+  render();
+}
+
+// ── Helpers ────────────────────────────────────────────────────
+function getChildren(chId, parentPath) {
+  const depth = parentPath.split(',').length + 1;
+  const prefix = parentPath + ',';
+  const out = [];
+  for (const r of ALL_RUBRICS) {
+    if (r.chapterId !== chId) continue;
+    if (!r.path.startsWith(prefix)) continue;
+    if (r.path.split(',').length !== depth) continue;
+    out.push(r);
+  }
+  return out;
+}
+function hasKids(r) {
+  const prefix = r.path + ',';
+  return ALL_RUBRICS.some(x => x.chapterId === r.chapterId && x.path.startsWith(prefix));
+}
+function chaptersWithPain() {
+  const has = new Set();
+  for (const r of ALL_RUBRICS) {
+    const segs = r.path.split(',').map(s => s.trim().toLowerCase());
+    if (segs.includes('pain')) has.add(r.chapterId);
+  }
+  return CHAPTERS.filter(c => has.has(c.id));
+}
+function esc(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Render ─────────────────────────────────────────────────────
+function render() {
+  const content = document.getElementById('content');
+  const basket = document.getElementById('basketBar');
+  const selCount = document.getElementById('selCount');
+
+  // Update basket bar
+  if (selections.size > 0 && (screen === 'navigate' || screen === 'chapters')) {
+    basket.classList.remove('hidden');
+    selCount.textContent = selections.size;
+  } else {
+    basket.classList.add('hidden');
+  }
+
+  if (screen === 'loading') {
+    content.innerHTML = `
+      <div class="loading-wrap">
+        <div class="loading-icon">🩹</div>
+        <div style="font-size:16px;font-weight:600;color:var(--teal)">Pain Symptom Guide</div>
+        <div style="font-size:13px;color:var(--ink2);margin-top:6px;">दर्द विवरण सहायक</div>
+        <div class="loading-bar"><div class="loading-progress"></div></div>
+        <div class="loading-msg">${loadState === 'error' ? '⚠️ Could not load rubric data. Check that all_rubrics_1.json and all_rubrics_2.json are in the repo root.' : 'Loading Kent\'s Repertory data…'}</div>
+      </div>`;
+    return;
+  }
+
+  if (screen === 'chapters') {
+    const chs = chaptersWithPain();
+    content.innerHTML = `
+      <div class="screen-title">Where is the pain?</div>
+      <span class="screen-title-hi">दर्द कहाँ है?</span>
+      <p class="screen-sub">Select the body part where pain occurs. You can do multiple body parts one by one.<br><span style="font-size:11.5px">दर्द वाला शरीर का हिस्सा चुनें।</span></p>
+      <div class="ch-grid">
+        ${chs.map(c => `
+          <div class="ch-card" data-ch="${esc(c.id)}">
+            <div class="ch-icon">${c.icon}</div>
+            <span class="ch-en">${esc(c.en)}</span>
+            <span class="ch-hi">${esc(c.hi)}</span>
+          </div>`).join('')}
+      </div>`;
+    return;
+  }
+
+  if (screen === 'navigate') {
+    const children = getChildren(navChapter.id, navPath);
+    const groups = {type:[], location:[], side:[], timing:[]};
+    for (const r of children) {
+      const lastSeg = r.path.split(',').slice(-1)[0].trim();
+      const cls = segClass(lastSeg);
+      if (cls === 'timing') {
+        // Check if it looks like a pain TYPE (stitching, pressing etc.)
+        if (TYPE_SEGS.has(lastSeg.toLowerCase())) groups.type.push(r);
+        else groups.timing.push(r);
+      } else {
+        groups[cls].push(r);
+      }
+    }
+    // Re-classify: depth=2 (immediate child of pain) could have types
+    const depth = navPath.split(',').length;
+    if (depth === 2) {
+      // Immediate children of "[Chapter], pain" — separate types from locations properly
+      const typeArr = [], locArr = [], sideArr = [], timeArr = [];
+      for (const r of children) {
+        const last = r.path.split(',').slice(-1)[0].trim().toLowerCase();
+        if (last === 'left' || last === 'right' || last === 'both sides' || last === 'sides') sideArr.push(r);
+        else if (TYPE_SEGS.has(last)) typeArr.push(r);
+        else if (TIMING_SEGS.has(last) || last.includes('agg') || last.includes('amel')) timeArr.push(r);
+        else locArr.push(r);
+      }
+      groups.type = typeArr;
+      groups.location = locArr;
+      groups.side = sideArr;
+      groups.timing = timeArr;
+    }
+
+    const crumbParts = navPath.split(',').slice(1).map(s => s.trim());
+    const crumb = navChapter.en + ' › ' + crumbParts.join(' › ');
+    const isAtPainRoot = navPath === navChapter.kent + ', pain';
+    const backLabel = isAtPainRoot ? `← ${navChapter.en}` : '← Back / वापस';
+
+    const groupOrder = ['type','location','side','timing'];
+    const hasAny = groupOrder.some(g => groups[g].length > 0);
+
+    content.innerHTML = `
+      <div class="nav-header">
+        <button class="btn-back" id="navBack">${backLabel}</button>
+        <span class="nav-crumb">${esc(crumb)}</span>
+        ${selections.size ? `<span class="nav-sel-badge" id="viewSel">${selections.size} selected</span>` : ''}
+      </div>
+      ${!hasAny ? `<div class="no-children">
+          <div style="font-size:28px;margin-bottom:10px;">✅</div>
+          <div style="font-size:14px;font-weight:600;color:var(--teal)">No further sub-rubrics</div>
+          <div style="font-size:12px;color:var(--ink3);margin-top:6px;">आगे कोई उप-रूब्रिक नहीं है।<br>Select from the level above.</div>
+        </div>` :
+        groupOrder.filter(g => groups[g].length > 0).map(g => `
+          <div class="group-wrap">
+            <div class="group-lbl">${GROUP_META[g].en}<span class="group-lbl-hi"> · ${GROUP_META[g].hi}</span></div>
+            ${groups[g].map(r => {
+              const sel = selections.has(r.path);
+              const kids = hasKids(r);
+              const lastSeg = r.path.split(',').slice(-1)[0].trim();
+              return `<div class="rub ${sel?'sel':''}" data-path="${esc(r.path)}">
+                <div class="rub-chk">${sel ? '✓' : ''}</div>
+                <div class="rub-body">
+                  <div class="rub-en">${esc(r.en || lastSeg)}</div>
+                  ${r.hi ? `<div class="rub-hi">${esc(r.hi)}</div>` : ''}
+                  <div class="rub-path">${esc(r.path)}</div>
+                </div>
+                ${kids ? `<div class="rub-drill" data-drill="${esc(r.path)}" title="Go deeper">›</div>` : ''}
+              </div>`;
+            }).join('')}
+          </div>`).join('')}
+      ${selections.size > 0 ? `
+        <div style="margin-top:20px;">
+          <button class="btn-primary" id="toReview">Review ${selections.size} selected rubric(s) →</button>
+        </div>` : ''}`;
+    return;
+  }
+
+  if (screen === 'review') {
+    const rubrics = [...selections].map(p => ALL_RUBRICS.find(r => r.path === p)).filter(Boolean);
+    content.innerHTML = `
+      <div class="screen-title">Review your selections</div>
+      <span class="screen-title-hi">आपकी चयनित रूब्रिक्स</span>
+      <p class="screen-sub">${rubrics.length} rubric(s) selected. Remove any that don't apply.</p>
+      ${rubrics.map(r => {
+        const ch = CHAPTERS.find(c => c.id === r.chapterId);
+        return `<div class="review-item">
+          <div class="review-item-ch">${ch ? (ch.icon + ' ' + ch.en + ' · ' + (ch.hi||'')) : r.chapterId}</div>
+          <div class="review-item-en">${esc(r.en)}</div>
+          ${r.hi ? `<div class="review-item-hi">${esc(r.hi)}</div>` : ''}
+          <div class="review-item-path">${esc(r.path)}</div>
+          <span class="review-remove" data-remove="${esc(r.path)}">×</span>
+        </div>`;
+      }).join('')}
+      <div class="review-actions">
+        <button class="btn-secondary" id="addMore">+ Add more</button>
+        <button class="btn-primary" id="submitBtn">Submit symptoms →</button>
+      </div>`;
+    return;
+  }
+
+  if (screen === 'done') {
+    const rubrics = [...selections].map(p => ALL_RUBRICS.find(r => r.path === p)).filter(Boolean);
+    const payload = rubrics.map(r => ({ path: r.path, en: r.en, hi: r.hi || '', chapterId: r.chapterId }));
+    content.innerHTML = `
+      <div class="done-wrap">
+        <div class="done-icon">✅</div>
+        <div class="done-title">Symptoms recorded!</div>
+        <div class="done-title" style="font-size:15px;margin-top:4px;color:var(--ink2);">लक्षण दर्ज हो गए</div>
+        <div class="done-sub" style="margin-top:12px;">${rubrics.length} rubric(s) from Kent's Repertory selected.<br>
+          Each one has at least one remedy attached.<br><br>
+          <em>Firebase submission will be wired here when integrated into the main portal.</em>
+        </div>
+        <div class="done-json">${JSON.stringify(payload, null, 2)}</div>
+        <button class="btn-primary" style="margin-top:16px;display:block;width:100%;" id="startOver">Start over / फिर से शुरू</button>
+      </div>`;
+    return;
+  }
+}
+
+// ── Event handling ─────────────────────────────────────────────
+document.getElementById('content').addEventListener('click', e => {
+  // Chapter card
+  const chCard = e.target.closest('[data-ch]');
+  if (chCard) {
+    const chId = chCard.dataset.ch;
+    const ch = CHAPTERS.find(c => c.id === chId);
+    if (ch) {
+      navChapter = ch;
+      navPath = ch.kent + ', pain';
+      screen = 'navigate';
+      render();
+      return;
+    }
+  }
+  // Back button in navigator
+  if (e.target.id === 'navBack') {
+    const painRoot = navChapter.kent + ', pain';
+    if (navPath === painRoot) {
+      screen = 'chapters';
+      navChapter = null;
+      navPath = null;
+    } else {
+      navPath = navPath.split(',').slice(0, -1).join(',').trim();
+    }
+    render(); return;
+  }
+  // View selections badge
+  if (e.target.id === 'viewSel' || e.target.id === 'toReview' || e.target.id === 'reviewBtn') {
+    screen = 'review'; render(); return;
+  }
+  // Drill into sub-rubrics
+  const drillEl = e.target.closest('[data-drill]');
+  if (drillEl) {
+    navPath = drillEl.dataset.drill;
+    render(); return;
+  }
+  // Toggle rubric selection
+  const rubEl = e.target.closest('[data-path]');
+  if (rubEl && !e.target.closest('[data-drill]')) {
+    const path = rubEl.dataset.path;
+    if (selections.has(path)) selections.delete(path);
+    else selections.add(path);
+    render(); return;
+  }
+  // Review screen: remove
+  const removeEl = e.target.closest('[data-remove]');
+  if (removeEl) {
+    selections.delete(removeEl.dataset.remove);
+    if (!selections.size) screen = 'chapters';
+    render(); return;
+  }
+  // Add more
+  if (e.target.id === 'addMore') {
+    screen = 'chapters'; render(); return;
+  }
+  // Submit
+  if (e.target.id === 'submitBtn') {
+    screen = 'done'; render(); return;
+  }
+  // Start over
+  if (e.target.id === 'startOver') {
+    selections.clear(); navChapter = null; navPath = null; screen = 'chapters'; render(); return;
+  }
+});
+
+// Start loading
+loadData();
+</script>
+</body>
+</html>
