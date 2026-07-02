@@ -833,6 +833,18 @@ function render() {
   const existingPane = document.getElementById('rubricResultsPane');
   const preservedScrollTop = existingPane ? existingPane.scrollTop : null;
 
+  // Rebuilding the DOM also destroys and recreates the search <input>,
+  // which silently steals focus. On mobile that closes the on-screen
+  // keyboard mid-render, the visible viewport suddenly grows back to full
+  // height, and the browser recalculates/snaps scroll position — which
+  // looks exactly like the list "bouncing to the top," but is actually a
+  // keyboard-dismiss side effect, not a scroll bug. Captured here so focus
+  // (and the keyboard) can be restored after rebuild, same as scroll.
+  const activeEl = document.activeElement;
+  const wasSearchFocused = !!(activeEl && activeEl.id === 'globalSearch');
+  const preservedSelStart = wasSearchFocused ? activeEl.selectionStart : null;
+  const preservedSelEnd = wasSearchFocused ? activeEl.selectionEnd : null;
+
   if (step === 'remarks') {
     html = `
       <div class="qstep active">
@@ -1200,6 +1212,15 @@ function render() {
   body.innerHTML = html;
   attachStepListeners();
 
+  if (wasSearchFocused) {
+    const newSearchEl = document.getElementById('globalSearch');
+    if (newSearchEl) {
+      newSearchEl.focus({ preventScroll: true });
+      if (preservedSelStart !== null) {
+        try { newSearchEl.setSelectionRange(preservedSelStart, preservedSelEnd); } catch (e) {}
+      }
+    }
+  }
   if (preservedScrollTop !== null) {
     const newPane = document.getElementById('rubricResultsPane');
     if (newPane) newPane.scrollTop = preservedScrollTop;
@@ -1316,6 +1337,14 @@ function attachStepListeners() {
     }
     const pane = document.getElementById('rubricResultsPane');
     if (pane) {
+      // Tapping a result row would otherwise blur the search input via the
+      // browser's default mousedown behavior, closing the mobile keyboard
+      // before our click handler even runs — that's the real source of the
+      // "bounces to top" feeling (the viewport resizing as the keyboard
+      // closes). Prevent the default so focus never leaves the input.
+      pane.addEventListener('mousedown', (e) => {
+        if (e.target.closest('[data-rubric-index]')) e.preventDefault();
+      });
       pane.addEventListener('click', (e) => {
         const el = e.target.closest('[data-rubric-index]');
         if (!el) return;
