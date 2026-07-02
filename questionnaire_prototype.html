@@ -966,14 +966,14 @@ function render() {
     const sortCacheKey = JSON.stringify([filterText, selectedChapterIds.slice().sort(), activeDistinguisherFilter, lang]);
     if (cachedSortKey !== sortCacheKey) {
       const relevanceTokens = tokenizeQuery(filterText);
-      function sortTier(r) {
-        return selectedChapterIds.includes(r.chapterId) ? 0 : 1;
-      }
-      const freshlySorted = resultRubricsAll.slice().sort((a, b) => {
-        const ta = sortTier(a), tb = sortTier(b);
-        if (ta !== tb) return ta - tb;
-        return relevanceScore(b, relevanceTokens) - relevanceScore(a, relevanceTokens);
-      });
+      // Sort purely by relevance — no tier separation by selected chapters.
+      // Color (PRIORITY_COLOR vs black) already differentiates selected from
+      // non-selected chapters visually. Sorting by tier was hiding non-selected
+      // results below the fold; pure relevance puts the best matches first
+      // regardless of which chapter they belong to.
+      const freshlySorted = resultRubricsAll.slice().sort((a, b) =>
+        relevanceScore(b, relevanceTokens) - relevanceScore(a, relevanceTokens)
+      );
       cachedSortedPaths = freshlySorted.map(r => r.path);
       cachedSortKey = sortCacheKey;
     }
@@ -1018,7 +1018,7 @@ function render() {
       bodyHtml = `
         <div class="selected-chapters-bar">
           ${selectedChapterIds.length
-            ? chT({en:'Prioritizing: ', hi:'प्राथमिकता: '}) + selectedChapterIds.map(id => { const ch = CHAPTERS.find(c=>c.id===id); return ch ? `<span style="color:${PRIORITY_COLOR};font-weight:700;">${escapeHtml(ch.en)}${ch.hi ? ' · ' + escapeHtml(ch.hi) : ''}</span>` : ''; }).join(', ')
+            ? chT({en:'Highlighted: ', hi:'हाइलाइट: '}) + selectedChapterIds.map(id => { const ch = CHAPTERS.find(c=>c.id===id); return ch ? `<span style="color:${PRIORITY_COLOR};font-weight:700;">${escapeHtml(ch.en)}${ch.hi ? ' · ' + escapeHtml(ch.hi) : ''}</span>` : ''; }).join(', ')
             : chT({en:'No areas selected yet — searching the whole repertory equally.', hi:'अभी तक कोई क्षेत्र नहीं चुना गया — पूरी रिपर्टरी समान रूप से खोजी जा रही है।'})}
           <a href="#" id="backToChaptersLink" style="margin-left:8px; color:var(--teal2); font-weight:600;">${chT({en:'Change', hi:'बदलें'})}</a>
         </div>
