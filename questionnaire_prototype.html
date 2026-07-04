@@ -133,6 +133,9 @@
   .wiz-chip { padding: 10px 16px; border: 1px solid var(--border); border-radius: 20px; font-size: 14px; color: var(--ink2); cursor: pointer; background: var(--white); transition: all 0.15s; }
   .wiz-chip:active { transform: scale(0.97); }
   .wiz-chip.sel { background: var(--teal); color: white; border-color: var(--teal); }
+  .wiz-bi-en { display: block; }
+  .wiz-bi-hi { display: block; font-size: 0.85em; opacity: 0.8; margin-top: 2px; }
+  .wiz-q .wiz-bi-hi { font-size: 0.7em; font-weight: 400; color: var(--ink2); }
   .wiz-chip-icon { margin-right: 6px; }
   .wiz-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .wiz-bw { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -1290,13 +1293,16 @@ function render() {
 }
 
 // ── GENERALS WIZARD ENGINE ──
-// A branching step-by-step questionnaire. Every selectable option maps to
-// one real rubric pulled from GEN_DATA above; steps with no qualifying
-// rubric for a given sub-branch are simply not offered. Every question is
-// mandatory — each step always includes a non-rubric "Moderate / Not
-// applicable" option so the patient is never blocked, but they cannot
-// advance without choosing something.
-const GEN_STEP_ORDER = ['appetite','foodDesires','tasteSalt','tasteSugar','tasteSour','tasteFried',
+// A branching step-by-step questionnaire. Real rubric-backed options come
+// straight from GEN_DATA above (pulled from the live repertory dataset).
+// A handful of options are deliberately "dummy" — cosmetic choices with no
+// backing rubric (e.g. "Moderate," or "Dislike it" for foods where only a
+// desire rubric exists and no aversion rubric exists) — selecting one of
+// these adds nothing to the case file, but keeps every question answerable
+// and visually consistent. Every question shows English and Hindi
+// together, allows multiple selections, and requires an explicit Next tap
+// — nothing auto-advances and nothing can be skipped.
+const GEN_STEP_ORDER = ['appetite','foodCravings','foodDislikes','tasteSalt','tasteSugar','tasteSour','tasteFried',
   'thirst','drinkPattern','coldWater','perspAmount','perspOdor','perspOdorType','perspStain',
   'perspStainColor','perspLocation','perspSpicyFace','perspAnger','perspAnxiety','faceRedAnger',
   'trembleAnger','trembleAnxiety','sleepQuality','sleepWakingCause','dreams','dreamPicker',
@@ -1305,7 +1311,8 @@ const GEN_STEP_ORDER = ['appetite','foodDesires','tasteSalt','tasteSugar','taste
 
 const GEN_Q = {
   appetite: {en:'How is your appetite?', hi:'आपकी भूख कैसी है?'},
-  foodDesires: {en:'Is there anything you specifically crave or dislike in food? Search & select any that apply.', hi:'क्या खाने में आपको कुछ खास पसंद या नापसंद है? खोजें और चुनें।'},
+  foodCravings: {en:'Do you specifically crave any of these foods? Search & select any that apply.', hi:'क्या आपको इनमें से किसी खाने की खास इच्छा होती है? खोजें और चुनें।'},
+  foodDislikes: {en:'Do you specifically dislike any of these foods? Search & select any that apply.', hi:'क्या आपको इनमें से किसी खाने से खास नापसंदगी है? खोजें और चुनें।'},
   tasteSalt: {en:'How about salty food?', hi:'नमकीन खाने के बारे में क्या ख्याल है?'},
   tasteSugar: {en:'How about sweet food?', hi:'मीठे खाने के बारे में क्या ख्याल है?'},
   tasteSour: {en:'How about sour food?', hi:'खट्टे खाने के बारे में क्या ख्याल है?'},
@@ -1339,22 +1346,31 @@ const GEN_Q = {
   freetext: {en:'Anything else you would like to mention?', hi:'कुछ और जो आप बताना चाहें?'},
 };
 
+// 'multiselect' = chip group, any number selectable, explicit Next required.
+// 'binary'      = mutually-exclusive Yes/No (or Yes/No/Menopause) — still
+//                 requires explicit Next now, just not multi-selectable,
+//                 since being both "yes" and "no" isn't meaningful.
+// 'searchable'  = multiselect with a search box, for long lists.
+// 'freetext'    = optional closing notes, not rubric-backed.
 const GEN_STEP_TYPE = {
-  appetite:'chips', tasteSalt:'chips', tasteSugar:'chips', tasteSour:'chips', tasteFried:'chips',
-  thirst:'chips', drinkPattern:'chips', perspAmount:'chips', sleepQuality:'chips',
-  stoolConsistency:'chips', mensesFlow:'chips', urineAmount:'chips',
+  appetite:'multiselect', tasteSalt:'multiselect', tasteSugar:'multiselect', tasteSour:'multiselect', tasteFried:'multiselect',
+  thirst:'multiselect', drinkPattern:'multiselect', perspAmount:'multiselect', sleepQuality:'multiselect',
+  stoolConsistency:'multiselect', mensesFlow:'multiselect', urineAmount:'multiselect',
+  perspOdorType:'multiselect', perspStainColor:'multiselect', perspLocation:'multiselect',
+  sleepWakingCause:'multiselect', mensesColor:'multiselect', urineColor:'multiselect',
   coldWater:'binary', perspOdor:'binary', perspStain:'binary', perspSpicyFace:'binary',
   perspAnger:'binary', perspAnxiety:'binary', faceRedAnger:'binary', trembleAnger:'binary',
   trembleAnxiety:'binary', dreams:'binary', constipation:'binary', mensesIrregular:'binary',
-  perspOdorType:'multichips', perspStainColor:'multichips', perspLocation:'multichips',
-  sleepWakingCause:'multichips', mensesColor:'multichips', urineColor:'multichips',
-  foodDesires:'searchable', dreamPicker:'searchable',
+  foodCravings:'searchable', foodDislikes:'searchable', dreamPicker:'searchable',
   freetext:'freetext',
 };
 
-// Every real quality descriptor that exists as a standalone top-level
-// rubric under the Appetite chapter (excludes "aversion"/"desires"/"time",
-// which are containers for sub-lists, not standalone symptoms themselves).
+// Fixed small chip lists (as opposed to the dynamic GEN_DATA-driven lists
+// used by perspOdorType, perspLocation, etc). Every real quality
+// descriptor that exists as a standalone rubric is included. A few extra
+// chips are marked dummy (no rubric) purely so every question offers a
+// consistent, complete-feeling set of options — dummy chips are commented
+// inline below.
 const GEN_CHIP_OPTIONS = {
   appetite: [
     {v:'increased (hunger in general)',en:'Increased',hi:'बढ़ी हुई'},
@@ -1373,10 +1389,26 @@ const GEN_CHIP_OPTIONS = {
     {v:'relish',en:'Eat with great enjoyment',hi:'बड़े चाव से खाना'},
     {v:'satiety',en:'Full quickly on very little',hi:'थोड़े में ही पेट भर जाना'},
   ],
-  tasteSalt: [{v:'desire',en:'Like it more',hi:'ज़्यादा पसंद'},{v:'aversion',en:'Dislike it',hi:'नापसंद'}],
-  tasteSugar: [{v:'desire',en:'Like it more',hi:'ज़्यादा पसंद'}],
-  tasteSour: [{v:'desire',en:'Like it more',hi:'ज़्यादा पसंद'}],
-  tasteFried: [{v:'desire',en:'Like it more',hi:'ज़्यादा पसंद'}],
+  // salt: both real (desire and aversion rubrics both exist)
+  tasteSalt: [
+    {v:'desire',en:'Like it more',hi:'ज़्यादा पसंद'},
+    {v:'aversion',en:'Dislike it',hi:'नापसंद'},
+  ],
+  // sugar/sour/fried: only a desire rubric exists in Kent's Repertory —
+  // "Dislike it" here is a dummy option (no aversion rubric backs it),
+  // kept only so all four taste questions look and feel consistent.
+  tasteSugar: [
+    {v:'desire',en:'Like it more',hi:'ज़्यादा पसंद'},
+    {v:'aversion',en:'Dislike it',hi:'नापसंद'},
+  ],
+  tasteSour: [
+    {v:'desire',en:'Like it more',hi:'ज़्यादा पसंद'},
+    {v:'aversion',en:'Dislike it',hi:'नापसंद'},
+  ],
+  tasteFried: [
+    {v:'desire',en:'Like it more',hi:'ज़्यादा पसंद'},
+    {v:'aversion',en:'Dislike it',hi:'नापसंद'},
+  ],
   thirst: [{v:'extreme',en:'Very thirsty / extreme thirst',hi:'बहुत ज़्यादा प्यास'},{v:'thirstless',en:'Very little or no thirst',hi:'बहुत कम / प्यास न लगना'}],
   drinkPattern: [{v:'largeOften',en:'Large amounts, often',hi:'ज़्यादा मात्रा में, बार-बार'},{v:'largeLong',en:'Large amounts, at long intervals',hi:'ज़्यादा मात्रा में, लंबे अंतराल पर'},{v:'smallOften',en:'Small sips, often',hi:'थोड़ा-थोड़ा, बार-बार'}],
   perspAmount: [{v:'profuse',en:'Profuse (a lot)',hi:'बहुत ज़्यादा'},{v:'scanty',en:'Very little',hi:'बहुत कम'}],
@@ -1385,6 +1417,11 @@ const GEN_CHIP_OPTIONS = {
   mensesFlow: [{v:'copious',en:'Heavy / excessive',hi:'ज़्यादा'},{v:'scanty',en:'Very little',hi:'बहुत कम'}],
   urineAmount: [{v:'copious',en:'Excessive',hi:'ज़्यादा'},{v:'scanty',en:'Very little',hi:'बहुत कम'}],
 };
+// Every fixed chip list gets the same mandatory-but-not-blocking fallback:
+// selecting it answers the question but adds no rubric.
+Object.keys(GEN_CHIP_OPTIONS).forEach(k => {
+  GEN_CHIP_OPTIONS[k] = [...GEN_CHIP_OPTIONS[k], {v:'moderate', en:'Moderate', hi:'सामान्य'}];
+});
 
 const GEN_REGION_LABELS = {
   'face|perspiration': {en:'Face', hi:'चेहरा'},
@@ -1396,6 +1433,11 @@ const GEN_REGION_LABELS = {
   'abdomen|perspiration': {en:'Abdomen', hi:'पेट'},
 };
 
+// Renders English + Hindi together, always — no language toggle.
+function bi(en, hi) {
+  return `<span class="wiz-bi-en">${escapeHtml(en)}</span><span class="wiz-bi-hi">${escapeHtml(hi || en)}</span>`;
+}
+
 function genMultiSource(key) {
   if (key === 'perspOdorType') return GEN_DATA.odor;
   if (key === 'perspStainColor') return GEN_DATA.stain;
@@ -1403,33 +1445,32 @@ function genMultiSource(key) {
   if (key === 'sleepWakingCause') return GEN_DATA.wakingCauses;
   if (key === 'mensesColor') return GEN_DATA.mensesColors;
   if (key === 'urineColor') return GEN_DATA.urineColors;
-  if (key === 'foodDesires') return [...GEN_DATA.foodDesires, ...GEN_DATA.foodAversions];
+  if (key === 'foodCravings') return GEN_DATA.foodDesires;
+  if (key === 'foodDislikes') return GEN_DATA.foodAversions;
   if (key === 'dreamPicker') return GEN_DATA.dreamsAll;
   return [];
 }
-function genOptionLabel(key, opt) {
+function genOptionLabelBi(key, opt) {
   if (key === 'perspLocation') {
     const lbl = GEN_REGION_LABELS[`${opt.chapterId}|${opt.path}`];
-    if (lbl) return lang === 'hi' ? lbl.hi : lbl.en;
+    if (lbl) return bi(lbl.en, lbl.hi);
   }
-  if (key === 'foodDesires' || key === 'dreamPicker') {
+  if (key === 'foodCravings' || key === 'foodDislikes' || key === 'dreamPicker') {
     // The underlying rubric text repeats "You crave X" / "You dream about
-    // X" for every single item — reads fine as one sentence, but is
-    // needlessly repetitive as a list of chips. Show just the item itself
-    // (the rubric's last path segment), title-cased.
-    if (lang === 'en') {
-      const seg = opt.path.split(',').pop().trim();
-      return seg.charAt(0).toUpperCase() + seg.slice(1);
-    }
-    return opt.hi || opt.en;
+    // X" for every item — reads fine as a sentence, but is repetitive as a
+    // list of chips. Show just the item itself (the rubric's last path
+    // segment), title-cased, in both languages.
+    const seg = opt.path.split(',').pop().trim();
+    const enLabel = seg.charAt(0).toUpperCase() + seg.slice(1);
+    return bi(enLabel, opt.hi || opt.en);
   }
-  return lang === 'hi' ? (opt.hi || opt.en) : opt.en;
+  return bi(opt.en, opt.hi);
 }
 function genStepApplicable(id) {
   switch (id) {
     case 'perspOdorType': return genAnswers.perspOdor === 'yes';
     case 'perspStainColor': return genAnswers.perspStain === 'yes';
-    case 'sleepWakingCause': return genAnswers.sleepQuality === 'disturbed';
+    case 'sleepWakingCause': return genAnswers.sleepQuality && genAnswers.sleepQuality.includes('disturbed');
     case 'dreamPicker': return genAnswers.dreams === 'yes';
     case 'stoolConsistency': return genAnswers.constipation === 'yes';
     // Menses questions only make sense for a patient recorded as female,
@@ -1475,25 +1516,28 @@ function gCore(key) { return GEN_DATA.core[key] || null; }
 // Pure function: recomputes the full list of rubrics implied by the
 // current answers. Re-run from scratch each time (not incrementally
 // patched) so going back and changing an earlier answer can never leave a
-// stale rubric behind.
+// stale rubric behind. Values like 'moderate' or the dummy taste-aversion
+// options simply have no matching gCore() lookup below, so they answer the
+// question but correctly contribute zero rubrics.
 function assembleGenRubrics() {
   const a = genAnswers, out = [];
   function add(r) { if (r) out.push(r); }
-  if (a.appetite && a.appetite !== 'moderate') add(gCore(`appetite|${a.appetite}`));
-  (a.foodDesires || []).forEach(add);
-  if (a.tasteSalt === 'desire') add(gCore('appetite|Appetite, desires, salt things'));
-  if (a.tasteSalt === 'aversion') add(gCore('appetite|Appetite, aversion, salt food'));
-  if (a.tasteSugar === 'desire') add(gCore('appetite|Appetite, desires, sweets, sugar'));
-  if (a.tasteSour === 'desire') add(gCore('appetite|Appetite, desires, sour'));
-  if (a.tasteFried === 'desire') add(gCore('appetite|Appetite, desires, fried food'));
-  if (a.thirst === 'extreme') add(gCore('stomach|Stomach, thirst, extreme'));
-  if (a.thirst === 'thirstless') add(gCore('stomach|thirstless'));
-  if (a.drinkPattern === 'largeOften') add(gCore('stomach|Stomach, thirst, large quantities, for, often'));
-  if (a.drinkPattern === 'largeLong') add(gCore('stomach|Stomach, thirst, large quantities, for, long intervals, at'));
-  if (a.drinkPattern === 'smallOften') add(gCore('stomach|Stomach, thirst, small quantities, for, often'));
+  (a.appetite || []).forEach(v => add(gCore(`appetite|${v}`)));
+  (a.foodCravings || []).forEach(add);
+  (a.foodDislikes || []).forEach(add);
+  if ((a.tasteSalt||[]).includes('desire')) add(gCore('appetite|Appetite, desires, salt things'));
+  if ((a.tasteSalt||[]).includes('aversion')) add(gCore('appetite|Appetite, aversion, salt food'));
+  if ((a.tasteSugar||[]).includes('desire')) add(gCore('appetite|Appetite, desires, sweets, sugar'));
+  if ((a.tasteSour||[]).includes('desire')) add(gCore('appetite|Appetite, desires, sour'));
+  if ((a.tasteFried||[]).includes('desire')) add(gCore('appetite|Appetite, desires, fried food'));
+  if ((a.thirst||[]).includes('extreme')) add(gCore('stomach|Stomach, thirst, extreme'));
+  if ((a.thirst||[]).includes('thirstless')) add(gCore('stomach|thirstless'));
+  if ((a.drinkPattern||[]).includes('largeOften')) add(gCore('stomach|Stomach, thirst, large quantities, for, often'));
+  if ((a.drinkPattern||[]).includes('largeLong')) add(gCore('stomach|Stomach, thirst, large quantities, for, long intervals, at'));
+  if ((a.drinkPattern||[]).includes('smallOften')) add(gCore('stomach|Stomach, thirst, small quantities, for, often'));
   if (a.coldWater === 'yes') add(gCore('stomach|Stomach, thirst, water, drinking, cold'));
-  if (a.perspAmount === 'profuse') add(gCore('perspiration|profuse'));
-  if (a.perspAmount === 'scanty') add(gCore('perspiration|scanty sweat'));
+  if ((a.perspAmount||[]).includes('profuse')) add(gCore('perspiration|profuse'));
+  if ((a.perspAmount||[]).includes('scanty')) add(gCore('perspiration|scanty sweat'));
   if (a.perspOdor === 'yes') add(gCore('perspiration|Perspiration, odor, offensive'));
   (a.perspOdorType || []).forEach(add);
   if (a.perspStain === 'yes') add(gCore('perspiration|staining the linen'));
@@ -1505,20 +1549,20 @@ function assembleGenRubrics() {
   if (a.faceRedAnger === 'yes') add(gCore('face|Face, discoloration, red, anger, after'));
   if (a.trembleAnger === 'yes') add(gCore('generalities|Generalities, trembling, anger, from'));
   if (a.trembleAnxiety === 'yes') add(gCore('generalities|Generalities, trembling, anxiety, from'));
-  if (a.sleepQuality === 'deep') add(gCore('sleep|deep'));
-  if (a.sleepQuality === 'disturbed') add(gCore('sleep|disturbed'));
+  if ((a.sleepQuality||[]).includes('deep')) add(gCore('sleep|deep'));
+  if ((a.sleepQuality||[]).includes('disturbed')) add(gCore('sleep|disturbed'));
   (a.sleepWakingCause || []).forEach(add);
   (a.dreamPicker || []).forEach(add);
   if (a.constipation === 'yes') add(gCore('rectum|constipation'));
-  if (a.stoolConsistency === 'hard') add(gCore('stool|hard'));
-  if (a.stoolConsistency === 'soft') add(gCore('stool|soft'));
+  if ((a.stoolConsistency||[]).includes('hard')) add(gCore('stool|hard'));
+  if ((a.stoolConsistency||[]).includes('soft')) add(gCore('stool|soft'));
   if (a.mensesIrregular === 'yes') add(gCore('genitalia_female|Genitalia female, menses, irregular'));
   if (a.mensesIrregular === 'menopause') add(gCore('genitalia_female|menopause'));
-  if (a.mensesFlow === 'copious') add(gCore('genitalia_female|Genitalia female, menses, copious'));
-  if (a.mensesFlow === 'scanty') add(gCore('genitalia_female|Genitalia female, menses, scanty'));
+  if ((a.mensesFlow||[]).includes('copious')) add(gCore('genitalia_female|Genitalia female, menses, copious'));
+  if ((a.mensesFlow||[]).includes('scanty')) add(gCore('genitalia_female|Genitalia female, menses, scanty'));
   (a.mensesColor || []).forEach(add);
-  if (a.urineAmount === 'copious') add(gCore('urine|copious (increased)'));
-  if (a.urineAmount === 'scanty') add(gCore('urine|scanty'));
+  if ((a.urineAmount||[]).includes('copious')) add(gCore('urine|copious (increased)'));
+  if ((a.urineAmount||[]).includes('scanty')) add(gCore('urine|scanty'));
   (a.urineColor || []).forEach(add);
   return out;
 }
@@ -1542,27 +1586,23 @@ function renderGenWizardStep() {
   const q = GEN_Q[id];
   const type = GEN_STEP_TYPE[id];
   let bodyHtml = '';
-  let nextDisabled = false;
+  let nextDisabled = true;
 
   if (type === 'binary') {
     const val = genAnswers[id];
+    nextDisabled = !val;
     bodyHtml = `<div class="wiz-chips">
-      <div class="wiz-chip ${val==='yes'?'sel':''}" data-gw-set="${id}" data-gw-val="yes">${chT({en:'Yes',hi:'हाँ'})}</div>
-      <div class="wiz-chip ${val==='no'?'sel':''}" data-gw-set="${id}" data-gw-val="no">${chT({en:'No',hi:'नहीं'})}</div>
+      <div class="wiz-chip ${val==='yes'?'sel':''}" data-gw-bin="${id}" data-gw-val="yes">${bi('Yes','हाँ')}</div>
+      <div class="wiz-chip ${val==='no'?'sel':''}" data-gw-bin="${id}" data-gw-val="no">${bi('No','नहीं')}</div>
     </div>`;
-  } else if (type === 'chips') {
-    const opts = GEN_CHIP_OPTIONS[id] || [];
-    const val = genAnswers[id];
-    // Mandatory "Moderate / Not applicable" fallback — adds no rubric
-    // (moderate/normal isn't a reportable symptom) but still counts as a
-    // real answer, so the question is never skippable yet never a
-    // dead-end either.
+  } else if (type === 'multiselect' && GEN_CHIP_OPTIONS[id]) {
+    const opts = GEN_CHIP_OPTIONS[id];
+    const selected = genAnswers[id] || [];
+    nextDisabled = selected.length === 0;
     bodyHtml = `<div class="wiz-chips">
-      ${opts.map(o => `<div class="wiz-chip ${val===o.v?'sel':''}" data-gw-set="${id}" data-gw-val="${escapeHtml(o.v)}">${escapeHtml(lang==='hi'?o.hi:o.en)}</div>`).join('')}
-      <div class="wiz-chip ${val==='moderate'?'sel':''}" data-gw-set="${id}" data-gw-val="moderate">${chT({en:'Moderate / Not sure',hi:'सामान्य / निश्चित नहीं'})}</div>
+      ${opts.map(o => `<div class="wiz-chip ${selected.includes(o.v)?'sel':''}" data-gw-fixed="${id}" data-gw-val="${escapeHtml(o.v)}">${bi(o.en, o.hi)}</div>`).join('')}
     </div>`;
-  } else if (type === 'multichips') {
-    if (id === 'mensesIrregular') { /* unused: mensesIrregular is binary, handled above */ }
+  } else if (type === 'multiselect') {
     const list = genMultiSource(id);
     const selected = genAnswers[id] || [];
     const noneSelected = genAnswers[id + '_none'] === true;
@@ -1570,11 +1610,10 @@ function renderGenWizardStep() {
     bodyHtml = `<div class="wiz-chips">
       ${list.map(o => {
         const sel = selected.some(s => s.path === o.path);
-        return `<div class="wiz-chip ${sel?'sel':''}" data-gw-multi="${id}" data-gw-path="${escapeHtml(o.path)}">${escapeHtml(genOptionLabel(id, o))}</div>`;
+        return `<div class="wiz-chip ${sel?'sel':''}" data-gw-multi="${id}" data-gw-path="${escapeHtml(o.path)}">${genOptionLabelBi(id, o)}</div>`;
       }).join('')}
-      <div class="wiz-chip ${noneSelected?'sel':''}" data-gw-none="${id}">${chT({en:'None of these',hi:'इनमें से कोई नहीं'})}</div>
-    </div>
-    <button class="btn-primary wiz-finish" id="genNextBtn" ${nextDisabled?'disabled':''}>${chT({en:'Next',hi:'अगला'})}</button>`;
+      <div class="wiz-chip ${noneSelected?'sel':''}" data-gw-none="${id}">${bi('None of these','इनमें से कोई नहीं')}</div>
+    </div>`;
   } else if (type === 'searchable') {
     const list = genMultiSource(id);
     const query = (genAnswers[`${id}_search`] || '').toLowerCase().trim();
@@ -1587,37 +1626,41 @@ function renderGenWizardStep() {
     bodyHtml = `
       <input type="text" class="gen-freetext" id="genSearchInput" style="height:auto;padding:10px 12px;" placeholder="${escapeAttr(chT({en:'Type to search…',hi:'खोजने के लिए लिखें…'}))}" value="${escapeAttr(genAnswers[id+'_search']||'')}">
       <div class="wiz-chips" style="margin-top:10px;max-height:34vh;overflow-y:auto;">
-        <div class="wiz-chip ${noneSelected?'sel':''}" data-gw-none="${id}">${chT({en:'None / not applicable',hi:'कुछ नहीं / लागू नहीं'})}</div>
+        <div class="wiz-chip ${noneSelected?'sel':''}" data-gw-none="${id}">${bi('None / not applicable','कुछ नहीं / लागू नहीं')}</div>
         ${filtered.map(o => {
           const sel = selected.some(s => s.path === o.path);
-          const tag = o._tag === 'aversion' ? ` (${chT({en:'dislike',hi:'नापसंद'})})` : (o._tag === 'desire' ? ` (${chT({en:'crave',hi:'पसंद'})})` : '');
-          return `<div class="wiz-chip ${sel?'sel':''}" data-gw-multi="${id}" data-gw-path="${escapeHtml(o.path)}">${escapeHtml(genOptionLabel(id, o))}${escapeHtml(tag)}</div>`;
+          return `<div class="wiz-chip ${sel?'sel':''}" data-gw-multi="${id}" data-gw-path="${escapeHtml(o.path)}">${genOptionLabelBi(id, o)}</div>`;
         }).join('')}
-        ${!filtered.length ? `<p class="wiz-none">${chT({en:'No matches.',hi:'कोई परिणाम नहीं।'})}</p>` : ''}
+        ${!filtered.length ? `<p class="wiz-none">${bi('No matches.','कोई परिणाम नहीं।')}</p>` : ''}
       </div>
-      ${selected.length ? `<div class="wiz-preview-label" style="margin-top:8px;">${selected.length} ${chT({en:'selected',hi:'चयनित'})}</div>` : ''}
-      <button class="btn-primary wiz-finish" id="genNextBtn" ${nextDisabled?'disabled':''}>${chT({en:'Next',hi:'अगला'})}</button>`;
+      ${selected.length ? `<div class="wiz-preview-label" style="margin-top:8px;">${selected.length} ${chT({en:'selected',hi:'चयनित'})}</div>` : ''}`;
   } else if (type === 'freetext') {
-    bodyHtml = `<textarea class="gen-freetext" id="generalsFreetext" style="height:90px;" placeholder="${escapeAttr(chT({en:'Optional',hi:'वैकल्पिक'}))}">${escapeHtml(generalsState.freetext)}</textarea>
-      <button class="btn-primary wiz-finish" id="genFinishBtn">${chT({en:'Review answers',hi:'उत्तर देखें'})}</button>`;
+    nextDisabled = false;
+    bodyHtml = `<textarea class="gen-freetext" id="generalsFreetext" style="height:90px;" placeholder="${escapeAttr(chT({en:'Optional',hi:'वैकल्पिक'}))}">${escapeHtml(generalsState.freetext)}</textarea>`;
   }
 
-  // Menses branch gets one extra option folded into the binary step
-  // (Yes/No/Menopause reached) — special-cased here since it's the only
-  // 3-way binary-family question in the flow.
+  // Menses gets a 3-way single-select (Yes / No / Menopause reached) —
+  // special-cased since it's the only 3-state exclusive question.
   if (id === 'mensesIrregular') {
     const val = genAnswers[id];
+    nextDisabled = !val;
     bodyHtml = `<div class="wiz-chips">
-      <div class="wiz-chip ${val==='yes'?'sel':''}" data-gw-set="${id}" data-gw-val="yes">${chT({en:'Yes',hi:'हाँ'})}</div>
-      <div class="wiz-chip ${val==='no'?'sel':''}" data-gw-set="${id}" data-gw-val="no">${chT({en:'No',hi:'नहीं'})}</div>
-      <div class="wiz-chip ${val==='menopause'?'sel':''}" data-gw-set="${id}" data-gw-val="menopause">${chT({en:'Menopause reached',hi:'रजोनिवृत्ति हो चुकी है'})}</div>
+      <div class="wiz-chip ${val==='yes'?'sel':''}" data-gw-bin="${id}" data-gw-val="yes">${bi('Yes','हाँ')}</div>
+      <div class="wiz-chip ${val==='no'?'sel':''}" data-gw-bin="${id}" data-gw-val="no">${bi('No','नहीं')}</div>
+      <div class="wiz-chip ${val==='menopause'?'sel':''}" data-gw-bin="${id}" data-gw-val="menopause">${bi('Menopause reached','रजोनिवृत्ति हो चुकी है')}</div>
     </div>`;
   }
 
+  const nextLabel = id === 'freetext'
+    ? bi('Review answers', 'उत्तर देखें')
+    : bi('Next', 'अगला');
+  const finishAttr = id === 'freetext' ? 'genFinishBtn' : 'genNextBtn';
+
   return `<div class="wiz-wrap" id="genWizWrap">
-    <div class="wiz-header"><button class="wiz-back" id="genBackBtn">${chT({en:'← Back',hi:'← वापस'})}</button></div>
-    <p class="wiz-q">${escapeHtml(lang==='hi'?q.hi:q.en)}</p>
+    <div class="wiz-header"><button class="wiz-back" id="genBackBtn">${bi('← Back','← वापस')}</button></div>
+    <p class="wiz-q">${bi(q.en, q.hi)}</p>
     ${bodyHtml}
+    <button class="btn-primary wiz-finish" id="${finishAttr}" ${nextDisabled?'disabled':''}>${nextLabel}</button>
   </div>`;
 }
 
@@ -1846,25 +1889,39 @@ function attachStepListeners() {
       // Same fix as the search results pane: don't let tapping a chip blur
       // a focused search input and close the mobile keyboard mid-render.
       wrap.addEventListener('mousedown', (e) => {
-        if (e.target.closest('[data-gw-multi], [data-gw-none]')) e.preventDefault();
+        if (e.target.closest('[data-gw-multi], [data-gw-none], [data-gw-fixed], [data-gw-bin]')) e.preventDefault();
       });
       wrap.addEventListener('click', (e) => {
         if (e.target.closest('#genBackBtn'))    { backGenStep(); return; }
         if (e.target.closest('#genNextBtn'))    { advanceGenStep(); return; }
         if (e.target.closest('#genFinishBtn'))  { finishGenWizard(); return; }
-        // Single-answer chip (binary Yes/No, or the small option sets):
-        // taps directly advance to the next applicable step, same as the
-        // existing Pain Wizard's chip-tap behavior.
-        const setChip = e.target.closest('[data-gw-set]');
-        if (setChip) {
-          genAnswers[setChip.dataset.gwSet] = setChip.dataset.gwVal;
-          advanceGenStep();
+        // Binary / tri-state (Yes/No, or Yes/No/Menopause): mutually
+        // exclusive, single choice — just toggles the current answer, does
+        // NOT auto-advance. Explicit Next required, same as every other
+        // step now.
+        const binChip = e.target.closest('[data-gw-bin]');
+        if (binChip) {
+          genAnswers[binChip.dataset.gwBin] = binChip.dataset.gwVal;
+          render();
+          return;
+        }
+        // Fixed small chip lists (appetite, taste, thirst, drink pattern,
+        // perspiration amount, sleep quality, stool, menses flow, urine
+        // amount): any number selectable, toggles in place.
+        const fixedChip = e.target.closest('[data-gw-fixed]');
+        if (fixedChip) {
+          const key = fixedChip.dataset.gwFixed;
+          const val = fixedChip.dataset.gwVal;
+          if (!genAnswers[key]) genAnswers[key] = [];
+          const idx = genAnswers[key].indexOf(val);
+          if (idx === -1) genAnswers[key].push(val); else genAnswers[key].splice(idx, 1);
+          render();
           return;
         }
         // "None of these / not applicable" — the mandatory-but-not-blocking
-        // fallback for multi-select steps. Mutually exclusive with actually
-        // picking items: choosing it clears any selections, and picking an
-        // item below un-checks it.
+        // fallback for the dynamic (GEN_DATA-driven) multi-select steps.
+        // Mutually exclusive with actually picking items: choosing it
+        // clears any selections, and picking an item below un-checks it.
         const noneChip = e.target.closest('[data-gw-none]');
         if (noneChip) {
           const key = noneChip.dataset.gwNone;
@@ -1873,9 +1930,9 @@ function attachStepListeners() {
           render();
           return;
         }
-        // Multi-select chip (locations, odor types, stain colors, waking
-        // causes, food desires/aversions, dream categories): toggles in
-        // place, requires the explicit Next button to advance.
+        // Dynamic multi-select chip (locations, odor types, stain colors,
+        // waking causes, food cravings/dislikes, dream categories): any
+        // number selectable, toggles in place.
         const multiChip = e.target.closest('[data-gw-multi]');
         if (multiChip) {
           const key = multiChip.dataset.gwMulti;
