@@ -549,9 +549,9 @@ const MAIN_QUALIFIERS = {"Abdomen|abscess":["inguinal region","liver","spleen","
 <!-- If this file is missing, हिन्दी mode still works for direct Devanagari  -->
 <!-- typing — this file only adds Roman-letter matching on top.            -->
 <script src="repertory_translations_hindi_romanized.js"></script>
-<script src="mechanism_taxonomy.js?v=5"></script>
-<script src="case_narrative_data_assembly.js?v=5"></script>
-<script src="narrative_engine.js?v=5"></script>
+<script src="mechanism_taxonomy.js?v=6"></script>
+<script src="case_narrative_data_assembly.js?v=6"></script>
+<script src="narrative_engine.js?v=6"></script>
 
 <!-- GENERATE CASE NARRATIVE MODAL -->
 <div id="narrative-modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1000; align-items:center; justify-content:center;">
@@ -594,8 +594,8 @@ async function loadData() {
       throw new Error('repertory_data.js did not load (check the file is present next to this HTML file, and that it is being served over http:// rather than opened directly as a file:// URL in browsers that block local script loading).');
     }
     DB = EMBEDDED_DATA;
-    fetch('remedy_pathophysiology_db.json?v=5').then(r => r.json()).then(d => { window.remedyDB = d; }).catch(() => { console.warn('remedy_pathophysiology_db.json not found — Generate Case Narrative will be unavailable until it is added next to this file.'); });
-    fetch('symptom_affinity_table_v3.json?v=5').then(r => r.json()).then(d => { window.symptomAffinityTable = d; }).catch(() => { console.warn('symptom_affinity_table_v3.json not found — cross-rubric correlation section will be skipped.'); });
+    fetch('remedy_pathophysiology_db.json?v=6').then(r => r.json()).then(d => { window.remedyDB = d; }).catch(() => { console.warn('remedy_pathophysiology_db.json not found — Generate Case Narrative will be unavailable until it is added next to this file.'); });
+    fetch('symptom_affinity_table_v3.json?v=6').then(r => r.json()).then(d => { window.symptomAffinityTable = d; }).catch(() => { console.warn('symptom_affinity_table_v3.json not found — cross-rubric correlation section will be skipped.'); });
     setProgress(90, 'Initialising…'); await tick(30);
     setProgress(100, 'Ready!');        await tick(200);
     document.getElementById('loading').style.display = 'none';

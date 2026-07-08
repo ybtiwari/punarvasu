@@ -265,24 +265,24 @@
   // =================================================================
 
   const PATIENT_MECHANISM_EXPLANATIONS = {
-    'Vascular/Circulatory': 'blood flow and circulation seem to be part of what is driving this — blood vessels can become congested, swollen, or under-supplied',
-    'Autonomic/Nervous Regulation': 'the nervous system\'s automatic control over the body — things like heart rate, digestion, and internal sensation — appears to be overreacting or out of balance',
-    'Metabolic/Glycemic': 'the body\'s energy and blood sugar regulation seem to be part of the picture',
-    'Inflammatory/Immune': 'there appears to be an active inflammatory response — the body\'s natural defense and repair system reacting to something',
-    'Structural/Degenerative': 'this looks like a longer-standing, slowly developing change in the tissues themselves, rather than a sudden problem',
-    'Secretory/Glandular': 'the glands and normal secretions — sweat, saliva, discharge — seem to be behaving differently than they should',
-    'Hemorrhagic/Coagulation': 'there is a tendency toward bleeding or blood-clotting irregularity playing a role',
-    'Neuromuscular': 'the nerves and muscles appear to be losing some of their normal coordination',
-    'Thermoregulatory': 'the body\'s internal temperature control seems to be part of what is off balance',
-    'Psychoemotional/Stress-axis': 'the emotional state and physical symptoms appear closely linked — ongoing stress or emotional strain does not just stay in the mind, it can genuinely produce physical sensations in the body',
-    'Digestive-Motility': 'the digestive system\'s normal movement — the way food and waste travel through the gut — appears to be disrupted',
-    'Secretory-Mucosal': 'the mucous membranes seem to be overproducing or reacting abnormally, leading to discharge or congestion',
-    'Suppurative/Infective': 'there is a tendency toward infection or pus formation playing a role',
-    'Nutritive/Deficiency': 'the body\'s ability to absorb or use nutrients properly may be part of the picture',
-    'Reproductive-Hormonal': 'the reproductive and hormonal system appears to be part of what is driving this',
-    'Renal/Urinary-Excretory': 'the kidneys and urinary system\'s normal function appear to be involved',
-    'Respiratory-Ventilatory': 'the breathing and the way the lungs move air appear to be part of this pattern',
-    'Connective Tissue/Rheumatic': 'the joints and connective tissue seem to be involved — the kind of pattern seen in rheumatic-type complaints'
+    'Vascular/Circulatory': 'blood flow and circulation seem to be part of what is driving this — blood vessels can become congested, swollen, or under-supplied. This kind of circulatory strain often develops gradually, especially when vessels are already under pressure from other factors, making the affected tissue more prone to swelling, sluggish drainage, or irritation',
+    'Autonomic/Nervous Regulation': 'the nervous system\'s automatic control over the body — things like heart rate, digestion, and internal sensation — appears to be overreacting or out of balance. This kind of imbalance often builds up under sustained mental or physical strain, where the nervous system\'s regulatory "thermostat" stops resetting properly between stressful episodes, keeping the body in a heightened state even at rest',
+    'Metabolic/Glycemic': 'the body\'s energy and blood sugar regulation seem to be part of the picture. Over time, this kind of metabolic strain gradually affects small blood vessels and nerve endings throughout the body, which is why it can show up as symptoms in areas that seem, at first, unrelated to blood sugar itself',
+    'Inflammatory/Immune': 'there appears to be an active inflammatory response — the body\'s natural defense and repair system reacting to something. This usually develops when the body detects irritation, injury, or a foreign trigger in the tissue and mounts a defensive response, which is what produces the local heat, swelling, or discomfort',
+    'Structural/Degenerative': 'this looks like a longer-standing, slowly developing change in the tissues themselves, rather than a sudden problem. This kind of change usually results from repeated or prolonged strain on a tissue that outpaces the body\'s normal repair rate, so the tissue gradually adapts, thickens, or weakens rather than returning to its original state',
+    'Secretory/Glandular': 'the glands and normal secretions — sweat, saliva, discharge — seem to be behaving differently than they should. This often develops when the glands\' normal regulatory signals are disrupted, causing them to either over- or under-produce their usual output',
+    'Hemorrhagic/Coagulation': 'there is a tendency toward bleeding or blood-clotting irregularity. This can develop when the blood vessels or clotting mechanisms in the affected tissue become fragile or imbalanced, often as a downstream effect of chronic congestion in the same area',
+    'Neuromuscular': 'the nerves and muscles appear to be losing some of their normal coordination. This typically develops when nerve signals to the muscles become less efficient or consistent, often due to prolonged strain, poor local circulation, or metabolic disturbance affecting nerve function',
+    'Thermoregulatory': 'the body\'s internal temperature control seems to be part of what is off balance. This kind of imbalance can develop when the body\'s internal thermostat becomes less responsive, often linked to circulatory or metabolic strain elsewhere in the body',
+    'Psychoemotional/Stress-axis': 'the emotional state and physical symptoms appear closely linked — ongoing stress or emotional strain does not just stay in the mind, it can genuinely produce physical sensations in the body. This connection develops because ongoing emotional strain keeps the body\'s stress-response system continuously active, and that constant activation has real, measurable effects on digestion, circulation, and muscle tension elsewhere',
+    'Digestive-Motility': 'the digestive system\'s normal movement — the way food and waste travel through the gut — appears to be disrupted. This often develops when the nerves and muscles that coordinate digestion lose their normal rhythm, frequently linked to stress, dietary patterns, or metabolic strain',
+    'Secretory-Mucosal': 'the mucous membranes seem to be overproducing or reacting abnormally, leading to discharge or congestion. This typically develops when the membranes react to irritation, infection, or allergy by increasing their normal secretions',
+    'Suppurative/Infective': 'there is a tendency toward infection or pus formation. This typically develops when local tissue defenses are overwhelmed or drainage from the area is impaired, allowing organisms or debris to accumulate rather than clear normally',
+    'Nutritive/Deficiency': 'the body\'s ability to absorb or use nutrients properly may be part of the picture. This often develops gradually, when intake, absorption, or use of key nutrients falls behind the body\'s ongoing needs',
+    'Reproductive-Hormonal': 'the reproductive and hormonal system appears to be part of what is driving this. This often develops when the hormonal signals coordinating this system become irregular, which can be influenced by stress, metabolic health, or natural life-stage changes',
+    'Renal/Urinary-Excretory': 'the kidneys and urinary system\'s normal function appear to be involved. This can develop when the kidneys or urinary tract are placed under additional strain, often linked to circulatory or metabolic factors elsewhere in the body',
+    'Respiratory-Ventilatory': 'the breathing and the way the lungs move air appear to be part of this pattern. This often develops when the airway or the muscles driving breathing become more reactive or less efficient, sometimes linked to nervous system regulation or local irritation',
+    'Connective Tissue/Rheumatic': 'the joints and connective tissue seem to be involved — the kind of pattern seen in rheumatic-type complaints. This typically develops through repeated mechanical strain or a chronic low-grade inflammatory process affecting the joints and surrounding tissue over time'
   };
 
   const ACTION_TYPE_PATIENT_NOTE = {
@@ -372,6 +372,27 @@
   // phrase. Heuristic, not a full language model — handles the common
   // "worse from X" / "better from X" qualifier pattern explicitly, and
   // falls back to a translated comma-list for everything else.
+  // Looks up the app's own hand-written plain-English rubric translation
+  // (loaded from repertory_translations_english.js as a global
+  // TRANSLATIONS_ENGLISH object, keyed by a slugified chapter name and
+  // then by the rubric's exact full path). Falls back to null if no
+  // translation exists for this exact rubric, letting the caller fall
+  // back to the heuristic formatter below.
+  function slugifyChapter(chapter) {
+    return chapter.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  }
+
+  function lookupPlainTranslation(chapter, fullPath) {
+    let bucket = null;
+    try {
+      if (typeof TRANSLATIONS_ENGLISH !== 'undefined') bucket = TRANSLATIONS_ENGLISH[slugifyChapter(chapter)];
+    } catch (e) { /* not defined in this scope */ }
+    if (!bucket) bucket = (global.TRANSLATIONS_ENGLISH || {})[slugifyChapter(chapter)];
+    if (!bucket) return null;
+    const entry = bucket[fullPath];
+    return entry ? entry.plain : null;
+  }
+
   function formatPlainSymptom(mainRubric, qualifierText) {
     const head = translateTerm(mainRubric);
     if (!qualifierText) return head;
@@ -430,16 +451,32 @@
     return result;
   }
 
+  const STORY_CONNECTORS = ['Alongside this,', 'You also describe that', 'In addition,', 'Further,', 'You also note that'];
+
   function buildPatientSymptomList(assembledData) {
     const found = assembledData.rubrics.filter(r => r.found);
     if (!found.length) return null;
     const deduped = dedupeSymptomRubrics(found);
-    const lines = deduped.map(r => {
+
+    const sentences = deduped.map(r => {
+      const translated = lookupPlainTranslation(r.chapter, r.path);
+      if (translated) return translated;
+      // No exact translation on file for this rubric — fall back to the
+      // heuristic formatter, wrapped with organ context for clarity.
       const organ = CHAPTER_TO_ORGAN_PLAIN[r.chapter] || `your ${r.chapter.toLowerCase()}`;
-      const symptom = formatPlainSymptom(r.mainRubric, r.qualifierText);
-      return `In ${organ}: ${symptom}.`;
+      return `In ${organ}, there is ${formatPlainSymptom(r.mainRubric, r.qualifierText)}.`;
     });
-    return lines.join(' ');
+
+    if (sentences.length === 1) return sentences[0];
+
+    let story = sentences[0];
+    for (let i = 1; i < sentences.length; i++) {
+      const connector = STORY_CONNECTORS[(i - 1) % STORY_CONNECTORS.length];
+      const s = sentences[i];
+      const lowered = s.charAt(0).toLowerCase() + s.slice(1);
+      story += ` ${connector} ${lowered}`;
+    }
+    return story;
   }
 
   // Part 1: which organs/body areas are involved, in plain terms.
@@ -451,30 +488,34 @@
     if (!found.length) return null;
 
     const organNames = [...new Set(found.map(r => CHAPTER_TO_ORGAN_PLAIN[r.chapter] || `your ${r.chapter.toLowerCase()}`))];
-    const organsText = organNames.length
-      ? `The main areas involved are ${organNames.join(' and ')}.`
-      : null;
-
     const profile = assembledData.mechanismProfile;
     const top = (profile && profile.ranked) ? profile.ranked.filter(m => m.weight > 0).slice(0, 2) : [];
 
-    let connectionText = null;
-    if (top.length) {
-      const clause1 = PATIENT_MECHANISM_EXPLANATIONS[top[0].mechanism] || `a disturbance related to ${top[0].mechanism.toLowerCase()}`;
-      if (top.length === 1) {
-        connectionText = `The main driver appears to be that ${clause1}. This directly explains the symptoms described above.`;
-      } else {
-        const clause2 = PATIENT_MECHANISM_EXPLANATIONS[top[1].mechanism] || `a disturbance related to ${top[1].mechanism.toLowerCase()}`;
-        connectionText = `The main driver appears to be that ${clause1}. This is closely linked to a second factor — ${clause2} — ` +
-          `meaning these are not two separate problems but different expressions of one connected pattern.`;
-      }
-      const historyReinforced = top.some(m => m.reinforcedByHistory);
-      if (historyReinforced) {
-        connectionText += ' Your existing health history fits this same pattern and likely makes your body more prone to it.';
-      }
+    const points = [];
+    let n = 1;
+
+    if (organNames.length) {
+      points.push(`${n++}. The symptoms are centered in ${organNames.join(' and ')}.`);
     }
 
-    return [organsText, connectionText].filter(Boolean).join(' ');
+    if (top.length) {
+      const clause1 = PATIENT_MECHANISM_EXPLANATIONS[top[0].mechanism] || `a disturbance related to ${top[0].mechanism.toLowerCase()}`;
+      points.push(`${n++}. The process appears to begin with this: ${clause1}.`);
+
+      if (top.length > 1) {
+        const clause2 = PATIENT_MECHANISM_EXPLANATIONS[top[1].mechanism] || `a disturbance related to ${top[1].mechanism.toLowerCase()}`;
+        points.push(`${n++}. Because of that, a second, connected process follows: ${clause2}. These are not two separate problems but two stages of one developing pattern.`);
+      }
+
+      const historyReinforced = top.some(m => m.reinforcedByHistory);
+      if (historyReinforced) {
+        points.push(`${n++}. Your existing health history fits this same pattern, and independently makes your body more prone to it — likely making the current presentation more pronounced, and slower to resolve on its own without treatment.`);
+      }
+
+      points.push(`${n++}. Taken together, this sequence gives a plausible account of how the symptoms in ${organNames.join(' and ')} developed to their current state.`);
+    }
+
+    return points.join('\n');
   }
 
   // Short, single-line, organ-matched description of a remedy's known
@@ -493,6 +534,21 @@
     Constitutional: 'the overall constitution'
   };
 
+  // Best-effort split of a pathophysiology sentence into an anatomical
+  // "part" clause and a "function" clause. Heuristic: split at the
+  // first comma. Not perfect for every sentence structure, but gives
+  // a reasonably consistent short part/function pair without needing
+  // to re-author all 512 affinity entries with separate fields.
+  function splitPartFunction(pathophysiology) {
+    const firstSentence = (pathophysiology || '').split(/(?<=[.;])\s/)[0];
+    const commaIdx = firstSentence.indexOf(',');
+    if (commaIdx === -1) return { part: firstSentence.replace(/[.;]$/, '').trim(), fn: '' };
+    return {
+      part: firstSentence.slice(0, commaIdx).trim(),
+      fn: firstSentence.slice(commaIdx + 1).replace(/[.;]$/, '').trim()
+    };
+  }
+
   function buildPatientRemedyExplanation(remedyAbbr, assembledData, remedyDB) {
     const content = remedyDB.remedies[remedyAbbr];
     if (!content) {
@@ -506,23 +562,43 @@
     const topAffinity = content.systemAffinities.slice().sort((a, b) => a.prominence - b.prominence)[0];
     const chosenAffinity = matchedAffinity || topAffinity;
 
-    const organLabel = chosenAffinity ? (SYSTEM_TO_PLAIN_LABEL[chosenAffinity.system] || chosenAffinity.system) : 'your general constitution';
-    const shortLine = chosenAffinity
-      ? chosenAffinity.pathophysiology.split(/[.;]/)[0].trim()
-      : (content.constitutionalNote || '').split(/[.;]/)[0].trim();
+    const organLabel = chosenAffinity ? (SYSTEM_TO_PLAIN_LABEL[chosenAffinity.system] || chosenAffinity.system) : 'general constitution';
+    const { part, fn } = chosenAffinity
+      ? splitPartFunction(chosenAffinity.pathophysiology)
+      : splitPartFunction(content.constitutionalNote || '');
 
-    return `${content.fullName} — acts on: ${organLabel}. Known primarily for: ${shortLine}.`;
+    return `${content.fullName} — ${organLabel} — ${part}${fn ? ' — ' + fn : ''}.`;
   }
 
-  function buildCumulativeRemedyStatement(prescribedRemedies, remedyDB) {
+  // Since remedies here are prescribed as a combination rather than
+  // one at a time, this summarizes what the group as a whole is
+  // expected to do — derived directly from each remedy's actual
+  // organ/part/function target, not a generic closing statement.
+  function buildTreatmentExpectationSection(prescribedRemedies, assembledData, remedyDB) {
     if (!prescribedRemedies.length) return null;
-    const names = prescribedRemedies
-      .map(abbr => (remedyDB.remedies[abbr] || {}).fullName || abbr)
-      .join(', ');
-    return `Together, these medicines (${names}) are being considered as a complementary group rather than competing options — ` +
-      `each has a documented action on a different part of the same overall pattern described above. Your doctor will decide which ` +
-      `one to start with, and in what order or combination, based on the complete picture — but as a group, they represent a ` +
-      `well-founded, positive direction aimed at supporting your body's own capacity to recover and restore balance.`;
+
+    const targets = [];
+    for (const abbr of prescribedRemedies) {
+      const content = remedyDB.remedies[abbr];
+      if (!content) continue;
+      const affectedChapters = [...new Set(assembledData.rubrics.filter(r => r.found).map(r => r.chapter))];
+      const affectedSystems = new Set(affectedChapters.map(c => systemForChapter(c)).filter(Boolean));
+      const matchedAffinity = content.systemAffinities.find(aff => affectedSystems.has(aff.system));
+      const topAffinity = content.systemAffinities.slice().sort((a, b) => a.prominence - b.prominence)[0];
+      const chosenAffinity = matchedAffinity || topAffinity;
+      if (!chosenAffinity) continue;
+      const organLabel = SYSTEM_TO_PLAIN_LABEL[chosenAffinity.system] || chosenAffinity.system;
+      const { fn } = splitPartFunction(chosenAffinity.pathophysiology);
+      if (fn) targets.push(`${organLabel} (${fn})`);
+    }
+
+    if (!targets.length) return null;
+    const uniqueTargets = [...new Set(targets)];
+
+    return `These medicines are being given together as a combination, not one at a time. Based specifically on the organ and ` +
+      `function each one targets, the combination logically supports: ${uniqueTargets.join('; ')}. Since these targets align with ` +
+      `the pattern described above rather than working against each other, the expected effect is cumulative — gradual ` +
+      `improvement across these same functions as treatment continues, rather than each medicine acting in isolation.`;
   }
 
   function generatePatientFriendlyNarrative(assembledData, remedyDB) {
@@ -531,19 +607,18 @@
     const symptomText = buildPatientSymptomList(assembledData);
     const bodySystemsText = buildBodySystemsExplanation(assembledData);
     const remedyLines = prescribedRemedies.map(abbr => buildPatientRemedyExplanation(abbr, assembledData, remedyDB));
-    const cumulativeText = buildCumulativeRemedyStatement(prescribedRemedies, remedyDB);
+    const expectationText = buildTreatmentExpectationSection(prescribedRemedies, assembledData, remedyDB);
 
     const openingText = 'Based on what you have described, here is a simple explanation of what may be going on and how your treatment is intended to help.';
 
     const closingText =
       'This explanation is a starting point prepared for your doctor to review and discuss with you — it is not a final diagnosis, and your doctor may adjust it based on things not captured here.';
 
-    const remedySectionText = [remedyLines.join('\n'), cumulativeText].filter(Boolean).join('\n\n');
-
     const sections = [
       { title: 'Your Disease Picture', text: symptomText },
       { title: 'What May Be Happening In Your Body', text: bodySystemsText },
-      { title: 'What Each Medicine Is Known For, And How It May Help You', text: remedySectionText },
+      { title: 'What Each Medicine Is Known For, And How It May Help You', text: remedyLines.join('\n') },
+      { title: 'What to Expect from the Remedy / Treatment', text: expectationText },
       { title: 'A Note', text: closingText }
     ].filter(s => s.text);
 
