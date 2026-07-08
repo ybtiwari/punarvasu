@@ -253,9 +253,125 @@
     return lines.join(' ');
   }
 
+  // =================================================================
+  // PATIENT-FRIENDLY NARRATIVE MODE
   // ---------------------------------------------------------------
-  // Public entry point
-  // ---------------------------------------------------------------
+  // Same underlying data (assembledData + remedyDB), different
+  // output register: plain language, step-by-step, no jargon like
+  // "affinity rank" or "mechanism weight." Still deterministic —
+  // template assembly, not free generation. Intended as a draft for
+  // the doctor to review/edit before reading to or sharing with the
+  // patient; not sent to the patient automatically.
+  // =================================================================
+
+  const PATIENT_MECHANISM_EXPLANATIONS = {
+    'Vascular/Circulatory': 'Your blood flow and circulation in the affected area seem to be part of what is driving this — blood vessels can become congested, swollen, or under-supplied, which produces many of the sensations you are describing.',
+    'Autonomic/Nervous Regulation': 'Your nervous system\'s automatic control over your body — things like heart rate, digestion, and internal sensation — appears to be overreacting or out of balance right now, which can produce real physical symptoms even without anything being structurally damaged.',
+    'Metabolic/Glycemic': 'Your body\'s energy and blood sugar regulation seem to be part of the picture — when this balance is disturbed, it can affect how your whole body feels and functions.',
+    'Inflammatory/Immune': 'There appears to be an active inflammatory response — your body\'s natural defense and repair system reacting to something, producing heat, swelling, or irritation.',
+    'Structural/Degenerative': 'This looks like a longer-standing, slowly developing change in the tissues themselves, rather than a sudden problem — the kind that builds up gradually over time.',
+    'Secretory/Glandular': 'Your body\'s glands and normal secretions — sweat, saliva, discharge — seem to be behaving differently than they should, which is contributing to what you are feeling.',
+    'Hemorrhagic/Coagulation': 'There is a tendency toward bleeding or blood-clotting irregularity playing a role here.',
+    'Neuromuscular': 'Your nerves and muscles appear to be losing some of their normal coordination — this can show up as weakness, cramping, trembling, or numbness.',
+    'Thermoregulatory': 'Your body\'s internal temperature control seems to be part of what is off balance — how you handle heat, cold, and fevers.',
+    'Psychoemotional/Stress-axis': 'Your emotional state and physical symptoms appear closely linked. Ongoing stress, anxiety, or emotional strain does not just stay in the mind — it can genuinely produce physical sensations in the body, and that seems to be a real part of what you are experiencing.',
+    'Digestive-Motility': 'Your digestive system\'s normal movement — the way food and waste travel through your gut — appears to be disrupted.',
+    'Secretory-Mucosal': 'The mucous membranes, such as in your nose or throat, seem to be overproducing or reacting abnormally, leading to discharge or congestion.',
+    'Suppurative/Infective': 'There is a tendency toward infection or pus formation playing a role.',
+    'Nutritive/Deficiency': 'Your body\'s ability to absorb or use nutrients properly may be part of the picture, affecting your overall strength and energy.',
+    'Reproductive-Hormonal': 'Your reproductive and hormonal system appears to be part of what is driving this.',
+    'Renal/Urinary-Excretory': 'Your kidneys and urinary system\'s normal function appear to be involved in this pattern.',
+    'Respiratory-Ventilatory': 'Your breathing and the way your lungs move air appear to be part of this pattern.',
+    'Connective Tissue/Rheumatic': 'Your joints and connective tissue seem to be involved — the kind of pattern seen in rheumatic-type complaints.'
+  };
+
+  const ACTION_TYPE_PATIENT_NOTE = {
+    'functional': 'This is generally understood as a reversible disturbance in how your body is working, rather than permanent damage — your system has good potential to return to normal balance with the right treatment.',
+    'structural': 'This reflects a deeper, more established change in the tissue itself, so treatment aims to support your body\'s own repair and regulatory capacity over a longer course.',
+    'functional-to-structural': 'This kind of condition can range from a reversible disturbance to something more established in the tissue — treatment aims to address it while your body still has good capacity to recover.'
+  };
+
+  function buildPatientSymptomList(assembledData) {
+    const found = assembledData.rubrics.filter(r => r.found);
+    if (!found.length) return null;
+    const lines = found.map(r => {
+      const desc = r.qualifierText ? `${r.mainRubric}, ${r.qualifierText}` : r.mainRubric;
+      return `In the ${r.chapter.toLowerCase()}: a symptom described as "${desc}".`;
+    });
+    return lines.join(' ');
+  }
+
+  function buildPatientMechanismExplanation(assembledData) {
+    const profile = assembledData.mechanismProfile;
+    if (!profile || !profile.ranked || !profile.ranked.length) return null;
+    const top = profile.ranked.filter(m => m.weight > 0).slice(0, 4);
+    if (!top.length) return null;
+
+    const lines = top.map(m => {
+      const explanation = PATIENT_MECHANISM_EXPLANATIONS[m.mechanism] || `A disturbance related to ${m.mechanism.toLowerCase()} appears to be part of the picture.`;
+      const historyNote = m.reinforcedByHistory
+        ? ' This also fits with your existing health history, which can make your body more prone to this kind of pattern.'
+        : '';
+      return `${explanation}${historyNote}`;
+    });
+    return lines.join(' ');
+  }
+
+  function buildPatientRemedyExplanation(remedyAbbr, assembledData, remedyDB) {
+    const content = remedyDB.remedies[remedyAbbr];
+    if (!content) {
+      return `${remedyAbbr}: a detailed plain-language explanation is not yet available for this remedy in our system — your doctor will explain this one directly.`;
+    }
+
+    // What this medicine is classically/best known for overall — its single
+    // most prominent documented affinity, plus its constitutional picture —
+    // independent of whether it happens to match this particular case.
+    const topAffinity = content.systemAffinities.slice().sort((a, b) => a.prominence - b.prominence)[0];
+    const bestKnownFor = topAffinity ? topAffinity.pathophysiology : '';
+    const actionNote = ACTION_TYPE_PATIENT_NOTE[content.actionType] || '';
+
+    // Whether this case's synthesized mechanisms give an additional, more
+    // specific reason this medicine was chosen for this patient.
+    const rankedMechanisms = (assembledData.mechanismProfile && assembledData.mechanismProfile.ranked) || [];
+    const topMechanisms = rankedMechanisms.filter(m => m.weight > 0);
+    const matchedAffinity = topMechanisms
+      .map(m => content.systemAffinities.find(aff => (aff.mechanisms || []).includes(m.mechanism)))
+      .find(Boolean);
+
+    let text = `${content.fullName} is a medicine best known in classical homeopathic practice for: ${bestKnownFor} ${content.constitutionalNote || ''}`.trim();
+
+    if (matchedAffinity && matchedAffinity !== topAffinity) {
+      text += ` In your particular case, it is also considered relevant because: ${matchedAffinity.pathophysiology}`;
+    }
+    text += ` ${actionNote}`;
+
+    return text.trim();
+  }
+
+  function generatePatientFriendlyNarrative(assembledData, remedyDB) {
+    const prescribedRemedies = assembledData.remedySummary.map(r => r.remedy);
+
+    const symptomText = buildPatientSymptomList(assembledData);
+    const mechanismText = buildPatientMechanismExplanation(assembledData);
+    const remedyTexts = prescribedRemedies.map(abbr => buildPatientRemedyExplanation(abbr, assembledData, remedyDB));
+
+    const openingText = 'Based on what you have described, here is a simple explanation of what may be going on and how your treatment is intended to help.';
+
+    const closingText =
+      'This explanation is a starting point prepared for your doctor to review and discuss with you — it is not a final diagnosis, and your doctor may adjust it based on things not captured here.';
+
+    const sections = [
+      { title: 'What You Told Us', text: symptomText },
+      { title: 'What May Be Happening In Your Body', text: mechanismText },
+      { title: 'What Each Medicine Is Known For, And How It May Help You', text: remedyTexts.join('\n\n') },
+      { title: 'A Note', text: closingText }
+    ].filter(s => s.text);
+
+    const plainText = openingText + '\n\n' + sections.map(s => `${s.title}\n${s.text}`).join('\n\n');
+
+    return { generatedAt: new Date().toISOString(), sections, plainText };
+  }
+
 
   function generateEvidenceBasedNarrative(assembledData, remedyDB, options) {
     const opts = options || {};
@@ -304,9 +420,10 @@
   }
 
   global.generateEvidenceBasedNarrative = generateEvidenceBasedNarrative;
+  global.generatePatientFriendlyNarrative = generatePatientFriendlyNarrative;
   global.renderNarrativeText = renderNarrativeText;
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { generateEvidenceBasedNarrative, renderNarrativeText, CHAPTER_TO_SYSTEM };
+    module.exports = { generateEvidenceBasedNarrative, generatePatientFriendlyNarrative, renderNarrativeText, CHAPTER_TO_SYSTEM };
   }
 
 })(typeof window !== 'undefined' ? window : globalThis);

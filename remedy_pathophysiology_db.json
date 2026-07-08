@@ -18,8 +18,6 @@
           "prominence": 1,
           "pathophysiology": "Disturbs gastric motility and sphincter tone, producing spasmodic, irritable dysfunction of the upper GI tract rather than mucosal destruction in the early stage — hyperacidity, reflux, and constrictive cramping from smooth-muscle over-tone.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Structural/Degenerative",
             "Neuromuscular",
             "Psychoemotional/Stress-axis",
             "Digestive-Motility"
@@ -31,7 +29,6 @@
           "pathophysiology": "Heightens reflex irritability and sensory threshold sensitivity (light, noise, odours), consistent with a state of nervous over-stimulation followed by exhaustion.",
           "mechanisms": [
             "Autonomic/Nervous Regulation",
-            "Structural/Degenerative",
             "Psychoemotional/Stress-axis"
           ]
         },
@@ -40,8 +37,6 @@
           "prominence": 3,
           "pathophysiology": "Spasmodic muscular tension and cramping, particularly of the back and abdominal wall, from the same irritable smooth/skeletal muscle over-tone pattern.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Structural/Degenerative",
             "Neuromuscular",
             "Psychoemotional/Stress-axis"
           ]
@@ -66,8 +61,7 @@
           "prominence": 1,
           "pathophysiology": "Produces burning irritation of the gastric and intestinal mucosa with marked prostration disproportionate to the local finding — a picture of mucosal irritant injury with systemic exhaustion.",
           "mechanisms": [
-            "Vascular/Circulatory",
-            "Thermoregulatory"
+            "Digestive-Motility"
           ]
         },
         {
@@ -75,9 +69,7 @@
           "prominence": 2,
           "pathophysiology": "Anxious, constrictive dyspnea with a sense of suffocation, often worse lying flat and after midnight, reflecting both airway reactivity and the characteristic restlessness of the remedy.",
           "mechanisms": [
-            "Vascular/Circulatory",
             "Autonomic/Nervous Regulation",
-            "Thermoregulatory",
             "Respiratory-Ventilatory"
           ]
         },
@@ -86,8 +78,7 @@
           "prominence": 3,
           "pathophysiology": "Dry, scaly, burning skin changes with poor healing tendency, consistent with the remedy's general pattern of tissue dryness and depleted vital reaction.",
           "mechanisms": [
-            "Vascular/Circulatory",
-            "Thermoregulatory"
+            "Secretory/Glandular"
           ]
         }
       ],
@@ -110,7 +101,6 @@
           "prominence": 1,
           "pathophysiology": "Chronic inflammatory skin disturbance with heat, redness, and itching worse from warmth and washing, reflecting a pattern of poor eliminative/detoxification function expressed through the skin.",
           "mechanisms": [
-            "Vascular/Circulatory",
             "Inflammatory/Immune",
             "Structural/Degenerative",
             "Thermoregulatory"
@@ -122,8 +112,6 @@
           "pathophysiology": "Sluggish, congestive portal and intestinal circulation with morning diarrhea and a characteristic sinking, empty sensation around 11 AM.",
           "mechanisms": [
             "Vascular/Circulatory",
-            "Inflammatory/Immune",
-            "Structural/Degenerative",
             "Digestive-Motility"
           ]
         },
@@ -133,8 +121,6 @@
           "pathophysiology": "Generalized heat intolerance and burning sensations (soles, palms, vertex) consistent with dysregulated peripheral circulation and thermoregulation.",
           "mechanisms": [
             "Vascular/Circulatory",
-            "Inflammatory/Immune",
-            "Structural/Degenerative",
             "Thermoregulatory"
           ]
         }
@@ -168,10 +154,7 @@
           "prominence": 2,
           "pathophysiology": "Vesicular, intensely itching eruptions, reflecting a reactive inflammatory skin response pattern.",
           "mechanisms": [
-            "Inflammatory/Immune",
-            "Structural/Degenerative",
-            "Neuromuscular",
-            "Connective Tissue/Rheumatic"
+            "Inflammatory/Immune"
           ]
         },
         {
@@ -181,8 +164,7 @@
           "mechanisms": [
             "Autonomic/Nervous Regulation",
             "Structural/Degenerative",
-            "Neuromuscular",
-            "Connective Tissue/Rheumatic"
+            "Neuromuscular"
           ]
         }
       ],
@@ -285,9 +267,7 @@
           "pathophysiology": "Produces sudden, high-tension circulatory reaction — full, hard, rapid pulse with anxious tachycardia, consistent with an acute sympathetic surge rather than any fixed cardiac lesion.",
           "mechanisms": [
             "Vascular/Circulatory",
-            "Autonomic/Nervous Regulation",
-            "Inflammatory/Immune",
-            "Structural/Degenerative"
+            "Inflammatory/Immune"
           ]
         },
         {
@@ -295,10 +275,8 @@
           "prominence": 2,
           "pathophysiology": "Sudden, intense fear and restlessness bordering on panic, often with a fixed conviction of impending death — a marker of acute autonomic overdrive.",
           "mechanisms": [
-            "Vascular/Circulatory",
             "Autonomic/Nervous Regulation",
             "Inflammatory/Immune",
-            "Structural/Degenerative",
             "Psychoemotional/Stress-axis"
           ]
         },
@@ -307,10 +285,7 @@
           "prominence": 3,
           "pathophysiology": "Sudden dry, croupy, barking cough following abrupt cold dry wind exposure, reflecting acute reactive airway constriction rather than established inflammation.",
           "mechanisms": [
-            "Vascular/Circulatory",
-            "Autonomic/Nervous Regulation",
             "Inflammatory/Immune",
-            "Structural/Degenerative",
             "Respiratory-Ventilatory"
           ]
         }
@@ -355,7 +330,6 @@
           "prominence": 3,
           "pathophysiology": "Marked heat intolerance with a notable absence of thirst even during fever, an unusual combination that reflects the remedy's characteristic fluid-regulation pattern.",
           "mechanisms": [
-            "Vascular/Circulatory",
             "Metabolic/Glycemic",
             "Inflammatory/Immune",
             "Thermoregulatory"
@@ -389,7 +363,6 @@
           "prominence": 2,
           "pathophysiology": "A characteristic shock-state denial of injury — the patient insists nothing is wrong even when visibly hurt, reflecting acute autonomic shock response.",
           "mechanisms": [
-            "Vascular/Circulatory",
             "Autonomic/Nervous Regulation",
             "Inflammatory/Immune"
           ]
@@ -399,7 +372,6 @@
           "prominence": 3,
           "pathophysiology": "Fear of being touched or approached despite pain, and a restlessness that makes the bed feel too hard no matter the surface.",
           "mechanisms": [
-            "Vascular/Circulatory",
             "Autonomic/Nervous Regulation",
             "Psychoemotional/Stress-axis"
           ]
@@ -425,8 +397,7 @@
           "pathophysiology": "Sudden, intense throbbing congestive states with marked hypersensitivity to light, noise, and jarring, reflecting acute cerebral vascular engorgement.",
           "mechanisms": [
             "Vascular/Circulatory",
-            "Inflammatory/Immune",
-            "Thermoregulatory"
+            "Inflammatory/Immune"
           ]
         },
         {
@@ -479,7 +450,6 @@
           "pathophysiology": "Marked dryness of mucosa with thirst for large quantities at long intervals, and constipation with dry, hard stool — a pattern of reduced secretory fluid rather than structural obstruction.",
           "mechanisms": [
             "Metabolic/Glycemic",
-            "Inflammatory/Immune",
             "Digestive-Motility"
           ]
         },
@@ -488,7 +458,6 @@
           "prominence": 3,
           "pathophysiology": "Dry, painful cough worse on the slightest movement or deep breath, again reflecting pleural/serous membrane irritation aggravated mechanically.",
           "mechanisms": [
-            "Inflammatory/Immune",
             "Respiratory-Ventilatory"
           ]
         }
@@ -513,8 +482,6 @@
           "pathophysiology": "Slow metabolic and nutritive disturbance with a tendency to obesity or poor assimilation, and profuse sour-smelling perspiration of the head and scalp during sleep.",
           "mechanisms": [
             "Metabolic/Glycemic",
-            "Inflammatory/Immune",
-            "Structural/Degenerative",
             "Secretory/Glandular",
             "Thermoregulatory",
             "Nutritive/Deficiency"
@@ -526,11 +493,8 @@
           "pathophysiology": "Delayed ossification and weak bones or joints in growing individuals, with a tendency toward glandular and lymphatic swelling.",
           "mechanisms": [
             "Vascular/Circulatory",
-            "Metabolic/Glycemic",
             "Inflammatory/Immune",
-            "Structural/Degenerative",
             "Secretory/Glandular",
-            "Nutritive/Deficiency",
             "Connective Tissue/Rheumatic"
           ]
         },
@@ -539,12 +503,8 @@
           "prominence": 3,
           "pathophysiology": "Sour, curdled-milk-smelling stool or vomiting, with an aversion to meat and a characteristic craving for eggs or indigestible substances.",
           "mechanisms": [
-            "Metabolic/Glycemic",
-            "Inflammatory/Immune",
-            "Structural/Degenerative",
             "Secretory/Glandular",
-            "Digestive-Motility",
-            "Nutritive/Deficiency"
+            "Digestive-Motility"
           ]
         }
       ],
@@ -567,7 +527,6 @@
           "prominence": 1,
           "pathophysiology": "Extreme intolerance to pain with irritability disproportionate to the actual complaint, a hallmark during teething or acute colic.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
             "Inflammatory/Immune",
             "Psychoemotional/Stress-axis",
             "Digestive-Motility"
@@ -578,7 +537,6 @@
           "prominence": 2,
           "pathophysiology": "Colicky abdominal pain with green, offensive diarrhea, particularly in infants, consistent with acute intestinal irritability.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
             "Inflammatory/Immune",
             "Psychoemotional/Stress-axis",
             "Digestive-Motility"
@@ -590,10 +548,8 @@
           "pathophysiology": "One cheek flushed red and the other pale during fever or teething, reflecting an asymmetric acute vascular reaction.",
           "mechanisms": [
             "Vascular/Circulatory",
-            "Autonomic/Nervous Regulation",
             "Inflammatory/Immune",
-            "Thermoregulatory",
-            "Digestive-Motility"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -618,8 +574,7 @@
           "mechanisms": [
             "Secretory/Glandular",
             "Hemorrhagic/Coagulation",
-            "Digestive-Motility",
-            "Secretory-Mucosal"
+            "Digestive-Motility"
           ]
         },
         {
@@ -627,10 +582,7 @@
           "prominence": 2,
           "pathophysiology": "Bloating unrelieved by belching or passing gas, worse after eating, reflecting sluggish digestive motility from fluid-loss debility.",
           "mechanisms": [
-            "Secretory/Glandular",
-            "Hemorrhagic/Coagulation",
-            "Digestive-Motility",
-            "Secretory-Mucosal"
+            "Digestive-Motility"
           ]
         },
         {
@@ -639,10 +591,7 @@
           "pathophysiology": "Ringing in the ears and mental dullness consistent with exhaustion-related nervous under-function.",
           "mechanisms": [
             "Autonomic/Nervous Regulation",
-            "Secretory/Glandular",
-            "Hemorrhagic/Coagulation",
-            "Psychoemotional/Stress-axis",
-            "Secretory-Mucosal"
+            "Psychoemotional/Stress-axis"
           ]
         }
       ],
@@ -666,8 +615,7 @@
           "pathophysiology": "Violent, cutting abdominal cramping that forces the patient to bend double, dramatically relieved by hard pressure — a pattern of acute smooth-muscle spasm rather than structural obstruction.",
           "mechanisms": [
             "Inflammatory/Immune",
-            "Neuromuscular",
-            "Psychoemotional/Stress-axis"
+            "Neuromuscular"
           ]
         },
         {
@@ -684,8 +632,7 @@
           "prominence": 3,
           "pathophysiology": "Neuralgic pain along nerve distributions, again characteristically relieved by firm pressure.",
           "mechanisms": [
-            "Neuromuscular",
-            "Psychoemotional/Stress-axis"
+            "Neuromuscular"
           ]
         }
       ],
@@ -709,8 +656,7 @@
           "pathophysiology": "Heavy, drooping eyelids with muscular weakness, trembling, and drowsiness, reflecting a functional reduction in motor tone and alertness.",
           "mechanisms": [
             "Autonomic/Nervous Regulation",
-            "Neuromuscular",
-            "Psychoemotional/Stress-axis"
+            "Neuromuscular"
           ]
         },
         {
@@ -718,9 +664,7 @@
           "prominence": 2,
           "pathophysiology": "A slow, weak pulse in some presentations, consistent with reduced autonomic and motor drive.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Neuromuscular",
-            "Psychoemotional/Stress-axis"
+            "Autonomic/Nervous Regulation"
           ]
         },
         {
@@ -754,9 +698,7 @@
           "prominence": 1,
           "pathophysiology": "Dry or oozing, honey-like sticky eruptions especially in skin folds, with a marked tendency toward keloid or excessive scar-tissue formation.",
           "mechanisms": [
-            "Inflammatory/Immune",
-            "Structural/Degenerative",
-            "Secretory/Glandular"
+            "Structural/Degenerative"
           ]
         },
         {
@@ -765,9 +707,6 @@
           "pathophysiology": "Constipation with large, difficult, knotty stool, reflecting sluggish bowel tone consistent with the remedy's general slow metabolic pattern.",
           "mechanisms": [
             "Metabolic/Glycemic",
-            "Inflammatory/Immune",
-            "Structural/Degenerative",
-            "Secretory/Glandular",
             "Digestive-Motility"
           ]
         },
@@ -777,9 +716,6 @@
           "pathophysiology": "Scanty, delayed menses alongside a tendency to obesity, consistent with a broader hormonal-metabolic under-function pattern.",
           "mechanisms": [
             "Metabolic/Glycemic",
-            "Inflammatory/Immune",
-            "Structural/Degenerative",
-            "Secretory/Glandular",
             "Reproductive-Hormonal"
           ]
         }
@@ -804,8 +740,6 @@
           "pathophysiology": "Extreme sensitivity to touch and cold air over any inflamed area, with a marked tendency for every minor wound to suppurate.",
           "mechanisms": [
             "Autonomic/Nervous Regulation",
-            "Inflammatory/Immune",
-            "Psychoemotional/Stress-axis",
             "Suppurative/Infective"
           ]
         },
@@ -815,8 +749,6 @@
           "pathophysiology": "Croupy, rattling cough worse from any cold air exposure, with splinter-like throat pain reflecting acute mucosal hypersensitivity.",
           "mechanisms": [
             "Inflammatory/Immune",
-            "Psychoemotional/Stress-axis",
-            "Suppurative/Infective",
             "Respiratory-Ventilatory"
           ]
         },
@@ -825,9 +757,7 @@
           "prominence": 3,
           "pathophysiology": "Extreme irritability paired with oversensitivity to both pain and cold in general, more marked than in most other remedies.",
           "mechanisms": [
-            "Inflammatory/Immune",
-            "Psychoemotional/Stress-axis",
-            "Suppurative/Infective"
+            "Psychoemotional/Stress-axis"
           ]
         }
       ],
@@ -861,8 +791,7 @@
           "prominence": 2,
           "pathophysiology": "Paradoxical digestive complaints — for instance, symptoms sometimes easing rather than worsening after eating, a pattern uncharacteristic of typical dyspeptic remedies.",
           "mechanisms": [
-            "Inflammatory/Immune",
-            "Psychoemotional/Stress-axis"
+            "Digestive-Motility"
           ]
         },
         {
@@ -870,8 +799,7 @@
           "prominence": 3,
           "pathophysiology": "A generally contradictory, changeable symptom picture that doesn't fit conventional clinical patterns, itself a marker of the remedy's characteristic paradox.",
           "mechanisms": [
-            "Inflammatory/Immune",
-            "Psychoemotional/Stress-axis"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -894,7 +822,6 @@
           "prominence": 1,
           "pathophysiology": "Weakness and stitching pain of the back, particularly the lower back, markedly worse from any exertion.",
           "mechanisms": [
-            "Inflammatory/Immune",
             "Neuromuscular"
           ]
         },
@@ -912,7 +839,6 @@
           "prominence": 3,
           "pathophysiology": "Marked chilliness with a distinctive 2-4 AM aggravation window, consistent with disrupted circadian regulation of vital tone.",
           "mechanisms": [
-            "Inflammatory/Immune",
             "Thermoregulatory"
           ]
         }
@@ -949,8 +875,7 @@
             "Vascular/Circulatory",
             "Inflammatory/Immune",
             "Secretory/Glandular",
-            "Thermoregulatory",
-            "Suppurative/Infective"
+            "Thermoregulatory"
           ]
         },
         {
@@ -959,9 +884,7 @@
           "pathophysiology": "Marked sensitivity to both heat and cold, worse at night, reflecting a broad dysregulation of thermoregulatory tone.",
           "mechanisms": [
             "Autonomic/Nervous Regulation",
-            "Secretory/Glandular",
-            "Thermoregulatory",
-            "Suppurative/Infective"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -985,8 +908,6 @@
           "pathophysiology": "Craving for salt with marked thirst, and emaciation despite a good appetite, especially noticeable around the neck, alongside intolerance of consolation or sympathy.",
           "mechanisms": [
             "Metabolic/Glycemic",
-            "Structural/Degenerative",
-            "Psychoemotional/Stress-axis",
             "Nutritive/Deficiency"
           ]
         },
@@ -996,10 +917,7 @@
           "pathophysiology": "Headaches described as like small hammers, worse from sun exposure between 9 and 11 AM, reflecting a photosensitive vascular-nervous pattern.",
           "mechanisms": [
             "Vascular/Circulatory",
-            "Autonomic/Nervous Regulation",
-            "Structural/Degenerative",
-            "Psychoemotional/Stress-axis",
-            "Nutritive/Deficiency"
+            "Autonomic/Nervous Regulation"
           ]
         },
         {
@@ -1007,9 +925,7 @@
           "prominence": 3,
           "pathophysiology": "Oily skin especially along the hairline, and a tendency to cold-sore or herpetic eruptions, consistent with the remedy's general mucocutaneous disturbance.",
           "mechanisms": [
-            "Structural/Degenerative",
-            "Psychoemotional/Stress-axis",
-            "Nutritive/Deficiency"
+            "Secretory/Glandular"
           ]
         }
       ],
@@ -1032,8 +948,6 @@
           "prominence": 1,
           "pathophysiology": "Splinter-like, sharp pains particularly at mucocutaneous junctions such as the anus and corners of the mouth, with ulcerative lesions carrying a foul odor.",
           "mechanisms": [
-            "Thermoregulatory",
-            "Psychoemotional/Stress-axis",
             "Suppurative/Infective"
           ]
         },
@@ -1042,9 +956,6 @@
           "prominence": 2,
           "pathophysiology": "Strongly offensive urine odor even when the quantity passed is small, consistent with a marked secretory-odor disturbance.",
           "mechanisms": [
-            "Thermoregulatory",
-            "Psychoemotional/Stress-axis",
-            "Suppurative/Infective",
             "Renal/Urinary-Excretory"
           ]
         },
@@ -1054,8 +965,7 @@
           "pathophysiology": "Marked chilliness alongside an irritable, vindictive disposition, corroborating the remedy's generally destructive tissue picture.",
           "mechanisms": [
             "Thermoregulatory",
-            "Psychoemotional/Stress-axis",
-            "Suppurative/Infective"
+            "Psychoemotional/Stress-axis"
           ]
         }
       ],
@@ -1119,10 +1029,7 @@
           "pathophysiology": "Tightness and burning in the chest with hoarseness and an easy tendency to mucosal bleeding, reflecting heightened vascular fragility.",
           "mechanisms": [
             "Vascular/Circulatory",
-            "Autonomic/Nervous Regulation",
-            "Structural/Degenerative",
             "Hemorrhagic/Coagulation",
-            "Psychoemotional/Stress-axis",
             "Respiratory-Ventilatory"
           ]
         },
@@ -1131,11 +1038,7 @@
           "prominence": 2,
           "pathophysiology": "A desire for cold drinks or food which is vomited once it warms in the stomach, alongside a craving for salty or spicy food.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Structural/Degenerative",
-            "Hemorrhagic/Coagulation",
-            "Psychoemotional/Stress-axis",
-            "Respiratory-Ventilatory"
+            "Digestive-Motility"
           ]
         },
         {
@@ -1143,11 +1046,7 @@
           "prominence": 3,
           "pathophysiology": "Marked fear — of thunderstorms, being alone, or death — paired with an open, sociable, sympathetic disposition.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Structural/Degenerative",
-            "Hemorrhagic/Coagulation",
-            "Psychoemotional/Stress-axis",
-            "Respiratory-Ventilatory"
+            "Psychoemotional/Stress-axis"
           ]
         }
       ],
@@ -1170,9 +1069,6 @@
           "prominence": 1,
           "pathophysiology": "A bearing-down sensation as if the pelvic organs would fall out, with irregular or scanty menses, reflecting reduced pelvic tone and hormonal regulation.",
           "mechanisms": [
-            "Vascular/Circulatory",
-            "Structural/Degenerative",
-            "Psychoemotional/Stress-axis",
             "Reproductive-Hormonal"
           ]
         },
@@ -1181,10 +1077,7 @@
           "prominence": 2,
           "pathophysiology": "Nausea at the smell or thought of food, and a sinking, empty sensation not relieved by eating, consistent with disrupted appetite-satiety regulation.",
           "mechanisms": [
-            "Vascular/Circulatory",
-            "Structural/Degenerative",
-            "Psychoemotional/Stress-axis",
-            "Reproductive-Hormonal"
+            "Digestive-Motility"
           ]
         },
         {
@@ -1192,10 +1085,7 @@
           "prominence": 3,
           "pathophysiology": "Yellow-brown pigmentation across the nose and cheeks, with marked fatigue that is characteristically relieved by vigorous exercise.",
           "mechanisms": [
-            "Vascular/Circulatory",
-            "Structural/Degenerative",
-            "Psychoemotional/Stress-axis",
-            "Reproductive-Hormonal"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -1218,8 +1108,6 @@
           "prominence": 1,
           "pathophysiology": "Weak nails and hair with a tendency toward slow-healing wounds and fistula formation, reflecting deficient tissue nutrition.",
           "mechanisms": [
-            "Inflammatory/Immune",
-            "Suppurative/Infective",
             "Nutritive/Deficiency"
           ]
         },
@@ -1228,11 +1116,9 @@
           "prominence": 2,
           "pathophysiology": "Profuse, offensive foot sweat alongside a tendency for every small wound to suppurate, similar to but more chronic than Hepar.",
           "mechanisms": [
-            "Inflammatory/Immune",
             "Structural/Degenerative",
             "Secretory/Glandular",
-            "Suppurative/Infective",
-            "Nutritive/Deficiency"
+            "Suppurative/Infective"
           ]
         },
         {
@@ -1240,11 +1126,8 @@
           "prominence": 3,
           "pathophysiology": "Lack of stamina and mental exhaustion from even slight effort, paired with marked chilliness.",
           "mechanisms": [
-            "Inflammatory/Immune",
             "Thermoregulatory",
-            "Psychoemotional/Stress-axis",
-            "Suppurative/Infective",
-            "Nutritive/Deficiency"
+            "Psychoemotional/Stress-axis"
           ]
         }
       ],
@@ -1284,7 +1167,7 @@
           "prominence": 3,
           "pathophysiology": "Clean-cut, sharp pain as if from a knife, especially in the post-surgical setting.",
           "mechanisms": [
-            "Psychoemotional/Stress-axis"
+            "Neuromuscular"
           ]
         }
       ],
@@ -1307,7 +1190,7 @@
           "prominence": 1,
           "pathophysiology": "Warty, cauliflower-like growths and oily skin, reflecting a tendency toward benign tissue proliferation.",
           "mechanisms": [
-            "Psychoemotional/Stress-axis"
+            "Secretory/Glandular"
           ]
         },
         {
@@ -1316,7 +1199,6 @@
           "pathophysiology": "A history of urethral discharge, corresponding to the classical sycotic-miasm picture in traditional homeopathic theory.",
           "mechanisms": [
             "Secretory/Glandular",
-            "Psychoemotional/Stress-axis",
             "Secretory-Mucosal",
             "Renal/Urinary-Excretory"
           ]
@@ -1326,7 +1208,7 @@
           "prominence": 3,
           "pathophysiology": "Fixed ideas — for instance, a sensation of fragility as if made of glass — reflecting an obsessive, rigid thought-pattern disturbance.",
           "mechanisms": [
-            "Psychoemotional/Stress-axis"
+            "Autonomic/Nervous Regulation"
           ]
         }
       ],
@@ -1349,7 +1231,6 @@
           "prominence": 1,
           "pathophysiology": "Violent vomiting and purging occurring simultaneously, producing rapid collapse with profuse watery diarrhea.",
           "mechanisms": [
-            "Secretory/Glandular",
             "Digestive-Motility"
           ]
         },
@@ -1367,8 +1248,7 @@
           "pathophysiology": "Restlessness alternating with prostration, occasionally with manic features in acute presentations.",
           "mechanisms": [
             "Autonomic/Nervous Regulation",
-            "Inflammatory/Immune",
-            "Secretory/Glandular"
+            "Inflammatory/Immune"
           ]
         }
       ],
@@ -1394,8 +1274,7 @@
             "Vascular/Circulatory",
             "Inflammatory/Immune",
             "Structural/Degenerative",
-            "Secretory/Glandular",
-            "Neuromuscular"
+            "Secretory/Glandular"
           ]
         },
         {
@@ -1403,8 +1282,6 @@
           "prominence": 2,
           "pathophysiology": "An ascending numbness or paralysis pattern, with vertigo worse on turning the head or lying down.",
           "mechanisms": [
-            "Structural/Degenerative",
-            "Secretory/Glandular",
             "Neuromuscular"
           ]
         },
@@ -1414,8 +1291,6 @@
           "pathophysiology": "Weakness with trembling, particularly after exertion, consistent with progressive neuromuscular involvement.",
           "mechanisms": [
             "Autonomic/Nervous Regulation",
-            "Structural/Degenerative",
-            "Secretory/Glandular",
             "Neuromuscular"
           ]
         }
@@ -1440,7 +1315,6 @@
           "pathophysiology": "Anticipatory anxiety producing hurried, impulsive behavior, fear of heights and crowds, and an inability to wait calmly for anything.",
           "mechanisms": [
             "Autonomic/Nervous Regulation",
-            "Neuromuscular",
             "Psychoemotional/Stress-axis"
           ]
         },
@@ -1449,9 +1323,6 @@
           "prominence": 2,
           "pathophysiology": "Belching and bloating with an intense craving for sweets that consistently aggravates the digestive complaints.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Neuromuscular",
-            "Psychoemotional/Stress-axis",
             "Digestive-Motility"
           ]
         },
@@ -1462,8 +1333,7 @@
           "mechanisms": [
             "Autonomic/Nervous Regulation",
             "Structural/Degenerative",
-            "Neuromuscular",
-            "Psychoemotional/Stress-axis"
+            "Neuromuscular"
           ]
         }
       ],
@@ -1486,12 +1356,7 @@
           "prominence": 1,
           "pathophysiology": "Profuse, excoriating nasal and bronchial catarrh with wheezing, and a tendency toward recurrent sinusitis.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Metabolic/Glycemic",
-            "Secretory/Glandular",
-            "Secretory-Mucosal",
-            "Nutritive/Deficiency",
-            "Respiratory-Ventilatory"
+            "Secretory-Mucosal"
           ]
         },
         {
@@ -1499,12 +1364,7 @@
           "prominence": 2,
           "pathophysiology": "Dry, scaly eruptions with intense itching that is markedly worse from warmth.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Metabolic/Glycemic",
-            "Secretory/Glandular",
-            "Thermoregulatory",
-            "Nutritive/Deficiency",
-            "Respiratory-Ventilatory"
+            "Thermoregulatory"
           ]
         },
         {
@@ -1514,9 +1374,7 @@
           "mechanisms": [
             "Autonomic/Nervous Regulation",
             "Metabolic/Glycemic",
-            "Secretory/Glandular",
-            "Nutritive/Deficiency",
-            "Respiratory-Ventilatory"
+            "Nutritive/Deficiency"
           ]
         }
       ],
@@ -1540,7 +1398,6 @@
           "pathophysiology": "Delayed mental development in children, or degenerative mental decline in the elderly, accompanied by marked timidity and shyness.",
           "mechanisms": [
             "Structural/Degenerative",
-            "Secretory/Glandular",
             "Psychoemotional/Stress-axis"
           ]
         },
@@ -1549,7 +1406,6 @@
           "prominence": 2,
           "pathophysiology": "Enlarged tonsils and glands with delayed physical growth in the child presentation.",
           "mechanisms": [
-            "Structural/Degenerative",
             "Secretory/Glandular"
           ]
         },
@@ -1558,8 +1414,7 @@
           "prominence": 3,
           "pathophysiology": "An arteriosclerotic tendency characteristic of the elderly-decline presentation of this remedy.",
           "mechanisms": [
-            "Structural/Degenerative",
-            "Secretory/Glandular"
+            "Vascular/Circulatory"
           ]
         }
       ],
@@ -1591,8 +1446,6 @@
           "prominence": 2,
           "pathophysiology": "Aphthous ulcers of the mouth in infants, worse during nursing.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Psychoemotional/Stress-axis",
             "Suppurative/Infective"
           ]
         },
@@ -1601,8 +1454,7 @@
           "prominence": 3,
           "pathophysiology": "Moist eruptions localized to skin folds.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Psychoemotional/Stress-axis"
+            "Secretory/Glandular"
           ]
         }
       ],
@@ -1634,8 +1486,7 @@
           "prominence": 2,
           "pathophysiology": "Urticaria and eruptions that are markedly worse from the warmth of the bed.",
           "mechanisms": [
-            "Thermoregulatory",
-            "Reproductive-Hormonal"
+            "Thermoregulatory"
           ]
         },
         {
@@ -1643,7 +1494,7 @@
           "prominence": 3,
           "pathophysiology": "Clumsiness and a tendency to drop things, particularly worse in company.",
           "mechanisms": [
-            "Reproductive-Hormonal"
+            "Autonomic/Nervous Regulation"
           ]
         }
       ],
@@ -1666,8 +1517,7 @@
           "prominence": 1,
           "pathophysiology": "Delayed bone healing and growing pains, with weak bones especially in rapidly growing adolescents.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Nutritive/Deficiency"
+            "Neuromuscular"
           ]
         },
         {
@@ -1675,8 +1525,7 @@
           "prominence": 2,
           "pathophysiology": "A craving for smoked or salty food alongside easily upset digestion.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Nutritive/Deficiency"
+            "Digestive-Motility"
           ]
         },
         {
@@ -1684,8 +1533,7 @@
           "prominence": 3,
           "pathophysiology": "Discontent and a desire for travel or change, with fatigue driven by the demands of rapid growth.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Nutritive/Deficiency"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -1708,8 +1556,6 @@
           "prominence": 1,
           "pathophysiology": "Sudden collapse with icy coldness of the body, yet a marked aversion to being covered despite the cold.",
           "mechanisms": [
-            "Inflammatory/Immune",
-            "Structural/Degenerative",
             "Thermoregulatory"
           ]
         },
@@ -1718,9 +1564,6 @@
           "prominence": 2,
           "pathophysiology": "Sudden, violent, cholera-like diarrhea with rapid prostration.",
           "mechanisms": [
-            "Inflammatory/Immune",
-            "Structural/Degenerative",
-            "Thermoregulatory",
             "Digestive-Motility"
           ]
         },
@@ -1729,9 +1572,7 @@
           "prominence": 3,
           "pathophysiology": "Used as a first-aid remedy for acute shock or fainting states.",
           "mechanisms": [
-            "Inflammatory/Immune",
-            "Structural/Degenerative",
-            "Thermoregulatory"
+            "Inflammatory/Immune"
           ]
         }
       ],
@@ -1798,7 +1639,6 @@
           "pathophysiology": "Marked bloating and flatulence, needing to loosen clothing, worse after eating even small amounts.",
           "mechanisms": [
             "Hemorrhagic/Coagulation",
-            "Thermoregulatory",
             "Digestive-Motility"
           ]
         },
@@ -1807,9 +1647,7 @@
           "prominence": 2,
           "pathophysiology": "Air hunger with a desire to be fanned, especially prominent in collapse states.",
           "mechanisms": [
-            "Metabolic/Glycemic",
-            "Thermoregulatory",
-            "Digestive-Motility"
+            "Metabolic/Glycemic"
           ]
         },
         {
@@ -1817,9 +1655,7 @@
           "prominence": 3,
           "pathophysiology": "Venous congestion with blueness of the skin, cold extremities alongside a paradoxically warm head.",
           "mechanisms": [
-            "Vascular/Circulatory",
-            "Thermoregulatory",
-            "Digestive-Motility"
+            "Vascular/Circulatory"
           ]
         }
       ],
@@ -1852,7 +1688,6 @@
           "mechanisms": [
             "Autonomic/Nervous Regulation",
             "Structural/Degenerative",
-            "Neuromuscular",
             "Connective Tissue/Rheumatic"
           ]
         },
@@ -1861,7 +1696,7 @@
           "prominence": 3,
           "pathophysiology": "A deep sympathy for others' suffering, alongside marked bedwetting in children.",
           "mechanisms": [
-            "Neuromuscular"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -1892,7 +1727,7 @@
           "prominence": 2,
           "pathophysiology": "A voracious appetite despite remaining thin, with a characteristic habit of picking at the nose.",
           "mechanisms": [
-            "Psychoemotional/Stress-axis"
+            "Digestive-Motility"
           ]
         },
         {
@@ -1965,7 +1800,6 @@
           "pathophysiology": "Dark, stringy, tenacious menstrual or postpartum hemorrhage.",
           "mechanisms": [
             "Hemorrhagic/Coagulation",
-            "Psychoemotional/Stress-axis",
             "Reproductive-Hormonal"
           ]
         },
@@ -1974,7 +1808,6 @@
           "prominence": 2,
           "pathophysiology": "Sudden alternating extremes of mood — singing and laughing alternating abruptly with weeping.",
           "mechanisms": [
-            "Hemorrhagic/Coagulation",
             "Psychoemotional/Stress-axis"
           ]
         },
@@ -1983,8 +1816,7 @@
           "prominence": 3,
           "pathophysiology": "A classical, unusual sensation of something alive moving within the body.",
           "mechanisms": [
-            "Hemorrhagic/Coagulation",
-            "Psychoemotional/Stress-axis"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -2007,8 +1839,7 @@
           "prominence": 1,
           "pathophysiology": "Violent cramping, especially of the calves and soles, momentarily relieved by firm pressure.",
           "mechanisms": [
-            "Neuromuscular",
-            "Respiratory-Ventilatory"
+            "Neuromuscular"
           ]
         },
         {
@@ -2026,8 +1857,7 @@
           "prominence": 3,
           "pathophysiology": "A convulsive tendency starting in the fingers or toes and ascending upward.",
           "mechanisms": [
-            "Neuromuscular",
-            "Respiratory-Ventilatory"
+            "Neuromuscular"
           ]
         }
       ],
@@ -2101,7 +1931,7 @@
           "prominence": 2,
           "pathophysiology": "Urticaria and eruptions worse in cold, damp, or rainy weather.",
           "mechanisms": [
-            "Thermoregulatory"
+            "Secretory/Glandular"
           ]
         },
         {
@@ -2109,7 +1939,6 @@
           "prominence": 3,
           "pathophysiology": "Rheumatic-type pains worse from damp cold and before a change to rainy weather.",
           "mechanisms": [
-            "Thermoregulatory",
             "Connective Tissue/Rheumatic"
           ]
         }
@@ -2142,8 +1971,6 @@
           "prominence": 2,
           "pathophysiology": "A daytime cough that characteristically disappears on lying down at night.",
           "mechanisms": [
-            "Secretory/Glandular",
-            "Secretory-Mucosal",
             "Respiratory-Ventilatory"
           ]
         }
@@ -2218,7 +2045,6 @@
           "mechanisms": [
             "Vascular/Circulatory",
             "Inflammatory/Immune",
-            "Thermoregulatory",
             "Respiratory-Ventilatory"
           ]
         },
@@ -2227,8 +2053,7 @@
           "prominence": 3,
           "pathophysiology": "A rapid pulse, without the violence seen in Aconitum or Belladonna.",
           "mechanisms": [
-            "Inflammatory/Immune",
-            "Thermoregulatory"
+            "Vascular/Circulatory"
           ]
         }
       ],
@@ -2251,8 +2076,7 @@
           "prominence": 1,
           "pathophysiology": "Talkative, excitable delirium with a tendency to expose the body inappropriately, along with suspicion and jealousy.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Psychoemotional/Stress-axis"
+            "Autonomic/Nervous Regulation"
           ]
         },
         {
@@ -2260,9 +2084,7 @@
           "prominence": 2,
           "pathophysiology": "A dry, spasmodic cough worse lying down and better sitting up.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
             "Neuromuscular",
-            "Psychoemotional/Stress-axis",
             "Respiratory-Ventilatory"
           ]
         },
@@ -2271,9 +2093,7 @@
           "prominence": 3,
           "pathophysiology": "Twitching, especially of the face, during febrile states.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Neuromuscular",
-            "Psychoemotional/Stress-axis"
+            "Neuromuscular"
           ]
         }
       ],
@@ -2298,7 +2118,6 @@
           "mechanisms": [
             "Autonomic/Nervous Regulation",
             "Metabolic/Glycemic",
-            "Secretory/Glandular",
             "Thermoregulatory",
             "Nutritive/Deficiency"
           ]
@@ -2308,11 +2127,7 @@
           "prominence": 2,
           "pathophysiology": "Glandular (thyroid) enlargement in the classical picture.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Metabolic/Glycemic",
-            "Secretory/Glandular",
-            "Thermoregulatory",
-            "Nutritive/Deficiency"
+            "Secretory/Glandular"
           ]
         },
         {
@@ -2321,11 +2136,7 @@
           "pathophysiology": "Trembling, especially noticeable in the hands.",
           "mechanisms": [
             "Autonomic/Nervous Regulation",
-            "Metabolic/Glycemic",
-            "Secretory/Glandular",
-            "Neuromuscular",
-            "Thermoregulatory",
-            "Nutritive/Deficiency"
+            "Neuromuscular"
           ]
         }
       ],
@@ -2349,8 +2160,7 @@
           "pathophysiology": "Thick, ropy, stringy yellow-green mucus discharge from the nose or throat, classically able to be pulled into strings.",
           "mechanisms": [
             "Secretory/Glandular",
-            "Secretory-Mucosal",
-            "Suppurative/Infective"
+            "Secretory-Mucosal"
           ]
         },
         {
@@ -2358,9 +2168,6 @@
           "prominence": 2,
           "pathophysiology": "Migratory rheumatic pains that shift rapidly from one small, well-defined spot to another.",
           "mechanisms": [
-            "Secretory/Glandular",
-            "Secretory-Mucosal",
-            "Suppurative/Infective",
             "Connective Tissue/Rheumatic"
           ]
         },
@@ -2369,8 +2176,6 @@
           "prominence": 3,
           "pathophysiology": "Small, sharply defined, round ulcers of the stomach or mouth.",
           "mechanisms": [
-            "Secretory/Glandular",
-            "Secretory-Mucosal",
             "Suppurative/Infective"
           ]
         }
@@ -2395,7 +2200,6 @@
           "pathophysiology": "Profound nervous exhaustion and mental fatigue from overwork or stress, with irritability driven by tiredness rather than genuine anger.",
           "mechanisms": [
             "Autonomic/Nervous Regulation",
-            "Neuromuscular",
             "Psychoemotional/Stress-axis"
           ]
         },
@@ -2405,7 +2209,6 @@
           "pathophysiology": "Offensive diarrhea arising from nervous causes such as exam anxiety.",
           "mechanisms": [
             "Autonomic/Nervous Regulation",
-            "Neuromuscular",
             "Psychoemotional/Stress-axis",
             "Digestive-Motility"
           ]
@@ -2415,8 +2218,6 @@
           "prominence": 3,
           "pathophysiology": "Marked improvement from eating, worse from any mental effort.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Neuromuscular",
             "Psychoemotional/Stress-axis"
           ]
         }
@@ -2449,8 +2250,7 @@
           "prominence": 2,
           "pathophysiology": "Rapid dental decay, with teeth crumbling almost as soon as they appear, classically in children.",
           "mechanisms": [
-            "Secretory/Glandular",
-            "Secretory-Mucosal"
+            "Digestive-Motility"
           ]
         },
         {
@@ -2490,7 +2290,7 @@
           "prominence": 2,
           "pathophysiology": "Loquacity — excessive talkativeness with rapid jumping between subjects — alongside jealousy and suspicion.",
           "mechanisms": [
-            "Hemorrhagic/Coagulation"
+            "Autonomic/Nervous Regulation"
           ]
         },
         {
@@ -2498,7 +2298,7 @@
           "prominence": 3,
           "pathophysiology": "Symptoms characteristically worse after sleep, with a left-sided predominance across presentations.",
           "mechanisms": [
-            "Hemorrhagic/Coagulation"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -2532,7 +2332,7 @@
           "prominence": 2,
           "pathophysiology": "The classical remedy for puncture wounds — insect stings, needle punctures — with an easy tendency to bruise or discolor.",
           "mechanisms": [
-            "Thermoregulatory"
+            "Secretory/Glandular"
           ]
         },
         {
@@ -2605,8 +2405,7 @@
           "mechanisms": [
             "Secretory/Glandular",
             "Thermoregulatory",
-            "Digestive-Motility",
-            "Respiratory-Ventilatory"
+            "Digestive-Motility"
           ]
         },
         {
@@ -2614,10 +2413,7 @@
           "prominence": 2,
           "pathophysiology": "Irritability alternating with a desire for company.",
           "mechanisms": [
-            "Secretory/Glandular",
-            "Psychoemotional/Stress-axis",
-            "Digestive-Motility",
-            "Respiratory-Ventilatory"
+            "Psychoemotional/Stress-axis"
           ]
         },
         {
@@ -2625,9 +2421,7 @@
           "prominence": 3,
           "pathophysiology": "Neuralgic pains worse at night and worse from cold.",
           "mechanisms": [
-            "Secretory/Glandular",
-            "Digestive-Motility",
-            "Respiratory-Ventilatory"
+            "Neuromuscular"
           ]
         }
       ],
@@ -2651,8 +2445,7 @@
           "pathophysiology": "Cramping, spasmodic pain markedly relieved by warmth and firm pressure, worse from cold or light touch.",
           "mechanisms": [
             "Neuromuscular",
-            "Thermoregulatory",
-            "Psychoemotional/Stress-axis"
+            "Thermoregulatory"
           ]
         },
         {
@@ -2671,9 +2464,7 @@
           "prominence": 3,
           "pathophysiology": "Neuralgic pain that shifts rapidly from place to place.",
           "mechanisms": [
-            "Neuromuscular",
-            "Thermoregulatory",
-            "Psychoemotional/Stress-axis"
+            "Autonomic/Nervous Regulation"
           ]
         }
       ],
@@ -2696,8 +2487,7 @@
           "prominence": 1,
           "pathophysiology": "Intense internal heat with a desire to be fanned or uncovered despite being otherwise chilly, alongside marked forgetfulness.",
           "mechanisms": [
-            "Thermoregulatory",
-            "Respiratory-Ventilatory"
+            "Thermoregulatory"
           ]
         },
         {
@@ -2705,7 +2495,6 @@
           "prominence": 2,
           "pathophysiology": "Pains relieved by the knee-chest (prayer) position during sleep.",
           "mechanisms": [
-            "Thermoregulatory",
             "Respiratory-Ventilatory"
           ]
         },
@@ -2714,8 +2503,7 @@
           "prominence": 3,
           "pathophysiology": "A history consistent with the classical sycotic-miasm picture in traditional homeopathic theory.",
           "mechanisms": [
-            "Thermoregulatory",
-            "Respiratory-Ventilatory"
+            "Reproductive-Hormonal"
           ]
         }
       ],
@@ -2738,11 +2526,9 @@
           "prominence": 1,
           "pathophysiology": "Violent dysentery with intense tenesmus — constant urging with little result — and blood and mucus in the stool.",
           "mechanisms": [
-            "Inflammatory/Immune",
             "Hemorrhagic/Coagulation",
             "Digestive-Motility",
-            "Secretory-Mucosal",
-            "Renal/Urinary-Excretory"
+            "Secretory-Mucosal"
           ]
         },
         {
@@ -2750,8 +2536,6 @@
           "prominence": 2,
           "pathophysiology": "Burning, scanty urine with intense urging.",
           "mechanisms": [
-            "Inflammatory/Immune",
-            "Digestive-Motility",
             "Renal/Urinary-Excretory"
           ]
         },
@@ -2760,10 +2544,7 @@
           "prominence": 3,
           "pathophysiology": "Shares Mercurius Vivus's profuse offensive secretions, but with a more violent, rapidly destructive intensity.",
           "mechanisms": [
-            "Inflammatory/Immune",
-            "Secretory/Glandular",
-            "Digestive-Motility",
-            "Renal/Urinary-Excretory"
+            "Secretory/Glandular"
           ]
         }
       ],
@@ -2794,8 +2575,7 @@
           "prominence": 2,
           "pathophysiology": "Neuralgic pain, particularly following facial or dental eruption sites, worse from mental exertion.",
           "mechanisms": [
-            "Psychoemotional/Stress-axis",
-            "Suppurative/Infective"
+            "Psychoemotional/Stress-axis"
           ]
         },
         {
@@ -2803,7 +2583,7 @@
           "prominence": 3,
           "pathophysiology": "Bone pains that are worse at night.",
           "mechanisms": [
-            "Suppurative/Infective"
+            "Neuromuscular"
           ]
         }
       ],
@@ -2826,8 +2606,6 @@
           "prominence": 1,
           "pathophysiology": "An inability to digest starchy foods well, with bloating and discomfort after bread or potatoes.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Psychoemotional/Stress-axis",
             "Digestive-Motility"
           ]
         },
@@ -2845,9 +2623,7 @@
           "prominence": 3,
           "pathophysiology": "Weakness and headache brought on by sun exposure.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Neuromuscular",
-            "Psychoemotional/Stress-axis"
+            "Neuromuscular"
           ]
         }
       ],
@@ -3029,7 +2805,6 @@
           "prominence": 1,
           "pathophysiology": "Profound apathy and indifference following grief, homesickness, or debilitating illness, quite unlike the fear-driven picture of Phosphorus.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
             "Psychoemotional/Stress-axis"
           ]
         },
@@ -3038,8 +2813,6 @@
           "prominence": 2,
           "pathophysiology": "Watery, painless diarrhea reflecting general debility.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Psychoemotional/Stress-axis",
             "Digestive-Motility"
           ]
         },
@@ -3048,9 +2821,7 @@
           "prominence": 3,
           "pathophysiology": "Weakness particularly following growth spurts or sexual excess.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
             "Neuromuscular",
-            "Psychoemotional/Stress-axis",
             "Reproductive-Hormonal"
           ]
         }
@@ -3074,8 +2845,7 @@
           "prominence": 1,
           "pathophysiology": "A peculiar sensation that body parts feel larger than they actually are, alternating with numbness and hyperesthesia, especially affecting the genitalia in the classical picture.",
           "mechanisms": [
-            "Neuromuscular",
-            "Psychoemotional/Stress-axis"
+            "Neuromuscular"
           ]
         },
         {
@@ -3084,7 +2854,6 @@
           "pathophysiology": "Painful, spasmodic uterine complaints.",
           "mechanisms": [
             "Neuromuscular",
-            "Psychoemotional/Stress-axis",
             "Reproductive-Hormonal"
           ]
         },
@@ -3093,7 +2862,7 @@
           "prominence": 3,
           "pathophysiology": "A haughty, contemptuous disposition toward others, with a feeling of superiority.",
           "mechanisms": [
-            "Psychoemotional/Stress-axis"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -3118,9 +2887,7 @@
           "mechanisms": [
             "Autonomic/Nervous Regulation",
             "Metabolic/Glycemic",
-            "Structural/Degenerative",
             "Neuromuscular",
-            "Digestive-Motility",
             "Nutritive/Deficiency"
           ]
         },
@@ -3129,7 +2896,6 @@
           "prominence": 2,
           "pathophysiology": "Severe constipation with a markedly retracted, scaphoid abdomen, and colicky pain relieved by hard pressure.",
           "mechanisms": [
-            "Structural/Degenerative",
             "Digestive-Motility"
           ]
         },
@@ -3138,9 +2904,7 @@
           "prominence": 3,
           "pathophysiology": "Progressive mental dullness and weakened memory.",
           "mechanisms": [
-            "Structural/Degenerative",
-            "Psychoemotional/Stress-axis",
-            "Digestive-Motility"
+            "Psychoemotional/Stress-axis"
           ]
         }
       ],
@@ -3179,7 +2943,7 @@
           "prominence": 3,
           "pathophysiology": "Exhaustion following the diarrheal episode.",
           "mechanisms": [
-            "Digestive-Motility"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -3202,7 +2966,7 @@
           "prominence": 1,
           "pathophysiology": "Sharp, stitching intercostal (rib) pain worse from touch, motion, or changes in weather/barometric pressure.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation"
+            "Neuromuscular"
           ]
         },
         {
@@ -3210,7 +2974,7 @@
           "prominence": 2,
           "pathophysiology": "Vesicular, blistering eruptions, particularly herpetic, following nerve distributions.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation"
+            "Secretory/Glandular"
           ]
         },
         {
@@ -3218,7 +2982,7 @@
           "prominence": 3,
           "pathophysiology": "Marked worsening from weather changes and from alcohol.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -3241,7 +3005,6 @@
           "prominence": 1,
           "pathophysiology": "Injury to tendons, ligaments, and periosteum (especially the wrist and shin), with a bruised, sore sensation deeper than typical Arnica bruising.",
           "mechanisms": [
-            "Vascular/Circulatory",
             "Connective Tissue/Rheumatic"
           ]
         },
@@ -3250,8 +3013,7 @@
           "prominence": 2,
           "pathophysiology": "Eye strain and headache from prolonged close work such as reading or fine detail work.",
           "mechanisms": [
-            "Vascular/Circulatory",
-            "Connective Tissue/Rheumatic"
+            "Autonomic/Nervous Regulation"
           ]
         },
         {
@@ -3259,9 +3021,7 @@
           "prominence": 3,
           "pathophysiology": "Restlessness with a generalized sensation of soreness.",
           "mechanisms": [
-            "Vascular/Circulatory",
-            "Autonomic/Nervous Regulation",
-            "Connective Tissue/Rheumatic"
+            "Autonomic/Nervous Regulation"
           ]
         }
       ],
@@ -3296,8 +3056,6 @@
           "prominence": 2,
           "pathophysiology": "Watering eyes accompanying the nasal symptoms.",
           "mechanisms": [
-            "Inflammatory/Immune",
-            "Thermoregulatory",
             "Secretory-Mucosal"
           ]
         },
@@ -3306,9 +3064,7 @@
           "prominence": 3,
           "pathophysiology": "A vivid imagination, readily believing oneself to have any disease read about.",
           "mechanisms": [
-            "Inflammatory/Immune",
-            "Thermoregulatory",
-            "Secretory-Mucosal"
+            "Autonomic/Nervous Regulation"
           ]
         }
       ],
@@ -3340,7 +3096,6 @@
           "prominence": 2,
           "pathophysiology": "Rheumatic pains that shift from joint to joint, worse from warmth.",
           "mechanisms": [
-            "Hemorrhagic/Coagulation",
             "Thermoregulatory",
             "Connective Tissue/Rheumatic"
           ]
@@ -3350,7 +3105,7 @@
           "prominence": 3,
           "pathophysiology": "An unusual, distinctive aversion to music.",
           "mechanisms": [
-            "Hemorrhagic/Coagulation"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -3420,7 +3175,7 @@
           "prominence": 2,
           "pathophysiology": "Dry, rough skin with deep cracks, worse in winter.",
           "mechanisms": [
-            "Renal/Urinary-Excretory"
+            "Secretory/Glandular"
           ]
         },
         {
@@ -3429,8 +3184,7 @@
           "pathophysiology": "Emaciation particularly of the neck and upper body, despite reasonable nutrition elsewhere.",
           "mechanisms": [
             "Metabolic/Glycemic",
-            "Nutritive/Deficiency",
-            "Renal/Urinary-Excretory"
+            "Nutritive/Deficiency"
           ]
         }
       ],
@@ -3453,8 +3207,7 @@
           "prominence": 1,
           "pathophysiology": "Poor peripheral circulation with a burning sensation in the extremities that is markedly relieved by cold applications.",
           "mechanisms": [
-            "Vascular/Circulatory",
-            "Thermoregulatory"
+            "Vascular/Circulatory"
           ]
         },
         {
@@ -3463,7 +3216,6 @@
           "pathophysiology": "Weak, prolonged uterine contractions with dark, thin hemorrhage.",
           "mechanisms": [
             "Hemorrhagic/Coagulation",
-            "Thermoregulatory",
             "Reproductive-Hormonal"
           ]
         },
@@ -3472,7 +3224,7 @@
           "prominence": 3,
           "pathophysiology": "Formication — a crawling sensation under the skin — with associated tingling.",
           "mechanisms": [
-            "Thermoregulatory"
+            "Autonomic/Nervous Regulation"
           ]
         }
       ],
@@ -3543,8 +3295,7 @@
           "pathophysiology": "Anxiety centered on the heart, with palpitations improved by lying with the head low.",
           "mechanisms": [
             "Autonomic/Nervous Regulation",
-            "Psychoemotional/Stress-axis",
-            "Respiratory-Ventilatory"
+            "Psychoemotional/Stress-axis"
           ]
         }
       ],
@@ -3608,7 +3359,6 @@
           "prominence": 1,
           "pathophysiology": "Violent, terrifying delirium with vivid, frightening hallucinations, marked fear of the dark, of being alone, and of animals, particularly dogs.",
           "mechanisms": [
-            "Vascular/Circulatory",
             "Psychoemotional/Stress-axis"
           ]
         },
@@ -3617,11 +3367,9 @@
           "prominence": 2,
           "pathophysiology": "High fever with a bright red face and marked thirst for cold water.",
           "mechanisms": [
-            "Vascular/Circulatory",
             "Metabolic/Glycemic",
             "Inflammatory/Immune",
-            "Thermoregulatory",
-            "Psychoemotional/Stress-axis"
+            "Thermoregulatory"
           ]
         },
         {
@@ -3629,9 +3377,7 @@
           "prominence": 3,
           "pathophysiology": "Convulsive, jerking movements occurring during febrile states.",
           "mechanisms": [
-            "Vascular/Circulatory",
-            "Neuromuscular",
-            "Psychoemotional/Stress-axis"
+            "Neuromuscular"
           ]
         }
       ],
@@ -3685,7 +3431,6 @@
           "prominence": 1,
           "pathophysiology": "Profound weakness and destructive-feeling pain, markedly worse at night, with a sense of hopelessness or self-destructive despair in the classical picture.",
           "mechanisms": [
-            "Structural/Degenerative",
             "Neuromuscular"
           ]
         },
@@ -3694,7 +3439,7 @@
           "prominence": 2,
           "pathophysiology": "Bone pain worse at night, described as boring or gnawing in character.",
           "mechanisms": [
-            "Structural/Degenerative"
+            "Neuromuscular"
           ]
         },
         {
@@ -3702,7 +3447,6 @@
           "prominence": 3,
           "pathophysiology": "Marked forgetfulness and mental confusion.",
           "mechanisms": [
-            "Structural/Degenerative",
             "Psychoemotional/Stress-axis"
           ]
         }
@@ -3734,7 +3478,7 @@
           "prominence": 2,
           "pathophysiology": "A weak, irregular pulse during the nausea or collapse episode.",
           "mechanisms": [
-            "Secretory/Glandular"
+            "Vascular/Circulatory"
           ]
         },
         {
@@ -3742,7 +3486,7 @@
           "prominence": 3,
           "pathophysiology": "Vertigo markedly worse from any motion, especially on closing the eyes.",
           "mechanisms": [
-            "Secretory/Glandular"
+            "Autonomic/Nervous Regulation"
           ]
         }
       ],
@@ -3773,7 +3517,6 @@
           "prominence": 2,
           "pathophysiology": "Rapid, jerking, hurried movements, sometimes destructive in character.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
             "Neuromuscular"
           ]
         },
@@ -3782,7 +3525,7 @@
           "prominence": 3,
           "pathophysiology": "A deceptive calm alternating with sudden violent outbursts.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -3814,9 +3557,7 @@
           "prominence": 2,
           "pathophysiology": "Bloating with a sensation as if the abdomen would burst, and marked tympanitic distension.",
           "mechanisms": [
-            "Hemorrhagic/Coagulation",
-            "Digestive-Motility",
-            "Renal/Urinary-Excretory"
+            "Digestive-Motility"
           ]
         },
         {
@@ -3824,9 +3565,7 @@
           "prominence": 3,
           "pathophysiology": "Marked drowsiness and mental dullness.",
           "mechanisms": [
-            "Hemorrhagic/Coagulation",
-            "Psychoemotional/Stress-axis",
-            "Renal/Urinary-Excretory"
+            "Psychoemotional/Stress-axis"
           ]
         }
       ],
@@ -3896,7 +3635,6 @@
           "prominence": 2,
           "pathophysiology": "Twitching, especially of the face and limbs, worse from mental exertion.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
             "Neuromuscular",
             "Psychoemotional/Stress-axis"
           ]
@@ -3906,7 +3644,7 @@
           "prominence": 3,
           "pathophysiology": "Intolerance of wine, which aggravates all symptoms, and worsening from any suppressed skin eruption.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -3929,7 +3667,6 @@
           "prominence": 1,
           "pathophysiology": "Offensive, itching skin eruptions worse from the warmth of the bed, with a filthy appearance despite regular washing.",
           "mechanisms": [
-            "Structural/Degenerative",
             "Thermoregulatory"
           ]
         },
@@ -3938,7 +3675,6 @@
           "prominence": 2,
           "pathophysiology": "Marked chilliness combined with a paradoxical craving for open air or an open window despite the cold, alongside a profound lack of vital stamina.",
           "mechanisms": [
-            "Structural/Degenerative",
             "Thermoregulatory"
           ]
         },
@@ -3949,7 +3685,6 @@
           "mechanisms": [
             "Autonomic/Nervous Regulation",
             "Structural/Degenerative",
-            "Thermoregulatory",
             "Psychoemotional/Stress-axis"
           ]
         }
@@ -3993,7 +3728,7 @@
           "prominence": 3,
           "pathophysiology": "Nausea with a desire to drink, unlike most nausea remedies where drinking worsens things.",
           "mechanisms": [
-            "Respiratory-Ventilatory"
+            "Digestive-Motility"
           ]
         }
       ],
@@ -4016,8 +3751,7 @@
           "prominence": 1,
           "pathophysiology": "Marked hurriedness in speech and action, with impatience toward any delay.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Neuromuscular"
+            "Autonomic/Nervous Regulation"
           ]
         },
         {
@@ -4025,8 +3759,7 @@
           "prominence": 2,
           "pathophysiology": "Heartburn and sour eructation, worse from the smell of food in some presentations.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Neuromuscular"
+            "Digestive-Motility"
           ]
         },
         {
@@ -4066,7 +3799,7 @@
           "prominence": 2,
           "pathophysiology": "Intense itching worse from undressing or exposure to cold air.",
           "mechanisms": [
-            "Respiratory-Ventilatory"
+            "Secretory/Glandular"
           ]
         },
         {
@@ -4074,8 +3807,7 @@
           "prominence": 3,
           "pathophysiology": "Morning diarrhea that urges the person out of bed.",
           "mechanisms": [
-            "Digestive-Motility",
-            "Respiratory-Ventilatory"
+            "Digestive-Motility"
           ]
         }
       ],
@@ -4106,7 +3838,7 @@
           "prominence": 2,
           "pathophysiology": "A sensation as if pierced by needles of ice, with sharp, shooting pains along nerve pathways.",
           "mechanisms": [
-            "Neuromuscular"
+            "Autonomic/Nervous Regulation"
           ]
         },
         {
@@ -4114,8 +3846,7 @@
           "prominence": 3,
           "pathophysiology": "Incoordination and clumsiness resembling early degenerative neurological states.",
           "mechanisms": [
-            "Structural/Degenerative",
-            "Neuromuscular"
+            "Structural/Degenerative"
           ]
         }
       ],
@@ -4146,7 +3877,7 @@
           "prominence": 2,
           "pathophysiology": "Absent-mindedness and general indifference.",
           "mechanisms": [
-            "Reproductive-Hormonal"
+            "Autonomic/Nervous Regulation"
           ]
         },
         {
@@ -4154,7 +3885,7 @@
           "prominence": 3,
           "pathophysiology": "A subjective feeling of premature aging despite reasonable physical health.",
           "mechanisms": [
-            "Reproductive-Hormonal"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -4225,7 +3956,6 @@
           "prominence": 2,
           "pathophysiology": "Bland, non-irritating tears — the opposite of the nasal pattern.",
           "mechanisms": [
-            "Secretory/Glandular",
             "Secretory-Mucosal"
           ]
         },
@@ -4234,8 +3964,7 @@
           "prominence": 3,
           "pathophysiology": "Neuralgic pain extending from the eye region.",
           "mechanisms": [
-            "Secretory/Glandular",
-            "Secretory-Mucosal"
+            "Autonomic/Nervous Regulation"
           ]
         }
       ],
@@ -4268,8 +3997,7 @@
           "prominence": 2,
           "pathophysiology": "Slow, deliberate mental processing with a subjective feeling that time passes too slowly.",
           "mechanisms": [
-            "Psychoemotional/Stress-axis",
-            "Digestive-Motility"
+            "Psychoemotional/Stress-axis"
           ]
         },
         {
@@ -4277,7 +4005,7 @@
           "prominence": 3,
           "pathophysiology": "Dry, unhealthy skin with slow wound healing.",
           "mechanisms": [
-            "Digestive-Motility"
+            "Secretory/Glandular"
           ]
         }
       ],
@@ -4300,7 +4028,6 @@
           "prominence": 1,
           "pathophysiology": "Labored, weak respiration especially on waking from sleep, worse from even the slightest exertion.",
           "mechanisms": [
-            "Thermoregulatory",
             "Respiratory-Ventilatory"
           ]
         },
@@ -4309,9 +4036,7 @@
           "prominence": 2,
           "pathophysiology": "Weak heart action with a tendency toward peripheral edema.",
           "mechanisms": [
-            "Vascular/Circulatory",
-            "Thermoregulatory",
-            "Respiratory-Ventilatory"
+            "Vascular/Circulatory"
           ]
         },
         {
@@ -4319,8 +4044,7 @@
           "prominence": 3,
           "pathophysiology": "Marked chilliness with fatigue disproportionate to actual activity level.",
           "mechanisms": [
-            "Thermoregulatory",
-            "Respiratory-Ventilatory"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -4343,11 +4067,8 @@
           "prominence": 1,
           "pathophysiology": "Nasal obstruction that alternates with fluent discharge, alongside tough mucus that is difficult to dislodge.",
           "mechanisms": [
-            "Structural/Degenerative",
             "Secretory/Glandular",
-            "Neuromuscular",
-            "Secretory-Mucosal",
-            "Connective Tissue/Rheumatic"
+            "Secretory-Mucosal"
           ]
         },
         {
@@ -4356,10 +4077,7 @@
           "pathophysiology": "Stiffness in the knees, worse from sitting and better from continued motion.",
           "mechanisms": [
             "Structural/Degenerative",
-            "Secretory/Glandular",
-            "Neuromuscular",
-            "Secretory-Mucosal",
-            "Connective Tissue/Rheumatic"
+            "Neuromuscular"
           ]
         },
         {
@@ -4367,12 +4085,7 @@
           "prominence": 3,
           "pathophysiology": "Constipation with a sensation of incomplete evacuation.",
           "mechanisms": [
-            "Structural/Degenerative",
-            "Secretory/Glandular",
-            "Neuromuscular",
-            "Digestive-Motility",
-            "Secretory-Mucosal",
-            "Connective Tissue/Rheumatic"
+            "Digestive-Motility"
           ]
         }
       ],
@@ -4521,8 +4234,7 @@
           "prominence": 2,
           "pathophysiology": "Nausea with a coated tongue and a desire for acidic things.",
           "mechanisms": [
-            "Secretory-Mucosal",
-            "Respiratory-Ventilatory"
+            "Digestive-Motility"
           ]
         },
         {
@@ -4531,7 +4243,6 @@
           "pathophysiology": "Profound drowsiness and weakness during the respiratory crisis.",
           "mechanisms": [
             "Neuromuscular",
-            "Secretory-Mucosal",
             "Respiratory-Ventilatory"
           ]
         }
@@ -4565,8 +4276,6 @@
           "prominence": 2,
           "pathophysiology": "A sensation of water lying in the stomach without being absorbed, causing distension.",
           "mechanisms": [
-            "Vascular/Circulatory",
-            "Metabolic/Glycemic",
             "Digestive-Motility"
           ]
         },
@@ -4575,8 +4284,7 @@
           "prominence": 3,
           "pathophysiology": "Drowsiness with a bluish, dusky discoloration in severe presentations.",
           "mechanisms": [
-            "Vascular/Circulatory",
-            "Metabolic/Glycemic"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -4616,7 +4324,7 @@
           "prominence": 3,
           "pathophysiology": "Compulsive picking or boring at the nose and lips until they bleed.",
           "mechanisms": [
-            "Secretory/Glandular"
+            "Autonomic/Nervous Regulation"
           ]
         }
       ],
@@ -4647,7 +4355,7 @@
           "prominence": 2,
           "pathophysiology": "Bone pain with a sensation of pressure moving from within outward, worse at night.",
           "mechanisms": [
-            "Digestive-Motility"
+            "Neuromuscular"
           ]
         },
         {
@@ -4655,7 +4363,7 @@
           "prominence": 3,
           "pathophysiology": "A dramatic, hysterical style of symptom presentation.",
           "mechanisms": [
-            "Digestive-Motility"
+            "Autonomic/Nervous Regulation"
           ]
         }
       ],
@@ -4727,9 +4435,7 @@
           "prominence": 2,
           "pathophysiology": "Foul-smelling breath and discharges occurring during febrile illness.",
           "mechanisms": [
-            "Inflammatory/Immune",
             "Secretory/Glandular",
-            "Thermoregulatory",
             "Secretory-Mucosal",
             "Respiratory-Ventilatory"
           ]
@@ -4772,7 +4478,7 @@
           "prominence": 2,
           "pathophysiology": "Back pain worse from standing or motion, radiating downward.",
           "mechanisms": [
-            "Renal/Urinary-Excretory"
+            "Neuromuscular"
           ]
         },
         {
@@ -4780,7 +4486,7 @@
           "prominence": 3,
           "pathophysiology": "A bitter taste with tenderness in the liver region.",
           "mechanisms": [
-            "Renal/Urinary-Excretory"
+            "Digestive-Motility"
           ]
         }
       ],
@@ -4844,8 +4550,7 @@
           "mechanisms": [
             "Vascular/Circulatory",
             "Inflammatory/Immune",
-            "Secretory/Glandular",
-            "Neuromuscular"
+            "Secretory/Glandular"
           ]
         },
         {
@@ -4853,7 +4558,7 @@
           "prominence": 3,
           "pathophysiology": "Slow, dull cognitive processing.",
           "mechanisms": [
-            "Neuromuscular"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -4916,8 +4621,7 @@
           "prominence": 2,
           "pathophysiology": "Intolerance of tobacco smoke, with worsening from exposure to it.",
           "mechanisms": [
-            "Psychoemotional/Stress-axis",
-            "Reproductive-Hormonal"
+            "Respiratory-Ventilatory"
           ]
         },
         {
@@ -4925,8 +4629,7 @@
           "prominence": 3,
           "pathophysiology": "Forgetfulness and general absent-mindedness.",
           "mechanisms": [
-            "Psychoemotional/Stress-axis",
-            "Reproductive-Hormonal"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -4949,7 +4652,7 @@
           "prominence": 1,
           "pathophysiology": "Distorted perception of time, which feels much longer than it actually is, sometimes with vivid imaginative ideas.",
           "mechanisms": [
-            "Renal/Urinary-Excretory"
+            "Autonomic/Nervous Regulation"
           ]
         },
         {
@@ -4988,7 +4691,7 @@
           "prominence": 2,
           "pathophysiology": "Burning, vesicular eruptions with a marked tendency to blister.",
           "mechanisms": [
-            "Renal/Urinary-Excretory"
+            "Secretory/Glandular"
           ]
         },
         {
@@ -5029,7 +4732,7 @@
           "prominence": 2,
           "pathophysiology": "Marked homesickness, especially prominent in someone who has recently relocated.",
           "mechanisms": [
-            "Thermoregulatory"
+            "Autonomic/Nervous Regulation"
           ]
         },
         {
@@ -5060,7 +4763,7 @@
           "prominence": 1,
           "pathophysiology": "Pain in the liver region radiating specifically to the right shoulder blade, with sluggish biliary flow and a yellow-coated tongue.",
           "mechanisms": [
-            "Inflammatory/Immune"
+            "Digestive-Motility"
           ]
         },
         {
@@ -5068,7 +4771,6 @@
           "prominence": 2,
           "pathophysiology": "A cough that preferentially affects the right lung base.",
           "mechanisms": [
-            "Inflammatory/Immune",
             "Respiratory-Ventilatory"
           ]
         },
@@ -5108,7 +4810,7 @@
           "prominence": 2,
           "pathophysiology": "Lethargy and heaviness associated with hepatic sluggishness.",
           "mechanisms": [
-            "Digestive-Motility"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -5172,7 +4874,6 @@
           "pathophysiology": "Violent, spasmodic coughing fits ending with the expulsion of a long, ropy, clear mucus plug, worse in a warm room and better in cool air.",
           "mechanisms": [
             "Neuromuscular",
-            "Thermoregulatory",
             "Secretory-Mucosal",
             "Respiratory-Ventilatory"
           ]
@@ -5182,8 +4883,6 @@
           "prominence": 2,
           "pathophysiology": "Nausea accompanying the coughing fits.",
           "mechanisms": [
-            "Thermoregulatory",
-            "Secretory-Mucosal",
             "Respiratory-Ventilatory"
           ]
         }
@@ -5207,7 +4906,7 @@
           "prominence": 1,
           "pathophysiology": "Extreme nausea triggered merely by the smell of food, even food the person would normally enjoy.",
           "mechanisms": [
-            "Connective Tissue/Rheumatic"
+            "Digestive-Motility"
           ]
         },
         {
@@ -5223,8 +4922,7 @@
           "prominence": 3,
           "pathophysiology": "Profound weakness disproportionate to the apparent severity of illness.",
           "mechanisms": [
-            "Neuromuscular",
-            "Connective Tissue/Rheumatic"
+            "Neuromuscular"
           ]
         }
       ],
@@ -5257,8 +4955,6 @@
           "prominence": 2,
           "pathophysiology": "Urticarial, hive-like eruptions accompanying the urinary complaints.",
           "mechanisms": [
-            "Secretory/Glandular",
-            "Secretory-Mucosal",
             "Renal/Urinary-Excretory"
           ]
         }
@@ -5291,7 +4987,7 @@
           "prominence": 2,
           "pathophysiology": "Profound, rapid prostration with yellow or jaundiced discoloration.",
           "mechanisms": [
-            "Hemorrhagic/Coagulation"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -5324,9 +5020,7 @@
           "prominence": 2,
           "pathophysiology": "Profuse, thin nasal catarrh.",
           "mechanisms": [
-            "Secretory/Glandular",
-            "Secretory-Mucosal",
-            "Renal/Urinary-Excretory"
+            "Secretory-Mucosal"
           ]
         }
       ],
@@ -5349,7 +5043,7 @@
           "prominence": 1,
           "pathophysiology": "Visual disturbances such as flickering lights or zigzag patterns preceding a headache, similar to a classical migraine aura.",
           "mechanisms": [
-            "Reproductive-Hormonal"
+            "Autonomic/Nervous Regulation"
           ]
         },
         {
@@ -5366,8 +5060,7 @@
           "prominence": 3,
           "pathophysiology": "Sadness and indifference, worse in the evening.",
           "mechanisms": [
-            "Psychoemotional/Stress-axis",
-            "Reproductive-Hormonal"
+            "Psychoemotional/Stress-axis"
           ]
         }
       ],
@@ -5399,7 +5092,7 @@
           "prominence": 2,
           "pathophysiology": "Nausea with a blue, cold appearance during cardiac crises.",
           "mechanisms": [
-            "Psychoemotional/Stress-axis"
+            "Digestive-Motility"
           ]
         }
       ],
@@ -5465,8 +5158,7 @@
           "pathophysiology": "Involuntary sexual excitement disproportionate to the physical complaint.",
           "mechanisms": [
             "Psychoemotional/Stress-axis",
-            "Reproductive-Hormonal",
-            "Renal/Urinary-Excretory"
+            "Reproductive-Hormonal"
           ]
         }
       ],
@@ -5497,7 +5189,7 @@
           "prominence": 2,
           "pathophysiology": "Formication — a crawling, ant-like sensation under the skin, consistent with the remedy's name and source.",
           "mechanisms": [
-            "Connective Tissue/Rheumatic"
+            "Autonomic/Nervous Regulation"
           ]
         }
       ],
@@ -5528,7 +5220,7 @@
           "prominence": 2,
           "pathophysiology": "Neuralgic pain worse from cold, better lying down.",
           "mechanisms": [
-            "Neuromuscular"
+            "Autonomic/Nervous Regulation"
           ]
         }
       ],
@@ -5561,8 +5253,7 @@
           "prominence": 2,
           "pathophysiology": "Offensive breath accompanying throat complaints.",
           "mechanisms": [
-            "Respiratory-Ventilatory",
-            "Connective Tissue/Rheumatic"
+            "Respiratory-Ventilatory"
           ]
         }
       ],
@@ -5585,7 +5276,6 @@
           "prominence": 1,
           "pathophysiology": "Profound mental slowness with delayed responses to questions and a blank, staring expression, occurring classically after meningitis-type illness or severe febrile brain involvement.",
           "mechanisms": [
-            "Inflammatory/Immune",
             "Psychoemotional/Stress-axis"
           ]
         },
@@ -5594,8 +5284,7 @@
           "prominence": 2,
           "pathophysiology": "A peculiar chewing motion of the mouth without eating, seen in severe presentations.",
           "mechanisms": [
-            "Inflammatory/Immune",
-            "Psychoemotional/Stress-axis"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -5618,8 +5307,6 @@
           "prominence": 1,
           "pathophysiology": "Thick, ropy yellow mucus alongside a sluggish, weak digestive constitution, with constipation and an ineffectual urge.",
           "mechanisms": [
-            "Inflammatory/Immune",
-            "Secretory/Glandular",
             "Digestive-Motility",
             "Secretory-Mucosal"
           ]
@@ -5629,7 +5316,6 @@
           "prominence": 2,
           "pathophysiology": "Similar thick, ropy discharge affecting the sinuses and throat.",
           "mechanisms": [
-            "Inflammatory/Immune",
             "Secretory/Glandular",
             "Secretory-Mucosal"
           ]
@@ -5696,8 +5382,7 @@
           "prominence": 2,
           "pathophysiology": "Bone pain, particularly of the long bones, worse at night.",
           "mechanisms": [
-            "Secretory/Glandular",
-            "Secretory-Mucosal"
+            "Neuromuscular"
           ]
         }
       ],
@@ -5732,7 +5417,6 @@
             "Vascular/Circulatory",
             "Inflammatory/Immune",
             "Secretory/Glandular",
-            "Secretory-Mucosal",
             "Suppurative/Infective"
           ]
         }
@@ -5766,7 +5450,7 @@
           "prominence": 2,
           "pathophysiology": "Gastric complaints with a sensation of a load or weight in the stomach.",
           "mechanisms": [
-            "Respiratory-Ventilatory"
+            "Digestive-Motility"
           ]
         }
       ],
@@ -5790,7 +5474,6 @@
           "pathophysiology": "Thin, yellow mucus discharge, worse specifically in a warm room and markedly better in open air.",
           "mechanisms": [
             "Secretory/Glandular",
-            "Thermoregulatory",
             "Secretory-Mucosal"
           ]
         },
@@ -5799,10 +5482,7 @@
           "prominence": 2,
           "pathophysiology": "Desquamating, peeling skin eruptions following an earlier acute stage.",
           "mechanisms": [
-            "Inflammatory/Immune",
-            "Secretory/Glandular",
-            "Thermoregulatory",
-            "Secretory-Mucosal"
+            "Inflammatory/Immune"
           ]
         }
       ],
@@ -5856,7 +5536,7 @@
           "prominence": 1,
           "pathophysiology": "Headache markedly aggravated by even the motion of the eyes themselves.",
           "mechanisms": [
-            "Secretory/Glandular"
+            "Autonomic/Nervous Regulation"
           ]
         },
         {
@@ -5888,7 +5568,6 @@
           "prominence": 1,
           "pathophysiology": "Hysterical, dramatic fainting spells accompanied by a sensation of suffocation, often disproportionate to any physical cause.",
           "mechanisms": [
-            "Thermoregulatory",
             "Respiratory-Ventilatory"
           ]
         },
@@ -5897,8 +5576,7 @@
           "prominence": 2,
           "pathophysiology": "Extreme chilliness, feeling cold even in a warm room.",
           "mechanisms": [
-            "Thermoregulatory",
-            "Respiratory-Ventilatory"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -5963,9 +5641,7 @@
           "prominence": 2,
           "pathophysiology": "Intense throat pain shooting to the ears on swallowing, with a dark red or bluish throat appearance.",
           "mechanisms": [
-            "Vascular/Circulatory",
-            "Inflammatory/Immune",
-            "Secretory/Glandular"
+            "Respiratory-Ventilatory"
           ]
         },
         {
@@ -5973,9 +5649,7 @@
           "prominence": 3,
           "pathophysiology": "Bone pain, particularly worse at night.",
           "mechanisms": [
-            "Vascular/Circulatory",
-            "Inflammatory/Immune",
-            "Secretory/Glandular"
+            "Neuromuscular"
           ]
         }
       ],
@@ -6007,8 +5681,7 @@
           "pathophysiology": "Testicular pain and swelling, worse from any weather change.",
           "mechanisms": [
             "Vascular/Circulatory",
-            "Inflammatory/Immune",
-            "Connective Tissue/Rheumatic"
+            "Inflammatory/Immune"
           ]
         }
       ],
@@ -6040,8 +5713,7 @@
           "prominence": 2,
           "pathophysiology": "Marked mental fatigue worse from talking or any mental exertion.",
           "mechanisms": [
-            "Psychoemotional/Stress-axis",
-            "Reproductive-Hormonal"
+            "Psychoemotional/Stress-axis"
           ]
         },
         {
@@ -6049,7 +5721,7 @@
           "prominence": 3,
           "pathophysiology": "Hair loss, particularly of the eyebrows and beard.",
           "mechanisms": [
-            "Reproductive-Hormonal"
+            "Secretory/Glandular"
           ]
         }
       ],
@@ -6144,7 +5816,7 @@
           "prominence": 2,
           "pathophysiology": "Lumbar back pain relieved by pressure and by passing gas.",
           "mechanisms": [
-            "Digestive-Motility"
+            "Neuromuscular"
           ]
         },
         {
@@ -6153,8 +5825,7 @@
           "pathophysiology": "Congestive hemorrhoids, worse from heat.",
           "mechanisms": [
             "Vascular/Circulatory",
-            "Thermoregulatory",
-            "Digestive-Motility"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -6256,7 +5927,6 @@
           "prominence": 2,
           "pathophysiology": "Gouty joint deposits with audible cracking on motion.",
           "mechanisms": [
-            "Renal/Urinary-Excretory",
             "Connective Tissue/Rheumatic"
           ]
         }
@@ -6338,8 +6008,6 @@
           "prominence": 1,
           "pathophysiology": "Erratic, shifting pains affecting the small joints, especially the fingers, with a peculiar migratory pattern.",
           "mechanisms": [
-            "Neuromuscular",
-            "Reproductive-Hormonal",
             "Connective Tissue/Rheumatic"
           ]
         },
@@ -6349,8 +6017,7 @@
           "pathophysiology": "Uterine irregularity with weak, spasmodic contractions, particularly noted in classical obstetric use during labor.",
           "mechanisms": [
             "Neuromuscular",
-            "Reproductive-Hormonal",
-            "Connective Tissue/Rheumatic"
+            "Reproductive-Hormonal"
           ]
         }
       ],
@@ -6408,8 +6075,7 @@
             "Vascular/Circulatory",
             "Inflammatory/Immune",
             "Structural/Degenerative",
-            "Secretory/Glandular",
-            "Thermoregulatory"
+            "Secretory/Glandular"
           ]
         }
       ],
@@ -6495,8 +6161,7 @@
           "prominence": 2,
           "pathophysiology": "A flushed face with a bounding, visible pulsation of the carotid arteries.",
           "mechanisms": [
-            "Vascular/Circulatory",
-            "Thermoregulatory"
+            "Vascular/Circulatory"
           ]
         }
       ],
@@ -6519,8 +6184,6 @@
           "prominence": 1,
           "pathophysiology": "Gastric irritability with a tendency toward diarrhea, worse from mental exertion or excitement.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
-            "Neuromuscular",
             "Psychoemotional/Stress-axis",
             "Digestive-Motility"
           ]
@@ -6626,7 +6289,6 @@
           "prominence": 2,
           "pathophysiology": "Acne-type eruptions, especially in adolescents, worse from any emotional excitement.",
           "mechanisms": [
-            "Autonomic/Nervous Regulation",
             "Psychoemotional/Stress-axis"
           ]
         }
@@ -6714,8 +6376,7 @@
           "prominence": 2,
           "pathophysiology": "Convulsive spasms triggered by the sight or sound of water.",
           "mechanisms": [
-            "Neuromuscular",
-            "Psychoemotional/Stress-axis"
+            "Neuromuscular"
           ]
         }
       ],
@@ -6778,7 +6439,7 @@
           "prominence": 2,
           "pathophysiology": "Hoarseness worse in damp weather.",
           "mechanisms": [
-            "Neuromuscular"
+            "Respiratory-Ventilatory"
           ]
         }
       ],
@@ -6870,7 +6531,6 @@
           "prominence": 1,
           "pathophysiology": "Ulcerative lesions of the mouth with dark, dusky discoloration, occurring in the setting of profound systemic exhaustion.",
           "mechanisms": [
-            "Neuromuscular",
             "Suppurative/Infective"
           ]
         },
@@ -6996,7 +6656,7 @@
           "prominence": 2,
           "pathophysiology": "Used topically and internally in classical practice as an aid for reducing tobacco craving.",
           "mechanisms": [
-            "Secretory/Glandular"
+            "Autonomic/Nervous Regulation"
           ]
         }
       ],
@@ -7123,7 +6783,7 @@
           "prominence": 2,
           "pathophysiology": "A marked desire for change — of scenery, occupation, or residence — with rapid exhaustion.",
           "mechanisms": [
-            "Respiratory-Ventilatory"
+            "Thermoregulatory"
           ]
         }
       ],
@@ -7342,9 +7002,6 @@
           "prominence": 1,
           "pathophysiology": "Rapid, severe prostration disproportionate to the apparent cause, occurring in septic or toxic states.",
           "mechanisms": [
-            "Inflammatory/Immune",
-            "Secretory/Glandular",
-            "Secretory-Mucosal",
             "Suppurative/Infective"
           ]
         },
@@ -7353,8 +7010,6 @@
           "prominence": 2,
           "pathophysiology": "Offensive-smelling catarrh and breath.",
           "mechanisms": [
-            "Inflammatory/Immune",
-            "Secretory/Glandular",
             "Secretory-Mucosal",
             "Respiratory-Ventilatory"
           ]
@@ -7380,8 +7035,7 @@
           "pathophysiology": "Menstrual pain with a marked, often alarming, sensation of mental darkness or gloom, occasionally described by the patient as a fear of going insane.",
           "mechanisms": [
             "Psychoemotional/Stress-axis",
-            "Reproductive-Hormonal",
-            "Connective Tissue/Rheumatic"
+            "Reproductive-Hormonal"
           ]
         },
         {
@@ -7389,7 +7043,6 @@
           "prominence": 2,
           "pathophysiology": "Muscular rheumatic pain, particularly of the neck and shoulders, that shifts location and is worse during menses.",
           "mechanisms": [
-            "Psychoemotional/Stress-axis",
             "Reproductive-Hormonal",
             "Connective Tissue/Rheumatic"
           ]
@@ -7445,7 +7098,7 @@
           "prominence": 2,
           "pathophysiology": "Intensely itching, vesicular eruptions worse from the least scratching.",
           "mechanisms": [
-            "Digestive-Motility"
+            "Secretory/Glandular"
           ]
         }
       ],
@@ -7514,8 +7167,7 @@
           "prominence": 1,
           "pathophysiology": "Deep, aching pain in the bones and muscles as if they were broken, classically occurring during influenza-type illness.",
           "mechanisms": [
-            "Inflammatory/Immune",
-            "Thermoregulatory"
+            "Neuromuscular"
           ]
         },
         {
@@ -7636,9 +7288,7 @@
           "pathophysiology": "Sensitivity in children, worse from any grief or emotional distress.",
           "mechanisms": [
             "Autonomic/Nervous Regulation",
-            "Secretory/Glandular",
-            "Psychoemotional/Stress-axis",
-            "Digestive-Motility"
+            "Psychoemotional/Stress-axis"
           ]
         }
       ],
@@ -7717,7 +7367,6 @@
           "pathophysiology": "Uterine induration or enlargement, with associated melancholic despair similar to, but somewhat milder than, Aurum Metallicum.",
           "mechanisms": [
             "Structural/Degenerative",
-            "Secretory-Mucosal",
             "Reproductive-Hormonal"
           ]
         },
@@ -7727,8 +7376,7 @@
           "pathophysiology": "Nasal bone involvement with a tendency toward destructive or ulcerative change.",
           "mechanisms": [
             "Secretory-Mucosal",
-            "Suppurative/Infective",
-            "Reproductive-Hormonal"
+            "Suppurative/Infective"
           ]
         }
       ],

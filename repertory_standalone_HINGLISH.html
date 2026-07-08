@@ -558,6 +558,10 @@ const MAIN_QUALIFIERS = {"Abdomen|abscess":["inguinal region","liver","spleen","
   <div id="narrative-modal" style="background:var(--bg2); border:1px solid var(--border2); border-radius:var(--radius); box-shadow:var(--shadow); width:min(700px, 92vw); max-height:86vh; display:flex; flex-direction:column; font-family:var(--font);">
     <div style="display:flex; align-items:center; padding:14px 18px; border-bottom:1px solid var(--border);">
       <h2 style="font-size:15px; color:var(--gold); flex:1;">📝 Case Narrative (Draft)</h2>
+      <select id="narrative-style-select" onchange="generateCaseNarrative()" style="margin-right:10px; padding:5px 8px; background:var(--bg2); border:1px solid var(--border2); border-radius:6px; color:var(--text); font-family:var(--font); font-size:12px;">
+        <option value="patient">Patient-Friendly Draft</option>
+        <option value="clinical">Clinical Draft</option>
+      </select>
       <button class="top-btn" onclick="closeNarrativeModal()">✕ Close</button>
     </div>
     <div style="padding:10px 18px; font-size:11px; color:var(--text3); border-bottom:1px solid var(--border);">
@@ -1372,7 +1376,7 @@ function generateCaseNarrative() {
   const statusEl = document.getElementById('narrative-status');
   const taEl = document.getElementById('narrative-textarea');
   try {
-    if (typeof assembleCaseNarrativeData !== 'function' || typeof generateEvidenceBasedNarrative !== 'function') {
+    if (typeof assembleCaseNarrativeData !== 'function' || typeof generateEvidenceBasedNarrative !== 'function' || typeof generatePatientFriendlyNarrative !== 'function') {
       taEl.value = 'Narrative engine scripts (case_narrative_data_assembly.js / narrative_engine.js) did not load. Check they are present next to this HTML file.';
       return;
     }
@@ -1387,7 +1391,10 @@ function generateCaseNarrative() {
       taEl.value = 'remedy_pathophysiology_db.json has not loaded yet — wait a moment and try again, or check the file is present next to this HTML file.';
       return;
     }
-    const narrative = generateEvidenceBasedNarrative(assembled, remedyDB);
+    const narrativeStyle = (document.getElementById('narrative-style-select') || {}).value || 'patient';
+    const narrative = (narrativeStyle === 'patient')
+      ? generatePatientFriendlyNarrative(assembled, remedyDB)
+      : generateEvidenceBasedNarrative(assembled, remedyDB);
     taEl.value = narrative.plainText;
     statusEl.textContent = window.symptomAffinityTable ? '' : '(symptom_affinity_table not loaded — cross-rubric correlations skipped)';
   } catch (e) {
