@@ -452,24 +452,25 @@
 
     const organNames = [...new Set(found.map(r => CHAPTER_TO_ORGAN_PLAIN[r.chapter] || `your ${r.chapter.toLowerCase()}`))];
     const organsText = organNames.length
-      ? `The main areas involved are: ${organNames.join('; ')}.`
+      ? `The main areas involved are ${organNames.join(' and ')}.`
       : null;
 
     const profile = assembledData.mechanismProfile;
-    const top = (profile && profile.ranked) ? profile.ranked.filter(m => m.weight > 0).slice(0, 4) : [];
+    const top = (profile && profile.ranked) ? profile.ranked.filter(m => m.weight > 0).slice(0, 2) : [];
 
     let connectionText = null;
     if (top.length) {
-      const clauses = top.map(m => {
-        const expl = PATIENT_MECHANISM_EXPLANATIONS[m.mechanism] || `a disturbance related to ${m.mechanism.toLowerCase()}`;
-        const historyNote = m.reinforcedByHistory ? ', which also fits your existing health history' : '';
-        return `${expl}${historyNote}`;
-      });
-      if (clauses.length === 1) {
-        connectionText = `These symptoms appear connected because ${clauses[0]}. This is likely the common thread linking what might otherwise look like separate complaints.`;
+      const clause1 = PATIENT_MECHANISM_EXPLANATIONS[top[0].mechanism] || `a disturbance related to ${top[0].mechanism.toLowerCase()}`;
+      if (top.length === 1) {
+        connectionText = `The main driver appears to be that ${clause1}. This directly explains the symptoms described above.`;
       } else {
-        connectionText = `These symptoms appear connected rather than separate: ${clauses.join('; and separately, ')}. ` +
-          `In other words, one part of this pattern (for example, an emotional or metabolic factor) can directly influence how the other organs behave — the body rarely produces unrelated symptoms in isolation, and this case looks like one connected picture rather than several unconnected ones.`;
+        const clause2 = PATIENT_MECHANISM_EXPLANATIONS[top[1].mechanism] || `a disturbance related to ${top[1].mechanism.toLowerCase()}`;
+        connectionText = `The main driver appears to be that ${clause1}. This is closely linked to a second factor — ${clause2} — ` +
+          `meaning these are not two separate problems but different expressions of one connected pattern.`;
+      }
+      const historyReinforced = top.some(m => m.reinforcedByHistory);
+      if (historyReinforced) {
+        connectionText += ' Your existing health history fits this same pattern and likely makes your body more prone to it.';
       }
     }
 
