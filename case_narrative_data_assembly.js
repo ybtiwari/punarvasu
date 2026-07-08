@@ -66,7 +66,15 @@
     if (_rubricById) return;
     _rubricById = new Map();
     _rubricByPath = new Map();
-    const rubrics = (global.EMBEDDED_DATA && global.EMBEDDED_DATA.rubrics) || [];
+    // EMBEDDED_DATA may be declared with let/const in another <script> tag, in which
+    // case it is NOT attached to window/global — but it IS visible by bare name here,
+    // since all classic (non-module) scripts on a page share one global lexical scope.
+    let dataSource = null;
+    try {
+      if (typeof EMBEDDED_DATA !== 'undefined') dataSource = EMBEDDED_DATA;
+    } catch (e) { /* not defined in this scope */ }
+    if (!dataSource) dataSource = global.EMBEDDED_DATA || (typeof DB !== 'undefined' ? DB : null);
+    const rubrics = (dataSource && dataSource.rubrics) || [];
     for (const r of rubrics) {
       const [id, path] = r;
       _rubricById.set(id, r);
