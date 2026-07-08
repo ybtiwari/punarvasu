@@ -265,111 +265,291 @@
   // =================================================================
 
   const PATIENT_MECHANISM_EXPLANATIONS = {
-    'Vascular/Circulatory': 'Your blood flow and circulation in the affected area seem to be part of what is driving this — blood vessels can become congested, swollen, or under-supplied, which produces many of the sensations you are describing.',
-    'Autonomic/Nervous Regulation': 'Your nervous system\'s automatic control over your body — things like heart rate, digestion, and internal sensation — appears to be overreacting or out of balance right now, which can produce real physical symptoms even without anything being structurally damaged.',
-    'Metabolic/Glycemic': 'Your body\'s energy and blood sugar regulation seem to be part of the picture — when this balance is disturbed, it can affect how your whole body feels and functions.',
-    'Inflammatory/Immune': 'There appears to be an active inflammatory response — your body\'s natural defense and repair system reacting to something, producing heat, swelling, or irritation.',
-    'Structural/Degenerative': 'This looks like a longer-standing, slowly developing change in the tissues themselves, rather than a sudden problem — the kind that builds up gradually over time.',
-    'Secretory/Glandular': 'Your body\'s glands and normal secretions — sweat, saliva, discharge — seem to be behaving differently than they should, which is contributing to what you are feeling.',
-    'Hemorrhagic/Coagulation': 'There is a tendency toward bleeding or blood-clotting irregularity playing a role here.',
-    'Neuromuscular': 'Your nerves and muscles appear to be losing some of their normal coordination — this can show up as weakness, cramping, trembling, or numbness.',
-    'Thermoregulatory': 'Your body\'s internal temperature control seems to be part of what is off balance — how you handle heat, cold, and fevers.',
-    'Psychoemotional/Stress-axis': 'Your emotional state and physical symptoms appear closely linked. Ongoing stress, anxiety, or emotional strain does not just stay in the mind — it can genuinely produce physical sensations in the body, and that seems to be a real part of what you are experiencing.',
-    'Digestive-Motility': 'Your digestive system\'s normal movement — the way food and waste travel through your gut — appears to be disrupted.',
-    'Secretory-Mucosal': 'The mucous membranes, such as in your nose or throat, seem to be overproducing or reacting abnormally, leading to discharge or congestion.',
-    'Suppurative/Infective': 'There is a tendency toward infection or pus formation playing a role.',
-    'Nutritive/Deficiency': 'Your body\'s ability to absorb or use nutrients properly may be part of the picture, affecting your overall strength and energy.',
-    'Reproductive-Hormonal': 'Your reproductive and hormonal system appears to be part of what is driving this.',
-    'Renal/Urinary-Excretory': 'Your kidneys and urinary system\'s normal function appear to be involved in this pattern.',
-    'Respiratory-Ventilatory': 'Your breathing and the way your lungs move air appear to be part of this pattern.',
-    'Connective Tissue/Rheumatic': 'Your joints and connective tissue seem to be involved — the kind of pattern seen in rheumatic-type complaints.'
+    'Vascular/Circulatory': 'blood flow and circulation seem to be part of what is driving this — blood vessels can become congested, swollen, or under-supplied',
+    'Autonomic/Nervous Regulation': 'the nervous system\'s automatic control over the body — things like heart rate, digestion, and internal sensation — appears to be overreacting or out of balance',
+    'Metabolic/Glycemic': 'the body\'s energy and blood sugar regulation seem to be part of the picture',
+    'Inflammatory/Immune': 'there appears to be an active inflammatory response — the body\'s natural defense and repair system reacting to something',
+    'Structural/Degenerative': 'this looks like a longer-standing, slowly developing change in the tissues themselves, rather than a sudden problem',
+    'Secretory/Glandular': 'the glands and normal secretions — sweat, saliva, discharge — seem to be behaving differently than they should',
+    'Hemorrhagic/Coagulation': 'there is a tendency toward bleeding or blood-clotting irregularity playing a role',
+    'Neuromuscular': 'the nerves and muscles appear to be losing some of their normal coordination',
+    'Thermoregulatory': 'the body\'s internal temperature control seems to be part of what is off balance',
+    'Psychoemotional/Stress-axis': 'the emotional state and physical symptoms appear closely linked — ongoing stress or emotional strain does not just stay in the mind, it can genuinely produce physical sensations in the body',
+    'Digestive-Motility': 'the digestive system\'s normal movement — the way food and waste travel through the gut — appears to be disrupted',
+    'Secretory-Mucosal': 'the mucous membranes seem to be overproducing or reacting abnormally, leading to discharge or congestion',
+    'Suppurative/Infective': 'there is a tendency toward infection or pus formation playing a role',
+    'Nutritive/Deficiency': 'the body\'s ability to absorb or use nutrients properly may be part of the picture',
+    'Reproductive-Hormonal': 'the reproductive and hormonal system appears to be part of what is driving this',
+    'Renal/Urinary-Excretory': 'the kidneys and urinary system\'s normal function appear to be involved',
+    'Respiratory-Ventilatory': 'the breathing and the way the lungs move air appear to be part of this pattern',
+    'Connective Tissue/Rheumatic': 'the joints and connective tissue seem to be involved — the kind of pattern seen in rheumatic-type complaints'
   };
 
   const ACTION_TYPE_PATIENT_NOTE = {
-    'functional': 'This is generally understood as a reversible disturbance in how your body is working, rather than permanent damage — your system has good potential to return to normal balance with the right treatment.',
-    'structural': 'This reflects a deeper, more established change in the tissue itself, so treatment aims to support your body\'s own repair and regulatory capacity over a longer course.',
-    'functional-to-structural': 'This kind of condition can range from a reversible disturbance to something more established in the tissue — treatment aims to address it while your body still has good capacity to recover.'
+    'functional': 'This is generally understood as a reversible disturbance rather than permanent damage — good potential to return to normal balance with the right treatment.',
+    'structural': 'This reflects a deeper, more established change in the tissue itself, so treatment aims to support the body\'s own repair capacity over a longer course.',
+    'functional-to-structural': 'This can range from a reversible disturbance to something more established in the tissue — treatment aims to address it while there is still good capacity to recover.'
   };
+
+  // Plain-English substitutions for common rubric/medical terminology.
+  // Not exhaustive — falls back to the original term if unmapped, so
+  // unfamiliar or rare rubric words still display rather than vanish.
+  const PLAIN_TERM_MAP = {
+    coryza: 'a cold (runny or blocked nose)',
+    eruptions: 'skin eruptions',
+    herpes: 'a viral skin eruption',
+    zoster: 'shingles',
+    zona: 'shingles',
+    vertigo: 'dizziness',
+    dyspnea: 'difficulty breathing',
+    dysuria: 'painful urination',
+    tenesmus: 'straining without result',
+    pruritus: 'itching',
+    epistaxis: 'nosebleed',
+    menorrhagia: 'heavy menstrual bleeding',
+    leucorrhea: 'vaginal discharge',
+    singultus: 'hiccups',
+    cephalalgia: 'headache',
+    flatulence: 'gas and bloating',
+    palpitation: 'a fluttering or pounding heartbeat',
+    convulsions: 'convulsions or seizures',
+    insomnia: 'difficulty sleeping',
+    somnolence: 'excessive sleepiness',
+    anorexia: 'loss of appetite',
+    bulimia: 'excessive hunger',
+    coldness: 'a feeling of coldness',
+    'agg': 'worse',
+    'amel': 'better'
+  };
+
+  const CHAPTER_TO_ORGAN_PLAIN = {
+    Mind: 'your mind and emotional state',
+    Vertigo: 'your sense of balance',
+    Head: 'your head',
+    Eye: 'your eyes',
+    Vision: 'your eyes',
+    Ear: 'your ears',
+    Hearing: 'your ears',
+    Nose: 'your nose and sinuses',
+    Face: 'your face',
+    Mouth: 'your mouth',
+    Teeth: 'your teeth',
+    Throat: 'your throat',
+    Stomach: 'your stomach',
+    Abdomen: 'your abdominal organs (stomach and intestines)',
+    Rectum: 'your rectum and bowel',
+    Stool: 'your bowel movements',
+    Urinary: 'your urinary system (bladder and kidneys)',
+    Bladder: 'your bladder',
+    Kidneys: 'your kidneys',
+    Male: 'your reproductive organs',
+    'Genitalia, Male': 'your reproductive organs',
+    Female: 'your reproductive organs',
+    'Genitalia, Female': 'your reproductive organs',
+    Larynx: 'your throat and voice box',
+    Respiration: 'your lungs and breathing',
+    Cough: 'your lungs and airway',
+    Expectoration: 'your lungs and airway',
+    Chest: 'your chest and lungs',
+    Heart: 'your heart',
+    Back: 'your back',
+    Extremities: 'your arms and legs',
+    Sleep: 'your sleep',
+    Dreams: 'your sleep',
+    Chill: 'your body temperature regulation',
+    Fever: 'your body temperature regulation',
+    Perspiration: 'your sweating and temperature regulation',
+    Skin: 'your skin',
+    Generalities: 'your overall, whole-body constitution'
+  };
+
+  function translateTerm(term) {
+    const key = term.toLowerCase().trim().replace(/\.$/, '');
+    return PLAIN_TERM_MAP[key] || term;
+  }
+
+  // Turns one rubric's mainRubric + qualifierText into a plain-English
+  // phrase. Heuristic, not a full language model — handles the common
+  // "worse from X" / "better from X" qualifier pattern explicitly, and
+  // falls back to a translated comma-list for everything else.
+  function formatPlainSymptom(mainRubric, qualifierText) {
+    const head = translateTerm(mainRubric);
+    if (!qualifierText) return head;
+
+    const rawTokens = qualifierText.split(',').map(t => t.trim()).filter(Boolean);
+    const descTokens = [];
+    let modalityClauses = [];
+
+    for (const tok of rawTokens) {
+      const aggMatch = tok.match(/^(.*?)[,\s]*agg\.?$/i);
+      const amelMatch = tok.match(/^(.*?)[,\s]*amel\.?$/i);
+      if (aggMatch && aggMatch[1]) {
+        modalityClauses.push(`worse from ${translateTerm(aggMatch[1])}`);
+      } else if (amelMatch && amelMatch[1]) {
+        modalityClauses.push(`better from ${translateTerm(amelMatch[1])}`);
+      } else if (/^agg\.?$/i.test(tok)) {
+        modalityClauses.push('generally worse');
+      } else if (/^amel\.?$/i.test(tok)) {
+        modalityClauses.push('generally better');
+      } else {
+        descTokens.push(translateTerm(tok));
+      }
+    }
+
+    const descClause = descTokens.length ? ` (${[...new Set(descTokens.map(t => t.toLowerCase()))].join(', ')})` : '';
+    const modalityClause = modalityClauses.length ? `, ${modalityClauses.join(', ')}` : '';
+    return `${head}${descClause}${modalityClause}`;
+  }
+
+  // Selecting a rubric in the tree often also selects its parent/child
+  // rubrics, producing several near-duplicate entries that are really
+  // one symptom described at different levels of detail (e.g.
+  // "eruptions, herpes, zoster" and "eruptions, herpes, zoster, zona,
+  // right side" are the same complaint). Collapse: within each
+  // chapter+mainRubric group, drop any entry whose qualifierText is a
+  // strict prefix of another kept entry's qualifierText, keeping the
+  // more specific ones (including divergent siblings, which are
+  // genuinely distinct qualifying facts and are both kept).
+  function dedupeSymptomRubrics(foundRubrics) {
+    const groups = {};
+    for (const r of foundRubrics) {
+      const key = r.chapter + '|' + r.mainRubric;
+      (groups[key] = groups[key] || []).push(r);
+    }
+    const result = [];
+    for (const key in groups) {
+      const list = groups[key].slice().sort((a, b) => (b.qualifierText || '').length - (a.qualifierText || '').length);
+      const kept = [];
+      for (const r of list) {
+        const q = r.qualifierText || '';
+        const isSubsumed = kept.some(k => q && (k.qualifierText || '').startsWith(q));
+        if (!isSubsumed) kept.push(r);
+      }
+      result.push(...kept);
+    }
+    return result;
+  }
 
   function buildPatientSymptomList(assembledData) {
     const found = assembledData.rubrics.filter(r => r.found);
     if (!found.length) return null;
-    const lines = found.map(r => {
-      const desc = r.qualifierText ? `${r.mainRubric}, ${r.qualifierText}` : r.mainRubric;
-      return `In the ${r.chapter.toLowerCase()}: a symptom described as "${desc}".`;
+    const deduped = dedupeSymptomRubrics(found);
+    const lines = deduped.map(r => {
+      const organ = CHAPTER_TO_ORGAN_PLAIN[r.chapter] || `your ${r.chapter.toLowerCase()}`;
+      const symptom = formatPlainSymptom(r.mainRubric, r.qualifierText);
+      return `In ${organ}: ${symptom}.`;
     });
     return lines.join(' ');
   }
 
-  function buildPatientMechanismExplanation(assembledData) {
+  // Part 1: which organs/body areas are involved, in plain terms.
+  // Part 2: how the synthesized mechanisms connect those organs to
+  // each other (and to metabolic/psychological background factors),
+  // rather than describing each organ in isolation.
+  function buildBodySystemsExplanation(assembledData) {
+    const found = assembledData.rubrics.filter(r => r.found);
+    if (!found.length) return null;
+
+    const organNames = [...new Set(found.map(r => CHAPTER_TO_ORGAN_PLAIN[r.chapter] || `your ${r.chapter.toLowerCase()}`))];
+    const organsText = organNames.length
+      ? `The main areas involved are: ${organNames.join('; ')}.`
+      : null;
+
     const profile = assembledData.mechanismProfile;
-    if (!profile || !profile.ranked || !profile.ranked.length) return null;
-    const top = profile.ranked.filter(m => m.weight > 0).slice(0, 4);
-    if (!top.length) return null;
+    const top = (profile && profile.ranked) ? profile.ranked.filter(m => m.weight > 0).slice(0, 4) : [];
 
-    const lines = top.map(m => {
-      const explanation = PATIENT_MECHANISM_EXPLANATIONS[m.mechanism] || `A disturbance related to ${m.mechanism.toLowerCase()} appears to be part of the picture.`;
-      const historyNote = m.reinforcedByHistory
-        ? ' This also fits with your existing health history, which can make your body more prone to this kind of pattern.'
-        : '';
-      return `${explanation}${historyNote}`;
-    });
-    return lines.join(' ');
+    let connectionText = null;
+    if (top.length) {
+      const clauses = top.map(m => {
+        const expl = PATIENT_MECHANISM_EXPLANATIONS[m.mechanism] || `a disturbance related to ${m.mechanism.toLowerCase()}`;
+        const historyNote = m.reinforcedByHistory ? ', which also fits your existing health history' : '';
+        return `${expl}${historyNote}`;
+      });
+      if (clauses.length === 1) {
+        connectionText = `These symptoms appear connected because ${clauses[0]}. This is likely the common thread linking what might otherwise look like separate complaints.`;
+      } else {
+        connectionText = `These symptoms appear connected rather than separate: ${clauses.join('; and separately, ')}. ` +
+          `In other words, one part of this pattern (for example, an emotional or metabolic factor) can directly influence how the other organs behave — the body rarely produces unrelated symptoms in isolation, and this case looks like one connected picture rather than several unconnected ones.`;
+      }
+    }
+
+    return [organsText, connectionText].filter(Boolean).join(' ');
   }
+
+  // Short, single-line, organ-matched description of a remedy's known
+  // action — deliberately brief, not a paragraph. Only mentions the
+  // organ(s) actually affected in this patient's case.
+  const SYSTEM_TO_PLAIN_LABEL = {
+    Nervous: 'the nervous system',
+    Cardiovascular: 'the heart and circulation',
+    Digestive: 'the digestive organs',
+    Respiratory: 'the lungs and airway',
+    Musculoskeletal: 'the muscles and joints',
+    Integumentary: 'the skin',
+    Reproductive: 'the reproductive organs',
+    Urinary: 'the urinary system',
+    Sensory: 'the senses (eyes, ears)',
+    Constitutional: 'the overall constitution'
+  };
 
   function buildPatientRemedyExplanation(remedyAbbr, assembledData, remedyDB) {
     const content = remedyDB.remedies[remedyAbbr];
     if (!content) {
-      return `${remedyAbbr}: a detailed plain-language explanation is not yet available for this remedy in our system — your doctor will explain this one directly.`;
+      return `${remedyAbbr}: a plain-language description is not yet available for this medicine — your doctor will explain this one directly.`;
     }
 
-    // What this medicine is classically/best known for overall — its single
-    // most prominent documented affinity, plus its constitutional picture —
-    // independent of whether it happens to match this particular case.
+    const affectedChapters = [...new Set(assembledData.rubrics.filter(r => r.found).map(r => r.chapter))];
+    const affectedSystems = new Set(affectedChapters.map(c => systemForChapter(c)).filter(Boolean));
+
+    const matchedAffinity = content.systemAffinities.find(aff => affectedSystems.has(aff.system));
     const topAffinity = content.systemAffinities.slice().sort((a, b) => a.prominence - b.prominence)[0];
-    const bestKnownFor = topAffinity ? topAffinity.pathophysiology : '';
-    const actionNote = ACTION_TYPE_PATIENT_NOTE[content.actionType] || '';
+    const chosenAffinity = matchedAffinity || topAffinity;
 
-    // Whether this case's synthesized mechanisms give an additional, more
-    // specific reason this medicine was chosen for this patient.
-    const rankedMechanisms = (assembledData.mechanismProfile && assembledData.mechanismProfile.ranked) || [];
-    const topMechanisms = rankedMechanisms.filter(m => m.weight > 0);
-    const matchedAffinity = topMechanisms
-      .map(m => content.systemAffinities.find(aff => (aff.mechanisms || []).includes(m.mechanism)))
-      .find(Boolean);
+    const organLabel = chosenAffinity ? (SYSTEM_TO_PLAIN_LABEL[chosenAffinity.system] || chosenAffinity.system) : 'your general constitution';
+    const shortLine = chosenAffinity
+      ? chosenAffinity.pathophysiology.split(/[.;]/)[0].trim()
+      : (content.constitutionalNote || '').split(/[.;]/)[0].trim();
 
-    let text = `${content.fullName} is a medicine best known in classical homeopathic practice for: ${bestKnownFor} ${content.constitutionalNote || ''}`.trim();
+    return `${content.fullName} — acts on: ${organLabel}. Known primarily for: ${shortLine}.`;
+  }
 
-    if (matchedAffinity && matchedAffinity !== topAffinity) {
-      text += ` In your particular case, it is also considered relevant because: ${matchedAffinity.pathophysiology}`;
-    }
-    text += ` ${actionNote}`;
-
-    return text.trim();
+  function buildCumulativeRemedyStatement(prescribedRemedies, remedyDB) {
+    if (!prescribedRemedies.length) return null;
+    const names = prescribedRemedies
+      .map(abbr => (remedyDB.remedies[abbr] || {}).fullName || abbr)
+      .join(', ');
+    return `Together, these medicines (${names}) are being considered as a complementary group rather than competing options — ` +
+      `each has a documented action on a different part of the same overall pattern described above. Your doctor will decide which ` +
+      `one to start with, and in what order or combination, based on the complete picture — but as a group, they represent a ` +
+      `well-founded, positive direction aimed at supporting your body's own capacity to recover and restore balance.`;
   }
 
   function generatePatientFriendlyNarrative(assembledData, remedyDB) {
     const prescribedRemedies = assembledData.remedySummary.map(r => r.remedy);
 
     const symptomText = buildPatientSymptomList(assembledData);
-    const mechanismText = buildPatientMechanismExplanation(assembledData);
-    const remedyTexts = prescribedRemedies.map(abbr => buildPatientRemedyExplanation(abbr, assembledData, remedyDB));
+    const bodySystemsText = buildBodySystemsExplanation(assembledData);
+    const remedyLines = prescribedRemedies.map(abbr => buildPatientRemedyExplanation(abbr, assembledData, remedyDB));
+    const cumulativeText = buildCumulativeRemedyStatement(prescribedRemedies, remedyDB);
 
     const openingText = 'Based on what you have described, here is a simple explanation of what may be going on and how your treatment is intended to help.';
 
     const closingText =
       'This explanation is a starting point prepared for your doctor to review and discuss with you — it is not a final diagnosis, and your doctor may adjust it based on things not captured here.';
 
+    const remedySectionText = [remedyLines.join('\n'), cumulativeText].filter(Boolean).join('\n\n');
+
     const sections = [
-      { title: 'What You Told Us', text: symptomText },
-      { title: 'What May Be Happening In Your Body', text: mechanismText },
-      { title: 'What Each Medicine Is Known For, And How It May Help You', text: remedyTexts.join('\n\n') },
+      { title: 'Your Disease Picture', text: symptomText },
+      { title: 'What May Be Happening In Your Body', text: bodySystemsText },
+      { title: 'What Each Medicine Is Known For, And How It May Help You', text: remedySectionText },
       { title: 'A Note', text: closingText }
     ].filter(s => s.text);
 
     const plainText = openingText + '\n\n' + sections.map(s => `${s.title}\n${s.text}`).join('\n\n');
 
     return { generatedAt: new Date().toISOString(), sections, plainText };
+
   }
 
 
