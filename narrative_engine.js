@@ -433,12 +433,14 @@
   // genuinely distinct qualifying facts and are both kept).
   function dedupeSymptomRubrics(foundRubrics) {
     const groups = {};
+    const order = [];
     for (const r of foundRubrics) {
       const key = r.chapter + '|' + r.mainRubric;
-      (groups[key] = groups[key] || []).push(r);
+      if (!groups[key]) { groups[key] = []; order.push(key); }
+      groups[key].push(r);
     }
     const result = [];
-    for (const key in groups) {
+    for (const key of order) {
       const list = groups[key].slice().sort((a, b) => (b.qualifierText || '').length - (a.qualifierText || '').length);
       const kept = [];
       for (const r of list) {
@@ -446,34 +448,66 @@
         const isSubsumed = kept.some(k => q && (k.qualifierText || '').startsWith(q));
         if (!isSubsumed) kept.push(r);
       }
-      result.push(...kept);
+      for (const r of kept) result.push({ rubric: r, groupKey: key });
     }
     return result;
   }
 
-  const STORY_CONNECTORS = ['Alongside this,', 'You also describe that', 'In addition,', 'Further,', 'You also note that'];
+  // Two connector pools — one for continuing the same complaint with more
+  // detail, one for moving on to a genuinely different complaint — so the
+  // transition wording itself carries meaning rather than being filler.
+  // Each pool is large enough that a typical case (a handful of symptoms)
+  // never has to reuse a phrase; reuse is guarded against explicitly below.
+  const SAME_THEME_CONNECTORS = [
+    'Along the same lines,', 'More specifically,', 'Relatedly,',
+    'Adding more detail to this same complaint,', 'On this same point,',
+    'To be more precise about this,'
+  ];
+  const NEW_THEME_CONNECTORS = [
+    'Separately, you also report that', 'In a different area,', 'Beyond that,',
+    'On another note,', 'You also mention that', 'Elsewhere,',
+    'It is also worth mentioning that', 'Additionally, there is the matter that',
+    'A further, unrelated complaint is that', 'You also bring up that'
+  ];
 
   function buildPatientSymptomList(assembledData) {
     const found = assembledData.rubrics.filter(r => r.found);
     if (!found.length) return null;
     const deduped = dedupeSymptomRubrics(found);
 
-    const sentences = deduped.map(r => {
+    const items = deduped.map(({ rubric: r, groupKey }) => {
       const translated = lookupPlainTranslation(r.chapter, r.path);
-      if (translated) return translated;
-      // No exact translation on file for this rubric — fall back to the
-      // heuristic formatter, wrapped with organ context for clarity.
-      const organ = CHAPTER_TO_ORGAN_PLAIN[r.chapter] || `your ${r.chapter.toLowerCase()}`;
-      return `In ${organ}, there is ${formatPlainSymptom(r.mainRubric, r.qualifierText)}.`;
+      const sentence = translated
+        ? translated
+        : `In ${CHAPTER_TO_ORGAN_PLAIN[r.chapter] || `your ${r.chapter.toLowerCase()}`}, there is ${formatPlainSymptom(r.mainRubric, r.qualifierText)}.`;
+      return { sentence, groupKey };
     });
 
-    if (sentences.length === 1) return sentences[0];
+    if (items.length === 1) return items[0].sentence;
 
-    let story = sentences[0];
-    for (let i = 1; i < sentences.length; i++) {
-      const connector = STORY_CONNECTORS[(i - 1) % STORY_CONNECTORS.length];
-      const s = sentences[i];
-      const lowered = s.charAt(0).toLowerCase() + s.slice(1);
+    const usedSame = new Set();
+    const usedNew = new Set();
+    const usedSentences = new Set([items[0].sentence]);
+
+    let story = items[0].sentence;
+    for (let i = 1; i < items.length; i++) {
+      const { sentence, groupKey } = items[i];
+      if (usedSentences.has(sentence)) continue; // never say the exact same thing twice
+      usedSentences.add(sentence);
+
+      const sameTheme = groupKey === items[i - 1].groupKey;
+      const pool = sameTheme ? SAME_THEME_CONNECTORS : NEW_THEME_CONNECTORS;
+      const used = sameTheme ? usedSame : usedNew;
+      let connector = pool.find(c => !used.has(c));
+      if (!connector) {
+        // pool exhausted (unusually large case) — fall back to the other pool's unused entries
+        const otherPool = sameTheme ? NEW_THEME_CONNECTORS : SAME_THEME_CONNECTORS;
+        const otherUsed = sameTheme ? usedNew : usedSame;
+        connector = otherPool.find(c => !otherUsed.has(c)) || pool[0];
+      }
+      used.add(connector);
+
+      const lowered = sentence.charAt(0).toLowerCase() + sentence.slice(1);
       story += ` ${connector} ${lowered}`;
     }
     return story;
