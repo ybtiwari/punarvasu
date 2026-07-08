@@ -130,6 +130,7 @@
     const [id, path, remedyPairs] = record;
     const { chapter, mainRubric, qualifierText } = splitPath(path);
     const qualifierTags = classifyQualifiers(qualifierText);
+    const mechanismTags = (typeof classifyMechanisms === 'function') ? classifyMechanisms(path) : [];
     const remedyCount = remedyPairs.length;
     const rarity = classifyRarity(remedyCount);
 
@@ -154,6 +155,7 @@
       mainRubric,
       qualifierText,
       qualifierTags,
+      mechanismTags,
       totalRemedyCount: remedyCount,
       rarity,
       grade3RemedyCount: grade3Remedies.length,
@@ -238,8 +240,45 @@
   }
 
   // ---------------------------------------------------------------
-  // Public entry point
+  // Mechanism synthesis across the whole case
   // ---------------------------------------------------------------
+
+  const RARITY_WEIGHT = { rare: 3, uncommon: 1.5, common: 1 };
+
+  function synthesizeMechanismProfile(assembledRubrics, patientHistory) {
+    const scores = {}; // mechanism -> { weight, rubrics: Set }
+
+    for (const r of assembledRubrics) {
+      if (!r.found) continue;
+      const w = RARITY_WEIGHT[r.rarity] || 1;
+      for (const mech of r.mechanismTags) {
+        if (!scores[mech]) scores[mech] = { weight: 0, rubrics: new Set() };
+        scores[mech].weight += w;
+        scores[mech].rubrics.add(r.mainRubric || r.path);
+      }
+    }
+
+    const historyText = (patientHistory && (patientHistory.notes || patientHistory.freetext || '')) || '';
+    const comorbidityMechanisms = (typeof classifyComorbidityMechanisms === 'function')
+      ? classifyComorbidityMechanisms(historyText)
+      : [];
+    for (const mech of comorbidityMechanisms) {
+      if (!scores[mech]) scores[mech] = { weight: 0, rubrics: new Set() };
+      scores[mech].weight += 1; // background predisposition, lighter weight than a presenting rubric
+    }
+
+    const ranked = Object.entries(scores)
+      .map(([mechanism, data]) => ({
+        mechanism,
+        weight: Math.round(data.weight * 10) / 10,
+        supportingRubrics: Array.from(data.rubrics),
+        reinforcedByHistory: comorbidityMechanisms.includes(mechanism)
+      }))
+      .sort((a, b) => b.weight - a.weight);
+
+    return { ranked, comorbidityMechanisms };
+  }
+
 
   function assembleCaseNarrativeData(input) {
     const {
@@ -252,6 +291,7 @@
     const assembledRubrics = rubricIds.map(id => assembleRubric(id, prescribedRemedies));
     const affinityLinks = findAffinityLinks(assembledRubrics, affinityTable);
     const remedySummary = summarizeRemedies(assembledRubrics, prescribedRemedies);
+    const mechanismProfile = synthesizeMechanismProfile(assembledRubrics, patientHistory);
 
     const unresolvedRubrics = assembledRubrics.filter(r => !r.found).map(r => r.input);
 
@@ -260,6 +300,7 @@
       rubrics: assembledRubrics,
       affinityLinks,
       remedySummary,
+      mechanismProfile,
       patientHistory,
       warnings: unresolvedRubrics.length
         ? [`${unresolvedRubrics.length} rubric(s) could not be resolved: ${unresolvedRubrics.join('; ')}`]

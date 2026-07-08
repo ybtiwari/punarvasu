@@ -105,15 +105,47 @@
   }
 
   // ---------------------------------------------------------------
+  // Case-level synthesized pathophysiology
+  // ---------------------------------------------------------------
+
+  function buildMechanismSynthesisSection(assembledData) {
+    const profile = assembledData.mechanismProfile;
+    if (!profile || !profile.ranked || !profile.ranked.length) return null;
+    const top = profile.ranked.filter(m => m.weight > 0).slice(0, 6);
+    if (!top.length) return null;
+
+    const lines = top.map(m => {
+      const rubricsText = m.supportingRubrics.length
+        ? `driven by the rubric(s): ${m.supportingRubrics.join(', ')}`
+        : 'present only via patient history, with no directly selected rubric tagged to this mechanism';
+      const historyNote = m.reinforcedByHistory
+        ? ' This is also consistent with the patient\'s documented history, which independently predisposes toward this mechanism.'
+        : '';
+      return `${m.mechanism} (weight ${m.weight}) — ${rubricsText}.${historyNote}`;
+    });
+
+    lines.push(
+      'This mechanism ranking is a deterministic tally, not a diagnosis: each selected rubric was tagged against ' +
+      'a fixed pathophysiological taxonomy by keyword matching, weighted by how rare/characteristic the rubric is, ' +
+      'and combined with any comorbidities mentioned in patient history. Treat it as a synthesized hypothesis about ' +
+      'the case\'s underlying pattern for your own clinical judgment to confirm or override.'
+    );
+
+    return lines.join(' ');
+  }
+
+  // ---------------------------------------------------------------
   // Per-remedy section
   // ---------------------------------------------------------------
 
   function buildRemedySection(remedyAbbr, assembledData, remedyDB) {
     const content = remedyDB.remedies[remedyAbbr];
-    const remedySummary = assembledData.remedySummary.find(r => r.remedy === remedyAbbr);
     const relevantRubrics = assembledData.rubrics.filter(
       r => r.found && r.prescribedRemedyMatches.some(m => m.remedy === remedyAbbr)
     );
+    const rankedMechanisms = (assembledData.mechanismProfile && assembledData.mechanismProfile.ranked) || [];
+    const topMechanisms = rankedMechanisms.filter(m => m.weight > 0);
+    const topMechanismNames = new Set(topMechanisms.map(m => m.mechanism));
 
     if (!content) {
       return {
@@ -128,28 +160,45 @@
     const lines = [];
     lines.push(`${content.fullName} (${remedyAbbr}) — ${content.actionType} action. ${content.actionTypeNote}`);
 
-    // Match remedy's system affinities against systems actually present in this case
+    // Match remedy's system affinities against the CASE'S SYNTHESIZED MECHANISMS
+    // (not raw chapter overlap) — this is the connective-tissue step: does this
+    // remedy's own documented pathophysiology address the mechanism pattern the
+    // case's rubrics collectively point to, rather than just sharing a chapter label.
     const affinityMatches = [];
     for (const aff of content.systemAffinities) {
-      const rubricsInSystem = relevantRubrics.filter(r => systemForChapter(r.chapter) === aff.system);
-      if (rubricsInSystem.length) {
-        affinityMatches.push({ aff, rubricsInSystem });
-      }
+      const mechs = aff.mechanisms || [];
+      const overlap = mechs.filter(m => topMechanismNames.has(m));
+      if (overlap.length) affinityMatches.push({ aff, overlap });
     }
 
     if (affinityMatches.length) {
-      for (const { aff, rubricsInSystem } of affinityMatches) {
-        const evidence = rubricsInSystem.map(r => describeRubricEvidence(r, remedyAbbr)).join('; ');
+      for (const { aff, overlap } of affinityMatches) {
+        const evidenceRubricsSet = new Set();
+        const mechanismDescriptions = overlap.map(mech => {
+          const entry = topMechanisms.find(t => t.mechanism === mech);
+          if (entry) entry.supportingRubrics.forEach(r => evidenceRubricsSet.add(r));
+          const historyTag = entry && entry.reinforcedByHistory ? ', reinforced by patient history' : '';
+          return `${mech} (weight ${entry ? entry.weight : '?'}${historyTag})`;
+        }).join('; ');
+
+        const directEvidence = relevantRubrics
+          .filter(r => systemForChapter(r.chapter) === aff.system)
+          .map(r => describeRubricEvidence(r, remedyAbbr))
+          .filter(Boolean)
+          .join('; ');
+
         lines.push(
-          `${aff.system} affinity (rank ${aff.prominence} for this remedy): ${aff.pathophysiology} ` +
-          `Supported by: ${evidence}.`
+          `${aff.system} affinity (rank ${aff.prominence} for this remedy) matches the case's synthesized ${mechanismDescriptions} ` +
+          `pattern — driven in this case by: ${Array.from(evidenceRubricsSet).join(', ') || 'patient history'}. ${aff.pathophysiology}` +
+          (directEvidence ? ` Directly supported by the prescribed rubric(s): ${directEvidence}.` : '')
         );
       }
     } else {
+      const remedyMechanisms = [...new Set(content.systemAffinities.flatMap(a => a.mechanisms || []))];
       lines.push(
-        `Note: none of this remedy's documented system affinities (${content.systemAffinities.map(a => a.system).join(', ')}) ` +
-        `directly overlap with the chapters selected in this case (${[...new Set(relevantRubrics.map(r => r.chapter))].join(', ') || 'none'}). ` +
-        `Review whether the prescription rests on generals/constitutional grounds rather than the local rubrics captured here.`
+        `Note: none of this remedy's documented mechanisms (${remedyMechanisms.join(', ') || 'none tagged'}) overlap with ` +
+        `this case's synthesized pathophysiological pattern (${topMechanisms.map(m => m.mechanism).join(', ') || 'no dominant mechanism identified'}). ` +
+        `Review whether the prescription rests on generals/constitutional grounds rather than the mechanism pattern captured here.`
       );
     }
 
@@ -216,6 +265,7 @@
       buildRemedySection(abbr, assembledData, remedyDB)
     );
     const affinityText = buildAffinitySection(assembledData);
+    const mechanismSynthesisText = buildMechanismSynthesisSection(assembledData);
 
     const chaptersInvolved = [...new Set(assembledData.rubrics.filter(r => r.found).map(r => r.chapter))];
     const overviewText =
@@ -235,6 +285,7 @@
 
     const sections = [
       { title: 'Case Overview', text: overviewText },
+      mechanismSynthesisText ? { title: 'Synthesized Pathophysiology', text: mechanismSynthesisText } : null,
       ...remedySections.map(s => ({ title: `Remedy: ${s.remedy}`, text: s.text, available: s.available })),
       affinityText ? { title: 'Cross-Rubric Correlation', text: affinityText } : null,
       historyText ? { title: 'Patient History', text: historyText } : null,
