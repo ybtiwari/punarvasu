@@ -27,6 +27,14 @@ p.step-sub{font-size:13px;color:var(--ink3);margin-bottom:14px}
 .search-box{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;margin-bottom:12px;font-family:var(--font)}
 .option-group{margin-bottom:16px}
 .option-group-label{font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px}
+.collapsible-section{margin-bottom:10px;border:1.5px solid var(--border);border-radius:10px;overflow:hidden}
+.collapsible-header{display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;background:var(--cream);user-select:none}
+.collapsible-header:hover{background:var(--amber-bg)}
+.collapsible-arrow{font-size:11px;color:var(--teal);transition:transform .15s;display:inline-block}
+.collapsible-arrow.open{transform:rotate(90deg)}
+.collapsible-label{font-size:12.5px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.03em;flex:1}
+.collapsible-count{font-size:11px;color:var(--ink3)}
+.collapsible-body{padding:10px 10px 2px}
 .opt-card{border:1.5px solid var(--border);border-radius:10px;padding:11px 12px;margin-bottom:8px;cursor:pointer;background:var(--white);transition:all .12s}
 .opt-card:hover{border-color:var(--teal)}
 .opt-card .en{font-size:14px;font-weight:600;color:var(--ink)}
@@ -138,9 +146,22 @@ function lookupTranslation(chapter, path, table) {
   return bucket[path] || null;
 }
 
+function safeGlobalLookup(varName) {
+  // Same defensive pattern as the earlier EMBEDDED_DATA scoping fix: a bare
+  // reference works for let/const globals declared in another <script> tag,
+  // but NOT via window[name] — so try bare reference first (per known name),
+  // then fall back to window[] for var-style globals.
+  try {
+    if (varName === 'TRANSLATIONS_ENGLISH' && typeof TRANSLATIONS_ENGLISH !== 'undefined') return TRANSLATIONS_ENGLISH;
+    if (varName === 'TRANSLATIONS_HINDI' && typeof TRANSLATIONS_HINDI !== 'undefined') return TRANSLATIONS_HINDI;
+    if (varName === 'ROMANIZED_HINDI' && typeof ROMANIZED_HINDI !== 'undefined') return ROMANIZED_HINDI;
+  } catch (e) { /* not defined via bare reference in this scope */ }
+  return window[varName]; // fallback for var-style globals
+}
+
 function getDisplayText(chapter, path, fallbackToken) {
-  const en = lookupTranslation(chapter, path, (typeof TRANSLATIONS_ENGLISH !== 'undefined') ? TRANSLATIONS_ENGLISH : null);
-  const hi = lookupTranslation(chapter, path, (typeof TRANSLATIONS_HINDI !== 'undefined') ? TRANSLATIONS_HINDI : null);
+  const en = lookupTranslation(chapter, path, safeGlobalLookup('TRANSLATIONS_ENGLISH'));
+  const hi = lookupTranslation(chapter, path, safeGlobalLookup('TRANSLATIONS_HINDI'));
   return {
     en: (en && en.plain) || fallbackToken,
     hi: (hi && hi.plain) || ''
@@ -252,6 +273,30 @@ function renderChapterSelect() {
 
 let searchFilter = '';
 let showAllOptions = false;
+let collapsedGroups = {}; // { groupLabel: true/false } — true = collapsed. Reusable pattern.
+
+// Reusable collapsible-section renderer — used for option groups here, and
+// intended for reuse anywhere else in the app that needs the same
+// collapsed-by-default, tap-to-expand-and-collapse-again behavior.
+function renderCollapsibleSection(groupKey, label, countLabel, innerHtml) {
+  const isCollapsed = collapsedGroups[groupKey] !== false; // collapsed by default
+  return `
+    <div class="collapsible-section">
+      <div class="collapsible-header" onclick="onToggleGroup('${escAttr(groupKey)}')">
+        <span class="collapsible-arrow ${isCollapsed ? '' : 'open'}">&#9656;</span>
+        <span class="collapsible-label">${esc(label)}</span>
+        <span class="collapsible-count">${esc(countLabel)}</span>
+      </div>
+      ${!isCollapsed ? `<div class="collapsible-body">${innerHtml}</div>` : ''}
+    </div>
+  `;
+}
+
+function onToggleGroup(groupKey) {
+  const currentlyCollapsed = collapsedGroups[groupKey] !== false; // undefined or true = collapsed
+  collapsedGroups[groupKey] = !currentlyCollapsed;
+  render();
+}
 
 function renderWalkStep() {
   const pathTokens = state.currentWalk.pathTokens;
@@ -285,20 +330,18 @@ function renderWalkStep() {
     </div>`;
   }
 
-  const groupsHtml = Object.entries(grouped).map(([kind, opts]) => `
-    <div class="option-group">
-      <div class="option-group-label">${esc(kind)}</div>
-      ${opts.map(([token, info]) => {
-        const optPath = pathTokens.concat([token]).join(', ');
-        const disp = getDisplayText(chapter, optPath, token);
-        return `<div class="opt-card" onclick="onOptionPick('${escAttr(token)}')">
-          <div class="en">${esc(disp.en)}</div>
-          ${disp.hi ? `<div class="hi">${esc(disp.hi)}</div>` : ''}
-          <div class="meta">${info.rubricCount} sub-option(s) · ${info.totalRemedies} remedy-references</div>
-        </div>`;
-      }).join('')}
-    </div>
-  `).join('');
+  const groupsHtml = Object.entries(grouped).map(([kind, opts]) => {
+    const inner = opts.map(([token, info]) => {
+      const optPath = pathTokens.concat([token]).join(', ');
+      const disp = getDisplayText(chapter, optPath, token);
+      return `<div class="opt-card" onclick="onOptionPick('${escAttr(token)}')">
+        <div class="en">${esc(disp.en)}</div>
+        ${disp.hi ? `<div class="hi">${esc(disp.hi)}</div>` : ''}
+        <div class="meta">${info.rubricCount} sub-option(s) &middot; ${info.totalRemedies} remedy-references</div>
+      </div>`;
+    }).join('');
+    return renderCollapsibleSection(chapter + '::' + kind, kind, opts.length + ' option(s)', inner);
+  }).join('');
 
   const showAllLink = (!showAllOptions && totalCount > 15)
     ? `<div class="show-all-link" onclick="onShowAllOptions()">Show all ${totalCount} options</div>` : '';
@@ -366,6 +409,7 @@ function onChapterPick(chapter) {
   state.currentWalk = { pathTokens: [chapter] };
   searchFilter = '';
   showAllOptions = false;
+  collapsedGroups = {};
   state.screen = 'walk';
   render();
 }
@@ -374,6 +418,7 @@ function onOptionPick(token) {
   state.currentWalk.pathTokens.push(token);
   searchFilter = '';
   showAllOptions = false;
+  collapsedGroups = {};
   render();
 }
 
@@ -385,6 +430,7 @@ function onWalkBack() {
   }
   searchFilter = '';
   showAllOptions = false;
+  collapsedGroups = {};
   render();
 }
 
@@ -417,6 +463,7 @@ function onConnectorAccept(connectedChapter) {
   state.currentWalk = { pathTokens: [connectedChapter] };
   searchFilter = '';
   showAllOptions = false;
+  collapsedGroups = {};
   state.screen = 'walk';
   render();
 }
