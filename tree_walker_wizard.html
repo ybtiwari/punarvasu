@@ -35,6 +35,11 @@ p.step-sub{font-size:13px;color:var(--ink3);margin-bottom:14px}
 .collapsible-label{font-size:12.5px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.03em;flex:1}
 .collapsible-count{font-size:11px;color:var(--ink3)}
 .collapsible-body{padding:10px 10px 2px}
+.selected-node{margin-bottom:2px}
+.selected-node-header{display:flex;align-items:center;gap:8px;padding:9px 10px;cursor:pointer;background:#F0F7F4;border:1.5px solid var(--teal);border-radius:8px}
+.selected-node-header:hover{background:#E4F1EC}
+.selected-node-text .en{font-size:13.5px;font-weight:600;color:var(--teal)}
+.selected-node-text .hi{font-size:12px;color:var(--ink2);margin-top:1px}
 .opt-card{border:1.5px solid var(--border);border-radius:10px;padding:11px 12px;margin-bottom:8px;cursor:pointer;background:var(--white);transition:all .12s}
 .opt-card:hover{border-color:var(--teal)}
 .opt-card .en{font-size:14px;font-weight:600;color:var(--ink)}
@@ -160,8 +165,15 @@ function safeGlobalLookup(varName) {
 }
 
 function getDisplayText(chapter, path, fallbackToken) {
-  const en = lookupTranslation(chapter, path, safeGlobalLookup('TRANSLATIONS_ENGLISH'));
-  const hi = lookupTranslation(chapter, path, safeGlobalLookup('TRANSLATIONS_HINDI'));
+  const enTable = safeGlobalLookup('TRANSLATIONS_ENGLISH');
+  const hiTable = safeGlobalLookup('TRANSLATIONS_HINDI');
+  if (!enTable) console.error('[wizard] TRANSLATIONS_ENGLISH is not accessible — check that repertory_translations_english.js loaded without error (Network tab / Console for a script error).');
+  if (!hiTable) console.error('[wizard] TRANSLATIONS_HINDI is not accessible — check that repertory_translations_hindi.js loaded without error.');
+
+  const en = lookupTranslation(chapter, path, enTable);
+  const hi = lookupTranslation(chapter, path, hiTable);
+  if (enTable && !en) console.warn('[wizard] No English translation on file for path:', path);
+  if (hiTable && !hi) console.warn('[wizard] No Hindi translation on file for path:', path);
   return {
     en: (en && en.plain) || fallbackToken,
     hi: (hi && hi.plain) || ''
@@ -301,6 +313,53 @@ function onToggleGroup(groupKey) {
 function renderWalkStep() {
   const pathTokens = state.currentWalk.pathTokens;
   const chapter = pathTokens[0];
+
+  // Render every already-made selection (depth 1 .. end) as a static, indented,
+  // individually-collapsible row — this is the persistent history the patient
+  // asked for. Each row gets its own expand/collapse arrow. Collapsing a row
+  // only hides what's visually nested under it; it never removes the underlying
+  // selection (pathTokens itself is untouched by collapsing).
+  let historyHtml = '';
+  let stoppedAtCollapsedDepth = -1;
+
+  for (let depth = 1; depth < pathTokens.length; depth++) {
+    const tokenAtDepth = pathTokens[depth];
+    const pathUpToHere = pathTokens.slice(0, depth + 1).join(', ');
+    const disp = getDisplayText(chapter, pathUpToHere, tokenAtDepth);
+    const indent = (depth - 1) * 14;
+    const nodeKey = 'selectedNode::' + pathUpToHere;
+    const isCollapsed = collapsedGroups[nodeKey] === true; // selected nodes default OPEN
+
+    historyHtml += `
+      <div class="selected-node" style="margin-left:${indent}px">
+        <div class="selected-node-header" onclick="onToggleGroup('${escAttr(nodeKey)}')">
+          <span class="collapsible-arrow ${isCollapsed ? '' : 'open'}">&#9656;</span>
+          <div class="selected-node-text">
+            <div class="en">${esc(disp.en)}</div>
+            ${disp.hi ? `<div class="hi">${esc(disp.hi)}</div>` : ''}
+          </div>
+        </div>
+      </div>`;
+
+    if (isCollapsed) { stoppedAtCollapsedDepth = depth; break; }
+  }
+
+  // If the path was cut short by a collapsed node, nothing further renders below it.
+  if (stoppedAtCollapsedDepth !== -1) {
+    return `
+      ${renderTopbar('Guided Case Wizard', chapter)}
+      ${renderBreadcrumb()}
+      <div class="body">
+        <button class="back-btn" onclick="onWalkBack()">&larr; Back</button>
+        <h2 class="step-title">Choose what applies</h2>
+        ${historyHtml}
+      </div>
+    `;
+  }
+
+  // Live, interactive options at the current deepest level — same logic as
+  // before, just now indented to sit visually under the selection history.
+  const liveIndent = (pathTokens.length - 1) * 14;
   const { exactMatchRubric, nextOptions } = getNextOptions(pathTokens);
 
   let entries = Object.entries(nextOptions);
@@ -312,7 +371,6 @@ function renderWalkStep() {
   const totalCount = entries.length;
   const displayEntries = showAllOptions ? entries : entries.slice(0, 15);
 
-  // Group by cosmetic kind for display
   const grouped = {};
   for (const [token, info] of displayEntries) {
     const kind = classifyOptionKind(token);
@@ -340,7 +398,7 @@ function renderWalkStep() {
         <div class="meta">${info.rubricCount} sub-option(s) &middot; ${info.totalRemedies} remedy-references</div>
       </div>`;
     }).join('');
-    return renderCollapsibleSection(chapter + '::' + kind, kind, opts.length + ' option(s)', inner);
+    return renderCollapsibleSection(chapter + '::' + pathTokens.join(',') + '::' + kind, kind, opts.length + ' option(s)', inner);
   }).join('');
 
   const showAllLink = (!showAllOptions && totalCount > 15)
@@ -355,11 +413,14 @@ function renderWalkStep() {
       <button class="back-btn" onclick="onWalkBack()">&larr; Back</button>
       <h2 class="step-title">Choose what applies</h2>
       <p class="step-sub">Select one to go more specific, or use "This describes it" to stop here.</p>
-      ${totalCount > 8 ? `<input class="search-box" type="text" placeholder="Search these options…" value="${escAttr(searchFilter)}" oninput="onSearchFilterChange(this.value)">` : ''}
-      ${stopHereHtml}
-      ${noMoreOptions && !exactMatchRubric ? `<div class="empty-state">No further detail on file for this exact combination.</div>` : ''}
-      ${groupsHtml}
-      ${showAllLink}
+      ${historyHtml}
+      <div style="margin-left:${liveIndent}px">
+        ${totalCount > 8 ? `<input class="search-box" type="text" placeholder="Search these options…" value="${escAttr(searchFilter)}" oninput="onSearchFilterChange(this.value)">` : ''}
+        ${stopHereHtml}
+        ${noMoreOptions && !exactMatchRubric ? `<div class="empty-state">No further detail on file for this exact combination.</div>` : ''}
+        ${groupsHtml}
+        ${showAllLink}
+      </div>
     </div>
   `;
 }
