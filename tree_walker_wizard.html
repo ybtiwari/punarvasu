@@ -38,12 +38,14 @@ p.step-sub{font-size:13px;color:var(--ink3);margin-bottom:14px}
 .selected-node{margin-bottom:2px}
 .selected-node-header{display:flex;align-items:center;gap:8px;padding:9px 10px;cursor:pointer;background:#F0F7F4;border:1.5px solid var(--teal);border-radius:8px}
 .selected-node-header:hover{background:#E4F1EC}
-.selected-node-text .en{font-size:13.5px;font-weight:600;color:var(--teal)}
-.selected-node-text .hi{font-size:12px;color:var(--ink2);margin-top:1px}
+.selected-node-text .kent{font-size:13.5px;font-weight:700;color:var(--teal)}
+.selected-node-text .en{font-size:12px;color:var(--ink2);margin-top:1px}
+.selected-node-text .hi{font-size:11.5px;color:var(--ink3);margin-top:1px}
 .opt-card{border:1.5px solid var(--border);border-radius:10px;padding:11px 12px;margin-bottom:8px;cursor:pointer;background:var(--white);transition:all .12s}
 .opt-card:hover{border-color:var(--teal)}
-.opt-card .en{font-size:14px;font-weight:600;color:var(--ink)}
-.opt-card .hi{font-size:12.5px;color:var(--ink3);margin-top:1px}
+.opt-card .kent{font-size:14px;font-weight:700;color:var(--ink)}
+.opt-card .en{font-size:12.5px;color:var(--ink2);margin-top:2px}
+.opt-card .hi{font-size:12px;color:var(--ink3);margin-top:1px}
 .opt-card .meta{font-size:10.5px;color:var(--ink3);margin-top:3px}
 .chapter-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .ch-card{border:1.5px solid var(--border);border-radius:10px;padding:11px 6px;cursor:pointer;background:var(--white);text-align:center;transition:all .12s}
@@ -52,8 +54,9 @@ p.step-sub{font-size:13px;color:var(--ink3);margin-bottom:14px}
 .ch-card .hi{font-size:10.5px;color:var(--ink3);margin-top:1px}
 .stop-here-card{border:1.5px solid var(--teal);background:#F0F7F4;border-radius:10px;padding:12px;margin-bottom:16px;cursor:pointer}
 .stop-here-card .label{font-size:11px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.03em}
-.stop-here-card .en{font-size:14px;font-weight:600;margin-top:3px}
-.stop-here-card .hi{font-size:12.5px;color:var(--ink2);margin-top:1px}
+.stop-here-card .kent{font-size:14px;font-weight:700;margin-top:3px}
+.stop-here-card .en{font-size:12.5px;color:var(--ink2);margin-top:2px}
+.stop-here-card .hi{font-size:12px;color:var(--ink3);margin-top:1px}
 .footer-bar{position:sticky;bottom:0;background:white;border-top:1px solid var(--border);padding:10px 16px;display:flex;gap:10px;flex-shrink:0}
 .btn-primary{background:var(--teal);color:white;border:none;border-radius:8px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;width:100%}
 .btn-outline{background:none;border:1.5px solid var(--border);border-radius:8px;padding:10px 16px;font-size:13px;color:var(--ink2);cursor:pointer;width:100%}
@@ -164,7 +167,15 @@ function safeGlobalLookup(varName) {
   return window[varName]; // fallback for var-style globals
 }
 
-function getDisplayText(chapter, path, fallbackToken) {
+function renderTrilingualBlock(disp) {
+  return `
+    <div class="kent">${esc(disp.kent)}</div>
+    ${disp.en ? `<div class="en">${esc(disp.en)}</div>` : ''}
+    ${disp.hi ? `<div class="hi">${esc(disp.hi)}</div>` : ''}
+  `;
+}
+
+function getDisplayText(chapter, path, kentToken) {
   const enTable = safeGlobalLookup('TRANSLATIONS_ENGLISH');
   const hiTable = safeGlobalLookup('TRANSLATIONS_HINDI');
   if (!enTable) console.error('[wizard] TRANSLATIONS_ENGLISH is not accessible — check that repertory_translations_english.js loaded without error (Network tab / Console for a script error).');
@@ -175,8 +186,9 @@ function getDisplayText(chapter, path, fallbackToken) {
   if (enTable && !en) console.warn('[wizard] No English translation on file for path:', path);
   if (hiTable && !hi) console.warn('[wizard] No Hindi translation on file for path:', path);
   return {
-    en: (en && en.plain) || fallbackToken,
-    hi: (hi && hi.plain) || ''
+    kent: kentToken,             // Kent's original term — always shown, never replaced
+    en: (en && en.plain) || '',  // plain English — blank only if genuinely no translation exists
+    hi: (hi && hi.plain) || ''   // Hindi — blank only if genuinely no translation exists
   };
 }
 
@@ -305,7 +317,26 @@ function renderCollapsibleSection(groupKey, label, countLabel, innerHtml) {
 }
 
 function onToggleGroup(groupKey) {
-  const currentlyCollapsed = collapsedGroups[groupKey] !== false; // undefined or true = collapsed
+  const currentlyCollapsed = collapsedGroups[groupKey] !== false;
+  const willExpand = currentlyCollapsed;
+
+  // Accordion behavior: expanding a live option-group ("What it feels like",
+  // "Other details", etc.) auto-collapses its sibling groups at the same step,
+  // making room for it. This does NOT apply to selectedNode history rows —
+  // those are sequential/nested, not mutually-exclusive alternatives, so each
+  // toggles independently.
+  if (willExpand && !groupKey.startsWith('selectedNode::')) {
+    const lastSep = groupKey.lastIndexOf('::');
+    if (lastSep !== -1) {
+      const scopePrefix = groupKey.slice(0, lastSep + 2); // same step, up to and including the final '::'
+      for (const key in collapsedGroups) {
+        if (key !== groupKey && key.startsWith(scopePrefix) && !key.startsWith('selectedNode::')) {
+          collapsedGroups[key] = true; // force-collapse sibling groups
+        }
+      }
+    }
+  }
+
   collapsedGroups[groupKey] = !currentlyCollapsed;
   render();
 }
@@ -335,8 +366,7 @@ function renderWalkStep() {
         <div class="selected-node-header" onclick="onToggleGroup('${escAttr(nodeKey)}')">
           <span class="collapsible-arrow ${isCollapsed ? '' : 'open'}">&#9656;</span>
           <div class="selected-node-text">
-            <div class="en">${esc(disp.en)}</div>
-            ${disp.hi ? `<div class="hi">${esc(disp.hi)}</div>` : ''}
+            ${renderTrilingualBlock(disp)}
           </div>
         </div>
       </div>`;
@@ -383,8 +413,7 @@ function renderWalkStep() {
     const disp = getDisplayText(chapter, exactMatchRubric.path, pathTokens[pathTokens.length - 1]);
     stopHereHtml = `<div class="stop-here-card" onclick="onAddRubric('${exactMatchRubric.id}', '${escAttr(exactMatchRubric.path)}', ${exactMatchRubric.remedyCount})">
       <div class="label">This describes it</div>
-      <div class="en">${esc(disp.en)}</div>
-      ${disp.hi ? `<div class="hi">${esc(disp.hi)}</div>` : ''}
+      ${renderTrilingualBlock(disp)}
     </div>`;
   }
 
@@ -393,8 +422,7 @@ function renderWalkStep() {
       const optPath = pathTokens.concat([token]).join(', ');
       const disp = getDisplayText(chapter, optPath, token);
       return `<div class="opt-card" onclick="onOptionPick('${escAttr(token)}')">
-        <div class="en">${esc(disp.en)}</div>
-        ${disp.hi ? `<div class="hi">${esc(disp.hi)}</div>` : ''}
+        ${renderTrilingualBlock(disp)}
         <div class="meta">${info.rubricCount} sub-option(s) &middot; ${info.totalRemedies} remedy-references</div>
       </div>`;
     }).join('');
