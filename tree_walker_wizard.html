@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Punarvasu — Guided Case Wizard</title>
+<style>
+:root{
+  --teal:#1C6B5A;--teal2:#2E7D32;--amber:#C8600A;--amber-bg:#FDF3E8;
+  --ink:#1a1a1a;--ink2:#444;--ink3:#888;
+  --border:#e0e0e0;--white:#fff;--cream:#f7f5f0;--bg:#f2f0eb;
+  --success:#2E7D32;--danger:#c0392b;
+  --font:'Source Sans 3','Noto Sans Devanagari',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh}
+.app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--white);display:flex;flex-direction:column}
+.topbar{background:var(--teal);color:white;padding:14px 16px;flex-shrink:0}
+.topbar h1{font-size:16px;font-weight:700}
+.topbar .sub{font-size:11.5px;opacity:.85;margin-top:2px}
+.breadcrumb{padding:10px 16px 0;font-size:12px;color:var(--ink3);display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.breadcrumb .seg{background:var(--cream);border:1px solid var(--border);border-radius:12px;padding:2px 10px}
+.body{flex:1;overflow-y:auto;padding:16px}
+.back-btn{font-size:13px;font-weight:600;color:var(--teal);background:none;border:none;cursor:pointer;padding:0 0 10px;display:block}
+h2.step-title{font-size:17px;font-weight:700;margin-bottom:4px}
+p.step-sub{font-size:13px;color:var(--ink3);margin-bottom:14px}
+.search-box{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;margin-bottom:12px;font-family:var(--font)}
+.option-group{margin-bottom:16px}
+.option-group-label{font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px}
+.opt-card{border:1.5px solid var(--border);border-radius:10px;padding:11px 12px;margin-bottom:8px;cursor:pointer;background:var(--white);transition:all .12s}
+.opt-card:hover{border-color:var(--teal)}
+.opt-card .en{font-size:14px;font-weight:600;color:var(--ink)}
+.opt-card .hi{font-size:12.5px;color:var(--ink3);margin-top:1px}
+.opt-card .meta{font-size:10.5px;color:var(--ink3);margin-top:3px}
+.chapter-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ch-card{border:1.5px solid var(--border);border-radius:10px;padding:11px 6px;cursor:pointer;background:var(--white);text-align:center;transition:all .12s}
+.ch-card:hover{border-color:var(--amber);background:var(--amber-bg)}
+.ch-card .en{font-size:12px;font-weight:600}
+.ch-card .hi{font-size:10.5px;color:var(--ink3);margin-top:1px}
+.stop-here-card{border:1.5px solid var(--teal);background:#F0F7F4;border-radius:10px;padding:12px;margin-bottom:16px;cursor:pointer}
+.stop-here-card .label{font-size:11px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.03em}
+.stop-here-card .en{font-size:14px;font-weight:600;margin-top:3px}
+.stop-here-card .hi{font-size:12.5px;color:var(--ink2);margin-top:1px}
+.footer-bar{position:sticky;bottom:0;background:white;border-top:1px solid var(--border);padding:10px 16px;display:flex;gap:10px;flex-shrink:0}
+.btn-primary{background:var(--teal);color:white;border:none;border-radius:8px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;width:100%}
+.btn-outline{background:none;border:1.5px solid var(--border);border-radius:8px;padding:10px 16px;font-size:13px;color:var(--ink2);cursor:pointer;width:100%}
+.btn-outline.danger{color:var(--danger);border-color:#f2c4bd}
+.case-item{border:1.5px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;position:relative}
+.case-item .path-en{font-size:13.5px;font-weight:600}
+.case-item .path-hi{font-size:12px;color:var(--ink3);margin-top:2px}
+.case-item .remedy-count{font-size:10.5px;color:var(--ink3);margin-top:4px}
+.case-item .remove-btn{position:absolute;top:10px;right:10px;font-size:11px;color:var(--danger);background:none;border:none;cursor:pointer}
+.empty-state{text-align:center;padding:40px 16px;color:var(--ink3)}
+.loading{text-align:center;padding:60px 16px}
+.load-bar{width:220px;height:4px;background:var(--border);border-radius:2px;margin:16px auto 0;overflow:hidden}
+.load-anim{height:100%;background:var(--teal);border-radius:2px;animation:la 2s ease-in-out infinite}
+@keyframes la{0%{transform:translateX(-100%)}100%{transform:translateX(320%)}}
+.show-all-link{font-size:12.5px;color:var(--teal);text-align:center;padding:8px;cursor:pointer;font-weight:600}
+.connector-box{border:1.5px solid var(--amber);background:var(--amber-bg);border-radius:10px;padding:14px;margin-bottom:14px}
+.connector-box .label{font-size:11px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px}
+.connector-box p{font-size:13.5px;color:var(--ink2);line-height:1.4}
+input[type=text]{font-family:var(--font)}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="loading">
+    <p style="font-size:14px;color:var(--ink3)">Loading repertory data…</p>
+    <div class="load-bar"><div class="load-anim"></div></div>
+  </div>
+</div>
+
+<script src="repertory_data.js"></script>
+<script src="repertory_translations_english.js"></script>
+<script src="repertory_translations_hindi.js"></script>
+<script src="repertory_translations_hindi_romanized.js"></script>
+
+<script>
+'use strict';
+
+// =================================================================
+// STATE
+// =================================================================
+const state = {
+  screen: 'loading',           // loading | chapters | walk | connectorPrompt | caseReview
+  currentWalk: { pathTokens: [] },
+  completeCase: [],            // [{ rubricId, path, remedyCount }]
+  connectorQueue: [],          // pending optional connector suggestions to show
+  data: {
+    chaptersBucketed: null,    // { chapterName: [[id,path,remedies], ...] }
+    connectorMap: null,        // { rubricId: [{connectedChapter, connectorType}] }
+    chapterList: []
+  }
+};
+
+// =================================================================
+// DATA LOADING & INDEXING
+// =================================================================
+async function initData() {
+  // EMBEDDED_DATA comes from repertory_data.js (script tag, top-level const —
+  // accessed here by bare reference since that's visible across classic scripts
+  // on the same page regardless of var/let/const, as established earlier)
+  const rubrics = EMBEDDED_DATA.rubrics;
+
+  const buckets = {};
+  for (const rubric of rubrics) {
+    const chapter = rubric[1].split(',')[0].trim();
+    if (!buckets[chapter]) buckets[chapter] = [];
+    buckets[chapter].push(rubric);
+  }
+  state.data.chaptersBucketed = buckets;
+  state.data.chapterList = Object.keys(buckets).sort();
+
+  try {
+    const res = await fetch('connector_map.json');
+    state.data.connectorMap = await res.json();
+  } catch (e) {
+    console.warn('connector_map.json not found — connector suggestions disabled.');
+    state.data.connectorMap = {};
+  }
+
+  state.screen = 'chapters';
+  render();
+}
+
+// =================================================================
+// CORE ENGINE
+// =================================================================
+function slugifyChapter(chapter) {
+  if (chapter === 'Heart & Circulation') return 'heart-and-circulation';
+  return chapter.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+function lookupTranslation(chapter, path, table) {
+  if (!table) return null;
+  const bucket = table[slugifyChapter(chapter)];
+  if (!bucket) return null;
+  return bucket[path] || null;
+}
+
+function getDisplayText(chapter, path, fallbackToken) {
+  const en = lookupTranslation(chapter, path, (typeof TRANSLATIONS_ENGLISH !== 'undefined') ? TRANSLATIONS_ENGLISH : null);
+  const hi = lookupTranslation(chapter, path, (typeof TRANSLATIONS_HINDI !== 'undefined') ? TRANSLATIONS_HINDI : null);
+  return {
+    en: (en && en.plain) || fallbackToken,
+    hi: (hi && hi.plain) || ''
+  };
+}
+
+// Core primitive — validated against live data before this build began.
+// Given a partial path (array of tokens starting with the chapter), returns:
+//   exactMatchRubric — the rubric AT exactly this path, if one exists
+//   nextOptions      — { token: { rubricCount, totalRemedies, sampleId, samplePath } }
+function getNextOptions(pathTokens) {
+  const chapter = pathTokens[0];
+  const bucket = state.data.chaptersBucketed[chapter] || [];
+  const prefixLower = pathTokens.map(t => t.toLowerCase());
+
+  let exactMatchRubric = null;
+  const nextOptions = {};
+
+  for (const [id, path, remedies] of bucket) {
+    const rParts = path.split(',').map(s => s.trim());
+    if (rParts.length < prefixLower.length) continue;
+    let isPrefix = true;
+    for (let i = 0; i < prefixLower.length; i++) {
+      if (rParts[i].toLowerCase() !== prefixLower[i]) { isPrefix = false; break; }
+    }
+    if (!isPrefix) continue;
+
+    if (rParts.length === prefixLower.length) {
+      exactMatchRubric = { id, path, remedyCount: remedies.length };
+      continue;
+    }
+    const nextToken = rParts[pathTokens.length];
+    if (!nextOptions[nextToken]) {
+      nextOptions[nextToken] = { rubricCount: 0, totalRemedies: 0, sampleId: id, samplePath: path };
+    }
+    nextOptions[nextToken].rubricCount++;
+    nextOptions[nextToken].totalRemedies += remedies.length;
+  }
+
+  return { exactMatchRubric, nextOptions };
+}
+
+// Soft, cosmetic-only classification of an option token, purely to group same-kind
+// options under a heading. Never used to hide or filter — every option from
+// getNextOptions is always shown somewhere.
+const SENSATION_RE = /\b(pain|ache|burning|stitching|cutting|tearing|throbbing|pressing|drawing|numbness|itching|heaviness|constriction|tension)\b/i;
+const TIMING_RE = /\b(morning|forenoon|noon|afternoon|evening|night|midnight|before|after|during|periodic|every|annually|monthly|daily|hourly)\b/i;
+const MODALITY_RE = /\b(agg|amel|better|worse|from|during|while|motion|rest|touch|pressure|warm|cold|damp|eating|lying|standing|sitting)\b/i;
+const LATERALITY_RE = /\b(right|left|one side|alternating sides|side to side)\b/i;
+
+function classifyOptionKind(token) {
+  if (SENSATION_RE.test(token)) return 'What it feels like';
+  if (TIMING_RE.test(token)) return 'When it happens';
+  if (MODALITY_RE.test(token)) return 'What affects it';
+  if (LATERALITY_RE.test(token)) return 'Which side';
+  return 'Other details';
+}
+
+// =================================================================
+// RENDER
+// =================================================================
+function render() {
+  const app = document.getElementById('app');
+  if (state.screen === 'loading') app.innerHTML = renderLoading();
+  else if (state.screen === 'chapters') app.innerHTML = renderChapterSelect();
+  else if (state.screen === 'walk') app.innerHTML = renderWalkStep();
+  else if (state.screen === 'connectorPrompt') app.innerHTML = renderConnectorPrompt();
+  else if (state.screen === 'caseReview') app.innerHTML = renderCaseReview();
+}
+
+function renderLoading() {
+  return `<div class="loading"><p style="font-size:14px;color:var(--ink3)">Loading repertory data…</p>
+    <div class="load-bar"><div class="load-anim"></div></div></div>`;
+}
+
+function renderTopbar(title, sub) {
+  return `<div class="topbar"><h1>${title}</h1><div class="sub">${sub}</div></div>`;
+}
+
+function renderBreadcrumb() {
+  if (!state.currentWalk.pathTokens.length) return '';
+  const segs = state.currentWalk.pathTokens.map(t => `<span class="seg">${esc(t)}</span>`).join('');
+  return `<div class="breadcrumb">${segs}</div>`;
+}
+
+function renderChapterSelect() {
+  const cards = state.data.chapterList.map(ch => {
+    const disp = getDisplayText(ch, ch, ch);
+    return `<div class="ch-card" onclick="onChapterPick('${escAttr(ch)}')">
+      <div class="en">${esc(ch)}</div>
+      ${disp.hi ? `<div class="hi">${esc(disp.hi.slice(0,20))}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  const caseCount = state.completeCase.length;
+
+  return `
+    ${renderTopbar('Guided Case Wizard', 'Select what is troubling the patient')}
+    <div class="body">
+      <h2 class="step-title">Where is the main problem, or what kind of problem is it?</h2>
+      <p class="step-sub">Pick the one that best matches — you can add more complaints after this one.</p>
+      <div class="chapter-grid">${cards}</div>
+    </div>
+    ${caseCount ? `<div class="footer-bar">
+      <button class="btn-outline" onclick="goToCaseReview()">Review case (${caseCount} added)</button>
+    </div>` : ''}
+  `;
+}
+
+let searchFilter = '';
+let showAllOptions = false;
+
+function renderWalkStep() {
+  const pathTokens = state.currentWalk.pathTokens;
+  const chapter = pathTokens[0];
+  const { exactMatchRubric, nextOptions } = getNextOptions(pathTokens);
+
+  let entries = Object.entries(nextOptions);
+  if (searchFilter) {
+    entries = entries.filter(([token]) => token.toLowerCase().includes(searchFilter.toLowerCase()));
+  }
+  entries.sort((a, b) => b[1].rubricCount - a[1].rubricCount);
+
+  const totalCount = entries.length;
+  const displayEntries = showAllOptions ? entries : entries.slice(0, 15);
+
+  // Group by cosmetic kind for display
+  const grouped = {};
+  for (const [token, info] of displayEntries) {
+    const kind = classifyOptionKind(token);
+    if (!grouped[kind]) grouped[kind] = [];
+    grouped[kind].push([token, info]);
+  }
+
+  let stopHereHtml = '';
+  if (exactMatchRubric) {
+    const disp = getDisplayText(chapter, exactMatchRubric.path, pathTokens[pathTokens.length - 1]);
+    stopHereHtml = `<div class="stop-here-card" onclick="onAddRubric('${exactMatchRubric.id}', '${escAttr(exactMatchRubric.path)}', ${exactMatchRubric.remedyCount})">
+      <div class="label">This describes it</div>
+      <div class="en">${esc(disp.en)}</div>
+      ${disp.hi ? `<div class="hi">${esc(disp.hi)}</div>` : ''}
+    </div>`;
+  }
+
+  const groupsHtml = Object.entries(grouped).map(([kind, opts]) => `
+    <div class="option-group">
+      <div class="option-group-label">${esc(kind)}</div>
+      ${opts.map(([token, info]) => {
+        const optPath = pathTokens.concat([token]).join(', ');
+        const disp = getDisplayText(chapter, optPath, token);
+        return `<div class="opt-card" onclick="onOptionPick('${escAttr(token)}')">
+          <div class="en">${esc(disp.en)}</div>
+          ${disp.hi ? `<div class="hi">${esc(disp.hi)}</div>` : ''}
+          <div class="meta">${info.rubricCount} sub-option(s) · ${info.totalRemedies} remedy-references</div>
+        </div>`;
+      }).join('')}
+    </div>
+  `).join('');
+
+  const showAllLink = (!showAllOptions && totalCount > 15)
+    ? `<div class="show-all-link" onclick="onShowAllOptions()">Show all ${totalCount} options</div>` : '';
+
+  const noMoreOptions = totalCount === 0;
+
+  return `
+    ${renderTopbar('Guided Case Wizard', chapter)}
+    ${renderBreadcrumb()}
+    <div class="body">
+      <button class="back-btn" onclick="onWalkBack()">&larr; Back</button>
+      <h2 class="step-title">Choose what applies</h2>
+      <p class="step-sub">Select one to go more specific, or use "This describes it" to stop here.</p>
+      ${totalCount > 8 ? `<input class="search-box" type="text" placeholder="Search these options…" value="${escAttr(searchFilter)}" oninput="onSearchFilterChange(this.value)">` : ''}
+      ${stopHereHtml}
+      ${noMoreOptions && !exactMatchRubric ? `<div class="empty-state">No further detail on file for this exact combination.</div>` : ''}
+      ${groupsHtml}
+      ${showAllLink}
+    </div>
+  `;
+}
+
+function renderConnectorPrompt() {
+  const item = state.connectorQueue[0];
+  const typeLabel = { cause: 'often follows', sequence: 'often alternates or occurs together with', content: 'is often described alongside' }[item.connectorType] || 'is often linked with';
+  return `
+    ${renderTopbar('Guided Case Wizard', 'Related symptom check')}
+    <div class="body">
+      <div class="connector-box">
+        <div class="label">Worth checking</div>
+        <p>This complaint ${typeLabel} a symptom in <strong>${esc(item.connectedChapter)}</strong>. Would you like to check that too?</p>
+      </div>
+      <button class="btn-primary" style="margin-bottom:8px" onclick="onConnectorAccept('${escAttr(item.connectedChapter)}')">Yes, check ${esc(item.connectedChapter)}</button>
+      <button class="btn-outline" onclick="onConnectorSkip()">No, skip this</button>
+    </div>
+  `;
+}
+
+function renderCaseReview() {
+  const items = state.completeCase.map((c, i) => `
+    <div class="case-item">
+      <button class="remove-btn" onclick="onRemoveCaseItem(${i})">Remove</button>
+      <div class="path-en">${esc(getDisplayText(c.path.split(',')[0].trim(), c.path, c.path).en)}</div>
+      <div class="remedy-count">${c.remedyCount} remedy-references on file</div>
+    </div>
+  `).join('');
+
+  return `
+    ${renderTopbar('Guided Case Wizard', 'Case in progress')}
+    <div class="body">
+      <h2 class="step-title">Complaints added so far</h2>
+      ${state.completeCase.length ? items : '<div class="empty-state">No complaints added yet.</div>'}
+    </div>
+    <div class="footer-bar" style="flex-direction:column">
+      <button class="btn-primary" onclick="onAddAnotherComplaint()">+ Add another complaint</button>
+      ${state.completeCase.length ? `<button class="btn-outline" onclick="onSubmitCase()">Submit case (${state.completeCase.length} complaint(s))</button>` : ''}
+    </div>
+  `;
+}
+
+// =================================================================
+// EVENT HANDLERS
+// =================================================================
+function onChapterPick(chapter) {
+  state.currentWalk = { pathTokens: [chapter] };
+  searchFilter = '';
+  showAllOptions = false;
+  state.screen = 'walk';
+  render();
+}
+
+function onOptionPick(token) {
+  state.currentWalk.pathTokens.push(token);
+  searchFilter = '';
+  showAllOptions = false;
+  render();
+}
+
+function onWalkBack() {
+  if (state.currentWalk.pathTokens.length <= 1) {
+    state.screen = 'chapters';
+  } else {
+    state.currentWalk.pathTokens.pop();
+  }
+  searchFilter = '';
+  showAllOptions = false;
+  render();
+}
+
+function onSearchFilterChange(val) {
+  searchFilter = val;
+  render();
+}
+
+function onShowAllOptions() {
+  showAllOptions = true;
+  render();
+}
+
+function onAddRubric(rubricId, path, remedyCount) {
+  state.completeCase.push({ rubricId, path, remedyCount });
+
+  // Connector check — optional, skippable, never forced (Decision 6)
+  const suggestions = (state.data.connectorMap[rubricId] || []);
+  if (suggestions.length) {
+    state.connectorQueue = suggestions.slice(0, 3); // cap at 3 to avoid overwhelming
+    state.screen = 'connectorPrompt';
+  } else {
+    state.screen = 'caseReview';
+  }
+  render();
+}
+
+function onConnectorAccept(connectedChapter) {
+  state.connectorQueue.shift();
+  state.currentWalk = { pathTokens: [connectedChapter] };
+  searchFilter = '';
+  showAllOptions = false;
+  state.screen = 'walk';
+  render();
+}
+
+function onConnectorSkip() {
+  state.connectorQueue.shift();
+  if (state.connectorQueue.length) {
+    render(); // show next queued suggestion
+  } else {
+    state.screen = 'caseReview';
+    render();
+  }
+}
+
+function onRemoveCaseItem(index) {
+  state.completeCase.splice(index, 1);
+  render();
+}
+
+function onAddAnotherComplaint() {
+  state.currentWalk = { pathTokens: [] };
+  state.screen = 'chapters';
+  render();
+}
+
+function goToCaseReview() {
+  state.screen = 'caseReview';
+  render();
+}
+
+function onSubmitCase() {
+  const payload = {
+    submittedAt: new Date().toISOString(),
+    complaints: state.completeCase
+  };
+  console.log('SUBMIT PAYLOAD (Firebase wiring pending):', payload);
+  alert('Case ready to submit (' + state.completeCase.length + ' complaint(s)). Firebase write not yet wired — see console for payload.');
+}
+
+// =================================================================
+// UTIL
+// =================================================================
+function esc(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escAttr(s) {
+  return String(s || '').replace(/'/g, "\\'");
+}
+
+// =================================================================
+// BOOT
+// =================================================================
+window.addEventListener('DOMContentLoaded', () => {
+  // slight delay to let the script-tag data finish evaluating
+  setTimeout(initData, 50);
+});
+</script>
+</body>
+</html>
