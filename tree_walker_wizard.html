@@ -459,12 +459,12 @@ function renderWalkStep() {
 
   let entries = Object.entries(nextOptions);
   if (searchFilter) {
-    const filterLower = searchFilter.toLowerCase();
+    const filterWords = searchFilter.split(/[,\s]+/).map(w => w.trim().toLowerCase()).filter(Boolean);
     entries = entries.filter(([token]) => {
       const optPath = pathTokens.concat([token]).join(', ');
       const disp = getDisplayText(chapter, optPath, token);
       const searchable = (disp.kent + ' ' + disp.en + ' ' + disp.hi + ' ' + disp.roman).toLowerCase();
-      return searchable.includes(filterLower);
+      return filterWords.every(w => searchable.includes(w));
     });
   }
   entries.sort((a, b) => b[1].rubricCount - a[1].rubricCount);
@@ -574,7 +574,7 @@ function renderCaseReview() {
 // =================================================================
 function renderSearchScreen() {
   const q = state.search.query.trim();
-  const keywords = q.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+  const keywords = q.split(/[,\s]+/).map(k => k.trim().toLowerCase()).filter(Boolean);
 
   const TAB_DEFS = [
     { key: 'all', label: 'All' },
