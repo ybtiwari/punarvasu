@@ -149,17 +149,20 @@ async function initData() {
   // Cause/Sequence/Content patterns) for the distinguisher-tab filters.
   const enTable = safeGlobalLookup('TRANSLATIONS_ENGLISH') || {};
   const hiTable = safeGlobalLookup('TRANSLATIONS_HINDI') || {};
+  const romanTable = safeGlobalLookup('ROMANIZED_HINDI') || {};
   const searchIndex = [];
   for (const [id, path, remedies] of rubrics) {
     const chapter = path.split(',')[0].trim();
     const slug = slugifyChapter(chapter);
     const enEntry = enTable[slug] && enTable[slug][path];
     const hiEntry = hiTable[slug] && hiTable[slug][path];
+    const romanEntry = romanTable[slug] && romanTable[slug][path];
     const enText = (enEntry && enEntry.plain) || '';
     const hiText = (hiEntry && hiEntry.plain) || '';
+    const romanText = romanEntry || ''; // Romanized Hindi is stored as a direct string, not {plain, category}
     searchIndex.push({
       id, path, chapter, remedyCount: remedies.length,
-      searchable: (path + ' ' + enText + ' ' + hiText).toLowerCase(),
+      searchable: (path + ' ' + enText + ' ' + hiText + ' ' + romanText).toLowerCase(),
       tags: {
         sensation: SENSATION_RE.test(path), timing: TIMING_RE.test(path),
         modality: MODALITY_RE.test(path), laterality: LATERALITY_RE.test(path),
@@ -221,17 +224,20 @@ function renderTrilingualBlock(disp, count) {
 function getDisplayText(chapter, path, kentToken) {
   const enTable = safeGlobalLookup('TRANSLATIONS_ENGLISH');
   const hiTable = safeGlobalLookup('TRANSLATIONS_HINDI');
+  const romanTable = safeGlobalLookup('ROMANIZED_HINDI');
   if (!enTable) console.error('[wizard] TRANSLATIONS_ENGLISH is not accessible — check that repertory_translations_english.js loaded without error (Network tab / Console for a script error).');
   if (!hiTable) console.error('[wizard] TRANSLATIONS_HINDI is not accessible — check that repertory_translations_hindi.js loaded without error.');
 
   const en = lookupTranslation(chapter, path, enTable);
   const hi = lookupTranslation(chapter, path, hiTable);
+  const roman = lookupTranslation(chapter, path, romanTable);
   if (enTable && !en) console.warn('[wizard] No English translation on file for path:', path);
   if (hiTable && !hi) console.warn('[wizard] No Hindi translation on file for path:', path);
   return {
-    kent: kentToken,             // Kent's original term — always shown, never replaced
-    en: (en && en.plain) || '',  // plain English — blank only if genuinely no translation exists
-    hi: (hi && hi.plain) || ''   // Hindi — blank only if genuinely no translation exists
+    kent: kentToken,               // Kent's original term — always shown, never replaced
+    en: (en && en.plain) || '',    // plain English — blank only if genuinely no translation exists
+    hi: (hi && hi.plain) || '',    // Hindi (Devanagari) — blank only if genuinely no translation exists
+    roman: roman || '' // Romanized Hindi — file stores this as a direct string, not {plain, category}
   };
 }
 
@@ -450,7 +456,7 @@ function renderWalkStep() {
     entries = entries.filter(([token]) => {
       const optPath = pathTokens.concat([token]).join(', ');
       const disp = getDisplayText(chapter, optPath, token);
-      const searchable = (disp.kent + ' ' + disp.en + ' ' + disp.hi).toLowerCase();
+      const searchable = (disp.kent + ' ' + disp.en + ' ' + disp.hi + ' ' + disp.roman).toLowerCase();
       return searchable.includes(filterLower);
     });
   }
