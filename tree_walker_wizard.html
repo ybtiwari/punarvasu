@@ -493,7 +493,7 @@ function renderWalkStep() {
       <p class="step-sub">Select one to go more specific, or use "This describes it" to stop here.</p>
       ${historyHtml}
       <div style="margin-left:${liveIndent}px">
-        ${totalCount > 8 ? `<input class="search-box" type="text" placeholder="Search these options…" value="${escAttr(searchFilter)}" oninput="onSearchFilterChange(this.value)">` : ''}
+        ${totalCount > 8 ? `<input id="walkFilterInput" class="search-box" type="text" placeholder="Search these options…" value="${escAttr(searchFilter)}" oninput="onSearchFilterChange(this.value)">` : ''}
         ${stopHereHtml}
         ${noMoreOptions && !exactMatchRubric ? `<div class="empty-state">No further detail on file for this exact combination.</div>` : ''}
         ${groupsHtml}
@@ -603,7 +603,7 @@ function renderSearchScreen() {
     ${renderTopbar('Search', 'Find a rubric directly, in Kent term, English, or Hindi')}
     <div class="body">
       <button class="back-btn" onclick="onCloseSearch()">&larr; Back</button>
-      <input class="search-box" type="text" placeholder="e.g. pain, morning, right side…" value="${escAttr(state.search.query)}" oninput="onSearchInput(this.value)" autofocus>
+      <input id="globalSearchInput" class="search-box" type="text" placeholder="e.g. pain, morning, right side…" value="${escAttr(state.search.query)}" oninput="onSearchInput(this.value)" autofocus>
       <p class="step-sub">Separate multiple keywords with commas. More keywords narrow the results.</p>
       <div class="search-tabs">${tabsHtml}</div>
       ${nudgeHtml}
@@ -646,8 +646,17 @@ function onWalkBack() {
 }
 
 function onSearchFilterChange(val) {
+  const inputEl = document.getElementById('walkFilterInput');
+  const cursorPos = inputEl ? inputEl.selectionStart : val.length;
+
   searchFilter = val;
   render();
+
+  const newInputEl = document.getElementById('walkFilterInput');
+  if (newInputEl) {
+    newInputEl.focus();
+    newInputEl.setSelectionRange(cursorPos, cursorPos);
+  }
 }
 
 function onShowAllOptions() {
@@ -715,9 +724,18 @@ function onCloseSearch() {
 }
 
 function onSearchInput(val) {
+  const inputEl = document.getElementById('globalSearchInput');
+  const cursorPos = inputEl ? inputEl.selectionStart : val.length;
+
   state.search.query = val;
   state.search.displayLimit = 30; // reset pagination on every new query
   render();
+
+  const newInputEl = document.getElementById('globalSearchInput');
+  if (newInputEl) {
+    newInputEl.focus();
+    newInputEl.setSelectionRange(cursorPos, cursorPos);
+  }
 }
 
 function onSearchTabChange(tabKey) {
