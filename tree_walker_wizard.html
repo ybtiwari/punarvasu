@@ -71,7 +71,11 @@ p.step-sub{font-size:13px;color:var(--ink3);margin-bottom:14px}
 .btn-primary{background:var(--teal);color:white;border:none;border-radius:8px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;width:100%}
 .btn-outline{background:none;border:1.5px solid var(--border);border-radius:8px;padding:10px 16px;font-size:13px;color:var(--ink2);cursor:pointer;width:100%}
 .btn-outline.danger{color:var(--danger);border-color:#f2c4bd}
-.case-item{border:1.5px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;position:relative}
+.case-item{border:1.5px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;position:relative;cursor:pointer}
+.case-item:hover{border-color:var(--teal);background:var(--cream)}
+.case-item-hint{font-size:10.5px;color:var(--ink3);margin-top:6px;font-style:italic}
+.editing-banner{background:var(--amber-bg);border:1.5px solid var(--amber);border-radius:8px;padding:9px 12px;font-size:12.5px;color:var(--ink2);margin-bottom:12px}
+.cancel-edit-link{color:var(--amber);font-weight:700;cursor:pointer;text-decoration:underline}
 .case-item .path-en{font-size:13.5px;font-weight:600}
 .case-item .path-hi{font-size:12px;color:var(--ink3);margin-top:2px}
 .case-item .remedy-count{font-size:10.5px;color:var(--ink3);margin-top:4px}
@@ -112,6 +116,7 @@ const state = {
   currentWalk: { pathTokens: [] },
   completeCase: [],            // [{ rubricId, path, remedyCount }]
   connectorQueue: [],          // pending optional connector suggestions to show
+  editingCaseIndex: null,      // index into completeCase currently being re-walked/edited, or null
   returnScreenAfterSearch: 'chapters', // where to go back to if search is cancelled without a pick
   search: {
     query: '',
@@ -440,6 +445,7 @@ function renderWalkStep() {
       ${renderBreadcrumb()}
       <div class="body">
         <button class="back-btn" onclick="onWalkBack()">&larr; Back</button>
+      ${state.editingCaseIndex !== null ? `<div class="editing-banner">Editing an existing complaint. <span class="cancel-edit-link" onclick="onCancelEdit()">Cancel — keep original</span></div>` : ''}
         <h2 class="step-title">Choose what applies</h2>
         ${historyHtml}
       </div>
@@ -506,6 +512,7 @@ function renderWalkStep() {
     ${renderBreadcrumb()}
     <div class="body">
       <button class="back-btn" onclick="onWalkBack()">&larr; Back</button>
+      ${state.editingCaseIndex !== null ? `<div class="editing-banner">Editing an existing complaint. <span class="cancel-edit-link" onclick="onCancelEdit()">Cancel — keep original</span></div>` : ''}
       <h2 class="step-title">Choose what applies</h2>
       <p class="step-sub">Select one to go more specific, or use "This describes it" to stop here.</p>
       ${historyHtml}
@@ -538,13 +545,18 @@ function renderConnectorPrompt() {
 }
 
 function renderCaseReview() {
-  const items = state.completeCase.map((c, i) => `
-    <div class="case-item">
-      <button class="remove-btn" onclick="onRemoveCaseItem(${i})">Remove</button>
-      <div class="path-en">${esc(getDisplayText(c.path.split(',')[0].trim(), c.path, c.path).en)}</div>
+  const items = state.completeCase.map((c, i) => {
+    const chapter = c.path.split(',')[0].trim();
+    const disp = getDisplayText(chapter, c.path, c.path.split(',').map(s=>s.trim()).pop());
+    return `
+    <div class="case-item" onclick="onEditCaseItem(${i})">
+      <button class="remove-btn" onclick="event.stopPropagation(); onRemoveCaseItem(${i})">Remove</button>
+      ${renderTrilingualBlock(disp)}
       <div class="remedy-count">${c.remedyCount} remedy-references on file</div>
+      <div class="case-item-hint">Tap to review or change this selection</div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   return `
     ${renderTopbar('Guided Case Wizard', 'Case in progress')}
@@ -654,12 +666,30 @@ function onOptionPick(token) {
 function onWalkBack() {
   if (state.currentWalk.pathTokens.length <= 1) {
     state.screen = 'chapters';
+    state.editingCaseIndex = null; // abandoning the walk cancels any in-progress edit; original entry is untouched
   } else {
     state.currentWalk.pathTokens.pop();
   }
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
+  render();
+}
+
+function onEditCaseItem(index) {
+  const item = state.completeCase[index];
+  state.editingCaseIndex = index;
+  state.currentWalk = { pathTokens: item.path.split(',').map(s => s.trim()) };
+  searchFilter = '';
+  showAllOptions = false;
+  collapsedGroups = {};
+  state.screen = 'walk';
+  render();
+}
+
+function onCancelEdit() {
+  state.editingCaseIndex = null;
+  state.screen = 'caseReview';
   render();
 }
 
@@ -683,7 +713,12 @@ function onShowAllOptions() {
 }
 
 function onAddRubric(rubricId, path, remedyCount) {
-  state.completeCase.push({ rubricId, path, remedyCount });
+  if (state.editingCaseIndex !== null) {
+    state.completeCase[state.editingCaseIndex] = { rubricId, path, remedyCount };
+    state.editingCaseIndex = null;
+  } else {
+    state.completeCase.push({ rubricId, path, remedyCount });
+  }
 
   // Connector check — optional, skippable, never forced (Decision 6)
   const suggestions = (state.data.connectorMap[rubricId] || []);
