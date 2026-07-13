@@ -446,7 +446,13 @@ function renderWalkStep() {
 
   let entries = Object.entries(nextOptions);
   if (searchFilter) {
-    entries = entries.filter(([token]) => token.toLowerCase().includes(searchFilter.toLowerCase()));
+    const filterLower = searchFilter.toLowerCase();
+    entries = entries.filter(([token]) => {
+      const optPath = pathTokens.concat([token]).join(', ');
+      const disp = getDisplayText(chapter, optPath, token);
+      const searchable = (disp.kent + ' ' + disp.en + ' ' + disp.hi).toLowerCase();
+      return searchable.includes(filterLower);
+    });
   }
   entries.sort((a, b) => b[1].rubricCount - a[1].rubricCount);
 
