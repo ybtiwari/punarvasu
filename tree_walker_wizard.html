@@ -31,6 +31,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 h2.step-title{font-size:17px;font-weight:700;margin-bottom:4px}
 p.step-sub{font-size:13px;color:var(--ink3);margin-bottom:14px}
 .search-box{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;margin-bottom:12px;font-family:var(--font)}
+.search-box.no-match{border-color:var(--danger);color:var(--danger)}
+.no-match-msg{font-size:12.5px;color:var(--danger);margin:-6px 0 12px;padding:0 2px}
 .option-group{margin-bottom:16px}
 .option-group-label{font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px}
 .collapsible-section{margin-bottom:10px;border:1.5px solid var(--border);border-radius:10px;overflow:hidden}
@@ -483,6 +485,8 @@ function renderWalkStep() {
     ? `<div class="show-all-link" onclick="onShowAllOptions()">Show all ${totalCount} options</div>` : '';
 
   const noMoreOptions = totalCount === 0;
+  const filterMatchedNothing = noMoreOptions && searchFilter.length > 0;
+  const genuinelyNoData = noMoreOptions && searchFilter.length === 0;
 
   return `
     ${renderTopbar('Guided Case Wizard', chapter)}
@@ -493,9 +497,10 @@ function renderWalkStep() {
       <p class="step-sub">Select one to go more specific, or use "This describes it" to stop here.</p>
       ${historyHtml}
       <div style="margin-left:${liveIndent}px">
-        ${totalCount > 8 ? `<input id="walkFilterInput" class="search-box" type="text" placeholder="Search these options…" value="${escAttr(searchFilter)}" oninput="onSearchFilterChange(this.value)">` : ''}
+        ${totalCount > 8 || searchFilter ? `<input id="walkFilterInput" class="search-box ${filterMatchedNothing ? 'no-match' : ''}" type="text" placeholder="Search these options…" value="${escAttr(searchFilter)}" oninput="onSearchFilterChange(this.value)">` : ''}
+        ${filterMatchedNothing ? `<div class="no-match-msg">No option here matches "${esc(searchFilter)}" — try a shorter part of the word, or clear this to see everything again.</div>` : ''}
         ${stopHereHtml}
-        ${noMoreOptions && !exactMatchRubric ? `<div class="empty-state">No further detail on file for this exact combination.</div>` : ''}
+        ${genuinelyNoData && !exactMatchRubric ? `<div class="empty-state">No further detail on file for this exact combination.</div>` : ''}
         ${groupsHtml}
         ${showAllLink}
       </div>
