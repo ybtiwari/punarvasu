@@ -226,6 +226,9 @@
       <div class="nav-item" data-panel="broadcast">
         <span>📣 Broadcast</span>
       </div>
+      <div class="nav-item" id="navAccessCodes">
+        <span>🔑 Access Codes</span>
+      </div>
     </div>
 
     <!-- Content -->
@@ -526,6 +529,7 @@ onAuthStateChanged(auth, user => {
 
 // ── NAV ──
 document.querySelectorAll('.nav-item').forEach(item => {
+  if (!item.dataset.panel) return; // e.g. the Access Codes link — handled separately below, not an internal panel
   item.addEventListener('click', () => {
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -533,6 +537,16 @@ document.querySelectorAll('.nav-item').forEach(item => {
     document.getElementById('panel-' + item.dataset.panel).classList.add('active');
   });
 });
+
+const navAccessCodesBtn = document.getElementById('navAccessCodes');
+if (navAccessCodesBtn) {
+  navAccessCodesBtn.addEventListener('click', () => {
+    // Opens in a new tab deliberately — this is a separate mini-app (the
+    // questionnaire's hidden code-generator), not an internal panel of this
+    // dashboard, so navigating away from the dashboard itself isn't desired.
+    window.open('questionnaire_prototype.html?admin', '_blank');
+  });
+}
 
 // ── LOAD ALL ──
 function loadAll() {
