@@ -999,7 +999,7 @@ function render() {
         ${adminGeneratedCodes.length ? `
         <div class="lock-card">
           <div class="lock-card-title">${adminGeneratedCodes.length} new code(s) — copy and share one at a time</div>
-          <textarea id="adminCodesOutput" readonly style="width:100%;height:180px;font-family:monospace;font-size:14px;border:1px solid var(--border);border-radius:6px;padding:10px;">${adminGeneratedCodes.join('\\n')}</textarea>
+          <textarea id="adminCodesOutput" readonly style="width:100%;height:180px;font-family:monospace;font-size:14px;border:1px solid var(--border);border-radius:6px;padding:10px;">${adminGeneratedCodes.join('\n')}</textarea>
           <p class="qsub" style="margin-top:8px;">Each code works once. It stops working the moment a patient enters it, whether or not they finish the questionnaire.</p>
         </div>
         ` : ''}
