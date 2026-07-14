@@ -446,9 +446,11 @@ async function loadAllRubrics() {
 // ── STATE ──
 let lang = 'en';
 let step = 'remarks'; // remarks -> lock -> search -> generals -> review -> done
-// Hidden admin entry point: questionnaire_prototype.html?admin=1 — never
-// reachable through normal patient navigation.
-if (window.location.search.indexOf('admin=1') !== -1) step = 'adminGen';
+// Hidden admin entry point: questionnaire_prototype.html?admin — never
+// reachable through normal patient navigation. Works whether written as
+// plain ?admin, ?admin=1, or ?admin=anything — only the parameter's
+// presence matters, not its value.
+if (new URLSearchParams(window.location.search).has('admin')) step = 'adminGen';
 let adminEmail = '';
 let adminPassword = '';
 let adminError = '';
