@@ -542,9 +542,9 @@ const navAccessCodesBtn = document.getElementById('navAccessCodes');
 if (navAccessCodesBtn) {
   navAccessCodesBtn.addEventListener('click', () => {
     // Opens in a new tab deliberately — this is a separate mini-app (the
-    // questionnaire's hidden code-generator), not an internal panel of this
+    // standalone access-code generator page), not an internal panel of this
     // dashboard, so navigating away from the dashboard itself isn't desired.
-    window.open('questionnaire_prototype.html?admin', '_blank');
+    window.open('admin_access_codes.html', '_blank');
   });
 }
 

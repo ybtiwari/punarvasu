@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Access Codes — Punarvasu Clinic (Admin)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #0F2035; --teal: #1C6B5A; --teal2: #155448;
+    --cream: #F5F2EC; --white: #FFFFFF; --ink: #0F1E2D;
+    --ink2: #2A4055; --ink3: #4A6478; --border: #D0DDE8;
+    --serif: 'Lora', Georgia, serif; --sans: 'Source Sans 3', system-ui, sans-serif;
+  }
+  body { font-family: var(--sans); background: var(--cream); color: var(--ink); min-height: 100vh; }
+
+  .app { max-width: 480px; margin: 0 auto; min-height: 100vh; background: var(--white); display: flex; flex-direction: column; box-shadow: 0 0 30px rgba(15,32,53,0.06); }
+
+  .qtopbar { background: var(--navy); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .qtopbar-title { font-family: var(--serif); font-size: 16px; color: var(--white); }
+  .qtopbar-badge { font-size: 11px; color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.25); border-radius: 20px; padding: 3px 10px; }
+
+  .qbody { flex: 1; padding: 20px; display: flex; flex-direction: column; }
+
+  .qtitle { font-family: var(--serif); font-size: 21px; color: var(--navy); margin-bottom: 6px; line-height: 1.3; text-align: center; }
+  .qsub { font-size: 13.5px; color: var(--ink3); margin-bottom: 22px; line-height: 1.5; text-align: center; }
+
+  .form-label { font-size: 12.5px; font-weight: 500; color: var(--ink2); margin-bottom: 6px; display: block; }
+  .field-err { font-size: 12.5px; color: #c0392b; margin-top: 6px; min-height: 16px; }
+
+  .lock-icon-wrap { text-align: center; margin: 8px 0 20px; }
+  .lock-icon { font-size: 44px; }
+  .lock-card { background: var(--cream); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 14px; }
+  .lock-card-title { font-family: var(--serif); font-size: 15.5px; color: var(--navy); margin-bottom: 10px; }
+
+  .txt-input { width: 100%; margin-bottom: 8px; border: 1px solid var(--border); border-radius: 6px; padding: 11px 14px; font-family: var(--sans); font-size: 15px; outline: none; transition: border-color 0.15s; }
+  .txt-input:focus { border-color: var(--teal); }
+
+  .btn-apply { background: var(--teal); color: white; border: none; padding: 12px 18px; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.15s; width: 100%; font-family: var(--sans); }
+  .btn-apply:hover { background: var(--teal2); }
+  .btn-apply:disabled { opacity: 0.6; cursor: default; }
+
+  .btn-link { width: 100%; margin-top: 10px; background: none; border: none; color: var(--ink3); font-size: 12.5px; text-decoration: underline; cursor: pointer; font-family: var(--sans); }
+
+  .codes-output { width: 100%; height: 180px; font-family: monospace; font-size: 14px; border: 1px solid var(--border); border-radius: 6px; padding: 10px; resize: vertical; }
+
+  .btn-copy { margin-top: 8px; background: var(--navy); color: white; border: none; padding: 10px 18px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; width: 100%; font-family: var(--sans); }
+  .btn-copy:hover { opacity: 0.92; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="qtopbar">
+    <div class="qtopbar-title">Punarvasu Clinic</div>
+    <div class="qtopbar-badge">Admin</div>
+  </div>
+  <div class="qbody" id="appBody"><!-- rendered by JS --></div>
+</div>
+
+<script>
+// ── STATE ──
+let adminEmail = '';
+let adminPassword = '';
+let adminError = '';
+let adminSignedIn = false;
+let adminBusy = false;
+let adminCodeCount = 50;
+let adminGeneratedCodes = [];
+
+// Called by the Firebase module script (bottom of this file) whenever
+// Firebase confirms the auth state has actually changed.
+window.onAdminAuthChanged = function (signedIn) {
+  adminSignedIn = signedIn;
+  render();
+};
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function escapeAttr(s) {
+  return escapeHtml(s).replace(/"/g, '&quot;');
+}
+
+// ── RENDER ──
+function render() {
+  const body = document.getElementById('appBody');
+  body.innerHTML = `
+    <div class="lock-icon-wrap"><div class="lock-icon">🔑</div></div>
+    <h2 class="qtitle">Generate Access Codes</h2>
+    <p class="qsub">Admin only — each code lets one patient through the questionnaire lock screen, once.</p>
+
+    ${!adminSignedIn ? `
+    <div class="lock-card">
+      <div class="lock-card-title">Sign in</div>
+      <input id="adminEmailField" type="email" class="txt-input" placeholder="Admin email" value="${escapeAttr(adminEmail)}"/>
+      <input id="adminPasswordField" type="password" class="txt-input" placeholder="Password" value="${escapeAttr(adminPassword)}"/>
+      <button class="btn-apply" id="adminSignInBtn" ${adminBusy ? 'disabled' : ''}>${adminBusy ? 'Signing in…' : 'Sign in'}</button>
+      <div class="field-err">${escapeHtml(adminError)}</div>
+    </div>
+    ` : `
+    <div class="lock-card">
+      <div class="lock-card-title">Signed in ✓</div>
+      <label class="form-label" style="margin-top:8px;">How many codes to generate?</label>
+      <input id="adminCountField" type="number" min="1" max="200" class="txt-input" style="margin-bottom:10px;" value="${adminCodeCount}"/>
+      <button class="btn-apply" id="adminGenerateBtn" ${adminBusy ? 'disabled' : ''}>${adminBusy ? 'Generating…' : 'Generate codes'}</button>
+      <div class="field-err">${escapeHtml(adminError)}</div>
+      <button id="adminSignOutBtn" class="btn-link">Sign out</button>
+    </div>
+    ${adminGeneratedCodes.length ? `
+    <div class="lock-card">
+      <div class="lock-card-title">${adminGeneratedCodes.length} new code(s) — copy and share one at a time</div>
+      <textarea id="adminCodesOutput" class="codes-output" readonly>${adminGeneratedCodes.join('\n')}</textarea>
+      <button id="copyAllBtn" class="btn-copy">📋 Copy all codes</button>
+      <p class="qsub" style="margin-top:8px;margin-bottom:0;text-align:left;">Each code works once. It stops working the moment a patient enters it, whether or not they finish the questionnaire.</p>
+    </div>
+    ` : ''}
+    `}
+  `;
+  bindEvents();
+}
+
+// ── EVENTS ──
+function bindEvents() {
+  const emailField = document.getElementById('adminEmailField');
+  const passField = document.getElementById('adminPasswordField');
+  if (emailField) emailField.addEventListener('input', () => { adminEmail = emailField.value; });
+  if (passField) {
+    passField.addEventListener('input', () => { adminPassword = passField.value; });
+    passField.addEventListener('keydown', (e) => { if (e.key === 'Enter') adminDoSignIn(); });
+  }
+  const signInBtn = document.getElementById('adminSignInBtn');
+  if (signInBtn) signInBtn.addEventListener('click', adminDoSignIn);
+  const genBtn = document.getElementById('adminGenerateBtn');
+  if (genBtn) genBtn.addEventListener('click', adminDoGenerate);
+  const countField = document.getElementById('adminCountField');
+  if (countField) countField.addEventListener('input', () => { adminCodeCount = parseInt(countField.value, 10) || 1; });
+  const signOutBtn = document.getElementById('adminSignOutBtn');
+  if (signOutBtn) signOutBtn.addEventListener('click', () => { window.adminSignOut(); adminGeneratedCodes = []; render(); });
+  const copyBtn = document.getElementById('copyAllBtn');
+  if (copyBtn) copyBtn.addEventListener('click', () => {
+    const out = document.getElementById('adminCodesOutput');
+    if (!out) return;
+    out.select();
+    out.setSelectionRange(0, 999999);
+    try { document.execCommand('copy'); } catch (e) { /* fallback below */ }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(out.value).catch(() => {});
+    }
+    copyBtn.textContent = '✓ Copied';
+    setTimeout(() => { copyBtn.textContent = '📋 Copy all codes'; }, 1500);
+  });
+}
+
+async function adminDoSignIn() {
+  adminError = '';
+  adminBusy = true;
+  render();
+  const result = await window.adminSignIn(adminEmail.trim(), adminPassword);
+  adminBusy = false;
+  if (!result.ok) {
+    adminError = 'Sign-in failed. Check the email and password.';
+  }
+  // adminSignedIn itself gets set by window.onAdminAuthChanged once Firebase
+  // confirms the auth state change — no need to set it directly here.
+  render();
+}
+
+async function adminDoGenerate() {
+  adminError = '';
+  adminBusy = true;
+  render();
+  const result = await window.generateAccessCodeBatch(adminCodeCount);
+  adminBusy = false;
+  if (result.ok) {
+    adminGeneratedCodes = result.codes;
+  } else {
+    adminError = result.error || 'Could not generate codes.';
+  }
+  render();
+}
+
+render();
+</script>
+
+<script type="module">
+  // Access-code ADMIN side: Realtime Database, same Firebase project and SDK
+  // version as admin-panel.html and questionnaire_prototype.html.
+  // Security model (enforced by the RTDB rules, not by this client code —
+  // this code is just the UI):
+  //   - Only the single admin account can create new codes or list them.
+  //   - The patient-facing check/burn of one code lives in
+  //     questionnaire_prototype.html, not here.
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getDatabase, ref, get, set }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAqzKPqBzNoBJc5FWjnVXMER4prgrbhqag",
+    authDomain: "punarvasu-790a8.firebaseapp.com",
+    databaseURL: "https://punarvasu-790a8-default-rtdb.firebaseio.com",
+    projectId: "punarvasu-790a8",
+    storageBucket: "punarvasu-790a8.firebasestorage.app",
+    messagingSenderId: "774115339459",
+    appId: "1:774115339459:web:4ee1f45e1e25d61666c676"
+  };
+
+  const app = initializeApp(firebaseConfig, 'accessCodesAdminApp');
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  // Sign in with the single fixed admin account.
+  window.adminSignIn = async function (email, password) {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  };
+
+  window.adminSignOut = async function () {
+    await signOut(auth);
+  };
+
+  onAuthStateChanged(auth, function (user) {
+    if (typeof window.onAdminAuthChanged === 'function') window.onAdminAuthChanged(!!user);
+  });
+
+  function generateRandomCode(length) {
+    // Avoids 0/O and 1/I/L — characters that are easy to misread when a
+    // patient is copying a code off WhatsApp or reading it off a screen.
+    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < length; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+  }
+
+  // Generates `count` fresh, guaranteed-unique codes and writes them all to
+  // /accessCodes. Requires the admin to be signed in — enforced both here
+  // (early return) and, more importantly, by the database rules themselves.
+  window.generateAccessCodeBatch = async function (count) {
+    if (!auth.currentUser) return { ok: false, error: 'Not signed in.' };
+    const created = [];
+    for (let i = 0; i < count; i++) {
+      let code, exists = true, attempts = 0;
+      while (exists && attempts < 10) {
+        code = generateRandomCode(8);
+        const snap = await get(ref(db, 'accessCodes/' + code));
+        exists = snap.exists();
+        attempts++;
+      }
+      await set(ref(db, 'accessCodes/' + code), { used: false, createdAt: Date.now() });
+      created.push(code);
+    }
+    return { ok: true, codes: created };
+  };
+</script>
+</body>
+</html>
