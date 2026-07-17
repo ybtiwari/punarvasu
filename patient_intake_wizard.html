@@ -80,8 +80,9 @@ p.step-sub{font-size:13px;color:var(--ink3);margin-bottom:14px}
 .ch-card:hover{border-color:var(--amber);background:var(--amber-bg)}
 .ch-card .en{font-size:12px;font-weight:600}
 .ch-card .hi{font-size:10.5px;color:var(--lang-hi);margin-top:1px}
-.stop-here-card{border:1.5px solid var(--teal);background:#F0F7F4;border-radius:10px;padding:12px;margin-bottom:16px;cursor:pointer}
-.stop-here-card .label{font-size:11px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.03em}
+.stop-here-card{border:1.5px solid var(--teal);background:var(--cream);border-radius:10px;padding:11px 12px;margin-bottom:16px;cursor:pointer;transition:all .12s}
+.stop-here-card:hover{background:var(--white)}
+.stop-here-card .label{font-size:12.5px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.03em}
 .stop-here-card .kent{font-size:14px;font-weight:700;margin-top:3px}
 .stop-here-card .en{font-size:12.5px;color:var(--lang-en);margin-top:2px}
 .stop-here-card .hi{font-size:12px;color:var(--lang-hi);margin-top:1px}
@@ -676,7 +677,7 @@ function renderWalkStep() {
   if (exactMatchRubric) {
     const disp = getDisplayText(chapter, exactMatchRubric.path, pathTokens[pathTokens.length - 1]);
     stopHereHtml = `<div class="stop-here-card" onclick="onAddRubric('${exactMatchRubric.id}', '${escAttr(exactMatchRubric.path)}', ${exactMatchRubric.remedyCount})">
-      <div class="label">This describes it</div>
+      <div class="label">✓ This describes it</div>
       ${renderTrilingualBlock(disp)}
     </div>`;
   }
