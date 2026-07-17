@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Punarvasu — Guided Case Wizard</title>
+<style>
+:root{
+  --teal:#1C6B5A;--teal2:#2E7D32;--amber:#C8600A;--amber-bg:#FDF3E8;
+  --ink:#1a1a1a;--ink2:#444;--ink3:#888;
+  --border:#e0e0e0;--white:#fff;--cream:#f7f5f0;--bg:#f2f0eb;
+  --success:#2E7D32;--danger:#c0392b;
+  --lang-en:#0D47A1;--lang-hi:#A64B2A;
+  --font:'Source Sans 3','Noto Sans Devanagari',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh}
+.app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--white);display:flex;flex-direction:column}
+.topbar{background:var(--teal);color:white;padding:14px 16px;flex-shrink:0}
+.topbar h1{font-size:16px;font-weight:700}
+.topbar .sub{font-size:11.5px;opacity:.85;margin-top:2px}
+.search-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;border-radius:8px;padding:7px 12px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.search-btn:hover{background:rgba(255,255,255,0.25)}
+.search-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.tab-btn{background:var(--cream);border:1.5px solid var(--border);border-radius:14px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer}
+.tab-btn.active{background:var(--teal);border-color:var(--teal);color:white}
+.search-nudge{background:var(--amber-bg);border:1.5px solid var(--amber);border-radius:8px;padding:10px 12px;font-size:12.5px;color:var(--ink2);margin-bottom:12px}
+.breadcrumb{padding:10px 16px 0;font-size:12px;color:var(--ink3);display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.breadcrumb .seg{background:var(--cream);border:1px solid var(--border);border-radius:12px;padding:2px 10px}
+.body{flex:1;overflow-y:auto;padding:16px}
+.back-btn{font-size:13px;font-weight:600;color:var(--teal);background:none;border:none;cursor:pointer;padding:0 0 10px;display:block}
+h2.step-title{font-size:17px;font-weight:700;margin-bottom:4px}
+p.step-sub{font-size:13px;color:var(--ink3);margin-bottom:14px}
+.search-box{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;margin-bottom:12px;font-family:var(--font)}
+.search-box.no-match{border-color:var(--danger);color:var(--danger)}
+.no-match-msg{font-size:12.5px;color:var(--danger);margin:-6px 0 12px;padding:0 2px}
+.option-group{margin-bottom:16px}
+.option-group-label{font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px}
+.collapsible-section{margin-bottom:10px;border:1.5px solid var(--border);border-radius:10px;overflow:hidden}
+.collapsible-header{display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;background:var(--cream);user-select:none}
+.collapsible-header:hover{background:var(--amber-bg)}
+.collapsible-arrow{font-size:11px;color:var(--teal);transition:transform .15s;display:inline-block}
+.collapsible-arrow.open{transform:rotate(90deg)}
+.collapsible-label{font-size:12.5px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.03em;flex:1}
+.collapsible-count{font-size:11px;color:var(--ink3)}
+.collapsible-body{padding:10px 10px 2px}
+.selected-node{margin-bottom:2px}
+.selected-node-header{display:flex;align-items:center;gap:8px;padding:9px 10px;cursor:pointer;background:#F0F7F4;border:1.5px solid var(--teal);border-radius:8px}
+.selected-node-header:hover{background:#E4F1EC}
+.selected-node-text .kent{font-size:13.5px;font-weight:700;color:var(--teal)}
+.selected-node-text .en{font-size:12px;color:var(--lang-en);margin-top:1px}
+.selected-node-text .hi{font-size:11.5px;color:var(--lang-hi);margin-top:1px}
+.opt-card{border:1.5px solid var(--border);border-radius:10px;padding:11px 12px;margin-bottom:8px;cursor:pointer;background:var(--white);transition:all .12s}
+.opt-card:hover{border-color:var(--teal)}
+.opt-card .kent{font-size:14px;font-weight:700;color:var(--ink)}
+.opt-count{font-size:12px;font-weight:600;color:var(--amber)}
+.opt-card .en{font-size:12.5px;color:var(--lang-en);margin-top:2px}
+.opt-card .hi{font-size:12px;color:var(--lang-hi);margin-top:1px}
+.opt-card .meta{font-size:10.5px;color:var(--ink3);margin-top:3px}
+.chapter-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ch-card{border:1.5px solid var(--border);border-radius:10px;padding:11px 6px;cursor:pointer;background:var(--white);text-align:center;transition:all .12s}
+.ch-card:hover{border-color:var(--amber);background:var(--amber-bg)}
+.ch-card .en{font-size:12px;font-weight:600}
+.ch-card .hi{font-size:10.5px;color:var(--lang-hi);margin-top:1px}
+.stop-here-card{border:1.5px solid var(--teal);background:#F0F7F4;border-radius:10px;padding:12px;margin-bottom:16px;cursor:pointer}
+.stop-here-card .label{font-size:11px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.03em}
+.stop-here-card .kent{font-size:14px;font-weight:700;margin-top:3px}
+.stop-here-card .en{font-size:12.5px;color:var(--lang-en);margin-top:2px}
+.stop-here-card .hi{font-size:12px;color:var(--lang-hi);margin-top:1px}
+.footer-bar{position:sticky;bottom:0;background:white;border-top:1px solid var(--border);padding:10px 16px;display:flex;gap:10px;flex-shrink:0}
+.btn-primary{background:var(--teal);color:white;border:none;border-radius:8px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;width:100%}
+.btn-outline{background:none;border:1.5px solid var(--border);border-radius:8px;padding:10px 16px;font-size:13px;color:var(--ink2);cursor:pointer;width:100%}
+.btn-outline.danger{color:var(--danger);border-color:#f2c4bd}
+.case-item{border:1.5px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;position:relative;cursor:pointer}
+.case-item:hover{border-color:var(--teal);background:var(--cream)}
+.case-item-hint{font-size:10.5px;color:var(--ink3);margin-top:6px;font-style:italic}
+.editing-banner{background:var(--amber-bg);border:1.5px solid var(--amber);border-radius:8px;padding:9px 12px;font-size:12.5px;color:var(--ink2);margin-bottom:12px}
+.cancel-edit-link{color:var(--amber);font-weight:700;cursor:pointer;text-decoration:underline}
+.case-item .path-en{font-size:13.5px;font-weight:600}
+.case-item .path-hi{font-size:12px;color:var(--ink3);margin-top:2px}
+.case-item .remedy-count{font-size:10.5px;color:var(--ink3);margin-top:4px}
+.case-item .remove-btn{position:absolute;top:10px;right:10px;font-size:11px;color:var(--danger);background:none;border:none;cursor:pointer}
+.empty-state{text-align:center;padding:40px 16px;color:var(--ink3)}
+.loading{text-align:center;padding:60px 16px}
+.load-bar{width:220px;height:4px;background:var(--border);border-radius:2px;margin:16px auto 0;overflow:hidden}
+.load-anim{height:100%;background:var(--teal);border-radius:2px;animation:la 2s ease-in-out infinite}
+@keyframes la{0%{transform:translateX(-100%)}100%{transform:translateX(320%)}}
+.show-all-link{font-size:12.5px;color:var(--teal);text-align:center;padding:8px;cursor:pointer;font-weight:600}
+.connector-box{border:1.5px solid var(--amber);background:var(--amber-bg);border-radius:10px;padding:14px;margin-bottom:14px}
+.connector-box .label{font-size:11px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px}
+.connector-box p{font-size:13.5px;color:var(--ink2);line-height:1.4}
+input[type=text]{font-family:var(--font)}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="loading">
+    <p style="font-size:14px;color:var(--ink3)">Loading repertory data…</p>
+    <div class="load-bar"><div class="load-anim"></div></div>
+  </div>
+</div>
+
+<script src="repertory_data.js"></script>
+<script src="repertory_translations_english.js"></script>
+<script src="repertory_translations_hindi.js"></script>
+<script src="repertory_translations_hindi_romanized.js"></script>
+
+<script>
+'use strict';
+
+// =================================================================
+// STATE
+// =================================================================
+const state = {
+  screen: 'loading',           // loading | intake | lock | chapters | walk | connectorPrompt | caseReview | search | submitted
+  currentWalk: { pathTokens: [] },
+  completeCase: [],            // [{ rubricId, path, remedyCount }]
+  connectorQueue: [],          // pending optional connector suggestions to show
+  editingCaseIndex: null,      // index into completeCase currently being re-walked/edited, or null
+  returnScreenAfterSearch: 'chapters', // where to go back to if search is cancelled without a pick
+  patient: {
+    name: '', age: '', sex: '', location: '', reason: ''
+  },
+  lock: {
+    codeInput: '', error: '', isUnlocked: false, accessCodeUsed: '', busy: false
+  },
+  submit: { busy: false, error: '' },
+  search: {
+    query: '',
+    activeTab: 'all',          // all | sensation | timing | modality | laterality | cause | sequence | content
+    displayLimit: 30
+  },
+  data: {
+    chaptersBucketed: null,    // { chapterName: [[id,path,remedies], ...] }
+    connectorMap: null,        // { rubricId: [{connectedChapter, connectorType}] }
+    chapterList: [],
+    searchIndex: null
+  }
+};
+
+// =================================================================
+// DATA LOADING & INDEXING
+// =================================================================
+async function initData() {
+  // EMBEDDED_DATA comes from repertory_data.js (script tag, top-level const —
+  // accessed here by bare reference since that's visible across classic scripts
+  // on the same page regardless of var/let/const, as established earlier)
+  const rubrics = EMBEDDED_DATA.rubrics;
+
+  const buckets = {};
+  for (const rubric of rubrics) {
+    const chapter = rubric[1].split(',')[0].trim();
+    if (!buckets[chapter]) buckets[chapter] = [];
+    buckets[chapter].push(rubric);
+  }
+  state.data.chaptersBucketed = buckets;
+  state.data.chapterList = Object.keys(buckets).sort();
+
+  // Build the global search index once — combines Kent term + English + Hindi
+  // text into one lowercase searchable string per rubric, plus precomputed
+  // qualifier tags (reusing the same Sensation/Timing/Modality/Laterality/
+  // Cause/Sequence/Content patterns) for the distinguisher-tab filters.
+  const enTable = safeGlobalLookup('TRANSLATIONS_ENGLISH') || {};
+  const hiTable = safeGlobalLookup('TRANSLATIONS_HINDI') || {};
+  const romanTable = safeGlobalLookup('ROMANIZED_HINDI') || {};
+  const searchIndex = [];
+  for (const [id, path, remedies] of rubrics) {
+    const chapter = path.split(',')[0].trim();
+    const slug = slugifyChapter(chapter);
+    const enEntry = enTable[slug] && enTable[slug][path];
+    const hiEntry = hiTable[slug] && hiTable[slug][path];
+    const romanEntry = romanTable[slug] && romanTable[slug][path];
+    const enText = (enEntry && enEntry.plain) || '';
+    const hiText = (hiEntry && hiEntry.plain) || '';
+    const romanText = romanEntry || ''; // Romanized Hindi is stored as a direct string, not {plain, category}
+    searchIndex.push({
+      id, path, chapter, remedyCount: remedies.length,
+      searchable: (path + ' ' + enText + ' ' + hiText + ' ' + romanText).toLowerCase(),
+      tags: {
+        sensation: SENSATION_RE.test(path), timing: TIMING_RE.test(path),
+        modality: MODALITY_RE.test(path), laterality: LATERALITY_RE.test(path),
+        cause: CAUSE_RE.test(path), sequence: SEQUENCE_RE.test(path), content: CONTENT_RE.test(path)
+      }
+    });
+  }
+  state.data.searchIndex = searchIndex;
+
+  try {
+    const res = await fetch('connector_map.json');
+    state.data.connectorMap = await res.json();
+  } catch (e) {
+    console.warn('connector_map.json not found — connector suggestions disabled.');
+    state.data.connectorMap = {};
+  }
+
+  state.screen = 'intake';
+  render();
+}
+
+// =================================================================
+// CORE ENGINE
+// =================================================================
+function slugifyChapter(chapter) {
+  if (chapter === 'Heart & Circulation') return 'heart-and-circulation';
+  return chapter.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+function lookupTranslation(chapter, path, table) {
+  if (!table) return null;
+  const bucket = table[slugifyChapter(chapter)];
+  if (!bucket) return null;
+  return bucket[path] || null;
+}
+
+function safeGlobalLookup(varName) {
+  // Same defensive pattern as the earlier EMBEDDED_DATA scoping fix: a bare
+  // reference works for let/const globals declared in another <script> tag,
+  // but NOT via window[name] — so try bare reference first (per known name),
+  // then fall back to window[] for var-style globals.
+  try {
+    if (varName === 'TRANSLATIONS_ENGLISH' && typeof TRANSLATIONS_ENGLISH !== 'undefined') return TRANSLATIONS_ENGLISH;
+    if (varName === 'TRANSLATIONS_HINDI' && typeof TRANSLATIONS_HINDI !== 'undefined') return TRANSLATIONS_HINDI;
+    if (varName === 'ROMANIZED_HINDI' && typeof ROMANIZED_HINDI !== 'undefined') return ROMANIZED_HINDI;
+  } catch (e) { /* not defined via bare reference in this scope */ }
+  return window[varName]; // fallback for var-style globals
+}
+
+function renderTrilingualBlock(disp, count) {
+  const countSuffix = (typeof count === 'number') ? ` <span class="opt-count">(${count})</span>` : '';
+  return `
+    <div class="kent">${esc(disp.kent)}${countSuffix}</div>
+    ${disp.en ? `<div class="en">${esc(disp.en)}</div>` : ''}
+    ${disp.hi ? `<div class="hi">${esc(disp.hi)}</div>` : ''}
+  `;
+}
+
+function getDisplayText(chapter, path, kentToken) {
+  const enTable = safeGlobalLookup('TRANSLATIONS_ENGLISH');
+  const hiTable = safeGlobalLookup('TRANSLATIONS_HINDI');
+  const romanTable = safeGlobalLookup('ROMANIZED_HINDI');
+  if (!enTable) console.error('[wizard] TRANSLATIONS_ENGLISH is not accessible — check that repertory_translations_english.js loaded without error (Network tab / Console for a script error).');
+  if (!hiTable) console.error('[wizard] TRANSLATIONS_HINDI is not accessible — check that repertory_translations_hindi.js loaded without error.');
+
+  const en = lookupTranslation(chapter, path, enTable);
+  const hi = lookupTranslation(chapter, path, hiTable);
+  const roman = lookupTranslation(chapter, path, romanTable);
+  if (enTable && !en) console.warn('[wizard] No English translation on file for path:', path);
+  if (hiTable && !hi) console.warn('[wizard] No Hindi translation on file for path:', path);
+  return {
+    kent: kentToken,               // Kent's original term — always shown, never replaced
+    en: (en && en.plain) || '',    // plain English — blank only if genuinely no translation exists
+    hi: (hi && hi.plain) || '',    // Hindi (Devanagari) — blank only if genuinely no translation exists
+    roman: roman || '' // Romanized Hindi — file stores this as a direct string, not {plain, category}
+  };
+}
+
+// Core primitive — validated against live data before this build began.
+// Given a partial path (array of tokens starting with the chapter), returns:
+//   exactMatchRubric — the rubric AT exactly this path, if one exists
+//   nextOptions      — { token: { rubricCount, totalRemedies, sampleId, samplePath } }
+function getNextOptions(pathTokens) {
+  const chapter = pathTokens[0];
+  const bucket = state.data.chaptersBucketed[chapter] || [];
+  const prefixLower = pathTokens.map(t => t.toLowerCase());
+
+  let exactMatchRubric = null;
+  const nextOptions = {};
+
+  for (const [id, path, remedies] of bucket) {
+    const rParts = path.split(',').map(s => s.trim());
+    if (rParts.length < prefixLower.length) continue;
+    let isPrefix = true;
+    for (let i = 0; i < prefixLower.length; i++) {
+      if (rParts[i].toLowerCase() !== prefixLower[i]) { isPrefix = false; break; }
+    }
+    if (!isPrefix) continue;
+
+    if (rParts.length === prefixLower.length) {
+      exactMatchRubric = { id, path, remedyCount: remedies.length };
+      continue;
+    }
+    const nextToken = rParts[pathTokens.length];
+    if (!nextOptions[nextToken]) {
+      nextOptions[nextToken] = { rubricCount: 0, totalRemedies: 0, sampleId: id, samplePath: path };
+    }
+    nextOptions[nextToken].rubricCount++;
+    nextOptions[nextToken].totalRemedies += remedies.length;
+  }
+
+  return { exactMatchRubric, nextOptions };
+}
+
+// Soft, cosmetic-only classification of an option token, purely to group same-kind
+// options under a heading. Never used to hide or filter — every option from
+// getNextOptions is always shown somewhere.
+const SENSATION_RE = /\b(pain|ache|burning|stitching|cutting|tearing|throbbing|pressing|drawing|numbness|itching|heaviness|constriction|tension)\b/i;
+const TIMING_RE = /\b(morning|forenoon|noon|afternoon|evening|night|midnight|before|after|during|periodic|every|annually|monthly|daily|hourly)\b/i;
+const MODALITY_RE = /\b(agg|amel|better|worse|from|during|while|motion|rest|touch|pressure|warm|cold|damp|eating|lying|standing|sitting)\b/i;
+const LATERALITY_RE = /\b(right|left|one side|alternating sides|side to side)\b/i;
+const CAUSE_RE = /\b(from|after|ailments from|due to|following|induced by)\b/i;
+const SEQUENCE_RE = /alternating with|followed by|preceded by|extending to|extends to|spreading to/i;
+const CONTENT_RE = /as if|as from|sensation of|like|as though/i;
+
+function classifyOptionKind(token) {
+  if (SENSATION_RE.test(token)) return 'What it feels like';
+  if (TIMING_RE.test(token)) return 'When it happens';
+  if (MODALITY_RE.test(token)) return 'What affects it';
+  if (LATERALITY_RE.test(token)) return 'Which side';
+  return 'Other details';
+}
+
+// =================================================================
+// RENDER
+// =================================================================
+function render() {
+  const app = document.getElementById('app');
+  if (state.screen === 'loading') app.innerHTML = renderLoading();
+  else if (state.screen === 'intake') app.innerHTML = renderIntakeScreen();
+  else if (state.screen === 'lock') app.innerHTML = renderLockScreen();
+  else if (state.screen === 'chapters') app.innerHTML = renderChapterSelect();
+  else if (state.screen === 'walk') app.innerHTML = renderWalkStep();
+  else if (state.screen === 'connectorPrompt') app.innerHTML = renderConnectorPrompt();
+  else if (state.screen === 'caseReview') app.innerHTML = renderCaseReview();
+  else if (state.screen === 'search') app.innerHTML = renderSearchScreen();
+  else if (state.screen === 'submitted') app.innerHTML = renderSubmittedScreen();
+
+  if (state.screen === 'intake') wireIntakeScreen();
+  if (state.screen === 'lock') wireLockScreen();
+}
+
+function renderLoading() {
+  return `<div class="loading"><p style="font-size:14px;color:var(--ink3)">Loading repertory data…</p>
+    <div class="load-bar"><div class="load-anim"></div></div></div>`;
+}
+
+function renderIntakeScreen() {
+  const p = state.patient;
+  return `
+    ${renderTopbar('Punarvasu Clinic', 'A few details before we begin')}
+    <div class="body">
+      <h2 class="step-title">Tell us about yourself</h2>
+      <p class="step-sub">This helps the doctor understand your case.</p>
+
+      <div class="option-group">
+        <div class="option-group-label">Name</div>
+        <input id="intakeNameField" class="search-box" type="text" placeholder="Full name" value="${escAttr(p.name)}">
+      </div>
+      <div class="option-group">
+        <div class="option-group-label">Age</div>
+        <input id="intakeAgeField" class="search-box" type="number" min="0" max="120" placeholder="Age in years" value="${escAttr(p.age)}">
+      </div>
+      <div class="option-group">
+        <div class="option-group-label">Sex</div>
+        <div style="display:flex;gap:8px">
+          ${['male','female','other'].map(s => `
+            <div class="ch-card" style="flex:1;${p.sex===s ? 'border-color:var(--teal);background:var(--amber-bg)' : ''}" onclick="onIntakeSexPick('${s}')">
+              <div class="en">${s.charAt(0).toUpperCase()+s.slice(1)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="option-group">
+        <div class="option-group-label">Location (optional)</div>
+        <input id="intakeLocationField" class="search-box" type="text" placeholder="City / town" value="${escAttr(p.location)}">
+      </div>
+      <div class="option-group">
+        <div class="option-group-label">Reason for consultation</div>
+        <textarea id="intakeReasonField" class="search-box" style="height:80px" placeholder="Briefly, what brings you in today?">${esc(p.reason)}</textarea>
+      </div>
+
+      ${state.lock.error && state.screen==='intake' ? `<div class="no-match-msg">${esc(state.lock.error)}</div>` : ''}
+      <button class="btn-primary" onclick="onIntakeContinue()">Continue</button>
+    </div>
+  `;
+}
+
+function wireIntakeScreen() {
+  const nameF = document.getElementById('intakeNameField');
+  const ageF = document.getElementById('intakeAgeField');
+  const locF = document.getElementById('intakeLocationField');
+  const reasonF = document.getElementById('intakeReasonField');
+  if (nameF) nameF.addEventListener('input', () => { state.patient.name = nameF.value; });
+  if (ageF) ageF.addEventListener('input', () => { state.patient.age = ageF.value; });
+  if (locF) locF.addEventListener('input', () => { state.patient.location = locF.value; });
+  if (reasonF) reasonF.addEventListener('input', () => { state.patient.reason = reasonF.value; });
+}
+
+function onIntakeSexPick(sex) {
+  state.patient.sex = sex;
+  render();
+}
+
+function onIntakeContinue() {
+  const p = state.patient;
+  if (!p.name.trim() || !p.age || !p.sex) {
+    state.lock.error = 'Please fill in name, age, and sex before continuing.';
+    render();
+    return;
+  }
+  state.lock.error = '';
+  state.screen = 'lock';
+  render();
+}
+
+function renderLockScreen() {
+  return `
+    ${renderTopbar('Punarvasu Clinic', 'Enter your access code')}
+    <div class="body">
+      <button class="back-btn" onclick="state.screen='intake'; render();">&larr; Back</button>
+      <h2 class="step-title">Enter your one-time access code</h2>
+      <p class="step-sub">This code was given to you by the clinic and works once.</p>
+
+      <input id="lockCodeField" class="search-box ${state.lock.error ? 'no-match' : ''}" type="text" placeholder="e.g. XK7M2PQR" value="${escAttr(state.lock.codeInput)}" style="text-transform:uppercase">
+      ${state.lock.error ? `<div class="no-match-msg">${esc(state.lock.error)}</div>` : ''}
+      <button class="btn-primary" id="lockSubmitBtn" ${state.lock.busy ? 'disabled' : ''}>${state.lock.busy ? 'Checking…' : 'Unlock'}</button>
+    </div>
+  `;
+}
+
+function wireLockScreen() {
+  const codeF = document.getElementById('lockCodeField');
+  const btn = document.getElementById('lockSubmitBtn');
+  if (codeF) codeF.addEventListener('input', () => { state.lock.codeInput = codeF.value; });
+  if (btn) btn.addEventListener('click', onLockSubmit);
+}
+
+async function onLockSubmit() {
+  const code = (state.lock.codeInput || '').trim().toUpperCase();
+  if (!code) {
+    state.lock.error = 'Please enter a code.';
+    render();
+    return;
+  }
+  state.lock.busy = true;
+  state.lock.error = '';
+  render();
+
+  const result = await window.checkAndUseAccessCode(code);
+  state.lock.busy = false;
+
+  if (result.ok) {
+    state.lock.isUnlocked = true;
+    state.lock.accessCodeUsed = code;
+    state.screen = 'chapters';
+    render();
+  } else if (result.reason === 'used') {
+    state.lock.error = 'This code has already been used. Please contact the clinic for a new one.';
+    render();
+  } else {
+    state.lock.error = 'That code was not recognized. Please check and try again.';
+    render();
+  }
+}
+
+function renderSubmittedScreen() {
+  return `
+    ${renderTopbar('Punarvasu Clinic', 'Thank you')}
+    <div class="body">
+      <div class="stop-here-card">
+        <div class="label">Submitted</div>
+        <div class="kent">Your case has been sent to the clinic.</div>
+        <div class="en">The doctor will review your responses and contact you.</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderTopbar(title, sub) {
+  return `<div class="topbar">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div><h1>${title}</h1><div class="sub">${sub}</div></div>
+      <button class="search-btn" onclick="onOpenSearch()">&#128269; Search</button>
+    </div>
+  </div>`;
+}
+
+function renderBreadcrumb() {
+  if (!state.currentWalk.pathTokens.length) return '';
+  const segs = state.currentWalk.pathTokens.map(t => `<span class="seg">${esc(t)}</span>`).join('');
+  return `<div class="breadcrumb">${segs}</div>`;
+}
+
+function renderChapterSelect() {
+  const sex = state.patient.sex;
+  const visibleChapters = state.data.chapterList.filter(ch => {
+    if (sex === 'male' && ch === 'Genitalia female') return false;
+    if (sex === 'female' && ch === 'Genitalia male') return false;
+    return true;
+  });
+  const cards = visibleChapters.map(ch => {
+    const disp = getDisplayText(ch, ch, ch);
+    return `<div class="ch-card" onclick="onChapterPick('${escAttr(ch)}')">
+      <div class="en">${esc(ch)}</div>
+      ${disp.hi ? `<div class="hi">${esc(disp.hi.slice(0,20))}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  const caseCount = state.completeCase.length;
+
+  return `
+    ${renderTopbar('Guided Case Wizard', 'Select what is troubling the patient')}
+    <div class="body">
+      <h2 class="step-title">Where is the main problem, or what kind of problem is it?</h2>
+      <p class="step-sub">Pick the one that best matches — you can add more complaints after this one.</p>
+      <div class="chapter-grid">${cards}</div>
+    </div>
+    ${caseCount ? `<div class="footer-bar">
+      <button class="btn-outline" onclick="goToCaseReview()">Review case (${caseCount} added)</button>
+    </div>` : ''}
+  `;
+}
+
+let searchFilter = '';
+let showAllOptions = false;
+let collapsedGroups = {}; // { groupLabel: true/false } — true = collapsed. Reusable pattern.
+
+// Reusable collapsible-section renderer — used for option groups here, and
+// intended for reuse anywhere else in the app that needs the same
+// collapsed-by-default, tap-to-expand-and-collapse-again behavior.
+function renderCollapsibleSection(groupKey, label, countLabel, innerHtml) {
+  const isCollapsed = collapsedGroups[groupKey] !== false; // collapsed by default
+  return `
+    <div class="collapsible-section">
+      <div class="collapsible-header" onclick="onToggleGroup('${escAttr(groupKey)}')">
+        <span class="collapsible-arrow ${isCollapsed ? '' : 'open'}">&#9656;</span>
+        <span class="collapsible-label">${esc(label)}</span>
+        <span class="collapsible-count">${esc(countLabel)}</span>
+      </div>
+      ${!isCollapsed ? `<div class="collapsible-body">${innerHtml}</div>` : ''}
+    </div>
+  `;
+}
+
+function onToggleGroup(groupKey) {
+  const currentlyCollapsed = collapsedGroups[groupKey] !== false;
+  const willExpand = currentlyCollapsed;
+
+  // Accordion behavior: expanding a live option-group ("What it feels like",
+  // "Other details", etc.) auto-collapses its sibling groups at the same step,
+  // making room for it. This does NOT apply to selectedNode history rows —
+  // those are sequential/nested, not mutually-exclusive alternatives, so each
+  // toggles independently.
+  if (willExpand && !groupKey.startsWith('selectedNode::')) {
+    const lastSep = groupKey.lastIndexOf('::');
+    if (lastSep !== -1) {
+      const scopePrefix = groupKey.slice(0, lastSep + 2); // same step, up to and including the final '::'
+      for (const key in collapsedGroups) {
+        if (key !== groupKey && key.startsWith(scopePrefix) && !key.startsWith('selectedNode::')) {
+          collapsedGroups[key] = true; // force-collapse sibling groups
+        }
+      }
+    }
+  }
+
+  collapsedGroups[groupKey] = !currentlyCollapsed;
+  render();
+}
+
+function renderWalkStep() {
+  const pathTokens = state.currentWalk.pathTokens;
+  const chapter = pathTokens[0];
+
+  // Render every already-made selection (depth 1 .. end) as a static, indented,
+  // individually-collapsible row — this is the persistent history the patient
+  // asked for. Each row gets its own expand/collapse arrow. Collapsing a row
+  // only hides what's visually nested under it; it never removes the underlying
+  // selection (pathTokens itself is untouched by collapsing).
+  let historyHtml = '';
+  let stoppedAtCollapsedDepth = -1;
+
+  for (let depth = 1; depth < pathTokens.length; depth++) {
+    const tokenAtDepth = pathTokens[depth];
+    const pathUpToHere = pathTokens.slice(0, depth + 1).join(', ');
+    const disp = getDisplayText(chapter, pathUpToHere, tokenAtDepth);
+    const indent = (depth - 1) * 14;
+    const nodeKey = 'selectedNode::' + pathUpToHere;
+    const isCollapsed = collapsedGroups[nodeKey] === true; // selected nodes default OPEN
+
+    historyHtml += `
+      <div class="selected-node" style="margin-left:${indent}px">
+        <div class="selected-node-header" onclick="onToggleGroup('${escAttr(nodeKey)}')">
+          <span class="collapsible-arrow ${isCollapsed ? '' : 'open'}">&#9656;</span>
+          <div class="selected-node-text">
+            ${renderTrilingualBlock(disp)}
+          </div>
+        </div>
+      </div>`;
+
+    if (isCollapsed) { stoppedAtCollapsedDepth = depth; break; }
+  }
+
+  // If the path was cut short by a collapsed node, nothing further renders below it.
+  if (stoppedAtCollapsedDepth !== -1) {
+    return `
+      ${renderTopbar('Guided Case Wizard', chapter)}
+      ${renderBreadcrumb()}
+      <div class="body">
+        <button class="back-btn" onclick="onWalkBack()">&larr; Back</button>
+      ${state.editingCaseIndex !== null ? `<div class="editing-banner">Editing an existing complaint. <span class="cancel-edit-link" onclick="onCancelEdit()">Cancel — keep original</span></div>` : ''}
+        <h2 class="step-title">Choose what applies</h2>
+        ${historyHtml}
+      </div>
+    `;
+  }
+
+  // Live, interactive options at the current deepest level — same logic as
+  // before, just now indented to sit visually under the selection history.
+  const liveIndent = (pathTokens.length - 1) * 14;
+  const { exactMatchRubric, nextOptions } = getNextOptions(pathTokens);
+
+  let entries = Object.entries(nextOptions);
+  if (searchFilter) {
+    const filterWords = searchFilter.split(/[,\s]+/).map(w => w.trim().toLowerCase()).filter(Boolean);
+    entries = entries.filter(([token]) => {
+      const optPath = pathTokens.concat([token]).join(', ');
+      const disp = getDisplayText(chapter, optPath, token);
+      const searchable = (disp.kent + ' ' + disp.en + ' ' + disp.hi + ' ' + disp.roman).toLowerCase();
+      return filterWords.every(w => searchable.includes(w));
+    });
+  }
+  entries.sort((a, b) => b[1].rubricCount - a[1].rubricCount);
+
+  const totalCount = entries.length;
+  const displayEntries = showAllOptions ? entries : entries.slice(0, 15);
+
+  const grouped = {};
+  for (const [token, info] of displayEntries) {
+    const kind = classifyOptionKind(token);
+    if (!grouped[kind]) grouped[kind] = [];
+    grouped[kind].push([token, info]);
+  }
+
+  let stopHereHtml = '';
+  if (exactMatchRubric) {
+    const disp = getDisplayText(chapter, exactMatchRubric.path, pathTokens[pathTokens.length - 1]);
+    stopHereHtml = `<div class="stop-here-card" onclick="onAddRubric('${exactMatchRubric.id}', '${escAttr(exactMatchRubric.path)}', ${exactMatchRubric.remedyCount})">
+      <div class="label">This describes it</div>
+      ${renderTrilingualBlock(disp)}
+    </div>`;
+  }
+
+  const groupsHtml = Object.entries(grouped).map(([kind, opts]) => {
+    const inner = opts.map(([token, info]) => {
+      const optPath = pathTokens.concat([token]).join(', ');
+      const disp = getDisplayText(chapter, optPath, token);
+      return `<div class="opt-card" onclick="onOptionPick('${escAttr(token)}')">
+        ${renderTrilingualBlock(disp, info.rubricCount)}
+        <div class="meta">${info.totalRemedies} remedy-references</div>
+      </div>`;
+    }).join('');
+    return renderCollapsibleSection(chapter + '::' + pathTokens.join(',') + '::' + kind, kind, opts.length + ' option(s)', inner);
+  }).join('');
+
+  const showAllLink = (!showAllOptions && totalCount > 15)
+    ? `<div class="show-all-link" onclick="onShowAllOptions()">Show all ${totalCount} options</div>` : '';
+
+  const noMoreOptions = totalCount === 0;
+  const filterMatchedNothing = noMoreOptions && searchFilter.length > 0;
+  const genuinelyNoData = noMoreOptions && searchFilter.length === 0;
+
+  return `
+    ${renderTopbar('Guided Case Wizard', chapter)}
+    ${renderBreadcrumb()}
+    <div class="body">
+      <button class="back-btn" onclick="onWalkBack()">&larr; Back</button>
+      ${state.editingCaseIndex !== null ? `<div class="editing-banner">Editing an existing complaint. <span class="cancel-edit-link" onclick="onCancelEdit()">Cancel — keep original</span></div>` : ''}
+      <h2 class="step-title">Choose what applies</h2>
+      <p class="step-sub">Select one to go more specific, or use "This describes it" to stop here.</p>
+      ${historyHtml}
+      <div style="margin-left:${liveIndent}px">
+        ${totalCount > 8 || searchFilter ? `<input id="walkFilterInput" class="search-box ${filterMatchedNothing ? 'no-match' : ''}" type="text" placeholder="Search these options…" value="${escAttr(searchFilter)}" oninput="onSearchFilterChange(this.value)">` : ''}
+        ${filterMatchedNothing ? `<div class="no-match-msg">No option here matches "${esc(searchFilter)}" — try a shorter part of the word, or clear this to see everything again.</div>` : ''}
+        ${stopHereHtml}
+        ${genuinelyNoData && !exactMatchRubric ? `<div class="empty-state">No further detail on file for this exact combination.</div>` : ''}
+        ${groupsHtml}
+        ${showAllLink}
+      </div>
+    </div>
+  `;
+}
+
+function renderConnectorPrompt() {
+  const item = state.connectorQueue[0];
+  const typeLabel = { cause: 'often follows', sequence: 'often alternates or occurs together with', content: 'is often described alongside' }[item.connectorType] || 'is often linked with';
+  return `
+    ${renderTopbar('Guided Case Wizard', 'Related symptom check')}
+    <div class="body">
+      <div class="connector-box">
+        <div class="label">Worth checking</div>
+        <p>This complaint ${typeLabel} a symptom in <strong>${esc(item.connectedChapter)}</strong>. Would you like to check that too?</p>
+      </div>
+      <button class="btn-primary" style="margin-bottom:8px" onclick="onConnectorAccept('${escAttr(item.connectedChapter)}')">Yes, check ${esc(item.connectedChapter)}</button>
+      <button class="btn-outline" onclick="onConnectorSkip()">No, skip this</button>
+    </div>
+  `;
+}
+
+function renderCaseReview() {
+  const items = state.completeCase.map((c, i) => {
+    const chapter = c.path.split(',')[0].trim();
+    const disp = getDisplayText(chapter, c.path, c.path.split(',').map(s=>s.trim()).pop());
+    return `
+    <div class="case-item" onclick="onEditCaseItem(${i})">
+      <button class="remove-btn" onclick="event.stopPropagation(); onRemoveCaseItem(${i})">Remove</button>
+      ${renderTrilingualBlock(disp)}
+      <div class="remedy-count">${c.remedyCount} remedy-references on file</div>
+      <div class="case-item-hint">Tap to review or change this selection</div>
+    </div>
+  `;
+  }).join('');
+
+  return `
+    ${renderTopbar('Guided Case Wizard', 'Case in progress')}
+    <div class="body">
+      <h2 class="step-title">Complaints added so far</h2>
+      ${state.completeCase.length ? items : '<div class="empty-state">No complaints added yet.</div>'}
+    </div>
+    <div class="footer-bar" style="flex-direction:column">
+      <button class="btn-primary" onclick="onAddAnotherComplaint()">+ Add another complaint</button>
+      ${state.completeCase.length ? `<button class="btn-outline" onclick="onSubmitCase()" ${state.submit.busy ? 'disabled' : ''}>${state.submit.busy ? 'Submitting…' : 'Submit case (' + state.completeCase.length + ' complaint(s))'}</button>` : ''}
+      ${state.submit.error ? `<div class="no-match-msg">${esc(state.submit.error)}</div>` : ''}
+    </div>
+  `;
+}
+
+// =================================================================
+function renderSearchScreen() {
+  const q = state.search.query.trim();
+  const keywords = q.split(/[,\s]+/).map(k => k.trim().toLowerCase()).filter(Boolean);
+
+  const TAB_DEFS = [
+    { key: 'all', label: 'All' },
+    { key: 'sensation', label: 'Sensation' },
+    { key: 'timing', label: 'Timing' },
+    { key: 'modality', label: 'Modality' },
+    { key: 'laterality', label: 'Laterality' },
+    { key: 'cause', label: 'Cause' },
+    { key: 'sequence', label: 'Sequence' },
+    { key: 'content', label: 'Content' }
+  ];
+  const tabsHtml = TAB_DEFS.map(t => `
+    <button class="tab-btn ${state.search.activeTab === t.key ? 'active' : ''}" onclick="onSearchTabChange('${t.key}')">${esc(t.label)}</button>
+  `).join('');
+
+  let resultsHtml = '';
+  let totalCount = 0;
+  let nudgeHtml = '';
+
+  if (keywords.length && state.data.searchIndex) {
+    let matches = state.data.searchIndex.filter(r => keywords.every(k => r.searchable.includes(k)));
+    if (state.search.activeTab !== 'all') {
+      matches = matches.filter(r => r.tags[state.search.activeTab]);
+    }
+    matches.sort((a, b) => b.remedyCount - a.remedyCount);
+    totalCount = matches.length;
+
+    if (totalCount > 150) {
+      nudgeHtml = `<div class="search-nudge">This matched a very large number of rubrics (${totalCount}). Try adding when it happens, which side, or what makes it better/worse to narrow this down.</div>`;
+    }
+
+    const shown = matches.slice(0, state.search.displayLimit);
+    const byChapter = {};
+    for (const r of shown) {
+      if (!byChapter[r.chapter]) byChapter[r.chapter] = [];
+      byChapter[r.chapter].push(r);
+    }
+
+    resultsHtml = Object.entries(byChapter).map(([chapter, items]) => `
+      <div class="option-group-label" style="margin-top:14px">${esc(chapter)} (${items.length} shown)</div>
+      ${items.map(r => {
+        const disp = getDisplayText(r.chapter, r.path, r.path.split(',').map(s=>s.trim()).pop());
+        return `<div class="opt-card" onclick="onSearchResultPick('${escAttr(r.path)}')">
+          ${renderTrilingualBlock(disp)}
+          <div class="meta">${r.remedyCount} remedy-references</div>
+        </div>`;
+      }).join('')}
+    `).join('');
+
+    if (state.search.displayLimit < totalCount) {
+      resultsHtml += `<div class="show-all-link" onclick="onSearchShowMore()">Showing ${Math.min(state.search.displayLimit, totalCount)} of ${totalCount} — show more</div>`;
+    }
+  }
+
+  return `
+    ${renderTopbar('Search', 'Find a rubric directly, in Kent term, English, or Hindi')}
+    <div class="body">
+      <button class="back-btn" onclick="onCloseSearch()">&larr; Back</button>
+      <input id="globalSearchInput" class="search-box" type="text" placeholder="e.g. pain, morning, right side…" value="${escAttr(state.search.query)}" oninput="onSearchInput(this.value)" autofocus>
+      <p class="step-sub">Separate multiple keywords with commas. More keywords narrow the results.</p>
+      <div class="search-tabs">${tabsHtml}</div>
+      ${nudgeHtml}
+      ${!keywords.length ? `<div class="empty-state">Start typing to search across all chapters.</div>` : ''}
+      ${keywords.length && !totalCount ? `<div class="empty-state">No rubrics found matching all of: ${esc(keywords.join(', '))}</div>` : ''}
+      ${resultsHtml}
+    </div>
+  `;
+}
+
+
+// =================================================================
+function onChapterPick(chapter) {
+  state.currentWalk = { pathTokens: [chapter] };
+  searchFilter = '';
+  showAllOptions = false;
+  collapsedGroups = {};
+  state.screen = 'walk';
+  render();
+}
+
+function onOptionPick(token) {
+  state.currentWalk.pathTokens.push(token);
+  searchFilter = '';
+  showAllOptions = false;
+  collapsedGroups = {};
+  render();
+}
+
+function onWalkBack() {
+  if (state.currentWalk.pathTokens.length <= 1) {
+    state.screen = 'chapters';
+    state.editingCaseIndex = null; // abandoning the walk cancels any in-progress edit; original entry is untouched
+  } else {
+    state.currentWalk.pathTokens.pop();
+  }
+  searchFilter = '';
+  showAllOptions = false;
+  collapsedGroups = {};
+  render();
+}
+
+function onEditCaseItem(index) {
+  const item = state.completeCase[index];
+  state.editingCaseIndex = index;
+  state.currentWalk = { pathTokens: item.path.split(',').map(s => s.trim()) };
+  searchFilter = '';
+  showAllOptions = false;
+  collapsedGroups = {};
+  state.screen = 'walk';
+  render();
+}
+
+function onCancelEdit() {
+  state.editingCaseIndex = null;
+  state.screen = 'caseReview';
+  render();
+}
+
+function onSearchFilterChange(val) {
+  const inputEl = document.getElementById('walkFilterInput');
+  const cursorPos = inputEl ? inputEl.selectionStart : val.length;
+
+  searchFilter = val;
+  render();
+
+  const newInputEl = document.getElementById('walkFilterInput');
+  if (newInputEl) {
+    newInputEl.focus();
+    newInputEl.setSelectionRange(cursorPos, cursorPos);
+  }
+}
+
+function onShowAllOptions() {
+  showAllOptions = true;
+  render();
+}
+
+function onAddRubric(rubricId, path, remedyCount) {
+  if (state.editingCaseIndex !== null) {
+    state.completeCase[state.editingCaseIndex] = { rubricId, path, remedyCount };
+    state.editingCaseIndex = null;
+  } else {
+    state.completeCase.push({ rubricId, path, remedyCount });
+  }
+
+  // Connector check — optional, skippable, never forced (Decision 6)
+  const suggestions = (state.data.connectorMap[rubricId] || []);
+  if (suggestions.length) {
+    state.connectorQueue = suggestions.slice(0, 3); // cap at 3 to avoid overwhelming
+    state.screen = 'connectorPrompt';
+  } else {
+    state.screen = 'caseReview';
+  }
+  render();
+}
+
+function onConnectorAccept(connectedChapter) {
+  state.connectorQueue.shift();
+  state.currentWalk = { pathTokens: [connectedChapter] };
+  searchFilter = '';
+  showAllOptions = false;
+  collapsedGroups = {};
+  state.screen = 'walk';
+  render();
+}
+
+function onConnectorSkip() {
+  state.connectorQueue.shift();
+  if (state.connectorQueue.length) {
+    render(); // show next queued suggestion
+  } else {
+    state.screen = 'caseReview';
+    render();
+  }
+}
+
+function onRemoveCaseItem(index) {
+  state.completeCase.splice(index, 1);
+  render();
+}
+
+function onAddAnotherComplaint() {
+  state.currentWalk = { pathTokens: [] };
+  state.screen = 'chapters';
+  render();
+}
+
+function onOpenSearch() {
+  state.returnScreenAfterSearch = state.screen === 'search' ? state.returnScreenAfterSearch : state.screen;
+  state.search.query = '';
+  state.search.activeTab = 'all';
+  state.search.displayLimit = 30;
+  state.screen = 'search';
+  render();
+}
+
+function onCloseSearch() {
+  state.screen = state.returnScreenAfterSearch || 'chapters';
+  render();
+}
+
+function onSearchInput(val) {
+  const inputEl = document.getElementById('globalSearchInput');
+  const cursorPos = inputEl ? inputEl.selectionStart : val.length;
+
+  state.search.query = val;
+  state.search.displayLimit = 30; // reset pagination on every new query
+  render();
+
+  const newInputEl = document.getElementById('globalSearchInput');
+  if (newInputEl) {
+    newInputEl.focus();
+    newInputEl.setSelectionRange(cursorPos, cursorPos);
+  }
+}
+
+function onSearchTabChange(tabKey) {
+  state.search.activeTab = tabKey;
+  state.search.displayLimit = 30;
+  render();
+}
+
+function onSearchShowMore() {
+  state.search.displayLimit += 30;
+  render();
+}
+
+// The core of the search-to-tree feature: a chosen rubric's full path becomes
+// the walk's pathTokens directly, landing the patient exactly there — the
+// exact same rendering logic used for normal click-through browsing then
+// takes over from this point on, with no special-casing needed downstream.
+function onSearchResultPick(path) {
+  const pathTokens = path.split(',').map(s => s.trim());
+  state.currentWalk = { pathTokens };
+  searchFilter = '';
+  showAllOptions = false;
+  collapsedGroups = {};
+  state.screen = 'walk';
+  render();
+}
+
+
+function goToCaseReview() {
+  state.screen = 'caseReview';
+  render();
+}
+async function onSubmitCase() {
+  state.submit.busy = true;
+  state.submit.error = '';
+  render();
+
+  const payload = {
+    patient: state.patient,
+    accessCodeUsed: state.lock.accessCodeUsed,
+    complaints: state.completeCase,
+    submittedAt: new Date().toISOString()
+  };
+
+  const result = await window.submitCaseToFirebase(payload);
+  state.submit.busy = false;
+
+  if (result.ok) {
+    state.screen = 'submitted';
+    render();
+  } else {
+    state.submit.error = result.error || 'Could not submit — please try again.';
+    render();
+  }
+}
+
+// =================================================================
+// UTIL
+// =================================================================
+function esc(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escAttr(s) {
+  return String(s || '').replace(/'/g, "\\'");
+}
+
+// =================================================================
+// BOOT
+// =================================================================
+window.addEventListener('DOMContentLoaded', () => {
+  // slight delay to let the script-tag data finish evaluating
+  setTimeout(initData, 50);
+});
+</script>
+
+<script type="module">
+  // Same Firebase project and SDK version as questionnaire_prototype.html and
+  // admin-panel.html — reusing the exact, already-tested access-code checking
+  // logic, plus a new function for writing a completed case.
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, get, update, push, set }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAqzKPqBzNoBJc5FWjnVXMER4prgrbhqag",
+    authDomain: "punarvasu-790a8.firebaseapp.com",
+    databaseURL: "https://punarvasu-790a8-default-rtdb.firebaseio.com",
+    projectId: "punarvasu-790a8",
+    storageBucket: "punarvasu-790a8.firebasestorage.app",
+    messagingSenderId: "774115339459",
+    appId: "1:774115339459:web:4ee1f45e1e25d61666c676"
+  };
+
+  const app = initializeApp(firebaseConfig, 'patientIntakeApp');
+  const db = getDatabase(app);
+
+  // Identical logic to questionnaire_prototype.html's access-code check —
+  // same rules, same behavior: burns the code the instant it's valid.
+  window.checkAndUseAccessCode = async function (code) {
+    try {
+      const codeRef = ref(db, 'accessCodes/' + code);
+      const snap = await get(codeRef);
+      if (!snap.exists()) return { ok: false, reason: 'invalid' };
+      const data = snap.val();
+      if (data.used === true) return { ok: false, reason: 'used' };
+      await update(codeRef, { used: true });
+      return { ok: true };
+    } catch (e) {
+      console.error('[patient-intake] access code check failed:', e);
+      return { ok: false, reason: 'error' };
+    }
+  };
+
+  // Writes the completed case to a new /cases node — patient info, the full
+  // selected-rubric list, which access code unlocked this session, and a
+  // timestamp. Security rules (separate from this file) ensure a patient can
+  // only write their own new case, never read anyone else's.
+  window.submitCaseToFirebase = async function (payload) {
+    try {
+      const casesRef = ref(db, 'cases');
+      const newCaseRef = push(casesRef);
+      await set(newCaseRef, payload);
+      return { ok: true, caseId: newCaseRef.key };
+    } catch (e) {
+      console.error('[patient-intake] case submission failed:', e);
+      return { ok: false, error: e.message };
+    }
+  };
+</script>
+</body>
+</html>
