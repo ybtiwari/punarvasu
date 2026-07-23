@@ -213,15 +213,17 @@ async function initData() {
   }
 
   // If a ?code=XXXXXXXX parameter is present in the URL (sent via the
-  // WhatsApp welcome message), pre-fill the lock screen code field so the
-  // patient just needs to tap Unlock. We do NOT auto-submit — the patient
-  // sees the lock screen with the code already filled and taps Unlock.
+  // WhatsApp welcome message), pre-fill the lock screen code field and show
+  // the lock screen FIRST — the patient sees their code pre-filled, taps
+  // Unlock, then fills their basic details. Without a URL code, the normal
+  // flow applies: intake details first, then the lock screen.
   const urlCode = new URLSearchParams(window.location.search).get('code');
   if (urlCode) {
     state.lock.codeInput = urlCode.trim().toUpperCase();
+    state.screen = 'lock';
+  } else {
+    state.screen = 'intake';
   }
-
-  state.screen = 'intake';
   render();
 }
 
@@ -426,7 +428,8 @@ function onIntakeContinue() {
     return;
   }
   state.lock.error = '';
-  state.screen = 'lock';
+  // If already unlocked via URL code, skip lock screen and go straight to chapters
+  state.screen = state.lock.isUnlocked ? 'chapters' : 'lock';
   render();
 }
 
@@ -493,7 +496,10 @@ async function onLockSubmit() {
   if (result.ok) {
     state.lock.isUnlocked = true;
     state.lock.accessCodeUsed = code;
-    state.screen = 'chapters';
+    // If patient came via URL code, they haven't filled intake details yet
+    // (name will be empty). Send them to intake first, then chapters.
+    const hasIntakeDetails = !!(state.patient.name && state.patient.age && state.patient.sex);
+    state.screen = hasIntakeDetails ? 'chapters' : 'intake';
     render();
   } else if (result.reason === 'used') {
     state.lock.error = 'This code has already been used. Please contact the clinic for a new one.';

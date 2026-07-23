@@ -472,7 +472,7 @@
           <h3 style="margin-bottom:10px;">Step 3 &mdash; Welcome card</h3>
           <p class="np-step">The full branded card with QR code is generated below. Download it and attach it in WhatsApp alongside the message.</p>
           <div class="np-qr-wrap" style="padding:12px;">
-            <canvas id="npCardCanvas" width="540" height="540" style="max-width:100%;border-radius:8px;"></canvas>
+            <canvas id="npCardCanvas" width="540" height="660" style="max-width:100%;border-radius:8px;"></canvas>
             <canvas id="npQrCanvas" width="180" height="180" style="display:none;"></canvas>
             <div class="np-qr-label" id="npQrUrl" style="margin-top:8px;">&mdash;</div>
             <button class="np-copy-btn" style="margin-top:10px;padding:8px 16px;font-size:13px;" onclick="npDownloadCard()">&#11015; Download welcome card</button>
@@ -1488,210 +1488,127 @@ function npCopyCode() {
   setTimeout(() => btn.textContent = orig, 1500);
 }
 function npDrawCard(cardCanvas, qrCanvas, code, url) {
-  const W = 540, H = 540;
+  const W = 540, H = 660;
+  cardCanvas.width = W; cardCanvas.height = H;
   const ctx = cardCanvas.getContext('2d');
   ctx.clearRect(0, 0, W, H);
 
-  // Background — off-white
-  ctx.fillStyle = '#FAFAF8';
+  // ── BACKGROUND ──
+  ctx.fillStyle = '#0F2035';
   ctx.fillRect(0, 0, W, H);
 
-  // Dot pattern
-  ctx.fillStyle = '#C8C0B8';
-  for (let x = 9; x < W; x += 18) for (let y = 9; y < H; y += 18) {
-    ctx.beginPath(); ctx.arc(x, y, 0.8, 0, Math.PI*2); ctx.fill();
+  // Subtle dot grid
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  for (let x = 12; x < W; x += 22) for (let y = 12; y < H; y += 22) {
+    ctx.beginPath(); ctx.arc(x, y, 1, 0, Math.PI*2); ctx.fill();
   }
 
   // Top teal bar
   ctx.fillStyle = '#00E5CC';
-  ctx.fillRect(0, 0, W, 6);
+  ctx.fillRect(0, 0, W, 8);
 
-  // ── LOGO MARK (ring + lotus) ──
-  const mx = 70, my = 72, mr = 36;
-  ctx.strokeStyle = '#2C2820'; ctx.lineWidth = 0.8; ctx.globalAlpha = 0.15;
+  // ── LARGE LOGO MARK ── centred in top half
+  const mx = W/2, my = 185, mr = 90;
+
+  // Outer ring
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI*2); ctx.stroke();
-  ctx.globalAlpha = 1;
 
-  // Cardinal ticks — electric teal
-  const ticks = [[0,-1],[1,0],[0,1],[-1,0]];
-  ctx.strokeStyle = '#00E5CC'; ctx.lineWidth = 2.6;
-  ticks.forEach(([dx,dy]) => {
+  // Cardinal ticks — teal
+  ctx.strokeStyle = '#00E5CC'; ctx.lineWidth = 5;
+  [[0,-1],[1,0],[0,1],[-1,0]].forEach(([dx,dy]) => {
     ctx.beginPath();
-    ctx.moveTo(mx+dx*(mr), my+dy*(mr));
-    ctx.lineTo(mx+dx*(mr-9), my+dy*(mr-9));
+    ctx.moveTo(mx+dx*mr, my+dy*mr);
+    ctx.lineTo(mx+dx*(mr-18), my+dy*(mr-18));
     ctx.stroke();
   });
 
-  // Intermediate ticks — subtle
-  const ang8 = [45,135,225,315];
-  ctx.strokeStyle = '#2C2820'; ctx.lineWidth = 0.7; ctx.globalAlpha = 0.17;
-  ang8.forEach(a => {
-    const r = a * Math.PI/180;
+  // Intermediate ticks
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1;
+  [45,135,225,315].forEach(a => {
+    const r = a*Math.PI/180;
     ctx.beginPath();
     ctx.moveTo(mx+Math.cos(r)*mr, my+Math.sin(r)*mr);
-    ctx.lineTo(mx+Math.cos(r)*(mr-7), my+Math.sin(r)*(mr-7));
+    ctx.lineTo(mx+Math.cos(r)*(mr-12), my+Math.sin(r)*(mr-12));
     ctx.stroke();
   });
-  ctx.globalAlpha = 1;
 
   // Inner ring
-  ctx.strokeStyle = '#2C2820'; ctx.lineWidth = 0.4; ctx.globalAlpha = 0.10;
-  ctx.beginPath(); ctx.arc(mx, my, mr-11, 0, Math.PI*2); ctx.stroke();
-  ctx.globalAlpha = 1;
+  ctx.strokeStyle = 'rgba(255,255,255,0.10)'; ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.arc(mx, my, mr-28, 0, Math.PI*2); ctx.stroke();
 
-  // Centre circle
-  ctx.fillStyle = '#FAFAF8';
-  ctx.beginPath(); ctx.arc(mx, my, mr-14, 0, Math.PI*2); ctx.fill();
+  // Centre fill
+  ctx.fillStyle = '#0F2035';
+  ctx.beginPath(); ctx.arc(mx, my, mr-32, 0, Math.PI*2); ctx.fill();
 
-  // Lotus petals (outline)
-  ctx.strokeStyle = '#1A1814'; ctx.lineWidth = 1.1;
-  function petal(cx,cy, c1x,c1y, c2x,c2y, ex,ey) {
-    ctx.beginPath(); ctx.moveTo(cx,cy);
-    ctx.bezierCurveTo(c1x,c1y,c2x,c2y,ex,ey);
-    ctx.bezierCurveTo(c2x,c2y,c1x,c1y,cx,cy);
+  // Lotus petals (outline, white)
+  ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 2;
+  const sc = 1.4;
+  function petal(x1,y1,x2,y2,x3,y3,x4,y4) {
+    ctx.beginPath();
+    ctx.moveTo(mx+x1*sc, my+y1*sc);
+    ctx.bezierCurveTo(mx+x2*sc,my+y2*sc, mx+x3*sc,my+y3*sc, mx+x4*sc,my+y4*sc);
+    ctx.bezierCurveTo(mx+x3*sc,my+y3*sc, mx+x2*sc,my+y2*sc, mx+x1*sc,my+y1*sc);
     ctx.stroke();
   }
-  // scale lotus to ring: scale factor ~0.55
-  const s = 0.55;
-  function lp(x1,y1,x2,y2,x3,y3,x4,y4) {
-    petal(mx+x1*s, my+y1*s, mx+x2*s, my+y2*s, mx+x3*s, my+y3*s, mx+x4*s, my+y4*s);
-  }
-  lp(0,-23, 11,-14, 12,-3, 0,5);
-  lp(-15,-13, -7,-12, -4,-2, -9,6);
-  lp(15,-13, 7,-12, 4,-2, 9,6);
-  lp(-20,2, -11,-1, -5,4, -5,9);
-  lp(20,2, 11,-1, 5,4, 5,9);
-  // centre dot
-  ctx.fillStyle = '#1A1814';
-  ctx.beginPath(); ctx.arc(mx, my+3, 2.2, 0, Math.PI*2); ctx.fill();
-  // water line
-  ctx.strokeStyle = '#00E5CC'; ctx.lineWidth = 1.3;
+  petal(0,-23, 11,-14, 12,-3, 0,5);
+  petal(-15,-13, -7,-12, -4,-2, -9,6);
+  petal(15,-13, 7,-12, 4,-2, 9,6);
+  petal(-20,2, -11,-1, -5,4, -5,9);
+  petal(20,2, 11,-1, 5,4, 5,9);
+
+  // Centre dot
+  ctx.fillStyle = '#00E5CC';
+  ctx.beginPath(); ctx.arc(mx, my+4*sc, 3.5, 0, Math.PI*2); ctx.fill();
+
+  // Water line
+  ctx.strokeStyle = '#00E5CC'; ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(mx-14, my+14);
-  ctx.quadraticCurveTo(mx-7, my+10, mx, my+13);
-  ctx.quadraticCurveTo(mx+7, my+16, mx+14, my+13);
+  ctx.moveTo(mx-22*sc, my+15*sc);
+  ctx.quadraticCurveTo(mx, my+10*sc, mx, my+14*sc);
+  ctx.quadraticCurveTo(mx, my+18*sc, mx+22*sc, my+15*sc);
   ctx.stroke();
 
   // ── WORDMARK ──
-  ctx.fillStyle = '#1A1814';
-  ctx.font = 'bold 22px Palatino Linotype, Palatino, Georgia, serif';
-  ctx.letterSpacing = '3px';
-  ctx.fillText('PUNARVASU', 116, 60);
-  ctx.font = '300 9px Trebuchet MS, Arial, sans-serif';
-  ctx.fillStyle = '#6B6560';
-  ctx.fillText('CLASSICAL HOMEOPATHY', 118, 78);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 28px Palatino Linotype, Palatino, Georgia, serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('PUNARVASU', mx, 318);
+  ctx.fillStyle = '#00E5CC';
+  ctx.font = '300 11px Trebuchet MS, Arial, sans-serif';
+  ctx.fillText('CLASSICAL HOMEOPATHY', mx, 338);
 
-  // Rule line
+  // Teal rule
   ctx.strokeStyle = '#00E5CC'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(116, 85); ctx.lineTo(430, 85); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(mx-120, 348); ctx.lineTo(mx+120, 348); ctx.stroke();
 
-  // Tagline band
-  ctx.fillStyle = 'rgba(0,229,204,0.10)';
-  ctx.beginPath(); roundRect(ctx, 112, 91, 270, 22, 3); ctx.fill();
-  ctx.fillStyle = '#00E5CC'; ctx.fillRect(112, 91, 3, 22);
-  ctx.fillStyle = '#1A1814';
-  ctx.font = 'italic bold 11px Palatino Linotype, Palatino, Georgia, serif';
-  ctx.fillText('Renewing Life, Restoring Hope.', 120, 106);
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.font = 'italic 11px Palatino Linotype, Palatino, Georgia, serif';
+  ctx.fillText('Renewing Life, Restoring Hope.', mx, 364);
 
-  // Divider
-  ctx.strokeStyle = '#E0DCD4'; ctx.lineWidth = 0.7;
-  ctx.beginPath(); ctx.moveTo(30, 128); ctx.lineTo(510, 128); ctx.stroke();
+  // ── LARGE QR CODE ── centred in bottom half
+  const qSize = 220;
+  const qx = (W - qSize) / 2;
+  const qy = 385;
 
-  // ── GREETING ──
-  ctx.fillStyle = '#1A1814';
-  ctx.font = 'bold 17px Palatino Linotype, Palatino, Georgia, serif';
-  ctx.fillText('Namaste', 30, 158);
-  ctx.font = '13px Trebuchet MS, Arial, sans-serif';
-  ctx.fillStyle = '#4A4540';
-  ctx.fillText('Welcome to Punarvasu Clinic. Your consultation has been', 30, 178);
-  ctx.fillText('arranged. Please fill your symptom intake using this card.', 30, 195);
+  // QR background (white rounded rect)
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath(); roundRect(ctx, qx-10, qy-10, qSize+20, qSize+20, 12); ctx.fill();
 
-  // Instruction band
-  ctx.fillStyle = '#1A1814';
-  ctx.beginPath(); roundRect(ctx, 30, 208, 480, 46, 7); ctx.fill();
-  ctx.fillStyle = '#00E5CC'; ctx.fillRect(30, 208, 4, 46);
-  ctx.fillStyle = '#FAFAF8';
+  // Draw QR
+  if (qrCanvas && qrCanvas.width > 0) {
+    ctx.drawImage(qrCanvas, qx, qy, qSize, qSize);
+  }
+
+  // "SCAN TO OPEN" label
+  ctx.fillStyle = '#00E5CC';
   ctx.font = 'bold 10px Trebuchet MS, Arial, sans-serif';
-  ctx.fillText('HOW TO USE', 42, 226);
-  ctx.font = '10px Trebuchet MS, Arial, sans-serif';
-  ctx.fillStyle = '#C0BDB8';
-  ctx.fillText('Tap the link or scan the QR code — your access code fills automatically.', 42, 241);
-  ctx.fillText('If needed, enter the code shown below manually and tap Unlock.', 42, 253);
-
-  // ── QR CODE ──
-  ctx.fillStyle = '#FAFAF8';
-  ctx.strokeStyle = '#E0DCD4'; ctx.lineWidth = 0.7;
-  ctx.beginPath(); roundRect(ctx, 30, 263, 150, 150, 10); ctx.fill(); ctx.stroke();
-
-  // draw QR from hidden canvas
-  if (qrCanvas) ctx.drawImage(qrCanvas, 40, 273, 130, 130);
-
-  ctx.fillStyle = '#00E5CC';
-  ctx.font = 'bold 8px Trebuchet MS, Arial, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('SCAN TO OPEN', 105, 406);
-  ctx.textAlign = 'left';
-
-  // ── LINK + CODE PANEL ──
-  ctx.fillStyle = '#FAFAF8';
-  ctx.strokeStyle = '#E0DCD4'; ctx.lineWidth = 0.7;
-  ctx.beginPath(); roundRect(ctx, 192, 263, 318, 150, 10); ctx.fill(); ctx.stroke();
-
-  ctx.fillStyle = '#6B6560';
-  ctx.font = '8px Trebuchet MS, Arial, sans-serif';
-  ctx.fillText('TAP THIS LINK', 204, 283);
-
-  ctx.fillStyle = '#E8FBF8';
-  ctx.beginPath(); roundRect(ctx, 198, 287, 306, 28, 5); ctx.fill();
-  ctx.fillStyle = '#007A5E';
-  ctx.font = 'bold 11px Trebuchet MS, Arial, sans-serif';
-  ctx.fillText('punarvasu.clinic/intake', 208, 305);
-
-  ctx.strokeStyle = '#E0DCD4'; ctx.lineWidth = 0.5;
-  ctx.beginPath(); ctx.moveTo(198, 325); ctx.lineTo(504, 325); ctx.stroke();
-
-  ctx.fillStyle = '#6B6560';
-  ctx.font = '8px Trebuchet MS, Arial, sans-serif';
-  ctx.fillText('ACCESS CODE  ·  auto-filled via link', 204, 343);
-
-  ctx.fillStyle = '#1A1814';
-  ctx.beginPath(); roundRect(ctx, 198, 348, 306, 42, 7); ctx.fill();
-  ctx.fillStyle = '#00E5CC';
-  ctx.font = 'bold 22px Courier New, monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText(code, 351, 375);
-  ctx.textAlign = 'left';
-  ctx.fillStyle = '#7A7570';
-  ctx.font = '8px Trebuchet MS, Arial, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('Backup: enter manually if the link does not open', 351, 388);
-  ctx.textAlign = 'left';
-
-  // Divider
-  ctx.strokeStyle = '#E0DCD4'; ctx.lineWidth = 0.7;
-  ctx.beginPath(); ctx.moveTo(30, 416); ctx.lineTo(510, 416); ctx.stroke();
-
-  // ── FOOTER ──
-  ctx.fillStyle = '#1A1814';
-  ctx.font = 'bold 11px Palatino Linotype, Palatino, Georgia, serif';
-  ctx.fillText('Dr. Yogeshwar Tiwari  ·  BHMS', 30, 434);
-  ctx.fillStyle = '#6B6560';
-  ctx.font = '8.5px Trebuchet MS, Arial, sans-serif';
-  ctx.fillText('E 801, Captown Enhance, Sindhu Bhavan Extension Road, Near Rajthal, Shilaj, Ahmedabad — 380058', 30, 450);
-  ctx.fillStyle = '#4A4540';
-  ctx.fillText('079-4598 4135', 30, 465);
-  ctx.fillStyle = '#007A5E';
-  ctx.fillText('www.punarvasu.clinic', 185, 465);
-
-  ctx.fillStyle = '#AAA5A0';
-  ctx.font = 'italic 7.5px Trebuchet MS, Arial, sans-serif';
-  ctx.fillText('Your information is submitted securely and used only for your consultation.', 30, 480);
+  ctx.fillText('SCAN TO OPEN', mx, qy + qSize + 28);
 
   // Bottom teal bar
   ctx.fillStyle = '#00E5CC';
-  ctx.fillRect(0, H-5, W, 5);
+  ctx.fillRect(0, H-8, W, 8);
 }
-
 function roundRect(ctx, x, y, w, h, r) {
   ctx.moveTo(x+r, y);
   ctx.lineTo(x+w-r, y);
