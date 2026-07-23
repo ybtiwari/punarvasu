@@ -475,11 +475,11 @@
             <canvas id="npCardCanvas" width="540" height="660" style="max-width:100%;border-radius:8px;"></canvas>
             <canvas id="npQrCanvas" width="180" height="180" style="display:none;"></canvas>
             <div class="np-qr-label" id="npQrUrl" style="margin-top:8px;">&mdash;</div>
-            <button class="np-copy-btn" style="margin-top:10px;padding:8px 16px;font-size:13px;" onclick="npDownloadCard()">&#11015; Download welcome card</button>
           </div>
           <h3 style="margin-bottom:10px;">Step 4 &mdash; Send on WhatsApp</h3>
-          <p class="np-step">Tap to open WhatsApp with the message pre-written. Then attach the QR image.</p>
-          <div class="np-msg-preview" id="npMsgPreview">&mdash;</div>
+          <p class="np-step">Card auto-downloaded as <b id="npFileName">&mdash;</b> &nbsp;&bull;&nbsp; Caption auto-copied to clipboard.</p>
+          <p class="np-step" style="margin-top:4px;">Open WhatsApp &rarr; attach the card image &rarr; paste caption (Ctrl+V) &rarr; Send.</p>
+          <div class="np-msg-preview" id="npMsgPreview" style="margin-top:10px;">&mdash;</div>
           <a class="np-wa-btn" id="npWaLink" href="#" target="_blank">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="white" style="flex-shrink:0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.558 4.118 1.535 5.847L0 24l6.338-1.507A11.946 11.946 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.37l-.36-.214-3.732.888.936-3.628-.235-.374A9.818 9.818 0 0112 2.182c5.427 0 9.818 4.391 9.818 9.818 0 5.428-4.391 9.818-9.818 9.818z"/></svg>
             Open WhatsApp
@@ -1423,12 +1423,15 @@ function npRandCode(n) {
   for (let i = 0; i < n; i++) s += NP_CHARS[Math.floor(Math.random() * NP_CHARS.length)];
   return s;
 }
+let _npPhone = '';
+
 function npClearResult() {
   document.getElementById('npResult').style.display = 'none';
   document.getElementById('npErr').textContent = '';
 }
 async function npGenerate() {
   const phone = document.getElementById('npPhone').value.trim().replace(/[^0-9]/g, '');
+  _npPhone = phone; // store for use in auto-download filename
   if (!phone || phone.length < 10) {
     document.getElementById('npErr').textContent = 'Enter a valid WhatsApp number with country code.';
     return;
@@ -1462,17 +1465,28 @@ async function npGenerate() {
             ctx.drawImage(img, 0, 0, 180, 180);
             // draw full welcome card
             const cardCanvas = document.getElementById('npCardCanvas');
-            const code = document.getElementById('npCodeDisplay').textContent;
-            const url = document.getElementById('npQrUrl').textContent;
-            npDrawCard(cardCanvas, document.getElementById('npQrCanvas'), code, url);
+            const codeNow = document.getElementById('npCodeDisplay').textContent;
+            const urlNow = document.getElementById('npQrUrl').textContent;
+            npDrawCard(cardCanvas, document.getElementById('npQrCanvas'), codeNow, urlNow);
+            // auto-download card named by phone number
+            setTimeout(() => {
+              const a = document.createElement('a');
+              a.download = _npPhone + '.png';
+              a.href = cardCanvas.toDataURL('image/png');
+              a.click();
+            }, 200);
+            // auto-copy caption to clipboard
+            const caption = document.getElementById('npMsgPreview').textContent;
+            if (navigator.clipboard) navigator.clipboard.writeText(caption).catch(() => {});
           };
           img.src = qrEl.tagName === 'CANVAS' ? qrEl.toDataURL() : qrEl.src;
         }
       }, 400);
     }
     document.getElementById('npQrUrl').textContent = url;
+    document.getElementById('npFileName').textContent = phone + '.png';
     document.getElementById('npMsgPreview').textContent = msg;
-    document.getElementById('npWaLink').href = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+    document.getElementById('npWaLink').href = 'https://wa.me/' + phone;
     document.getElementById('npResult').style.display = '';
   } catch(e) {
     document.getElementById('npErr').textContent = 'Error: ' + e.message;
