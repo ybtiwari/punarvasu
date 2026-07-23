@@ -2,12 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta http-equiv="refresh" content="0;url=/patient_intake_wizard.html"/>
-<title>Punarvasu Clinic — Redirecting...</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Punarvasu Clinic</title>
+<script>
+  // Forward to patient_intake_wizard.html preserving all URL parameters
+  // e.g. /intake?code=XXXXXXXX -> /patient_intake_wizard.html?code=XXXXXXXX
+  window.location.replace('/patient_intake_wizard.html' + window.location.search);
+</script>
 <style>
-  body { font-family: Arial, sans-serif; background: #FAFAF8; color: #1A1814;
-         display: flex; align-items: center; justify-content: center;
-         min-height: 100vh; margin: 0; }
+  body { font-family: Arial, sans-serif; background: #FAFAF8; display: flex;
+         align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
   p { font-size: 14px; color: #6B6560; }
 </style>
 </head>
