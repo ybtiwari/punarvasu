@@ -1486,7 +1486,7 @@ async function npGenerate() {
     document.getElementById('npQrUrl').textContent = url;
     document.getElementById('npFileName').textContent = phone + '.png';
     document.getElementById('npMsgPreview').textContent = msg;
-    document.getElementById('npWaLink').href = 'https://wa.me/' + phone;
+    document.getElementById('npWaLink').href = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
     document.getElementById('npResult').style.display = '';
   } catch(e) {
     document.getElementById('npErr').textContent = 'Error: ' + e.message;
