@@ -212,6 +212,15 @@ async function initData() {
     state.data.connectorMap = {};
   }
 
+  // If a ?code=XXXXXXXX parameter is present in the URL (sent via the
+  // WhatsApp welcome message), pre-fill the lock screen code field so the
+  // patient just needs to tap Unlock. We do NOT auto-submit — the patient
+  // sees the lock screen with the code already filled and taps Unlock.
+  const urlCode = new URLSearchParams(window.location.search).get('code');
+  if (urlCode) {
+    state.lock.codeInput = urlCode.trim().toUpperCase();
+  }
+
   state.screen = 'intake';
   render();
 }
