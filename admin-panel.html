@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -440,9 +441,7 @@
           <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
             <button class="btn-sm btn-gray" onclick="previewBroadcast()">Preview</button>
             <button class="btn-sm btn-teal" onclick="sendBroadcast()">📣 Send to all patients</button>
-          </div>
-          <p style="font-size:13px;color:var(--ink3);margin-top:12px;" id="broadcastStatus"></p>
-        </div>
+      
 
       <!-- NEW PATIENT PANEL -->
       <div class="panel" id="panel-newpatient">
@@ -469,7 +468,6 @@
             <span class="np-code-display" id="npCodeDisplay">&mdash;</span>
             <button class="np-copy-btn" onclick="npCopyCode()">Copy code</button>
           </div>
-
           <h3 style="margin-bottom:10px;">Step 3 &mdash; QR code</h3>
           <p class="np-step">This QR encodes the intake URL with your code pre-filled. Download and attach in WhatsApp.</p>
           <div class="np-qr-wrap">
@@ -477,16 +475,17 @@
             <div class="np-qr-label" id="npQrUrl">&mdash;</div>
             <button class="np-copy-btn" style="margin-top:8px;" onclick="npDownloadQr()">&#11015; Download QR image</button>
           </div>
-
           <h3 style="margin-bottom:10px;">Step 4 &mdash; Send on WhatsApp</h3>
-          <p class="np-step">Tap the button to open WhatsApp with the message pre-written. Then attach the QR image you downloaded.</p>
+          <p class="np-step">Tap the button to open WhatsApp. Then attach the QR image you downloaded.</p>
           <div class="np-msg-preview" id="npMsgPreview">&mdash;</div>
           <a class="np-wa-btn" id="npWaLink" href="#" target="_blank">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="white" style="flex-shrink:0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.558 4.118 1.535 5.847L0 24l6.338-1.507A11.946 11.946 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.37l-.36-.214-3.732.888.936-3.628-.235-.374A9.818 9.818 0 0112 2.182c5.427 0 9.818 4.391 9.818 9.818 0 5.428-4.391 9.818-9.818 9.818z"/></svg>
             Open WhatsApp
           </a>
         </div>
-      </div>
+      </div>    </div>
+          <p style="font-size:13px;color:var(--ink3);margin-top:12px;" id="broadcastStatus"></p>
+        </div>
       </div>
 
     </div>
@@ -494,7 +493,7 @@
 </div>
 
 <!-- Firebase -->
-<!-- QR code generator for New Patient panel -->
+<!-- QR code generator -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script type="module">
@@ -1418,7 +1417,6 @@ window.sendBroadcast = async function() {
 };
 
 
-
 // -- NEW PATIENT PANEL --
 const NP_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 function npRandCode(n) {
@@ -1492,12 +1490,11 @@ function npDownloadQr() {
   a.click();
 }
 
-// Expose NP functions to global scope (module scripts need this for onclick)
+
 window.npGenerate = npGenerate;
 window.npClearResult = npClearResult;
 window.npCopyCode = npCopyCode;
 window.npDownloadQr = npDownloadQr;
-
 </script>
 </body>
 </html>
