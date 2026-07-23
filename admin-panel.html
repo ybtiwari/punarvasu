@@ -80,6 +80,23 @@
     .add-patient-form h3 { font-family:var(--serif); font-size:18px; color:var(--navy); margin-bottom:18px; }
     .form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
 
+    /* NEW PATIENT PANEL */
+    .np-card { background:var(--white); border:1px solid var(--border); border-radius:10px; padding:24px; margin-bottom:18px; }
+    .np-card h3 { font-family:var(--serif); font-size:17px; color:var(--navy); margin-bottom:16px; }
+    .np-field { display:flex; flex-direction:column; gap:5px; margin-bottom:14px; }
+    .np-field label { font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink3); font-weight:500; }
+    .np-field input { border:1px solid var(--border); border-radius:6px; padding:10px 13px; font-family:var(--sans); font-size:15px; color:var(--ink); outline:none; transition:border-color .15s; }
+    .np-field input:focus { border-color:var(--teal); }
+    .np-code-display { font-family:monospace; font-size:22px; font-weight:700; color:var(--teal); letter-spacing:.12em; background:var(--cream); padding:10px 18px; border-radius:6px; border:1px solid var(--border); display:inline-block; }
+    .np-wa-btn { display:inline-flex; align-items:center; gap:8px; background:#25D366; color:white; border:none; padding:10px 18px; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer; font-family:var(--sans); text-decoration:none; }
+    .np-wa-btn:hover { background:#1ebe5d; }
+    .np-msg-preview { background:var(--cream); border:1px solid var(--border); border-radius:8px; padding:14px 16px; font-size:13px; color:var(--ink2); line-height:1.7; white-space:pre-wrap; font-family:var(--sans); margin-bottom:14px; }
+    .np-qr-wrap { text-align:center; padding:16px 16px 10px; background:var(--white); border-radius:8px; border:1px solid var(--border); margin-bottom:14px; }
+    .np-qr-label { font-size:11.5px; color:var(--ink3); margin-top:6px; }
+    .np-copy-btn { background:none; border:1px solid var(--border); border-radius:4px; padding:4px 10px; font-size:12px; color:var(--ink2); cursor:pointer; font-family:var(--sans); }
+    .np-copy-btn:hover { background:var(--cream); }
+    .np-step { font-size:12.5px; color:var(--ink3); margin-bottom:6px; }
+
     /* MESSAGES */
     .conv-list { display:flex; flex-direction:column; gap:0; margin-bottom:24px; }
     .conv-item { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border); cursor:pointer; }
@@ -225,6 +242,9 @@
       </div>
       <div class="nav-item" data-panel="broadcast">
         <span>📣 Broadcast</span>
+      </div>
+      <div class="nav-item" data-panel="newpatient">
+        <span>➕ New Patient</span>
       </div>
       <div class="nav-item" id="navAccessCodes">
         <span>🔑 Access Codes</span>
@@ -424,6 +444,50 @@
           </div>
           <p style="font-size:13px;color:var(--ink3);margin-top:12px;" id="broadcastStatus"></p>
         </div>
+
+      <!-- NEW PATIENT PANEL -->
+      <div class="panel" id="panel-newpatient">
+        <div class="panel-title">New Patient Invitation</div>
+        <div class="panel-sub">Generate an access code and send the welcome message via WhatsApp.</div>
+
+        <div class="np-card">
+          <h3>Step 1 &mdash; Enter WhatsApp number</h3>
+          <div class="np-field">
+            <label>WhatsApp number (with country code)</label>
+            <input type="tel" id="npPhone" placeholder="e.g. 919876543210" oninput="npClearResult()"/>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <button class="btn-sm btn-teal" onclick="npGenerate()">Generate code &amp; prepare message</button>
+            <span id="npBusy" style="font-size:13px;color:var(--ink3);display:none;">Generating...</span>
+            <span id="npErr" style="font-size:13px;color:var(--red);"></span>
+          </div>
+        </div>
+
+        <div class="np-card" id="npResult" style="display:none;">
+          <h3 style="margin-bottom:10px;">Step 2 &mdash; Access code generated</h3>
+          <p class="np-step">Code saved to Firebase &mdash; single use, burns on first unlock.</p>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+            <span class="np-code-display" id="npCodeDisplay">&mdash;</span>
+            <button class="np-copy-btn" onclick="npCopyCode()">Copy code</button>
+          </div>
+
+          <h3 style="margin-bottom:10px;">Step 3 &mdash; QR code</h3>
+          <p class="np-step">This QR encodes the intake URL with your code pre-filled. Download and attach in WhatsApp.</p>
+          <div class="np-qr-wrap">
+            <canvas id="npQrCanvas" width="180" height="180"></canvas>
+            <div class="np-qr-label" id="npQrUrl">&mdash;</div>
+            <button class="np-copy-btn" style="margin-top:8px;" onclick="npDownloadQr()">&#11015; Download QR image</button>
+          </div>
+
+          <h3 style="margin-bottom:10px;">Step 4 &mdash; Send on WhatsApp</h3>
+          <p class="np-step">Tap the button to open WhatsApp with the message pre-written. Then attach the QR image you downloaded.</p>
+          <div class="np-msg-preview" id="npMsgPreview">&mdash;</div>
+          <a class="np-wa-btn" id="npWaLink" href="#" target="_blank">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="white" style="flex-shrink:0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.558 4.118 1.535 5.847L0 24l6.338-1.507A11.946 11.946 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.37l-.36-.214-3.732.888.936-3.628-.235-.374A9.818 9.818 0 0112 2.182c5.427 0 9.818 4.391 9.818 9.818 0 5.428-4.391 9.818-9.818 9.818z"/></svg>
+            Open WhatsApp
+          </a>
+        </div>
+      </div>
       </div>
 
     </div>
@@ -431,6 +495,9 @@
 </div>
 
 <!-- Firebase -->
+<!-- QR code generator for New Patient panel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail }
@@ -1351,6 +1418,80 @@ window.sendBroadcast = async function() {
   setTimeout(() => { statusEl.textContent = ''; }, 5000);
 };
 
+
+
+// -- NEW PATIENT PANEL --
+const NP_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+function npRandCode(n) {
+  let s = '';
+  for (let i = 0; i < n; i++) s += NP_CHARS[Math.floor(Math.random() * NP_CHARS.length)];
+  return s;
+}
+function npClearResult() {
+  document.getElementById('npResult').style.display = 'none';
+  document.getElementById('npErr').textContent = '';
+}
+async function npGenerate() {
+  const phone = document.getElementById('npPhone').value.trim().replace(/[^0-9]/g, '');
+  if (!phone || phone.length < 10) {
+    document.getElementById('npErr').textContent = 'Enter a valid WhatsApp number with country code.';
+    return;
+  }
+  document.getElementById('npErr').textContent = '';
+  document.getElementById('npBusy').style.display = '';
+  document.getElementById('npResult').style.display = 'none';
+  try {
+    let code, exists = true, attempts = 0;
+    while (exists && attempts < 10) {
+      code = npRandCode(8);
+      const snap = await get(ref(db, 'accessCodes/' + code));
+      exists = snap.exists();
+      attempts++;
+    }
+    await set(ref(db, 'accessCodes/' + code), { used: false, createdAt: Date.now() });
+    const url = 'https://punarvasu.clinic/intake?code=' + code;
+    const msg = 'Namaste \uD83D\uDE4F\n\nWelcome to Punarvasu Clinic. Your consultation has been arranged.\n\nPlease tap the link below to fill your symptom intake form:\n\n' + url + '\n\nYour access code fills automatically when you tap the link.\nIf needed, enter it manually: ' + code + '\n\n-- Dr. Yogeshwar Tiwari (BHMS)\nPunarvasu Clinic, Ahmedabad\n079-4598 4135 | www.punarvasu.clinic';
+    document.getElementById('npCodeDisplay').textContent = code;
+    const canvas = document.getElementById('npQrCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, 180, 180);
+    if (window.QRCode) {
+      const tmpDiv = document.createElement('div');
+      new QRCode(tmpDiv, { text: url, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+      setTimeout(() => {
+        const qrEl = tmpDiv.querySelector('canvas') || tmpDiv.querySelector('img');
+        if (qrEl) {
+          const img = new Image();
+          img.onload = () => ctx.drawImage(img, 0, 0, 180, 180);
+          img.src = qrEl.tagName === 'CANVAS' ? qrEl.toDataURL() : qrEl.src;
+        }
+      }, 400);
+    }
+    document.getElementById('npQrUrl').textContent = url;
+    document.getElementById('npMsgPreview').textContent = msg;
+    document.getElementById('npWaLink').href = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+    document.getElementById('npResult').style.display = '';
+  } catch(e) {
+    document.getElementById('npErr').textContent = 'Error: ' + e.message;
+  }
+  document.getElementById('npBusy').style.display = 'none';
+}
+function npCopyCode() {
+  const code = document.getElementById('npCodeDisplay').textContent;
+  if (navigator.clipboard) navigator.clipboard.writeText(code).catch(() => {});
+  const btn = event.target;
+  const orig = btn.textContent;
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = orig, 1500);
+}
+function npDownloadQr() {
+  const canvas = document.getElementById('npQrCanvas');
+  const code = document.getElementById('npCodeDisplay').textContent;
+  const a = document.createElement('a');
+  a.download = 'punarvasu-invite-' + code + '.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
 </script>
 </body>
 </html>
