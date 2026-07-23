@@ -217,13 +217,14 @@ async function initData() {
   // the lock screen FIRST — the patient sees their code pre-filled, taps
   // Unlock, then fills their basic details. Without a URL code, the normal
   // flow applies: intake details first, then the lock screen.
+  // If a ?code=XXXXXXXX parameter is in the URL, pre-fill it in the lock
+  // screen field so the patient just taps Unlock — no typing needed.
+  // The flow stays: basic details first, then lock screen (pre-filled), then tree-walker.
   const urlCode = new URLSearchParams(window.location.search).get('code');
   if (urlCode) {
     state.lock.codeInput = urlCode.trim().toUpperCase();
-    state.screen = 'lock';
-  } else {
-    state.screen = 'intake';
   }
+  state.screen = 'intake';
   render();
 }
 
@@ -429,7 +430,7 @@ function onIntakeContinue() {
   }
   state.lock.error = '';
   // If already unlocked via URL code, skip lock screen and go straight to chapters
-  state.screen = state.lock.isUnlocked ? 'chapters' : 'lock';
+  state.screen = 'lock';
   render();
 }
 
@@ -498,8 +499,7 @@ async function onLockSubmit() {
     state.lock.accessCodeUsed = code;
     // If patient came via URL code, they haven't filled intake details yet
     // (name will be empty). Send them to intake first, then chapters.
-    const hasIntakeDetails = !!(state.patient.name && state.patient.age && state.patient.sex);
-    state.screen = hasIntakeDetails ? 'chapters' : 'intake';
+    state.screen = 'chapters';
     render();
   } else if (result.reason === 'used') {
     state.lock.error = 'This code has already been used. Please contact the clinic for a new one.';
