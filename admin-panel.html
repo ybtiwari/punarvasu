@@ -1,5 +1,4 @@
-
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
@@ -1492,6 +1491,13 @@ function npDownloadQr() {
   a.href = canvas.toDataURL('image/png');
   a.click();
 }
+
+// Expose NP functions to global scope (module scripts need this for onclick)
+window.npGenerate = npGenerate;
+window.npClearResult = npClearResult;
+window.npCopyCode = npCopyCode;
+window.npDownloadQr = npDownloadQr;
+
 </script>
 </body>
 </html>
