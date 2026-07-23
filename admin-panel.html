@@ -1541,32 +1541,44 @@ function npDrawCard(cardCanvas, qrCanvas, code, url) {
   ctx.fillStyle = '#0F2035';
   ctx.beginPath(); ctx.arc(mx, my, mr-32, 0, Math.PI*2); ctx.fill();
 
-  // Lotus petals (outline, white)
-  ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 2;
-  const sc = 1.4;
-  function petal(x1,y1,x2,y2,x3,y3,x4,y4) {
+  // Lotus petals — clean ellipse-based approach, rotated into position
+  ctx.strokeStyle = 'rgba(255,255,255,0.90)'; ctx.lineWidth = 2.2;
+  ctx.fillStyle = 'transparent';
+
+  function lotusPetal(cx, cy, angle, petalW, petalH) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
     ctx.beginPath();
-    ctx.moveTo(mx+x1*sc, my+y1*sc);
-    ctx.bezierCurveTo(mx+x2*sc,my+y2*sc, mx+x3*sc,my+y3*sc, mx+x4*sc,my+y4*sc);
-    ctx.bezierCurveTo(mx+x3*sc,my+y3*sc, mx+x2*sc,my+y2*sc, mx+x1*sc,my+y1*sc);
+    // Each petal is a vertical ellipse, pointed at top and bottom
+    // drawn as two quadratic bezier curves
+    ctx.moveTo(0, -petalH/2);
+    ctx.quadraticCurveTo(petalW/2, 0, 0, petalH/2);
+    ctx.quadraticCurveTo(-petalW/2, 0, 0, -petalH/2);
     ctx.stroke();
+    ctx.restore();
   }
-  petal(0,-23, 11,-14, 12,-3, 0,5);
-  petal(-15,-13, -7,-12, -4,-2, -9,6);
-  petal(15,-13, 7,-12, 4,-2, 9,6);
-  petal(-20,2, -11,-1, -5,4, -5,9);
-  petal(20,2, 11,-1, 5,4, 5,9);
+
+  // Centre top petal — pointing straight up
+  lotusPetal(mx, my - 20, 0, 22, 52);
+
+  // Upper-left and upper-right petals — angled outward
+  lotusPetal(mx - 20, my - 10, -Math.PI/5, 20, 46);
+  lotusPetal(mx + 20, my - 10, Math.PI/5, 20, 46);
+
+  // Lower-left and lower-right petals — more horizontal
+  lotusPetal(mx - 28, my + 8, -Math.PI*0.38, 18, 42);
+  lotusPetal(mx + 28, my + 8, Math.PI*0.38, 18, 42);
 
   // Centre dot
   ctx.fillStyle = '#00E5CC';
-  ctx.beginPath(); ctx.arc(mx, my+4*sc, 3.5, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(mx, my + 6, 4, 0, Math.PI*2); ctx.fill();
 
-  // Water line
-  ctx.strokeStyle = '#00E5CC'; ctx.lineWidth = 2;
+  // Water line — gentle arc beneath lotus
+  ctx.strokeStyle = '#00E5CC'; ctx.lineWidth = 2.2;
   ctx.beginPath();
-  ctx.moveTo(mx-22*sc, my+15*sc);
-  ctx.quadraticCurveTo(mx, my+10*sc, mx, my+14*sc);
-  ctx.quadraticCurveTo(mx, my+18*sc, mx+22*sc, my+15*sc);
+  ctx.moveTo(mx - 32, my + 28);
+  ctx.quadraticCurveTo(mx, my + 20, mx + 32, my + 28);
   ctx.stroke();
 
   // ── WORDMARK ──
