@@ -147,8 +147,13 @@ const state = {
   },
   submit: { busy: false, error: '' },
   generals: {
-    appetite: null, thirst: null, sleep: null,
-    perspiration: null, thermal: null, timeAgg: null, menses: null
+    appetite: null, tasteSalt: null, tasteSugar: null, tasteSour: null, tasteFried: null,
+    thirst: null, drinkPattern: null,
+    perspAmount: null, perspOdor: null, perspStain: null, perspLocation: null,
+    sleepQuality: null, dreams: null,
+    constipation: null, stoolConsistency: null,
+    urineAmount: null, urineColor: null,
+    thermal: null, timeAgg: null, menses: null
   },
   search: {
     query: '',
@@ -519,81 +524,179 @@ async function onLockSubmit() {
 
 function renderGeneralsScreen() {
   const isFemale = (state.patient.sex || '').toLowerCase() === 'female';
+  const g = state.generals;
 
-  function qBlock(key, title, en, hi, options) {
-    const val = state.generals[key];
+  function qBlock(key, enQ, hiQ, options) {
+    const val = g[key];
     const opts = options.map(o => `
       <button class="walk-option ${val === o.v ? 'selected' : ''}"
               onclick="state.generals['${key}']='${o.v}'; render();">
-        <div class="kent">${o.k}</div>
+        <div class="kent">${o.k || o.e}</div>
         <div class="en">${o.e}</div>
         <div class="hi">${o.h}</div>
       </button>`).join('');
-    return `
-    <div class="general-block">
-      <div class="step-title" style="font-size:16px;margin-bottom:4px;">${title}</div>
-      <div class="en" style="margin-bottom:12px;">${en}</div>
-      <div class="hi" style="margin-bottom:14px;">${hi}</div>
-      <div class="walk-options">${opts}</div>
+    return `<div class="general-block">
+      <div class="step-title" style="font-size:15px;margin-bottom:3px;">${enQ}</div>
+      <div class="en" style="margin-bottom:3px;">${hiQ}</div>
+      <div class="walk-options" style="margin-top:10px;">${opts}</div>
     </div>`;
   }
 
+  const notSure = {v:'notsure', k:'Not sure', e:'Not sure / skip', h:'पक्का नहीं / छोड़ें'};
+
   const blocks = [
-    qBlock('appetite', 'Appetite', 'How is your appetite?', 'आपकी भूख कैसी है?', [
-      {v:'increased', k:'Increased', e:'Better than usual', h:'सामान्य से ज़्यादा'},
-      {v:'normal',    k:'Normal',    e:'Normal',            h:'सामान्य'},
-      {v:'reduced',   k:'Reduced',   e:'Less than usual',   h:'सामान्य से कम'},
-      {v:'none',      k:'No appetite', e:'No appetite at all', h:'बिल्कुल भूख नहीं'},
-      {v:'notsure',   k:'Not sure',  e:'Not sure',          h:'पक्का नहीं'}
+    qBlock('appetite', 'Appetite', 'आपकी भूख कैसी है?', [
+      {v:'increased', k:'Increased', e:'More than usual', h:'सामान्य से ज़्यादा भूख'},
+      {v:'diminished', k:'Diminished', e:'Less than usual', h:'भूख कम हो गई है'},
+      {v:'ravenous', k:'Ravenous', e:'Extreme / never satisfied', h:'बहुत तेज़ भूख, कभी नहीं भरती'},
+      {v:'wanting', k:'No appetite', e:'No appetite at all', h:'बिल्कुल भूख नहीं लगती'},
+      {v:'easy satiety', k:'Full quickly', e:'Get full very quickly', h:'थोड़े में ही पेट भर जाता है'},
+      notSure
     ]),
-    qBlock('thirst', 'Thirst', 'How much water do you drink?', 'आप कितना पानी पीते हैं?', [
-      {v:'increased', k:'Much more', e:'Much more than usual', h:'बहुत ज़्यादा'},
-      {v:'normal',    k:'Normal',    e:'Normal amount',        h:'सामान्य'},
-      {v:'reduced',   k:'Less',      e:'Less than usual',      h:'कम'},
-      {v:'none',      k:'Very little', e:'Almost no thirst',   h:'बहुत कम प्यास'},
-      {v:'notsure',   k:'Not sure',  e:'Not sure',             h:'पक्का नहीं'}
+
+    qBlock('tasteSalt', 'Salt', 'नमकीन चीज़ों के बारे में?', [
+      {v:'desire', k:'Like more', e:'Crave salty things', h:'नमकीन चीज़ें ज़्यादा पसंद हैं'},
+      {v:'aversion', k:'Dislike', e:'Dislike salty things', h:'नमकीन चीज़ें पसंद नहीं'},
+      notSure
     ]),
-    qBlock('sleep', 'Sleep', 'How is your sleep?', 'आपकी नींद कैसी है?', [
-      {v:'sound',     k:'Sound',     e:'Deep, restful sleep',  h:'गहरी नींद'},
-      {v:'disturbed', k:'Disturbed', e:'Disturbed or broken',  h:'बाधित नींद'},
-      {v:'excess',    k:'Excess',    e:'Sleeping too much',    h:'बहुत ज़्यादा नींद'},
-      {v:'less',      k:'Sleepless', e:'Difficulty sleeping',  h:'नींद नहीं आती'},
-      {v:'notsure',   k:'Not sure',  e:'Not sure',             h:'पक्का नहीं'}
+
+    qBlock('tasteSugar', 'Sweet things', 'मीठी चीज़ों के बारे में?', [
+      {v:'desire', k:'Like more', e:'Crave sweet things', h:'मीठी चीज़ें ज़्यादा पसंद हैं'},
+      {v:'aversion', k:'Dislike', e:'Dislike sweet things', h:'मीठी चीज़ें पसंद नहीं'},
+      notSure
     ]),
-    qBlock('perspiration', 'Perspiration', 'How much do you sweat?', 'आपको कितना पसीना आता है?', [
-      {v:'profuse',   k:'Profuse',   e:'Sweat a lot',          h:'बहुत पसीना'},
-      {v:'normal',    k:'Normal',    e:'Normal sweating',      h:'सामान्य'},
-      {v:'little',    k:'Scanty',    e:'Sweat very little',    h:'बहुत कम पसीना'},
-      {v:'none',      k:'Absent',    e:'No sweating at all',   h:'पसीना नहीं'},
-      {v:'notsure',   k:'Not sure',  e:'Not sure',             h:'पक्का नहीं'}
+
+    qBlock('tasteSour', 'Sour / acidic things', 'खट्टी चीज़ों के बारे में?', [
+      {v:'desire', k:'Like more', e:'Crave sour things', h:'खट्टी चीज़ें ज़्यादा पसंद हैं'},
+      {v:'aversion', k:'Dislike', e:'Dislike sour things', h:'खट्टी चीज़ें पसंद नहीं'},
+      notSure
     ]),
-    qBlock('thermal', 'Temperature sensitivity', 'How do you feel about heat and cold?', 'गर्मी और ठंड के बारे में आप कैसा महसूस करते हैं?', [
-      {v:'hot',       k:'Hot',       e:'Feel warm, prefer cool air', h:'गर्मी लगती है'},
-      {v:'cold',      k:'Chilly',    e:'Feel cold, prefer warmth',   h:'ठंड लगती है'},
-      {v:'neither',   k:'Neither',   e:'No strong preference',       h:'कोई खास फ़र्क नहीं'},
-      {v:'notsure',   k:'Not sure',  e:'Not sure',                   h:'पक्का नहीं'}
+
+    qBlock('tasteFried', 'Fried / oily food', 'तली हुई चीज़ों के बारे में?', [
+      {v:'desire', k:'Like more', e:'Crave fried food', h:'तली हुई चीज़ें ज़्यादा पसंद हैं'},
+      {v:'aversion', k:'Dislike', e:'Dislike fried food', h:'तली हुई चीज़ें पसंद नहीं'},
+      notSure
     ]),
-    qBlock('timeAgg', 'Timing', 'When do your complaints feel worst?', 'आपकी तकलीफ़ कब सबसे ज़्यादा होती है?', [
-      {v:'morning',   k:'Morning',   e:'Worst in the morning',   h:'सुबह'},
-      {v:'afternoon', k:'Afternoon', e:'Worst in the afternoon', h:'दोपहर'},
-      {v:'evening',   k:'Evening',   e:'Worst in the evening',   h:'शाम'},
-      {v:'night',     k:'Night',     e:'Worst at night',         h:'रात'},
-      {v:'notsure',   k:'Not sure',  e:'No clear pattern',       h:'कोई खास समय नहीं'}
+
+    qBlock('thirst', 'Thirst', 'आपकी प्यास कैसी है?', [
+      {v:'extreme', k:'Extreme', e:'Very thirsty — much more than usual', h:'बहुत ज़्यादा प्यास लगती है'},
+      {v:'normal', k:'Normal', e:'Normal thirst', h:'सामान्य प्यास'},
+      {v:'thirstless', k:'Thirstless', e:'Very little or no thirst', h:'बहुत कम या प्यास नहीं लगती'},
+      notSure
     ]),
-    isFemale ? qBlock('menses', 'Menses', 'How are your periods?', 'आपके मासिक धर्म कैसे हैं?', [
-      {v:'regular',   k:'Regular',   e:'Regular and normal',      h:'नियमित और सामान्य'},
-      {v:'irregular', k:'Irregular', e:'Irregular',               h:'अनियमित'},
-      {v:'painful',   k:'Painful',   e:'Painful periods',         h:'दर्दनाक'},
-      {v:'scanty',    k:'Scanty',    e:'Very light flow',         h:'बहुत कम'},
-      {v:'profuse',   k:'Profuse',   e:'Very heavy flow',         h:'बहुत ज़्यादा'},
-      {v:'notsure',   k:'Not sure',  e:'Not sure',                h:'पक्का नहीं'}
+
+    qBlock('drinkPattern', 'Drinking pattern', 'आप पानी कैसे पीते हैं?', [
+      {v:'largeOften', k:'Large amounts, often', e:'Large amounts, frequently', h:'ज़्यादा मात्रा में, बार-बार'},
+      {v:'largeLong', k:'Large, infrequent', e:'Large amounts but rarely', h:'ज़्यादा मात्रा में पर कभी-कभी'},
+      {v:'smallOften', k:'Small sips, often', e:'Small sips, very often', h:'थोड़ा-थोड़ा, बार-बार'},
+      notSure
+    ]),
+
+    qBlock('perspAmount', 'Perspiration (sweating)', 'पसीना कैसा आता है?', [
+      {v:'profuse', k:'Profuse', e:'Sweat a lot', h:'बहुत ज़्यादा पसीना'},
+      {v:'normal', k:'Normal', e:'Normal sweating', h:'सामान्य पसीना'},
+      {v:'scanty', k:'Scanty', e:'Very little or no sweating', h:'पसीना बहुत कम या नहीं'},
+      notSure
+    ]),
+
+    qBlock('perspOdor', 'Sweat odour', 'पसीने में गंध आती है?', [
+      {v:'offensive', k:'Offensive', e:'Strong unpleasant smell', h:'तेज़ बदबू आती है'},
+      {v:'sour', k:'Sour', e:'Sour smell', h:'खट्टी गंध'},
+      {v:'none', k:'No odour', e:'No particular smell', h:'कोई खास गंध नहीं'},
+      notSure
+    ]),
+
+    qBlock('perspStain', 'Sweat staining', 'पसीने से कपड़ों पर दाग पड़ते हैं?', [
+      {v:'yes', k:'Yes', e:'Yes, leaves stains', h:'हाँ, दाग पड़ते हैं'},
+      {v:'no', k:'No', e:'No staining', h:'नहीं'},
+      notSure
+    ]),
+
+    qBlock('perspLocation', 'Where do you sweat most?', 'सबसे ज़्यादा पसीना कहाँ आता है?', [
+      {v:'head', k:'Head / scalp', e:'Head or scalp', h:'सिर या खोपड़ी'},
+      {v:'face', k:'Face', e:'Face', h:'चेहरा'},
+      {v:'axilla', k:'Armpits', e:'Armpits', h:'बगल'},
+      {v:'hands', k:'Hands', e:'Hands', h:'हाथ'},
+      {v:'feet', k:'Feet', e:'Feet', h:'पैर'},
+      {v:'back', k:'Back', e:'Back', h:'पीठ'},
+      {v:'chest', k:'Chest', e:'Chest / abdomen', h:'छाती / पेट'},
+      notSure
+    ]),
+
+    qBlock('sleepQuality', 'Sleep', 'नींद कैसी है?', [
+      {v:'deep', k:'Deep', e:'Deep, heavy sleep', h:'गहरी नींद'},
+      {v:'disturbed', k:'Disturbed', e:'Restless or disturbed', h:'बाधित या टूटी हुई नींद'},
+      {v:'excess', k:'Excess', e:'Sleeping too much', h:'बहुत ज़्यादा नींद'},
+      {v:'sleepless', k:'Sleepless', e:'Difficulty sleeping / insomnia', h:'नींद नहीं आती'},
+      notSure
+    ]),
+
+    qBlock('dreams', 'Dreams', 'क्या कोई सपना बार-बार आता है?', [
+      {v:'frightful', k:'Frightful', e:'Frightening / nightmares', h:'डरावने सपने'},
+      {v:'pleasant', k:'Pleasant', e:'Pleasant or happy dreams', h:'अच्छे सपने'},
+      {v:'vivid', k:'Vivid', e:'Very vivid or lifelike', h:'बहुत साफ सपने'},
+      {v:'none', k:'None', e:'No recurring dreams', h:'कोई बार-बार नहीं आता'},
+      notSure
+    ]),
+
+    qBlock('constipation', 'Bowels', 'मल / कब्ज़ के बारे में?', [
+      {v:'constipated', k:'Constipated', e:'Constipation — difficulty passing stool', h:'कब्ज़ — मल नहीं निकलता'},
+      {v:'loose', k:'Loose', e:'Loose stools or diarrhoea', h:'ढीला मल या दस्त'},
+      {v:'normal', k:'Normal', e:'Normal bowels', h:'सामान्य'},
+      notSure
+    ]),
+
+    qBlock('stoolConsistency', 'Stool consistency', 'मल कैसा है?', [
+      {v:'hard', k:'Hard', e:'Hard and difficult to pass', h:'सख्त, मुश्किल से निकलता है'},
+      {v:'soft', k:'Soft', e:'Soft and easy', h:'नरम और आसान'},
+      notSure
+    ]),
+
+    qBlock('urineAmount', 'Urine', 'पेशाब कैसा आता है?', [
+      {v:'copious', k:'Copious', e:'More than usual', h:'सामान्य से ज़्यादा'},
+      {v:'scanty', k:'Scanty', e:'Very little', h:'बहुत कम'},
+      {v:'normal', k:'Normal', e:'Normal amount', h:'सामान्य'},
+      notSure
+    ]),
+
+    qBlock('urineColor', 'Urine colour', 'पेशाब का रंग?', [
+      {v:'dark', k:'Dark', e:'Dark yellow or brown', h:'गहरा पीला या भूरा'},
+      {v:'pale', k:'Pale', e:'Very pale or clear', h:'बहुत हल्का या साफ'},
+      {v:'normal', k:'Normal', e:'Normal yellow', h:'सामान्य पीला'},
+      {v:'red', k:'Reddish', e:'Reddish tinge', h:'लाल रंग'},
+      notSure
+    ]),
+
+    qBlock('thermal', 'Temperature preference', 'गर्मी-ठंड के बारे में?', [
+      {v:'hot', k:'Hot', e:'Feel warm — prefer cool air / dislike heat', h:'गर्मी लगती है, ठंडक चाहिए'},
+      {v:'cold', k:'Chilly', e:'Feel cold — prefer warmth / dislike cold', h:'ठंड लगती है, गर्माहट चाहिए'},
+      {v:'neither', k:'Neither', e:'No strong preference', h:'कोई खास पसंद नहीं'},
+      notSure
+    ]),
+
+    qBlock('timeAgg', 'Time of aggravation', 'तकलीफ़ कब सबसे ज़्यादा होती है?', [
+      {v:'morning', k:'Morning', e:'Worst in the morning', h:'सुबह सबसे ज़्यादा'},
+      {v:'afternoon', k:'Afternoon', e:'Worst in the afternoon', h:'दोपहर में सबसे ज़्यादा'},
+      {v:'evening', k:'Evening', e:'Worst in the evening', h:'शाम को सबसे ज़्यादा'},
+      {v:'night', k:'Night', e:'Worst at night', h:'रात में सबसे ज़्यादा'},
+      {v:'nopattern', k:'No pattern', e:'No clear pattern', h:'कोई खास समय नहीं'},
+      notSure
+    ]),
+
+    isFemale ? qBlock('menses', 'Menses (periods)', 'मासिक धर्म (माहवारी) के बारे में?', [
+      {v:'regular', k:'Regular', e:'Regular and normal', h:'नियमित और सामान्य'},
+      {v:'irregular', k:'Irregular', e:'Irregular — comes early or late', h:'अनियमित'},
+      {v:'copious', k:'Profuse', e:'Very heavy flow', h:'बहुत ज़्यादा'},
+      {v:'scanty', k:'Scanty', e:'Very light flow', h:'बहुत कम'},
+      {v:'painful', k:'Painful', e:'Painful periods', h:'दर्दनाक'},
+      notSure
     ]) : ''
   ].join('');
 
   return `
     ${renderTopbar('A few more questions', 'About your general health')}
     <div class="body">
-      <p class="step-sub" style="margin-bottom:18px;">These help us understand your constitution. Tap "Not sure" to skip any question.</p>
+      <p class="step-sub" style="margin-bottom:18px;">These help us understand your constitution. Tap "Not sure / skip" for anything you are unsure about.</p>
       ${blocks}
     </div>
     <div class="footer-bar" style="flex-direction:column">
@@ -605,6 +708,7 @@ function renderGeneralsScreen() {
     </div>
   `;
 }
+
 
 function renderSubmittedScreen() {
   return `
