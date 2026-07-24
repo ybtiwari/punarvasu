@@ -1555,44 +1555,55 @@ function npDrawCard(cardCanvas, qrCanvas, code, url) {
   ctx.fillStyle = '#0F2035';
   ctx.beginPath(); ctx.arc(mx, my, mr-32, 0, Math.PI*2); ctx.fill();
 
-  // Lotus petals — clean ellipse-based approach, rotated into position
-  ctx.strokeStyle = 'rgba(255,255,255,0.90)'; ctx.lineWidth = 2.2;
-  ctx.fillStyle = 'transparent';
-
-  function lotusPetal(cx, cy, angle, petalW, petalH) {
+  // ── LOTUS — drawn from the ring centre, all petals rotate around mx,my ──
+  // Each petal: base at centre, tip pointing outward, leaf shape
+  function drawPetal(angle, baseW, length, offset) {
     ctx.save();
-    ctx.translate(cx, cy);
+    ctx.translate(mx, my);
     ctx.rotate(angle);
     ctx.beginPath();
-    // Each petal is a vertical ellipse, pointed at top and bottom
-    // drawn as two quadratic bezier curves
-    ctx.moveTo(0, -petalH/2);
-    ctx.quadraticCurveTo(petalW/2, 0, 0, petalH/2);
-    ctx.quadraticCurveTo(-petalW/2, 0, 0, -petalH/2);
+    // petal base starts at `offset` from centre, tip at `offset+length`
+    ctx.moveTo(0, -offset);
+    ctx.bezierCurveTo( baseW, -offset - length*0.3,
+                       baseW*0.5, -offset - length*0.85,
+                       0, -offset - length);
+    ctx.bezierCurveTo(-baseW*0.5, -offset - length*0.85,
+                      -baseW, -offset - length*0.3,
+                       0, -offset);
+    ctx.closePath();
     ctx.stroke();
     ctx.restore();
   }
 
-  // Centre top petal — pointing straight up
-  lotusPetal(mx, my - 20, 0, 22, 52);
+  ctx.strokeStyle = 'rgba(255,255,255,0.88)';
+  ctx.lineWidth = 1.8;
 
-  // Upper-left and upper-right petals — angled outward
-  lotusPetal(mx - 20, my - 10, -Math.PI/5, 20, 46);
-  lotusPetal(mx + 20, my - 10, Math.PI/5, 20, 46);
+  // Back row — 3 petals, slightly smaller, sitting behind
+  ctx.globalAlpha = 0.55;
+  drawPetal(-Math.PI*0.28, 9, 30, 4);   // back-left
+  drawPetal(0,             10, 32, 4);   // back-centre
+  drawPetal( Math.PI*0.28, 9, 30, 4);   // back-right
 
-  // Lower-left and lower-right petals — more horizontal
-  lotusPetal(mx - 28, my + 8, -Math.PI*0.38, 18, 42);
-  lotusPetal(mx + 28, my + 8, Math.PI*0.38, 18, 42);
+  // Front row — 2 outer petals
+  ctx.globalAlpha = 0.88;
+  drawPetal(-Math.PI*0.52, 8, 26, 5);   // front-left
+  drawPetal( Math.PI*0.52, 8, 26, 5);   // front-right
 
-  // Centre dot
+  // Centre front petal — tallest
+  ctx.globalAlpha = 1;
+  drawPetal(0, 11, 36, 2);
+
+  ctx.globalAlpha = 1;
+
+  // Centre dot — teal
   ctx.fillStyle = '#00E5CC';
-  ctx.beginPath(); ctx.arc(mx, my + 6, 4, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(mx, my + 4, 3.5, 0, Math.PI*2); ctx.fill();
 
-  // Water line — gentle arc beneath lotus
-  ctx.strokeStyle = '#00E5CC'; ctx.lineWidth = 2.2;
+  // Water line — gentle arc
+  ctx.strokeStyle = '#00E5CC'; ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(mx - 32, my + 28);
-  ctx.quadraticCurveTo(mx, my + 20, mx + 32, my + 28);
+  ctx.moveTo(mx - 28, my + 24);
+  ctx.quadraticCurveTo(mx, my + 18, mx + 28, my + 24);
   ctx.stroke();
 
   // ── WORDMARK ──
