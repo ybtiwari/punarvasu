@@ -472,7 +472,7 @@
           <h3 style="margin-bottom:10px;">Step 3 &mdash; Welcome card</h3>
           <p class="np-step">The full branded card with QR code is generated below. Download it and attach it in WhatsApp alongside the message.</p>
           <div class="np-qr-wrap" style="padding:12px;">
-            <canvas id="npCardCanvas" width="540" height="660" style="max-width:100%;border-radius:8px;"></canvas>
+            <canvas id="npCardCanvas" width="540" height="700" style="max-width:100%;border-radius:8px;"></canvas>
             <canvas id="npQrCanvas" width="180" height="180" style="display:none;"></canvas>
             <div class="np-qr-label" id="npQrUrl" style="margin-top:8px;">&mdash;</div>
           </div>
@@ -1502,7 +1502,7 @@ function npCopyCode() {
   setTimeout(() => btn.textContent = orig, 1500);
 }
 function npDrawCard(cardCanvas, qrCanvas, code, url) {
-  const W = 540, H = 660;
+  const W = 540, H = 700;
   cardCanvas.width = W; cardCanvas.height = H;
   const ctx = cardCanvas.getContext('2d');
   ctx.clearRect(0, 0, W, H);
@@ -1522,10 +1522,10 @@ function npDrawCard(cardCanvas, qrCanvas, code, url) {
   ctx.fillRect(0, 0, W, 8);
 
   // ── LARGE LOGO MARK ── centred in top half
-  const mx = W/2, my = 185, mr = 90;
+  const mx = W/2, my = 170, mr = 92;
 
   // Outer ring
-  ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1.5;
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1.8;
   ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI*2); ctx.stroke();
 
   // Cardinal ticks — teal
@@ -1538,7 +1538,7 @@ function npDrawCard(cardCanvas, qrCanvas, code, url) {
   });
 
   // Intermediate ticks
-  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(255,255,255,0.40)'; ctx.lineWidth = 1.2;
   [45,135,225,315].forEach(a => {
     const r = a*Math.PI/180;
     ctx.beginPath();
@@ -1610,23 +1610,23 @@ function npDrawCard(cardCanvas, qrCanvas, code, url) {
   ctx.fillStyle = '#FFFFFF';
   ctx.font = 'bold 28px Palatino Linotype, Palatino, Georgia, serif';
   ctx.textAlign = 'center';
-  ctx.fillText('PUNARVASU', mx, 318);
+  ctx.fillText('PUNARVASU', mx, 308);
   ctx.fillStyle = '#00E5CC';
   ctx.font = '300 11px Trebuchet MS, Arial, sans-serif';
-  ctx.fillText('CLASSICAL HOMEOPATHY', mx, 338);
+  ctx.fillText('CLASSICAL HOMEOPATHY', mx, 328);
 
   // Teal rule
   ctx.strokeStyle = '#00E5CC'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(mx-120, 348); ctx.lineTo(mx+120, 348); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(mx-120, 338); ctx.lineTo(mx+120, 338); ctx.stroke();
 
   ctx.fillStyle = 'rgba(255,255,255,0.6)';
   ctx.font = 'italic 11px Palatino Linotype, Palatino, Georgia, serif';
-  ctx.fillText('Renewing Life, Restoring Hope.', mx, 364);
+  ctx.fillText('Renewing Life, Restoring Hope.', mx, 354);
 
   // ── LARGE QR CODE ── centred in bottom half
-  const qSize = 220;
+  const qSize = 240;
   const qx = (W - qSize) / 2;
-  const qy = 385;
+  const qy = 390;
 
   // QR background (white rounded rect)
   ctx.fillStyle = '#FFFFFF';
@@ -1640,7 +1640,7 @@ function npDrawCard(cardCanvas, qrCanvas, code, url) {
   // "SCAN TO OPEN" label
   ctx.fillStyle = '#00E5CC';
   ctx.font = 'bold 10px Trebuchet MS, Arial, sans-serif';
-  ctx.fillText('SCAN TO OPEN', mx, qy + qSize + 28);
+  ctx.fillText('SCAN TO OPEN', mx, qy + qSize + 32);
 
   // Bottom teal bar
   ctx.fillStyle = '#00E5CC';
