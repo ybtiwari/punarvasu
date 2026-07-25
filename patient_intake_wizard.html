@@ -697,8 +697,17 @@ function renderGeneralsWalkStep() {
 }
 
 function renderGeneralsScreen() {
-  // redirect — screen set to generalsWalk by onStartGeneralsWalk
-  return '<div class="body"><p class="step-sub">Loading…</p></div>';
+  // Redirect to generalsWalk — use setTimeout to avoid re-entrant render() call
+  setTimeout(() => {
+    const sections = getActiveSections();
+    state.generalsWalk = { sectionIndex: 0, pathTokens: [...sections[0].startTokens] };
+    state.screen = 'generalsWalk';
+    searchFilter = '';
+    showAllOptions = false;
+    collapsedGroups = {};
+    render();
+  }, 0);
+  return '<div class="body" style="padding-top:40px;text-align:center;"><p class="step-sub">Loading general questions…</p></div>';
 }
 
 
@@ -1327,6 +1336,8 @@ window.onGeneralsBack = onGeneralsBack;
 window.onGeneralsAddRubric = onGeneralsAddRubric;
 window.onGeneralsSkipSection = onGeneralsSkipSection;
 window.onGeneralsAdvance = onGeneralsAdvance;
+window.renderGeneralsWalkStep = renderGeneralsWalkStep;
+window.renderGeneralsScreen = renderGeneralsScreen;
 </script>
 </body>
 </html>
