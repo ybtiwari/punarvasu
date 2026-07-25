@@ -544,7 +544,7 @@ function getActiveSections() {
 
 function onStartGeneralsWalk() {
   const sections = getActiveSections();
-  state.generalsWalk = { sectionIndex: 0, pathTokens: [...sections[0].startTokens] };
+  state.generalsWalk = { sectionIndex: 0, pathTokens: (function(){ const s=getActiveSections()[0]; const ch=findChapterKey(s.startTokens[0]); return [ch,...s.startTokens.slice(1)]; })() };
   state.screen = 'generalsWalk';
   searchFilter = '';
   showAllOptions = false;
@@ -591,7 +591,7 @@ function onGeneralsAdvance() {
     onSubmitCase();
   } else {
     state.generalsWalk.sectionIndex = nextIndex;
-    state.generalsWalk.pathTokens = [...sections[nextIndex].startTokens];
+    const _ns=sections[nextIndex]; const _rc=findChapterKey(_ns.startTokens[0]); state.generalsWalk.pathTokens=[_rc,..._ns.startTokens.slice(1)];
     searchFilter = '';
     showAllOptions = false;
     collapsedGroups = {};
@@ -701,7 +701,7 @@ function renderGeneralsScreen() {
   // Redirect to generalsWalk — use setTimeout to avoid re-entrant render() call
   setTimeout(() => {
     const sections = getActiveSections();
-    state.generalsWalk = { sectionIndex: 0, pathTokens: [...sections[0].startTokens] };
+    state.generalsWalk = { sectionIndex: 0, pathTokens: (function(){ const s=getActiveSections()[0]; const ch=findChapterKey(s.startTokens[0]); return [ch,...s.startTokens.slice(1)]; })() };
     state.screen = 'generalsWalk';
     searchFilter = '';
     showAllOptions = false;
