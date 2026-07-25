@@ -146,6 +146,7 @@ const state = {
     codeInput: '', error: '', isUnlocked: false, accessCodeUsed: '', busy: false
   },
   submit: { busy: false, error: '' },
+  generalsWalk: { sectionIndex: 0, pathTokens: [] },
   generals: {
     appetite: null, tasteSalt: null, tasteSugar: null, tasteSour: null, tasteFried: null,
     thirst: null, drinkPattern: null,
@@ -365,6 +366,7 @@ function render() {
   else if (state.screen === 'caseReview') app.innerHTML = renderCaseReview();
   else if (state.screen === 'search') app.innerHTML = renderSearchScreen();
   else if (state.screen === 'generals') app.innerHTML = renderGeneralsScreen();
+  else if (state.screen === 'generalsWalk') app.innerHTML = renderGeneralsWalkStep();
   else if (state.screen === 'submitted') app.innerHTML = renderSubmittedScreen();
 
   if (state.screen === 'intake') wireIntakeScreen();
@@ -522,177 +524,181 @@ async function onLockSubmit() {
   }
 }
 
-function renderGeneralsScreen() {
-  const isFemale = (state.patient.sex || '').toLowerCase() === 'female';
-  const g = state.generals;
+// ── GENERALS WALK — mirrors the tree-walker exactly ──
+const GENERALS_SECTIONS = [
+  { label: 'Appetite and Food',   chapter: 'appetite',          startTokens: ['appetite'] },
+  { label: 'Thirst',              chapter: 'stomach',           startTokens: ['stomach', 'thirst'] },
+  { label: 'Perspiration',        chapter: 'perspiration',      startTokens: ['perspiration'] },
+  { label: 'Sleep and Dreams',    chapter: 'sleep',             startTokens: ['sleep'] },
+  { label: 'Stool and Bowels',    chapter: 'stool',             startTokens: ['stool'] },
+  { label: 'Urine',               chapter: 'urine',             startTokens: ['urine'] },
+  { label: 'Constitution',        chapter: 'generalities',      startTokens: ['generalities'] },
+  { label: 'Menses',              chapter: 'genitalia_female',  startTokens: ['genitalia_female', 'menses'], femaleOnly: true },
+];
 
-  // Renders a question with opt-card style — same as tree-walker options
-  function qBlock(key, enQ, hiQ, options) {
-    const val = g[key];
-    const opts = options.map(o => {
-      const isSelected = val === o.v;
-      const border = isSelected ? 'border:1.5px solid var(--teal);background:#F0F7F4;' : '';
-      return `<div class="opt-card" style="cursor:pointer;${border}"
-               onclick="state.generals['${key}']='${o.v}'; render();">
-        <div class="kent">${o.k}</div>
-        <div class="en">${o.e}</div>
-        ${o.h ? `<div class="hi">${o.h}</div>` : ''}
-      </div>`;
-    }).join('');
-    return `<div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--cream);">
-      <h2 class="step-title" style="font-size:15.5px;margin-bottom:3px;">${enQ}</h2>
-      <p class="step-sub" style="margin-bottom:10px;">${hiQ}</p>
-      ${opts}
+function getActiveSections() {
+  const isFemale = (state.patient.sex || '').toLowerCase() === 'female';
+  return GENERALS_SECTIONS.filter(s => !s.femaleOnly || isFemale);
+}
+
+function onStartGeneralsWalk() {
+  const sections = getActiveSections();
+  state.generalsWalk = { sectionIndex: 0, pathTokens: [...sections[0].startTokens] };
+  state.screen = 'generalsWalk';
+  searchFilter = '';
+  showAllOptions = false;
+  collapsedGroups = {};
+  render();
+}
+
+function onGeneralsOptionPick(token) {
+  state.generalsWalk.pathTokens.push(token);
+  searchFilter = '';
+  showAllOptions = false;
+  collapsedGroups = {};
+  render();
+}
+
+function onGeneralsBack() {
+  const sections = getActiveSections();
+  const sec = sections[state.generalsWalk.sectionIndex];
+  if (state.generalsWalk.pathTokens.length <= sec.startTokens.length) {
+    state.screen = 'caseReview';
+  } else {
+    state.generalsWalk.pathTokens.pop();
+  }
+  searchFilter = '';
+  showAllOptions = false;
+  collapsedGroups = {};
+  render();
+}
+
+function onGeneralsAddRubric(rubricId, path, remedyCount) {
+  state.completeCase.push({ rubricId, path, remedyCount, origin: 'generals' });
+  onGeneralsAdvance();
+}
+
+function onGeneralsSkipSection() {
+  onGeneralsAdvance();
+}
+
+function onGeneralsAdvance() {
+  const sections = getActiveSections();
+  const nextIndex = state.generalsWalk.sectionIndex + 1;
+  if (nextIndex >= sections.length) {
+    state.screen = 'submitted';
+    onSubmitCase();
+  } else {
+    state.generalsWalk.sectionIndex = nextIndex;
+    state.generalsWalk.pathTokens = [...sections[nextIndex].startTokens];
+    searchFilter = '';
+    showAllOptions = false;
+    collapsedGroups = {};
+    render();
+  }
+}
+
+function renderGeneralsWalkStep() {
+  const sections = getActiveSections();
+  const secIdx = state.generalsWalk.sectionIndex;
+  const sec = sections[secIdx];
+  const pathTokens = state.generalsWalk.pathTokens;
+  const chapter = sec.chapter;
+  const total = sections.length;
+  const startDepth = sec.startTokens.length;
+
+  const pct = Math.round((secIdx / total) * 100);
+  const progressHtml = `<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--cream);border-bottom:1px solid var(--border);">
+    <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+      <div style="height:100%;width:${pct}%;background:var(--teal);border-radius:2px;transition:width .3s;"></div>
+    </div>
+    <div style="font-size:12px;color:var(--ink3);white-space:nowrap;">Section ${secIdx + 1} of ${total} — ${esc(sec.label)}</div>
+  </div>`;
+
+  let historyHtml = '';
+  for (let depth = startDepth; depth < pathTokens.length; depth++) {
+    const pathUpToHere = pathTokens.slice(0, depth + 1).join(', ');
+    const tokenAtDepth = pathTokens[depth];
+    const disp = getDisplayText(chapter, pathUpToHere, tokenAtDepth);
+    const indent = (depth - startDepth) * 14;
+    historyHtml += `<div style="margin-left:${indent}px;margin-bottom:4px;">
+      <div style="display:flex;align-items:center;gap:8px;padding:9px 10px;background:#F0F7F4;border:1.5px solid var(--teal);border-radius:8px;">
+        <div>
+          <div class="kent" style="color:var(--teal)">${esc(disp.kent)}</div>
+          ${disp.en ? `<div class="en">${esc(disp.en)}</div>` : ''}
+          ${disp.hi ? `<div class="hi">${esc(disp.hi)}</div>` : ''}
+        </div>
+      </div>
     </div>`;
   }
 
-  const skip = {v:'notsure', k:'Not sure', e:'Not sure — skip this', h:'पक्का नहीं — छोड़ें'};
+  const { exactMatchRubric, nextOptions } = getNextOptions(pathTokens);
 
-  const blocks = [
+  let entries = Object.entries(nextOptions);
+  if (searchFilter) {
+    const fw = searchFilter.split(/[,\s]+/).map(w => w.trim().toLowerCase()).filter(Boolean);
+    entries = entries.filter(([token]) => {
+      const optPath = pathTokens.concat([token]).join(', ');
+      const disp = getDisplayText(chapter, optPath, token);
+      return fw.every(w => (disp.kent + ' ' + disp.en + ' ' + disp.hi).toLowerCase().includes(w));
+    });
+  }
+  entries.sort((a, b) => b[1].rubricCount - a[1].rubricCount);
 
-    qBlock('appetite', 'Appetite', 'आपकी भूख कैसी है?', [
-      {v:'increased', k:'Increased', e:'More hungry than usual', h:'सामान्य से ज़्यादा भूख'},
-      {v:'diminished', k:'Diminished', e:'Less hungry than usual', h:'भूख कम हो गई है'},
-      {v:'ravenous', k:'Ravenous', e:'Extreme hunger — never satisfied', h:'बहुत तेज़ भूख, कभी नहीं भरती'},
-      {v:'wanting', k:'No appetite', e:'No appetite at all', h:'बिल्कुल भूख नहीं लगती'},
-      {v:'easy satiety', k:'Gets full quickly', e:'Full very quickly on little food', h:'थोड़े में ही पेट भर जाता है'},
-      skip
-    ]),
+  const totalCount = entries.length;
+  const displayEntries = showAllOptions ? entries : entries.slice(0, 15);
 
-    qBlock('tasteSalt', 'Salty foods', 'नमकीन चीज़ों के बारे में?', [
-      {v:'desire', k:'Like more', e:'Crave salty things more than usual', h:'नमकीन चीज़ें ज़्यादा पसंद हैं'},
-      {v:'aversion', k:'Dislike', e:'Dislike or avoid salty things', h:'नमकीन चीज़ें पसंद नहीं'},
-      skip
-    ]),
+  let stopHereHtml = '';
+  if (exactMatchRubric) {
+    const disp = getDisplayText(chapter, exactMatchRubric.path, pathTokens[pathTokens.length - 1]);
+    stopHereHtml = `<div class="stop-here-card" onclick="onGeneralsAddRubric('${exactMatchRubric.id}','${escAttr(exactMatchRubric.path)}',${exactMatchRubric.remedyCount})">
+      <div class="label">✓ This describes it</div>
+      ${renderTrilingualBlock(disp)}
+    </div>`;
+  }
 
-    qBlock('tasteSugar', 'Sweet things', 'मीठी चीज़ों के बारे में?', [
-      {v:'desire', k:'Like more', e:'Crave sweet things more than usual', h:'मीठी चीज़ें ज़्यादा पसंद हैं'},
-      {v:'aversion', k:'Dislike', e:'Dislike or avoid sweet things', h:'मीठी चीज़ें पसंद नहीं'},
-      skip
-    ]),
+  const optCardsHtml = displayEntries.map(([token, info]) => {
+    const optPath = pathTokens.concat([token]).join(', ');
+    const disp = getDisplayText(chapter, optPath, token);
+    return `<div class="opt-card" onclick="onGeneralsOptionPick('${escAttr(token)}')">
+      ${renderTrilingualBlock(disp, info.rubricCount)}
+      <div class="meta">${info.totalRemedies} remedy-references</div>
+    </div>`;
+  }).join('');
 
-    qBlock('tasteSour', 'Sour / acidic things', 'खट्टी चीज़ों के बारे में?', [
-      {v:'desire', k:'Like more', e:'Crave sour or acidic things', h:'खट्टी चीज़ें ज़्यादा पसंद हैं'},
-      {v:'aversion', k:'Dislike', e:'Dislike or avoid sour things', h:'खट्टी चीज़ें पसंद नहीं'},
-      skip
-    ]),
+  const showAllLink = (!showAllOptions && totalCount > 15)
+    ? `<div class="show-all-link" onclick="showAllOptions=true;render()">Show all ${totalCount} options</div>` : '';
 
-    qBlock('tasteFried', 'Fried / oily food', 'तली हुई चीज़ों के बारे में?', [
-      {v:'desire', k:'Like more', e:'Crave fried or oily food', h:'तली हुई चीज़ें ज़्यादा पसंद हैं'},
-      {v:'aversion', k:'Dislike', e:'Dislike or avoid fried food', h:'तली हुई चीज़ें पसंद नहीं'},
-      skip
-    ]),
-
-    qBlock('thirst', 'Thirst', 'प्यास कैसी है?', [
-      {v:'extreme', k:'Very thirsty', e:'Very thirsty — much more than usual', h:'बहुत ज़्यादा प्यास लगती है'},
-      {v:'normal', k:'Normal', e:'Normal thirst', h:'सामान्य प्यास'},
-      {v:'thirstless', k:'Thirstless', e:'Very little or no thirst', h:'बहुत कम या प्यास नहीं लगती'},
-      skip
-    ]),
-
-    qBlock('drinkPattern', 'Drinking pattern', 'पानी कैसे पीते हैं?', [
-      {v:'largeOften', k:'Large amounts, often', e:'Large amounts, frequently', h:'ज़्यादा मात्रा में, बार-बार'},
-      {v:'largeLong', k:'Large, infrequent', e:'Large amounts but rarely', h:'ज़्यादा मात्रा में पर कभी-कभी'},
-      {v:'smallOften', k:'Small sips, often', e:'Small sips, very often', h:'थोड़ा-थोड़ा, बार-बार'},
-      skip
-    ]),
-
-    qBlock('perspAmount', 'Perspiration', 'पसीना कितना आता है?', [
-      {v:'profuse', k:'Profuse', e:'Sweat a lot — more than normal', h:'बहुत ज़्यादा पसीना'},
-      {v:'normal', k:'Normal', e:'Normal sweating', h:'सामान्य पसीना'},
-      {v:'scanty', k:'Scanty', e:'Very little or no sweating', h:'पसीना बहुत कम या नहीं'},
-      skip
-    ]),
-
-    qBlock('perspOdor', 'Sweat odour', 'पसीने में गंध?', [
-      {v:'offensive', k:'Offensive', e:'Strong unpleasant smell', h:'तेज़ बदबू'},
-      {v:'sour', k:'Sour', e:'Sour smell', h:'खट्टी गंध'},
-      {v:'none', k:'No odour', e:'No particular smell', h:'कोई खास गंध नहीं'},
-      skip
-    ]),
-
-    qBlock('perspLocation', 'Where do you sweat most?', 'सबसे ज़्यादा पसीना कहाँ आता है?', [
-      {v:'head', k:'Head / scalp', e:'Head or scalp', h:'सिर'},
-      {v:'face', k:'Face', e:'Face', h:'चेहरा'},
-      {v:'axilla', k:'Armpits', e:'Armpits', h:'बगल'},
-      {v:'hands', k:'Hands', e:'Hands', h:'हाथ'},
-      {v:'feet', k:'Feet', e:'Feet', h:'पैर'},
-      {v:'back', k:'Back', e:'Back', h:'पीठ'},
-      skip
-    ]),
-
-    qBlock('sleepQuality', 'Sleep', 'नींद कैसी है?', [
-      {v:'deep', k:'Deep', e:'Deep, heavy sleep', h:'गहरी नींद'},
-      {v:'disturbed', k:'Disturbed', e:'Restless or broken sleep', h:'बाधित या टूटी हुई नींद'},
-      {v:'excess', k:'Too much', e:'Sleeping too much', h:'बहुत ज़्यादा नींद'},
-      {v:'sleepless', k:'Too little', e:'Difficulty sleeping / insomnia', h:'नींद नहीं आती'},
-      skip
-    ]),
-
-    qBlock('dreams', 'Dreams', 'सपने कैसे आते हैं?', [
-      {v:'frightful', k:'Frightful', e:'Frightening nightmares', h:'डरावने सपने'},
-      {v:'pleasant', k:'Pleasant', e:'Happy, pleasant dreams', h:'अच्छे सपने'},
-      {v:'vivid', k:'Vivid', e:'Very vivid or lifelike dreams', h:'बहुत साफ सपने'},
-      {v:'none', k:'None / rarely', e:'No particular recurring dreams', h:'कोई खास सपने नहीं'},
-      skip
-    ]),
-
-    qBlock('constipation', 'Bowel habits', 'मल / पेट साफ होने के बारे में?', [
-      {v:'constipated', k:'Constipated', e:'Constipation — difficulty passing stool', h:'कब्ज़ — मल नहीं निकलता'},
-      {v:'hard', k:'Hard stool', e:'Hard stool, difficult to pass', h:'सख्त मल'},
-      {v:'loose', k:'Loose', e:'Loose stools or diarrhoea', h:'ढीला मल या दस्त'},
-      {v:'normal', k:'Normal', e:'Normal bowel movements', h:'सामान्य'},
-      skip
-    ]),
-
-    qBlock('urineAmount', 'Urine', 'पेशाब कैसा है?', [
-      {v:'copious', k:'More than usual', e:'Passing more urine than normal', h:'सामान्य से ज़्यादा पेशाब'},
-      {v:'scanty', k:'Less than usual', e:'Passing very little urine', h:'बहुत कम पेशाब'},
-      {v:'normal', k:'Normal', e:'Normal amount', h:'सामान्य'},
-      skip
-    ]),
-
-    qBlock('thermal', 'Heat / cold preference', 'गर्मी और ठंड के बारे में?', [
-      {v:'hot', k:'Hot', e:'Feel warm — prefer cool air, dislike heat', h:'गर्मी लगती है, ठंडक चाहिए'},
-      {v:'cold', k:'Chilly', e:'Feel cold — prefer warmth, dislike cold', h:'ठंड लगती है, गर्माहट चाहिए'},
-      {v:'neither', k:'Neither', e:'No strong preference', h:'कोई खास पसंद नहीं'},
-      skip
-    ]),
-
-    qBlock('timeAgg', 'When is it worst?', 'तकलीफ़ कब सबसे ज़्यादा होती है?', [
-      {v:'morning', k:'Morning', e:'Worst in the morning', h:'सुबह सबसे ज़्यादा'},
-      {v:'afternoon', k:'Afternoon', e:'Worst in the afternoon', h:'दोपहर में सबसे ज़्यादा'},
-      {v:'evening', k:'Evening', e:'Worst in the evening', h:'शाम को सबसे ज़्यादा'},
-      {v:'night', k:'Night', e:'Worst at night', h:'रात में सबसे ज़्यादा'},
-      {v:'nopattern', k:'No pattern', e:'No clear pattern', h:'कोई खास समय नहीं'},
-      skip
-    ]),
-
-    isFemale ? qBlock('menses', 'Menstrual periods', 'माहवारी के बारे में?', [
-      {v:'regular', k:'Regular', e:'Regular and normal', h:'नियमित और सामान्य'},
-      {v:'irregular', k:'Irregular', e:'Comes early or late — irregular', h:'अनियमित'},
-      {v:'copious', k:'Heavy flow', e:'Very heavy flow', h:'बहुत ज़्यादा'},
-      {v:'scanty', k:'Scanty flow', e:'Very light flow', h:'बहुत कम'},
-      {v:'painful', k:'Painful', e:'Painful periods', h:'दर्दनाक'},
-      skip
-    ]) : ''
-
-  ].join('');
+  const filterMatchedNothing = totalCount === 0 && searchFilter.length > 0;
+  const genuinelyNoData = totalCount === 0 && searchFilter.length === 0;
+  const liveIndent = (pathTokens.length - startDepth) * 14;
 
   return `
-    ${renderTopbar('A few more questions', 'Your general health')}
+    ${renderTopbar('General Health', sec.label)}
+    ${progressHtml}
     <div class="body">
-      <p class="step-sub" style="margin-bottom:20px;">These help the doctor understand your constitution. Tap "Not sure — skip this" for anything you are unsure about.</p>
-      ${blocks}
+      <button class="back-btn" onclick="onGeneralsBack()">&larr; Back</button>
+      <h2 class="step-title">Choose what applies</h2>
+      <p class="step-sub">Select one to go more specific, or use “✓ This describes it” to stop here.</p>
+      ${historyHtml}
+      <div style="margin-left:${liveIndent}px">
+        ${totalCount > 8 || searchFilter ? `<input id="genFilterInput" class="search-box ${filterMatchedNothing ? 'no-match' : ''}" type="text" placeholder="Search these options…" value="${escAttr(searchFilter)}" oninput="searchFilter=this.value;render()">` : ''}
+        ${filterMatchedNothing ? `<div class="no-match-msg">No match for “${esc(searchFilter)}” — try a shorter word or clear the search.</div>` : ''}
+        ${stopHereHtml}
+        ${genuinelyNoData && !exactMatchRubric ? '<div class="empty-state">No further detail on file for this.</div>' : ''}
+        ${optCardsHtml}
+        ${showAllLink}
+      </div>
     </div>
     <div class="footer-bar" style="flex-direction:column">
-      <button class="btn-primary" onclick="onSubmitCase()" ${state.submit.busy ? 'disabled' : ''}>
-        ${state.submit.busy ? 'Submitting…' : 'Submit my case'}
-      </button>
-      <button class="btn-outline" onclick="state.screen='caseReview'; render();">← Back to symptoms</button>
-      ${state.submit.error ? `<div class="no-match-msg">${esc(state.submit.error)}</div>` : ''}
+      <button class="btn-outline" onclick="onGeneralsSkipSection()">Skip ${esc(sec.label)} &rarr;</button>
     </div>
   `;
+}
+
+function renderGeneralsScreen() {
+  // redirect — screen set to generalsWalk by onStartGeneralsWalk
+  return '<div class="body"><p class="step-sub">Loading…</p></div>';
 }
 
 
@@ -1313,6 +1319,14 @@ window.addEventListener('DOMContentLoaded', () => {
       return { ok: false, error: e.message };
     }
   };
+
+// Expose generals walk functions to global scope for onclick handlers
+window.onStartGeneralsWalk = onStartGeneralsWalk;
+window.onGeneralsOptionPick = onGeneralsOptionPick;
+window.onGeneralsBack = onGeneralsBack;
+window.onGeneralsAddRubric = onGeneralsAddRubric;
+window.onGeneralsSkipSection = onGeneralsSkipSection;
+window.onGeneralsAdvance = onGeneralsAdvance;
 </script>
 </body>
 </html>
