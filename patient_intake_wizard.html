@@ -542,6 +542,14 @@ function getActiveSections() {
   return GENERALS_SECTIONS.filter(s => !s.femaleOnly || isFemale);
 }
 
+function findChapterKey(name) {
+  // Case-insensitive lookup in chaptersBucketed to handle any capitalisation
+  const keys = Object.keys(state.data.chaptersBucketed || {});
+  const lower = name.toLowerCase();
+  return keys.find(k => k.toLowerCase() === lower) || name;
+}
+
+
 function onStartGeneralsWalk() {
   const sections = getActiveSections();
   state.generalsWalk = { sectionIndex: 0, pathTokens: (function(){ const s=getActiveSections()[0]; const ch=findChapterKey(s.startTokens[0]); return [ch,...s.startTokens.slice(1)]; })() };
@@ -1330,17 +1338,8 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-// Expose generals walk functions to global scope for onclick handlers
-window.findChapterKey = findChapterKey;
-window.getActiveSections = getActiveSections;
-window.onStartGeneralsWalk = onStartGeneralsWalk;
-window.onGeneralsOptionPick = onGeneralsOptionPick;
-window.onGeneralsBack = onGeneralsBack;
-window.onGeneralsAddRubric = onGeneralsAddRubric;
-window.onGeneralsSkipSection = onGeneralsSkipSection;
-window.onGeneralsAdvance = onGeneralsAdvance;
-window.renderGeneralsWalkStep = renderGeneralsWalkStep;
-window.renderGeneralsScreen = renderGeneralsScreen;
+// Generals walk functions are defined in the main script above and are
+// already globally accessible — no window assignment needed here.
 </script>
 </body>
 </html>
