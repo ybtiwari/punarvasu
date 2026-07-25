@@ -526,14 +526,15 @@ async function onLockSubmit() {
 
 // ── GENERALS WALK — mirrors the tree-walker exactly ──
 const GENERALS_SECTIONS = [
-  { label: 'Appetite and Food',   chapter: 'appetite',          startTokens: ['appetite'] },
-  { label: 'Thirst',              chapter: 'stomach',           startTokens: ['stomach', 'thirst'] },
-  { label: 'Perspiration',        chapter: 'perspiration',      startTokens: ['perspiration'] },
-  { label: 'Sleep and Dreams',    chapter: 'sleep',             startTokens: ['sleep'] },
-  { label: 'Stool and Bowels',    chapter: 'stool',             startTokens: ['stool'] },
-  { label: 'Urine',               chapter: 'urine',             startTokens: ['urine'] },
-  { label: 'Constitution',        chapter: 'generalities',      startTokens: ['generalities'] },
-  { label: 'Menses',              chapter: 'genitalia_female',  startTokens: ['genitalia_female', 'menses'], femaleOnly: true },
+  { label: 'Appetite',        chapter: 'Stomach',          startTokens: ['Stomach', 'appetite'] },
+  { label: 'Thirst',          chapter: 'Stomach',          startTokens: ['Stomach', 'thirst'] },
+  { label: 'Perspiration',    chapter: 'Perspiration',     startTokens: ['Perspiration'] },
+  { label: 'Sleep',           chapter: 'Sleep',            startTokens: ['Sleep'] },
+  { label: 'Dreams',          chapter: 'Sleep',            startTokens: ['Sleep', 'dreams'] },
+  { label: 'Stool',           chapter: 'Stool',            startTokens: ['Stool'] },
+  { label: 'Urine',           chapter: 'Urine',            startTokens: ['Urine'] },
+  { label: 'Generalities',    chapter: 'Generalities',     startTokens: ['Generalities'] },
+  { label: 'Menses',          chapter: 'Genitalia female', startTokens: ['Genitalia female', 'menses'], femaleOnly: true },
 ];
 
 function getActiveSections() {
