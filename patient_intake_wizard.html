@@ -133,9 +133,9 @@ input[type=text]{font-family:var(--font)}
 // STATE
 // =================================================================
 const state = {
-  screen: 'loading',           // loading | intake | lock | chapters | walk | connectorPrompt | caseReview | search | generals | submitted
+  screen: 'loading',           // loading | intake | lock | chapters | walk | connectorPrompt | caseReview | search | submitted
   currentWalk: { pathTokens: [] },
-  completeCase: [],            // [{ rubricId, path, remedyCount }]
+  completeCase: [],            // [{ rubricId, path, remedyCount, source? }] — source:'generals' tags entries added via the generals sequence
   connectorQueue: [],          // pending optional connector suggestions to show
   editingCaseIndex: null,      // index into completeCase currently being re-walked/edited, or null
   returnScreenAfterSearch: 'chapters', // where to go back to if search is cancelled without a pick
@@ -146,16 +146,11 @@ const state = {
     codeInput: '', error: '', isUnlocked: false, accessCodeUsed: '', busy: false
   },
   submit: { busy: false, error: '' },
-  generalsWalk: { sectionIndex: 0 },
-  generals: {
-    appetite: null, tasteSalt: null, tasteSugar: null, tasteSour: null, tasteFried: null,
-    thirst: null, drinkPattern: null,
-    perspAmount: null, perspOdor: null, perspStain: null, perspLocation: null,
-    sleepQuality: null, dreams: null,
-    constipation: null, stoolConsistency: null,
-    urineAmount: null, urineColor: null,
-    thermal: null, timeAgg: null, menses: null
-  },
+  // Generals now runs as a fixed sequence of REAL chapter-walks — same tree-walker
+  // used for complaints, just auto-sequenced. `order` is resolved (sex-filtered) once
+  // at start; `completeCaseIndices[i]` remembers which completeCase slot topic i
+  // landed in, so stepping back into an already-answered topic edits it in place.
+  generalsQueue: { active: false, index: -1, order: [], completeCaseIndices: [] },
   search: {
     query: '',
     activeTab: 'all',          // all | sensation | timing | modality | laterality | cause | sequence | content
@@ -365,8 +360,6 @@ function render() {
   else if (state.screen === 'connectorPrompt') app.innerHTML = renderConnectorPrompt();
   else if (state.screen === 'caseReview') app.innerHTML = renderCaseReview();
   else if (state.screen === 'search') app.innerHTML = renderSearchScreen();
-  else if (state.screen === 'generals') app.innerHTML = renderGeneralsScreen();
-  else if (state.screen === 'generalsWalk') app.innerHTML = renderGeneralsWalkStep();
   else if (state.screen === 'submitted') app.innerHTML = renderSubmittedScreen();
 
   if (state.screen === 'intake') wireIntakeScreen();
@@ -524,207 +517,81 @@ async function onLockSubmit() {
   }
 }
 
-// ── GENERALS QUESTIONNAIRE — flat card-per-question format ──
-// Questions and options taken directly from questionnaire_prototype.html
-// Each screen shows one question group. Patient taps opt-cards to answer.
-// "Not sure / skip" always available. Multi-select allowed.
-
-const GEN_STEPS = [
-  // Screen 1 — Appetite & Taste
-  [
-    { key:'appetite', en:'How is your appetite?', hi:'आपकी भूख कैसी है?',
-      opts:[
-        {v:'increased (hunger in general)', e:'Increased', h:'बढ़ी हुई'},
-        {v:'diminished', e:'Diminished', h:'कम'},
-        {v:'ravenous', e:'Ravenous / extreme hunger', h:'बहुत तेज़ भूख'},
-        {v:'wanting', e:'No appetite at all', h:'बिल्कुल भूख न लगना'},
-        {v:'insatiable', e:'Insatiable — never satisfied', h:'कभी न भरने वाली भूख'},
-        {v:'gnawing', e:'Gnawing, empty feeling', h:'खाली-सा, कुरेदने जैसा एहसास'},
-        {v:'easy satiety', e:'Full very quickly', h:'जल्दी पेट भर जाना'},
-        {v:'constant', e:'Constant hunger', h:'लगातार भूख लगना'},
-        {v:'disgust', e:'Disgust — nothing appealing', h:'खाने से अरुचि'},
-        {v:'moderate', e:'Moderate / normal', h:'सामान्य'},
-      ]},
-    { key:'tasteSalt', en:'Salty things?', hi:'नमकीन चीज़ें?',
-      opts:[{v:'desire',e:'Like it more',h:'ज़्यादा पसंद'},{v:'aversion',e:'Dislike it',h:'नापसंद'},{v:'moderate',e:'Moderate',h:'सामान्य'}]},
-    { key:'tasteSugar', en:'Sweet things?', hi:'मीठी चीज़ें?',
-      opts:[{v:'desire',e:'Like it more',h:'ज़्यादा पसंद'},{v:'aversion',e:'Dislike it',h:'नापसंद'},{v:'moderate',e:'Moderate',h:'सामान्य'}]},
-    { key:'tasteSour', en:'Sour / acidic things?', hi:'खट्टी चीज़ें?',
-      opts:[{v:'desire',e:'Like it more',h:'ज़्यादा पसंद'},{v:'aversion',e:'Dislike it',h:'नापसंद'},{v:'moderate',e:'Moderate',h:'सामान्य'}]},
-    { key:'tasteFried', en:'Fried / oily food?', hi:'तली हुई चीज़ें?',
-      opts:[{v:'desire',e:'Like it more',h:'ज़्यादा पसंद'},{v:'aversion',e:'Dislike it',h:'नापसंद'},{v:'moderate',e:'Moderate',h:'सामान्य'}]},
-  ],
-  // Screen 2 — Thirst
-  [
-    { key:'thirst', en:'How is your thirst?', hi:'आपकी प्यास कैसी है?',
-      opts:[
-        {v:'extreme', e:'Very thirsty / extreme thirst', h:'बहुत ज़्यादा प्यास'},
-        {v:'thirstless', e:'Very little or no thirst', h:'बहुत कम / प्यास न लगना'},
-        {v:'moderate', e:'Moderate / normal', h:'सामान्य'},
-      ]},
-    { key:'drinkPattern', en:'How do you drink water?', hi:'पानी कैसे पीते हैं?',
-      opts:[
-        {v:'largeOften', e:'Large amounts, often', h:'ज़्यादा मात्रा में, बार-बार'},
-        {v:'largeLong', e:'Large amounts, at long intervals', h:'ज़्यादा मात्रा में, लंबे अंतराल पर'},
-        {v:'smallOften', e:'Small sips, often', h:'थोड़ा-थोड़ा, बार-बार'},
-        {v:'moderate', e:'Moderate / normal', h:'सामान्य'},
-      ]},
-    { key:'coldWater', en:'Do you specifically crave cold water?', hi:'क्या आपको ठंडा पानी खासतौर पर पसंद है?',
-      opts:[{v:'yes',e:'Yes',h:'हाँ'},{v:'no',e:'No',h:'नहीं'}]},
-  ],
-  // Screen 3 — Perspiration
-  [
-    { key:'perspAmount', en:'How is your perspiration (sweating)?', hi:'आपको पसीना कैसा आता है?',
-      opts:[{v:'profuse',e:'Profuse (a lot)',h:'बहुत ज़्यादा'},{v:'scanty',e:'Very little',h:'बहुत कम'},{v:'moderate',e:'Moderate / normal',h:'सामान्य'}]},
-    { key:'perspOdor', en:'Does your perspiration have a noticeable smell?', hi:'क्या आपके पसीने से खास गंध आती है?',
-      opts:[{v:'yes',e:'Yes',h:'हाँ'},{v:'no',e:'No',h:'नहीं'}]},
-    { key:'perspStain', en:'Does your perspiration stain your clothes?', hi:'क्या आपका पसीना कपड़ों पर दाग छोड़ता है?',
-      opts:[{v:'yes',e:'Yes',h:'हाँ'},{v:'no',e:'No',h:'नहीं'}]},
-    { key:'perspLocation', en:'Where on your body do you sweat most?', hi:'शरीर के किस हिस्से में सबसे ज़्यादा पसीना आता है?',
-      opts:[
-        {v:'face',e:'Face',h:'चेहरा'},{v:'head',e:'Head / Scalp',h:'सिर / खोपड़ी'},
-        {v:'hands',e:'Hands',h:'हाथ'},{v:'feet',e:'Feet',h:'पैर'},
-        {v:'back',e:'Back',h:'पीठ'},{v:'axilla',e:'Armpit',h:'बगल'},
-        {v:'abdomen',e:'Abdomen',h:'पेट'},{v:'moderate',e:'Normal / no preference',h:'सामान्य'},
-      ]},
-    { key:'perspAnger', en:'Do you sweat when you get angry?', hi:'क्या गुस्सा आने पर आपको पसीना आता है?',
-      opts:[{v:'yes',e:'Yes',h:'हाँ'},{v:'no',e:'No',h:'नहीं'}]},
-    { key:'perspAnxiety', en:'Do you sweat when anxious or worried?', hi:'क्या चिंता होने पर आपको पसीना आता है?',
-      opts:[{v:'yes',e:'Yes',h:'हाँ'},{v:'no',e:'No',h:'नहीं'}]},
-  ],
-  // Screen 4 — Sleep & Dreams
-  [
-    { key:'sleepQuality', en:'How is your sleep?', hi:'आपकी नींद कैसी है?',
-      opts:[{v:'deep',e:'Deep sleep',h:'गहरी नींद'},{v:'disturbed',e:'Disturbed sleep',h:'बाधित नींद'},{v:'moderate',e:'Moderate / normal',h:'सामान्य'}]},
-    { key:'dreams', en:'Do you get any dream repeatedly?', hi:'क्या आपको बार-बार कोई सपना आता है?',
-      opts:[{v:'yes',e:'Yes',h:'हाँ'},{v:'no',e:'No',h:'नहीं'}]},
-  ],
-  // Screen 5 — Stool & Urine
-  [
-    { key:'constipation', en:'Do you tend to stay constipated?', hi:'क्या आपको कब्ज़ रहता है?',
-      opts:[{v:'yes',e:'Yes',h:'हाँ'},{v:'no',e:'No',h:'नहीं'}]},
-    { key:'stoolConsistency', en:'Is your stool hard or soft?', hi:'आपका मल सख्त है या नरम?',
-      opts:[{v:'hard',e:'Hard',h:'सख्त'},{v:'soft',e:'Soft',h:'नरम'},{v:'moderate',e:'Normal',h:'सामान्य'}]},
-    { key:'urineAmount', en:'How is your urine output?', hi:'आपका पेशाब कैसा आता है?',
-      opts:[{v:'copious',e:'Excessive / more than usual',h:'सामान्य से ज़्यादा'},{v:'scanty',e:'Very little',h:'बहुत कम'},{v:'moderate',e:'Normal',h:'सामान्य'}]},
-    { key:'urineColor', en:'What colour is your urine?', hi:'आपके पेशाब का रंग कैसा है?',
-      opts:[
-        {v:'dark yellow',e:'Dark yellow',h:'गहरा पीला'},{v:'pale',e:'Very pale / clear',h:'बहुत हल्का / साफ'},
-        {v:'red',e:'Reddish',h:'लाल'},{v:'moderate',e:'Normal yellow',h:'सामान्य पीला'},
-      ]},
-  ],
-  // Screen 6 — Menses (female only — filtered at runtime)
-  [
-    { key:'mensesIrregular', en:'Are your periods irregular?', hi:'क्या आपके मासिक धर्म अनियमित हैं?', femaleOnly:true,
-      opts:[{v:'yes',e:'Yes',h:'हाँ'},{v:'no',e:'No — regular',h:'नहीं — नियमित'}]},
-    { key:'mensesFlow', en:'How is the flow of your periods?', hi:'मासिक धर्म का प्रवाह कैसा है?', femaleOnly:true,
-      opts:[{v:'copious',e:'Heavy / excessive',h:'ज़्यादा'},{v:'scanty',e:'Very little',h:'बहुत कम'},{v:'moderate',e:'Normal',h:'सामान्य'}]},
-    { key:'mensesColor', en:'What colour is the menstrual blood?', hi:'मासिक धर्म का रंग कैसा है?', femaleOnly:true,
-      opts:[
-        {v:'bright red',e:'Bright red',h:'चमकीला लाल'},{v:'dark',e:'Dark / blackish',h:'गहरा / काला'},
-        {v:'pale',e:'Pale / watery',h:'हल्का / पानीदार'},{v:'moderate',e:'Normal',h:'सामान्य'},
-      ]},
-  ],
+// ── GENERALS SEQUENCE — real chapter-walks, auto-sequenced ──
+// Generals are no longer a bespoke question set. Each topic below is a real
+// Kent chapter (or a specific branch of one) already present in the loaded
+// 74,667-rubric dataset, walked with the EXACT same renderWalkStep() used for
+// every complaint — same cards, same search box, same "This describes it",
+// same auto-grouped accordion sections. We just drive it through a fixed list
+// automatically instead of the patient choosing chapters off the grid.
+// Appetite / Perspiration / Sleep / Stool / Urine are themselves clean
+// "generals" chapters, so they're walked whole. Thirst, Constipation and
+// Menses are scoped to their specific branch — Stomach, Rectum and Genitalia
+// female each contain a lot of non-general, complaint-type rubrics (pain,
+// nausea, hemorrhoids, leucorrhea, etc.) that don't belong in this section.
+const GENERALS_WALKS = [
+  { label: 'Appetite',      pathTokens: ['Appetite'] },
+  { label: 'Thirst',        pathTokens: ['Stomach', 'thirst'] },
+  { label: 'Perspiration',  pathTokens: ['Perspiration'] },
+  { label: 'Sleep',         pathTokens: ['Sleep'] },
+  { label: 'Stool',         pathTokens: ['Stool'] },
+  { label: 'Constipation',  pathTokens: ['Rectum', 'constipation'] },
+  { label: 'Urine',         pathTokens: ['Urine'] },
+  { label: 'Menses',        pathTokens: ['Genitalia female', 'menses'], femaleOnly: true },
 ];
 
-// Generals answers: key -> selected value(s) — stored flat, not in completeCase
-// They go into the Firebase payload as generals answers, not as rubrics.
-// (Rubric mapping happens on the doctor's side in the case analyzer.)
-if (!state.generals) state.generals = {};
-
-function getGenScreens() {
+function startGeneralsSequence() {
   const isFemale = (state.patient.sex || '').toLowerCase() === 'female';
-  return GEN_STEPS.map(screen =>
-    screen.filter(q => !q.femaleOnly || isFemale)
-  ).filter(screen => screen.length > 0);
+  const order = GENERALS_WALKS.filter(w => !w.femaleOnly || isFemale);
+  const gq = state.generalsQueue;
+
+  // If the patient previously backed all the way out mid-sequence, resume at
+  // the first not-yet-resolved topic rather than restarting from Appetite —
+  // otherwise already-answered topics would get duplicated in completeCase.
+  const sameShape = gq.order && gq.order.length === order.length
+    && gq.order.every((w, i) => w.label === order[i].label);
+  if (sameShape && gq.completeCaseIndices.length) {
+    gq.active = true;
+    let resumeIdx = gq.completeCaseIndices.findIndex(v => v === undefined);
+    if (resumeIdx === -1) resumeIdx = gq.completeCaseIndices.length;
+    if (resumeIdx >= order.length) { gq.active = false; onSubmitCase(); return; }
+    enterGeneralsWalk(resumeIdx);
+    return;
+  }
+
+  state.generalsQueue = { active: true, index: 0, order, completeCaseIndices: [] };
+  enterGeneralsWalk(0);
 }
 
-function onStartGeneralsWalk() {
-  if (!state.generalsWalk) state.generalsWalk = {};
-  state.generalsWalk.sectionIndex = 0;
-  state.screen = 'generalsWalk';
+function enterGeneralsWalk(idx) {
+  state.generalsQueue.index = idx;
+  const item = state.generalsQueue.order[idx];
+  state.currentWalk = { pathTokens: item.pathTokens.slice() };
+  searchFilter = '';
+  showAllOptions = false;
+  collapsedGroups = {};
+  state.screen = 'walk';
   render();
 }
 
-function onGeneralsBack() {
-  if (state.generalsWalk.sectionIndex > 0) {
-    state.generalsWalk.sectionIndex--;
-    render();
-  } else {
-    state.screen = 'caseReview';
-    render();
-  }
-}
-
-function onGeneralsNext() {
-  const screens = getGenScreens();
-  const next = state.generalsWalk.sectionIndex + 1;
-  if (next >= screens.length) {
+// Called once a rubric has been added/edited for the current topic, or the
+// patient explicitly skipped it — moves to the next topic, or submits if that
+// was the last one (mirrors the old design's "Submit my case" on the final screen).
+function advanceGeneralsQueue() {
+  const q = state.generalsQueue;
+  const next = q.index + 1;
+  if (next >= q.order.length) {
+    q.active = false;
     onSubmitCase();
   } else {
-    state.generalsWalk.sectionIndex = next;
-    render();
+    enterGeneralsWalk(next);
   }
 }
 
-function onGeneralsToggle(key, val) {
-  if (!state.generals[key]) state.generals[key] = null;
-  // single-select: tap same = deselect, tap new = select
-  state.generals[key] = (state.generals[key] === val) ? null : val;
-  render();
-}
-
-function renderGeneralsWalkStep() {
-  const screens = getGenScreens();
-  const idx = state.generalsWalk.sectionIndex;
-  const screen = screens[idx];
-  const total = screens.length;
-  const isLast = idx === total - 1;
-
-  const pct = Math.round((idx / total) * 100);
-  const progressHtml = `<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--cream);border-bottom:1px solid var(--border);">
-    <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
-      <div style="height:100%;width:${pct}%;background:var(--teal);border-radius:2px;transition:width .3s;"></div>
-    </div>
-    <div style="font-size:12px;color:var(--ink3);white-space:nowrap;">Screen ${idx + 1} of ${total}</div>
-  </div>`;
-
-  const blocks = screen.map(q => {
-    const cur = state.generals[q.key];
-    const opts = [...q.opts, {v:'__skip__', e:'Not sure — skip this', h:'पक्का नहीं — छोड़ें'}];
-    const cards = opts.map(o => {
-      const sel = cur === o.v;
-      const border = sel ? 'border:1.5px solid var(--teal);background:#F0F7F4;' : '';
-      return `<div class="opt-card" style="cursor:pointer;${border}" onclick="onGeneralsToggle('${q.key}','${o.v.replace(/'/g,"\'")}')">
-        <div class="kent">${esc(o.e)}</div>
-        <div class="hi">${esc(o.h)}</div>
-      </div>`;
-    }).join('');
-    return `<div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--cream);">
-      <h2 class="step-title" style="font-size:15px;margin-bottom:3px;">${esc(q.en)}</h2>
-      <p class="step-sub" style="margin-bottom:10px;">${esc(q.hi)}</p>
-      ${cards}
-    </div>`;
-  }).join('');
-
-  return `
-    ${renderTopbar('General Health', 'Screen ' + (idx+1) + ' of ' + total)}
-    ${progressHtml}
-    <div class="body">
-      <button class="back-btn" onclick="onGeneralsBack()">&larr; Back</button>
-      ${blocks}
-    </div>
-    <div class="footer-bar">
-      <button class="btn-primary" onclick="onGeneralsNext()">
-        ${isLast ? 'Submit my case' : 'Next →'}
-      </button>
-    </div>
-  `;
-}
-
-function renderGeneralsScreen() {
-  setTimeout(() => { onStartGeneralsWalk(); }, 0);
-  return '<div class="body" style="padding-top:40px;text-align:center;"><p class="step-sub">Loading…</p></div>';
+function onSkipGeneralsTopic() {
+  state.generalsQueue.completeCaseIndices[state.generalsQueue.index] = null; // explicit "skipped", never re-prompted by resume
+  state.editingCaseIndex = null;
+  advanceGeneralsQueue();
 }
 
 // findChapterKey kept for safety (unused now)
@@ -842,6 +709,26 @@ function renderWalkStep() {
   const pathTokens = state.currentWalk.pathTokens;
   const chapter = pathTokens[0];
 
+  // Generals-sequence chrome layered on top of the exact same walk mechanic —
+  // friendly title, a short progress bar, and a way to skip a topic that
+  // doesn't apply. Nothing below this block (cards, search, groups, "This
+  // describes it") changes based on this; it's the same UI as any complaint.
+  const gq = state.generalsQueue;
+  const inGenerals = gq.active;
+  const gItem = inGenerals ? gq.order[gq.index] : null;
+  const gTotal = inGenerals ? gq.order.length : 0;
+  const topbarTitle = inGenerals ? 'General Health' : 'Guided Case Wizard';
+  const topbarSub = inGenerals ? (gItem.label + ' — ' + (gq.index + 1) + ' of ' + gTotal) : chapter;
+  const gProgressHtml = inGenerals ? `<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--cream);border-bottom:1px solid var(--border);">
+    <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+      <div style="height:100%;width:${Math.round((gq.index / gTotal) * 100)}%;background:var(--teal);border-radius:2px;transition:width .3s;"></div>
+    </div>
+    <div style="font-size:12px;color:var(--ink3);white-space:nowrap;">${gq.index + 1} of ${gTotal}</div>
+  </div>` : '';
+  const gSkipHtml = inGenerals
+    ? `<button class="back-btn" style="color:var(--ink3);text-decoration:underline;padding-bottom:14px" onclick="onSkipGeneralsTopic()">Doesn't apply to me — skip this</button>`
+    : '';
+
   // Render every already-made selection (depth 1 .. end) as a static, indented,
   // individually-collapsible row — this is the persistent history the patient
   // asked for. Each row gets its own expand/collapse arrow. Collapsing a row
@@ -874,10 +761,12 @@ function renderWalkStep() {
   // If the path was cut short by a collapsed node, nothing further renders below it.
   if (stoppedAtCollapsedDepth !== -1) {
     return `
-      ${renderTopbar('Guided Case Wizard', chapter)}
+      ${renderTopbar(topbarTitle, topbarSub)}
+      ${gProgressHtml}
       ${renderBreadcrumb()}
       <div class="body">
         <button class="back-btn" onclick="onWalkBack()">&larr; Back</button>
+        ${gSkipHtml}
       ${state.editingCaseIndex !== null ? `<div class="editing-banner">Editing an existing complaint. <span class="cancel-edit-link" onclick="onCancelEdit()">Cancel — keep original</span></div>` : ''}
         <h2 class="step-title">Choose what applies</h2>
         ${historyHtml}
@@ -941,10 +830,12 @@ function renderWalkStep() {
   const genuinelyNoData = noMoreOptions && searchFilter.length === 0;
 
   return `
-    ${renderTopbar('Guided Case Wizard', chapter)}
+    ${renderTopbar(topbarTitle, topbarSub)}
+    ${gProgressHtml}
     ${renderBreadcrumb()}
     <div class="body">
       <button class="back-btn" onclick="onWalkBack()">&larr; Back</button>
+      ${gSkipHtml}
       ${state.editingCaseIndex !== null ? `<div class="editing-banner">Editing an existing complaint. <span class="cancel-edit-link" onclick="onCancelEdit()">Cancel — keep original</span></div>` : ''}
       <h2 class="step-title">Choose what applies</h2>
       <p class="step-sub">Select one to go more specific, or use "This describes it" to stop here.</p>
@@ -999,7 +890,7 @@ function renderCaseReview() {
     </div>
     <div class="footer-bar" style="flex-direction:column">
       <button class="btn-primary" onclick="onAddAnotherComplaint()">+ Add another complaint</button>
-      ${state.completeCase.length ? `<button class="btn-outline" onclick="state.screen='generals'; render();">Continue →</button>` : ''}
+      ${state.completeCase.length ? `<button class="btn-outline" onclick="startGeneralsSequence()">Continue →</button>` : ''}
     </div>
   `;
 }
@@ -1097,6 +988,35 @@ function onOptionPick(token) {
 }
 
 function onWalkBack() {
+  const gq = state.generalsQueue;
+  if (gq.active) {
+    // Each generals topic has its own starting depth (1 token for a whole
+    // chapter like Perspiration, 2 for a scoped branch like Stomach>thirst).
+    // Only pop within the topic while above that floor; at the floor, step
+    // the QUEUE instead of falling through to the complaint chapter grid.
+    const floorLen = gq.order[gq.index].pathTokens.length;
+    if (state.currentWalk.pathTokens.length > floorLen) {
+      state.currentWalk.pathTokens.pop();
+      searchFilter = '';
+      showAllOptions = false;
+      collapsedGroups = {};
+      render();
+      return;
+    }
+    if (gq.index > 0) {
+      const prevIdx = gq.index - 1;
+      const prevCCIdx = gq.completeCaseIndices[prevIdx];
+      state.editingCaseIndex = (typeof prevCCIdx === 'number') ? prevCCIdx : null;
+      enterGeneralsWalk(prevIdx);
+    } else {
+      gq.active = false;
+      state.editingCaseIndex = null;
+      state.screen = 'caseReview';
+      render();
+    }
+    return;
+  }
+
   if (state.currentWalk.pathTokens.length <= 1) {
     state.screen = 'chapters';
     state.editingCaseIndex = null; // abandoning the walk cancels any in-progress edit; original entry is untouched
@@ -1146,11 +1066,28 @@ function onShowAllOptions() {
 }
 
 function onAddRubric(rubricId, path, remedyCount) {
+  const gq = state.generalsQueue;
+  const entry = { rubricId, path, remedyCount };
+  if (gq.active) entry.source = 'generals'; // lets the case analyzer split generals from complaints
+
+  let targetIndex;
   if (state.editingCaseIndex !== null) {
-    state.completeCase[state.editingCaseIndex] = { rubricId, path, remedyCount };
+    targetIndex = state.editingCaseIndex;
+    state.completeCase[targetIndex] = entry;
     state.editingCaseIndex = null;
   } else {
-    state.completeCase.push({ rubricId, path, remedyCount });
+    state.completeCase.push(entry);
+    targetIndex = state.completeCase.length - 1;
+  }
+
+  if (gq.active) {
+    // Remember where this topic's answer landed (for editing if the patient
+    // steps back into it later), then move straight to the next topic —
+    // connector prompts are a complaints-flow feature, skipped here to keep
+    // the sequence short and predictable.
+    gq.completeCaseIndices[gq.index] = targetIndex;
+    advanceGeneralsQueue();
+    return;
   }
 
   // Connector check — optional, skippable, never forced (Decision 6)
@@ -1262,8 +1199,7 @@ async function onSubmitCase() {
   const payload = {
     patient: state.patient,
     accessCodeUsed: state.lock.accessCodeUsed,
-    complaints: state.completeCase,
-    generals: state.generals,
+    complaints: state.completeCase, // includes both complaint- and generals-sourced entries; generals ones carry source:'generals'
     submittedAt: new Date().toISOString()
   };
 
