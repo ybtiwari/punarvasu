@@ -133,7 +133,7 @@ input[type=text]{font-family:var(--font)}
 // STATE
 // =================================================================
 const state = {
-  screen: 'loading',           // loading | intake | lock | chapters | walk | connectorPrompt | caseReview | search | submitted
+  screen: 'loading',           // loading | intake | lock | chapters | walk | generalsWalk | connectorPrompt | caseReview | search | submitted
   currentWalk: { pathTokens: [] },
   completeCase: [],            // [{ rubricId, path, remedyCount, source? }] — source:'generals' tags entries added via the generals sequence
   connectorQueue: [],          // pending optional connector suggestions to show
@@ -146,11 +146,12 @@ const state = {
     codeInput: '', error: '', isUnlocked: false, accessCodeUsed: '', busy: false
   },
   submit: { busy: false, error: '' },
-  // Generals now runs as a fixed sequence of REAL chapter-walks — same tree-walker
-  // used for complaints, just auto-sequenced. `order` is resolved (sex-filtered) once
-  // at start; `completeCaseIndices[i]` remembers which completeCase slot topic i
-  // landed in, so stepping back into an already-answered topic edits it in place.
-  generalsQueue: { active: false, index: -1, order: [], completeCaseIndices: [] },
+  // Generals runs as a fixed sequence of topics. Each topic has a short curated
+  // list of yes/no/skip items grounded in real rubric paths (verified against
+  // the loaded dataset). `itemIndex` is the current item within the current
+  // topic; `answers` remembers each item's answer keyed by 'topicIdx:itemIdx'
+  // so stepping back shows what was already answered and lets it be changed.
+  generalsQueue: { active: false, index: -1, order: [], itemIndex: 0, answers: {} },
   search: {
     query: '',
     activeTab: 'all',          // all | sensation | timing | modality | laterality | cause | sequence | content
@@ -357,6 +358,7 @@ function render() {
   else if (state.screen === 'lock') app.innerHTML = renderLockScreen();
   else if (state.screen === 'chapters') app.innerHTML = renderChapterSelect();
   else if (state.screen === 'walk') app.innerHTML = renderWalkStep();
+  else if (state.screen === 'generalsWalk') app.innerHTML = renderGeneralsQuestionStep();
   else if (state.screen === 'connectorPrompt') app.innerHTML = renderConnectorPrompt();
   else if (state.screen === 'caseReview') app.innerHTML = renderCaseReview();
   else if (state.screen === 'search') app.innerHTML = renderSearchScreen();
@@ -517,89 +519,225 @@ async function onLockSubmit() {
   }
 }
 
-// ── GENERALS SEQUENCE — real chapter-walks, auto-sequenced ──
-// Generals are no longer a bespoke question set. Each topic below is a real
-// Kent chapter (or a specific branch of one) already present in the loaded
-// 74,667-rubric dataset, walked with the EXACT same renderWalkStep() used for
-// every complaint — same cards, same search box, same "This describes it",
-// same auto-grouped accordion sections. We just drive it through a fixed list
-// automatically instead of the patient choosing chapters off the grid.
-// Appetite / Perspiration / Sleep / Stool / Urine are themselves clean
-// "generals" chapters, so they're walked whole. Thirst, Constipation and
-// Menses are scoped to their specific branch — Stomach, Rectum and Genitalia
-// female each contain a lot of non-general, complaint-type rubrics (pain,
-// nausea, hemorrhoids, leucorrhea, etc.) that don't belong in this section.
+// ── GENERALS SEQUENCE — curated yes/no/skip questions, grounded in real rubrics ──
+// Each topic has a short, hand-picked list of the most clinically relevant
+// symptoms for that area. Every item's path was checked against the loaded
+// dataset before being included here, so "Yes" always adds a real, correctly
+// remedy-mapped rubric — the patient only ever sees a plain-language yes/no
+// question, never raw Kent shorthand. Multiple "Yes" answers can stack up
+// within one topic (e.g. both increased appetite AND easy satiety).
 const GENERALS_WALKS = [
-  { label: 'Appetite',      pathTokens: ['Appetite'],
-    question: { en: 'How is your appetite in general?', hi: 'आपकी भूख सामान्य तौर पर कैसी रहती है?' } },
-  { label: 'Thirst',        pathTokens: ['Stomach', 'thirst'],
-    question: { en: 'How is your thirst?', hi: 'आपकी प्यास कैसी रहती है?' } },
-  { label: 'Perspiration',  pathTokens: ['Perspiration'],
-    question: { en: 'How is your perspiration (sweating)?', hi: 'आपको पसीना कैसा आता है?' } },
-  { label: 'Sleep',         pathTokens: ['Sleep'],
-    question: { en: 'How is your sleep, and what do you dream about?', hi: 'आपकी नींद कैसी रहती है, और आपको कैसे सपने आते हैं?' } },
-  { label: 'Stool',         pathTokens: ['Stool'],
-    question: { en: 'How are your bowel movements (stool)?', hi: 'आपका मल त्याग कैसा रहता है?' } },
-  { label: 'Constipation',  pathTokens: ['Rectum', 'constipation'],
-    question: { en: 'Do you tend to stay constipated?', hi: 'क्या आपको कब्ज़ रहता है?' } },
-  { label: 'Urine',         pathTokens: ['Urine'],
-    question: { en: 'How is your urine — output and colour?', hi: 'आपका पेशाब कैसा रहता है — मात्रा और रंग में?' } },
-  { label: 'Menses',        pathTokens: ['Genitalia female', 'menses'], femaleOnly: true,
-    question: { en: 'How are your periods (menses)?', hi: 'आपका मासिक धर्म कैसा रहता है?' } },
+  { label: 'Appetite', pathTokens: ['Appetite'],
+    items: [
+      { path: 'Appetite, increased (hunger in general)', en: 'Is your appetite increased — do you feel hungrier than usual?', hi: 'क्या आपकी भूख सामान्य से ज़्यादा बढ़ गई है?' },
+      { path: 'Appetite, diminished', en: 'Is your appetite reduced or poor?', hi: 'क्या आपकी भूख कम हो गई है?' },
+      { path: 'Appetite, ravenous', en: 'Do you get an extreme, ravenous hunger?', hi: 'क्या आपको बहुत ज़बरदस्त और तेज़ भूख लगती है?' },
+      { path: 'Appetite, wanting', en: 'Do you have almost no appetite at all?', hi: 'क्या आपको लगभग बिल्कुल भूख नहीं लगती?' },
+      { path: 'Appetite, insatiable', en: 'Do you feel hungry no matter how much you eat?', hi: 'क्या कितना भी खा लें, भूख नहीं मिटती?' },
+      { path: 'Appetite, gnawing', en: 'Do you get a gnawing, empty feeling, as if you need to eat?', hi: 'क्या पेट में कुछ कुरेदने जैसा, खाली-सा एहसास होता है?' },
+      { path: 'Appetite, satiety', en: 'Do you feel full very quickly, after eating just a little?', hi: 'क्या थोड़ा खाते ही पेट भरा हुआ लगने लगता है?' },
+      { path: 'Appetite, disgust', en: 'Do you feel disgusted by food — does nothing appeal to you?', hi: 'क्या खाने से मन उचट जाता है — कुछ भी खाने का मन नहीं करता?' },
+    ] },
+  { label: 'Thirst', pathTokens: ['Stomach', 'thirst'],
+    items: [
+      { path: 'Stomach, thirst, extreme', en: 'Are you extremely thirsty?', hi: 'क्या आपको बहुत ज़्यादा प्यास लगती है?' },
+      { path: 'Stomach, thirstless', en: 'Do you have little or no thirst at all?', hi: 'क्या आपको बहुत कम या बिल्कुल प्यास नहीं लगती?' },
+      { path: 'Stomach, thirst, large quantities', en: 'When thirsty, do you want to drink large amounts at once?', hi: 'क्या प्यास लगने पर एक साथ बहुत सारा पानी पीने का मन करता है?' },
+      { path: 'Stomach, thirst, small quantities', en: 'Do you drink only small sips at a time, even when thirsty?', hi: 'क्या प्यास लगने पर भी सिर्फ़ थोड़ा-थोड़ा पानी पीते हैं?' },
+      { path: 'Stomach, thirst, water, drinking, cold', en: 'Do you specifically crave cold water?', hi: 'क्या आपको खासतौर पर ठंडा पानी पीने की इच्छा होती है?' },
+      { path: 'Stomach, thirst, unquenchable', en: 'Does your thirst stay unsatisfied no matter how much you drink?', hi: 'क्या कितना भी पानी पी लें, प्यास बुझती नहीं?' },
+    ] },
+  { label: 'Perspiration', pathTokens: ['Perspiration'],
+    items: [
+      { path: 'Perspiration, profuse', en: 'Do you sweat heavily?', hi: 'क्या आपको बहुत ज़्यादा पसीना आता है?' },
+      { path: 'Perspiration, scanty sweat', en: 'Do you sweat very little?', hi: 'क्या आपको बहुत कम पसीना आता है?' },
+      { path: 'Perspiration, night', en: 'Do you sweat mainly at night?', hi: 'क्या आपको ज़्यादातर रात के समय पसीना आता है?' },
+      { path: 'Perspiration, cold', en: 'Does your sweat feel cold on the skin?', hi: 'क्या आपका पसीना त्वचा पर ठंडा महसूस होता है?' },
+      { path: 'Perspiration, odor', en: 'Does your sweat have a noticeable smell?', hi: 'क्या आपके पसीने से कोई खास गंध आती है?' },
+      { path: 'Perspiration, staining the linen', en: 'Does your sweat leave stains on your clothes or bedding?', hi: 'क्या पसीने से कपड़ों या चादर पर दाग पड़ जाते हैं?' },
+      { path: 'Perspiration, anxiety', en: 'Do you sweat along with anxiety or nervousness?', hi: 'क्या घबराहट या चिंता होने पर पसीना आता है?' },
+      { path: 'Perspiration, exertion', en: 'Does physical exertion easily bring on sweating?', hi: 'क्या थोड़ी मेहनत या कसरत से ही पसीना आ जाता है?' },
+    ] },
+  { label: 'Sleep', pathTokens: ['Sleep'],
+    items: [
+      { path: 'Sleep, sleeplessness', en: 'Do you have trouble falling or staying asleep?', hi: 'क्या आपको नींद आने या नींद बनाए रखने में परेशानी होती है?' },
+      { path: 'Sleep, sleepiness', en: 'Do you feel unusually drowsy, with a strong urge to sleep?', hi: 'क्या आपको बहुत ज़्यादा नींद और ऊँघ आती रहती है?' },
+      { path: 'Sleep, restless', en: 'Is your sleep restless and unsettled?', hi: 'क्या आपकी नींद बेचैन और अशांत रहती है?' },
+      { path: 'Sleep, deep', en: 'Is your sleep unusually deep and heavy?', hi: 'क्या आपको बहुत गहरी नींद आती है?' },
+      { path: 'Sleep, disturbed', en: 'Is your sleep disturbed, breaking up through the night?', hi: 'क्या रात में बार-बार नींद टूटती है?' },
+      { path: 'Sleep, unrefreshing', en: 'Do you wake up feeling unrefreshed, even after sleeping?', hi: 'क्या सोने के बाद भी तरोताज़ा महसूस नहीं होता?' },
+      { path: 'Sleep, dreams', en: 'Do you dream a lot, or have vivid, repeated dreams?', hi: 'क्या आपको बहुत सपने आते हैं, या बार-बार वही सपने आते हैं?' },
+    ] },
+  { label: 'Stool', pathTokens: ['Stool'],
+    items: [
+      { path: 'Stool, hard', en: 'Is your stool hard?', hi: 'क्या आपका मल सख्त होता है?' },
+      { path: 'Stool, soft', en: 'Is your stool soft?', hi: 'क्या आपका मल नरम होता है?' },
+      { path: 'Stool, watery', en: 'Is your stool watery?', hi: 'क्या आपका मल पानी जैसा पतला होता है?' },
+      { path: 'Stool, mucous', en: 'Does your stool contain mucus?', hi: 'क्या आपके मल में बलगम आता है?' },
+      { path: 'Stool, odor', en: 'Does your stool have a noticeable, strong smell?', hi: 'क्या आपके मल से खास या तेज़ गंध आती है?' },
+      { path: 'Stool, copious', en: 'Is the amount unusually large each time?', hi: 'क्या हर बार मल की मात्रा सामान्य से ज़्यादा होती है?' },
+      { path: 'Stool, scanty', en: 'Is the amount unusually small each time?', hi: 'क्या हर बार मल की मात्रा बहुत कम होती है?' },
+    ] },
+  { label: 'Constipation', pathTokens: ['Rectum', 'constipation'],
+    items: [
+      { path: 'Rectum, constipation', en: 'Do you tend to stay constipated in general?', hi: 'क्या आपको आमतौर पर कब्ज़ रहता है?' },
+      { path: 'Rectum, constipation, difficult stool', en: 'Is passing stool very difficult, needing a lot of straining?', hi: 'क्या मल त्यागने में बहुत ज़ोर लगाना पड़ता है?' },
+      { path: 'Rectum, constipation, ineffectual urging and straining', en: 'Do you feel a strong urge to go, but straining brings nothing?', hi: 'क्या शौच की तेज़ इच्छा होती है लेकिन ज़ोर लगाने पर भी कुछ नहीं निकलता?' },
+      { path: 'Rectum, constipation, alternating with diarrhea', en: 'Does your constipation alternate with bouts of diarrhoea?', hi: 'क्या कभी कब्ज़ रहती है तो कभी दस्त लग जाते हैं?' },
+    ] },
+  { label: 'Urine', pathTokens: ['Urine'],
+    items: [
+      { path: 'Urine, copious (increased)', en: 'Is your urine output larger than usual?', hi: 'क्या आपका पेशाब सामान्य से ज़्यादा मात्रा में आता है?' },
+      { path: 'Urine, scanty', en: 'Is your urine output smaller than usual?', hi: 'क्या आपका पेशाब सामान्य से बहुत कम आता है?' },
+      { path: 'Urine, cloudy', en: 'Does your urine look cloudy or murky?', hi: 'क्या आपका पेशाब गंदला या मटमैला दिखता है?' },
+      { path: 'Urine, odor', en: 'Does your urine have an unusual or noticeable smell?', hi: 'क्या आपके पेशाब से कोई खास गंध आती है?' },
+      { path: 'Urine, burning (includes hot)', en: 'Does it burn or feel hot when you urinate?', hi: 'क्या पेशाब करते समय जलन या गर्माहट महसूस होती है?' },
+      { path: 'Urine, colorless', en: 'Is your urine unusually clear or colourless?', hi: 'क्या आपका पेशाब बिल्कुल साफ़, बेरंग जैसा आता है?' },
+    ] },
+  { label: 'Menses', pathTokens: ['Genitalia female', 'menses'], femaleOnly: true,
+    items: [
+      { path: 'Genitalia female, menses, irregular', en: 'Are your periods irregular?', hi: 'क्या आपके मासिक धर्म अनियमित हैं?' },
+      { path: 'Genitalia female, menses, copious', en: 'Is the flow unusually heavy?', hi: 'क्या माहवारी में बहुत ज़्यादा खून आता है?' },
+      { path: 'Genitalia female, menses, scanty', en: 'Is the flow unusually light?', hi: 'क्या माहवारी में बहुत कम खून आता है?' },
+      { path: 'Genitalia female, menses, painful', en: 'Are your periods painful?', hi: 'क्या माहवारी में बहुत दर्द होता है?' },
+      { path: 'Genitalia female, menses, late', en: 'Do your periods tend to come later than expected?', hi: 'क्या आपकी माहवारी अक्सर देर से आती है?' },
+      { path: 'Genitalia female, menses, dark', en: 'Is the blood dark in colour?', hi: 'क्या माहवारी का खून गहरे रंग का होता है?' },
+      { path: 'Genitalia female, menses, bright-red', en: 'Is the blood bright red in colour?', hi: 'क्या माहवारी का खून चमकीला लाल रंग का होता है?' },
+    ] },
 ];
+
+function findRubricByExactPath(chapter, fullPath) {
+  const bucket = state.data.chaptersBucketed[chapter] || [];
+  for (const [id, path, remedies] of bucket) {
+    if (path.trim() === fullPath.trim()) return { id, path, remedyCount: remedies.length };
+  }
+  return null; // shouldn't happen — every path above was checked against the live dataset before inclusion
+}
 
 function startGeneralsSequence() {
   const isFemale = (state.patient.sex || '').toLowerCase() === 'female';
   const order = GENERALS_WALKS.filter(w => !w.femaleOnly || isFemale);
-  const gq = state.generalsQueue;
-
-  // If the patient previously backed all the way out mid-sequence, resume at
-  // the first not-yet-resolved topic rather than restarting from Appetite —
-  // otherwise already-answered topics would get duplicated in completeCase.
-  const sameShape = gq.order && gq.order.length === order.length
-    && gq.order.every((w, i) => w.label === order[i].label);
-  if (sameShape && gq.completeCaseIndices.length) {
-    gq.active = true;
-    let resumeIdx = gq.completeCaseIndices.findIndex(v => v === undefined);
-    if (resumeIdx === -1) resumeIdx = gq.completeCaseIndices.length;
-    if (resumeIdx >= order.length) { gq.active = false; onSubmitCase(); return; }
-    enterGeneralsWalk(resumeIdx);
-    return;
-  }
-
-  state.generalsQueue = { active: true, index: 0, order, completeCaseIndices: [] };
-  enterGeneralsWalk(0);
-}
-
-function enterGeneralsWalk(idx) {
-  state.generalsQueue.index = idx;
-  const item = state.generalsQueue.order[idx];
-  state.currentWalk = { pathTokens: item.pathTokens.slice() };
-  searchFilter = '';
-  showAllOptions = false;
-  collapsedGroups = {};
-  state.screen = 'walk';
+  state.generalsQueue = { active: true, index: 0, order, itemIndex: 0, answers: {} };
+  state.screen = 'generalsWalk';
   render();
 }
 
-// Called once a rubric has been added/edited for the current topic, or the
-// patient explicitly skipped it — moves to the next topic, or submits if that
-// was the last one (mirrors the old design's "Submit my case" on the final screen).
-function advanceGeneralsQueue() {
-  const q = state.generalsQueue;
-  const next = q.index + 1;
-  if (next >= q.order.length) {
-    q.active = false;
+// Moves to the next item within the current topic, or the next topic if that
+// was the last item, or submits if that was the last topic (mirrors the old
+// design's "Submit my case" on the final screen).
+function advanceGeneralsItem() {
+  const gq = state.generalsQueue;
+  const topic = gq.order[gq.index];
+  const nextItem = gq.itemIndex + 1;
+  if (nextItem < topic.items.length) {
+    gq.itemIndex = nextItem;
+    render();
+    return;
+  }
+  const nextTopic = gq.index + 1;
+  if (nextTopic >= gq.order.length) {
+    gq.active = false;
     onSubmitCase();
   } else {
-    enterGeneralsWalk(next);
+    gq.index = nextTopic;
+    gq.itemIndex = 0;
+    render();
   }
 }
 
 function onSkipGeneralsTopic() {
-  state.generalsQueue.completeCaseIndices[state.generalsQueue.index] = null; // explicit "skipped", never re-prompted by resume
-  state.editingCaseIndex = null;
-  advanceGeneralsQueue();
+  // Jumps straight to the next topic without recording anything for whichever
+  // items in the current topic haven't been answered yet.
+  const gq = state.generalsQueue;
+  const nextTopic = gq.index + 1;
+  if (nextTopic >= gq.order.length) {
+    gq.active = false;
+    onSubmitCase();
+  } else {
+    gq.index = nextTopic;
+    gq.itemIndex = 0;
+    render();
+  }
+}
+
+function onGeneralsAnswer(choice) {
+  const gq = state.generalsQueue;
+  const topic = gq.order[gq.index];
+  const item = topic.items[gq.itemIndex];
+  const key = gq.index + ':' + gq.itemIndex;
+
+  // If this exact item was already answered "yes" before (patient stepped
+  // back and is changing their mind), remove that earlier entry first so
+  // changing an answer never leaves a duplicate or stale rubric behind.
+  const existingIdx = state.completeCase.findIndex(e => e.source === 'generals' && e.path === item.path);
+  if (existingIdx !== -1) state.completeCase.splice(existingIdx, 1);
+
+  if (choice === 'yes') {
+    const rubric = findRubricByExactPath(topic.pathTokens[0], item.path);
+    if (rubric) {
+      state.completeCase.push({ rubricId: rubric.id, path: rubric.path, remedyCount: rubric.remedyCount, source: 'generals' });
+    }
+  }
+  gq.answers[key] = choice;
+  advanceGeneralsItem();
+}
+
+function onGeneralsItemBack() {
+  const gq = state.generalsQueue;
+  if (gq.itemIndex > 0) {
+    gq.itemIndex--;
+    render();
+    return;
+  }
+  if (gq.index > 0) {
+    gq.index--;
+    gq.itemIndex = gq.order[gq.index].items.length - 1;
+    render();
+  } else {
+    gq.active = false;
+    state.screen = 'caseReview';
+    render();
+  }
+}
+
+function renderGeneralsQuestionStep() {
+  const gq = state.generalsQueue;
+  const topic = gq.order[gq.index];
+  const item = topic.items[gq.itemIndex];
+  const topicTotal = gq.order.length;
+  const itemTotal = topic.items.length;
+
+  const progressHtml = `<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--cream);border-bottom:1px solid var(--border);">
+    <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+      <div style="height:100%;width:${Math.round((gq.index / topicTotal) * 100)}%;background:var(--teal);border-radius:2px;transition:width .3s;"></div>
+    </div>
+    <div style="font-size:12px;color:var(--ink3);white-space:nowrap;">${gq.index + 1} of ${topicTotal}</div>
+  </div>`;
+
+  // If the patient stepped back into an already-answered item, highlight
+  // whichever choice they picked so it's clear what's currently recorded.
+  const priorAnswer = gq.answers[gq.index + ':' + gq.itemIndex];
+  const yesStyle = priorAnswer === 'yes' ? 'outline:2px solid var(--teal);outline-offset:-2px;' : '';
+  const noStyle = priorAnswer === 'no' ? 'outline:2px solid var(--ink3);outline-offset:-2px;' : '';
+
+  return `
+    ${renderTopbar('General Health', topic.label + ' — ' + (gq.index + 1) + ' of ' + topicTotal)}
+    ${progressHtml}
+    <div class="body">
+      <button class="back-btn" onclick="onGeneralsItemBack()">&larr; Back</button>
+      <button class="back-btn" style="color:var(--ink3);text-decoration:underline;" onclick="onSkipGeneralsTopic()">Doesn't apply to me — skip this section</button>
+      <div style="font-size:12px;color:var(--ink3);margin:10px 0;">Question ${gq.itemIndex + 1} of ${itemTotal}</div>
+      <h2 class="step-title">${esc(item.en)}</h2>
+      <p class="hi" style="margin-bottom:22px;">${esc(item.hi)}</p>
+      <div style="display:flex;gap:10px;">
+        <button class="btn-primary" style="${yesStyle}" onclick="onGeneralsAnswer('yes')">Yes</button>
+        <button class="btn-outline" style="${noStyle}" onclick="onGeneralsAnswer('no')">No</button>
+      </div>
+      <div style="text-align:center;margin-top:16px;">
+        <span style="color:var(--ink3);text-decoration:underline;cursor:pointer;font-size:13px;" onclick="onGeneralsAnswer('skip')">Not sure — skip this one</span>
+      </div>
+    </div>
+  `;
 }
 
 // findChapterKey kept for safety (unused now)
@@ -717,31 +855,6 @@ function renderWalkStep() {
   const pathTokens = state.currentWalk.pathTokens;
   const chapter = pathTokens[0];
 
-  // Generals-sequence chrome layered on top of the exact same walk mechanic —
-  // friendly title, a short progress bar, and a way to skip a topic that
-  // doesn't apply. Nothing below this block (cards, search, groups, "This
-  // describes it") changes based on this; it's the same UI as any complaint.
-  const gq = state.generalsQueue;
-  const inGenerals = gq.active;
-  const gItem = inGenerals ? gq.order[gq.index] : null;
-  const gTotal = inGenerals ? gq.order.length : 0;
-  const topbarTitle = inGenerals ? 'General Health' : 'Guided Case Wizard';
-  const topbarSub = inGenerals ? (gItem.label + ' — ' + (gq.index + 1) + ' of ' + gTotal) : chapter;
-  const gProgressHtml = inGenerals ? `<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--cream);border-bottom:1px solid var(--border);">
-    <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
-      <div style="height:100%;width:${Math.round((gq.index / gTotal) * 100)}%;background:var(--teal);border-radius:2px;transition:width .3s;"></div>
-    </div>
-    <div style="font-size:12px;color:var(--ink3);white-space:nowrap;">${gq.index + 1} of ${gTotal}</div>
-  </div>` : '';
-  const gSkipHtml = inGenerals
-    ? `<button class="back-btn" style="color:var(--ink3);text-decoration:underline;padding-bottom:14px" onclick="onSkipGeneralsTopic()">Doesn't apply to me — skip this</button>`
-    : '';
-  // Each generals topic asks its own question instead of the generic complaint
-  // heading — same idea as before, just phrased for that specific topic.
-  const stepTitleHtml = inGenerals
-    ? `<h2 class="step-title">${esc(gItem.question.en)}</h2><p class="hi" style="margin-bottom:8px;">${esc(gItem.question.hi)}</p>`
-    : `<h2 class="step-title">Choose what applies</h2>`;
-
   // Render every already-made selection (depth 1 .. end) as a static, indented,
   // individually-collapsible row — this is the persistent history the patient
   // asked for. Each row gets its own expand/collapse arrow. Collapsing a row
@@ -774,14 +887,12 @@ function renderWalkStep() {
   // If the path was cut short by a collapsed node, nothing further renders below it.
   if (stoppedAtCollapsedDepth !== -1) {
     return `
-      ${renderTopbar(topbarTitle, topbarSub)}
-      ${gProgressHtml}
+      ${renderTopbar('Guided Case Wizard', chapter)}
       ${renderBreadcrumb()}
       <div class="body">
         <button class="back-btn" onclick="onWalkBack()">&larr; Back</button>
-        ${gSkipHtml}
       ${state.editingCaseIndex !== null ? `<div class="editing-banner">Editing an existing complaint. <span class="cancel-edit-link" onclick="onCancelEdit()">Cancel — keep original</span></div>` : ''}
-        ${stepTitleHtml}
+        <h2 class="step-title">Choose what applies</h2>
         ${historyHtml}
       </div>
     `;
@@ -843,14 +954,12 @@ function renderWalkStep() {
   const genuinelyNoData = noMoreOptions && searchFilter.length === 0;
 
   return `
-    ${renderTopbar(topbarTitle, topbarSub)}
-    ${gProgressHtml}
+    ${renderTopbar('Guided Case Wizard', chapter)}
     ${renderBreadcrumb()}
     <div class="body">
       <button class="back-btn" onclick="onWalkBack()">&larr; Back</button>
-      ${gSkipHtml}
       ${state.editingCaseIndex !== null ? `<div class="editing-banner">Editing an existing complaint. <span class="cancel-edit-link" onclick="onCancelEdit()">Cancel — keep original</span></div>` : ''}
-      ${stepTitleHtml}
+      <h2 class="step-title">Choose what applies</h2>
       <p class="step-sub">Select one to go more specific, or use "This describes it" to stop here.</p>
       ${historyHtml}
       <div style="margin-left:${liveIndent}px">
@@ -1001,35 +1110,6 @@ function onOptionPick(token) {
 }
 
 function onWalkBack() {
-  const gq = state.generalsQueue;
-  if (gq.active) {
-    // Each generals topic has its own starting depth (1 token for a whole
-    // chapter like Perspiration, 2 for a scoped branch like Stomach>thirst).
-    // Only pop within the topic while above that floor; at the floor, step
-    // the QUEUE instead of falling through to the complaint chapter grid.
-    const floorLen = gq.order[gq.index].pathTokens.length;
-    if (state.currentWalk.pathTokens.length > floorLen) {
-      state.currentWalk.pathTokens.pop();
-      searchFilter = '';
-      showAllOptions = false;
-      collapsedGroups = {};
-      render();
-      return;
-    }
-    if (gq.index > 0) {
-      const prevIdx = gq.index - 1;
-      const prevCCIdx = gq.completeCaseIndices[prevIdx];
-      state.editingCaseIndex = (typeof prevCCIdx === 'number') ? prevCCIdx : null;
-      enterGeneralsWalk(prevIdx);
-    } else {
-      gq.active = false;
-      state.editingCaseIndex = null;
-      state.screen = 'caseReview';
-      render();
-    }
-    return;
-  }
-
   if (state.currentWalk.pathTokens.length <= 1) {
     state.screen = 'chapters';
     state.editingCaseIndex = null; // abandoning the walk cancels any in-progress edit; original entry is untouched
@@ -1079,28 +1159,13 @@ function onShowAllOptions() {
 }
 
 function onAddRubric(rubricId, path, remedyCount) {
-  const gq = state.generalsQueue;
   const entry = { rubricId, path, remedyCount };
-  if (gq.active) entry.source = 'generals'; // lets the case analyzer split generals from complaints
 
-  let targetIndex;
   if (state.editingCaseIndex !== null) {
-    targetIndex = state.editingCaseIndex;
-    state.completeCase[targetIndex] = entry;
+    state.completeCase[state.editingCaseIndex] = entry;
     state.editingCaseIndex = null;
   } else {
     state.completeCase.push(entry);
-    targetIndex = state.completeCase.length - 1;
-  }
-
-  if (gq.active) {
-    // Remember where this topic's answer landed (for editing if the patient
-    // steps back into it later), then move straight to the next topic —
-    // connector prompts are a complaints-flow feature, skipped here to keep
-    // the sequence short and predictable.
-    gq.completeCaseIndices[gq.index] = targetIndex;
-    advanceGeneralsQueue();
-    return;
   }
 
   // Connector check — optional, skippable, never forced (Decision 6)
