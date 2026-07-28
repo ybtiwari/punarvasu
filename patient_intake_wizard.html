@@ -530,14 +530,22 @@ async function onLockSubmit() {
 // female each contain a lot of non-general, complaint-type rubrics (pain,
 // nausea, hemorrhoids, leucorrhea, etc.) that don't belong in this section.
 const GENERALS_WALKS = [
-  { label: 'Appetite',      pathTokens: ['Appetite'] },
-  { label: 'Thirst',        pathTokens: ['Stomach', 'thirst'] },
-  { label: 'Perspiration',  pathTokens: ['Perspiration'] },
-  { label: 'Sleep',         pathTokens: ['Sleep'] },
-  { label: 'Stool',         pathTokens: ['Stool'] },
-  { label: 'Constipation',  pathTokens: ['Rectum', 'constipation'] },
-  { label: 'Urine',         pathTokens: ['Urine'] },
-  { label: 'Menses',        pathTokens: ['Genitalia female', 'menses'], femaleOnly: true },
+  { label: 'Appetite',      pathTokens: ['Appetite'],
+    question: { en: 'How is your appetite in general?', hi: 'आपकी भूख सामान्य तौर पर कैसी रहती है?' } },
+  { label: 'Thirst',        pathTokens: ['Stomach', 'thirst'],
+    question: { en: 'How is your thirst?', hi: 'आपकी प्यास कैसी रहती है?' } },
+  { label: 'Perspiration',  pathTokens: ['Perspiration'],
+    question: { en: 'How is your perspiration (sweating)?', hi: 'आपको पसीना कैसा आता है?' } },
+  { label: 'Sleep',         pathTokens: ['Sleep'],
+    question: { en: 'How is your sleep, and what do you dream about?', hi: 'आपकी नींद कैसी रहती है, और आपको कैसे सपने आते हैं?' } },
+  { label: 'Stool',         pathTokens: ['Stool'],
+    question: { en: 'How are your bowel movements (stool)?', hi: 'आपका मल त्याग कैसा रहता है?' } },
+  { label: 'Constipation',  pathTokens: ['Rectum', 'constipation'],
+    question: { en: 'Do you tend to stay constipated?', hi: 'क्या आपको कब्ज़ रहता है?' } },
+  { label: 'Urine',         pathTokens: ['Urine'],
+    question: { en: 'How is your urine — output and colour?', hi: 'आपका पेशाब कैसा रहता है — मात्रा और रंग में?' } },
+  { label: 'Menses',        pathTokens: ['Genitalia female', 'menses'], femaleOnly: true,
+    question: { en: 'How are your periods (menses)?', hi: 'आपका मासिक धर्म कैसा रहता है?' } },
 ];
 
 function startGeneralsSequence() {
@@ -728,6 +736,11 @@ function renderWalkStep() {
   const gSkipHtml = inGenerals
     ? `<button class="back-btn" style="color:var(--ink3);text-decoration:underline;padding-bottom:14px" onclick="onSkipGeneralsTopic()">Doesn't apply to me — skip this</button>`
     : '';
+  // Each generals topic asks its own question instead of the generic complaint
+  // heading — same idea as before, just phrased for that specific topic.
+  const stepTitleHtml = inGenerals
+    ? `<h2 class="step-title">${esc(gItem.question.en)}</h2><p class="hi" style="margin-bottom:8px;">${esc(gItem.question.hi)}</p>`
+    : `<h2 class="step-title">Choose what applies</h2>`;
 
   // Render every already-made selection (depth 1 .. end) as a static, indented,
   // individually-collapsible row — this is the persistent history the patient
@@ -768,7 +781,7 @@ function renderWalkStep() {
         <button class="back-btn" onclick="onWalkBack()">&larr; Back</button>
         ${gSkipHtml}
       ${state.editingCaseIndex !== null ? `<div class="editing-banner">Editing an existing complaint. <span class="cancel-edit-link" onclick="onCancelEdit()">Cancel — keep original</span></div>` : ''}
-        <h2 class="step-title">Choose what applies</h2>
+        ${stepTitleHtml}
         ${historyHtml}
       </div>
     `;
@@ -837,7 +850,7 @@ function renderWalkStep() {
       <button class="back-btn" onclick="onWalkBack()">&larr; Back</button>
       ${gSkipHtml}
       ${state.editingCaseIndex !== null ? `<div class="editing-banner">Editing an existing complaint. <span class="cancel-edit-link" onclick="onCancelEdit()">Cancel — keep original</span></div>` : ''}
-      <h2 class="step-title">Choose what applies</h2>
+      ${stepTitleHtml}
       <p class="step-sub">Select one to go more specific, or use "This describes it" to stop here.</p>
       ${historyHtml}
       <div style="margin-left:${liveIndent}px">
