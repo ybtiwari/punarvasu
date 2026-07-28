@@ -146,15 +146,16 @@ const state = {
     codeInput: '', error: '', isUnlocked: false, accessCodeUsed: '', busy: false
   },
   submit: { busy: false, error: '' },
-  // Generals runs as a fixed sequence of topics, each a short curated list of
-  // yes/no/not-sure questions grounded in real rubric paths. A "yes" checks
-  // the live dataset for real children of that exact rubric — if there are
-  // any, a follow-up detail screen shows them (categorized the same way as
-  // the complaint tree-walker: small categories as direct checkboxes, larger
-  // ones as type-ahead search). `inDetail` tracks whether that follow-up
-  // screen is currently showing; `answers` remembers each question's choice
-  // and any follow-up picks, keyed by 'topicIdx-itemIdx'.
-  generalsQueue: { active: false, index: -1, order: [], itemIndex: 0, inDetail: false, detailSearch: {}, answers: {} },
+  // Generals runs as a fixed sequence of topics. Each topic's questions all
+  // show together on one screen as a list — tapping a question expands it
+  // (collapsing whichever other one was open) to reveal yes/no/not-sure and,
+  // if answered "yes" and the real dataset has children for that exact
+  // rubric, a follow-up detail section inline (categorized the same way as
+  // the complaint tree-walker: small categories as checkboxes, larger ones
+  // as type-ahead search + browse). `expandedItem` is which question index
+  // is currently open (null = all collapsed); `answers` remembers each
+  // question's choice and any follow-up picks, keyed by 'topicIdx-itemIdx'.
+  generalsQueue: { active: false, index: -1, order: [], expandedItem: null, detailSearch: {}, answers: {} },
   search: {
     query: '',
     activeTab: 'all',          // all | sensation | timing | modality | laterality | cause | sequence | content
@@ -621,110 +622,120 @@ function itemPathTokens(item) {
   return item.path.split(',').map(s => s.trim());
 }
 
+// getNextOptions reports every next-level TOKEN under a path, but some of
+// those tokens are only intermediate branch points (further sub-rubrics
+// exist beneath them) with no rubric of their own at exactly that path — so
+// they can't be added directly. This filters down to only the ones that
+// really do resolve to a complete, addable rubric, which is what this
+// one-level-deep follow-up screen needs.
+function getRealDetailChildren(chapter, itemPath) {
+  const { nextOptions } = getNextOptions(itemPath.split(',').map(s => s.trim()));
+  const result = [];
+  for (const [token, info] of Object.entries(nextOptions)) {
+    if (findRubricByExactPath(chapter, itemPath + ', ' + token)) result.push([token, info]);
+  }
+  return result;
+}
+
 function generalsAnswerKey(topicIdx, itemIdx) {
   return topicIdx + '-' + itemIdx;
 }
 
-function currentGeneralsItem() {
+function expandedGeneralsItem() {
   const gq = state.generalsQueue;
-  return gq.order[gq.index].items[gq.itemIndex];
+  if (gq.expandedItem === null) return null;
+  return gq.order[gq.index].items[gq.expandedItem];
 }
 
 function startGeneralsSequence() {
   const isFemale = (state.patient.sex || '').toLowerCase() === 'female';
   const order = GENERALS_WALKS.filter(w => !w.femaleOnly || isFemale);
-  state.generalsQueue = { active: true, index: 0, order, itemIndex: 0, inDetail: false, detailSearch: {}, answers: {} };
+  state.generalsQueue = { active: true, index: 0, order, expandedItem: null, detailSearch: {}, answers: {} };
   state.screen = 'generalsWalk';
   render();
 }
 
-// Moves to the next top-level question, or the next topic if that was the
-// last question, or submits if that was the last topic (mirrors the old
-// "Submit my case" on the final screen).
-function advanceGeneralsTopItem() {
+// Whatever's checked in the currently-expanded question's follow-up detail
+// gets synced into completeCase here — called whenever that question is
+// about to stop being the one on screen (collapsed, switched away from, or
+// navigating off the topic entirely), so nothing typed/checked is lost even
+// if the patient never explicitly taps "Done".
+function finalizeGeneralsItemDetail() {
   const gq = state.generalsQueue;
+  if (gq.expandedItem === null) return;
   const topic = gq.order[gq.index];
-  gq.inDetail = false;
-  gq.detailSearch = {};
-  const nextItem = gq.itemIndex + 1;
-  if (nextItem < topic.items.length) {
-    gq.itemIndex = nextItem;
-    render();
-    return;
-  }
-  const nextTopic = gq.index + 1;
-  if (nextTopic >= gq.order.length) {
-    gq.active = false;
-    onSubmitCase();
-  } else {
-    gq.index = nextTopic;
-    gq.itemIndex = 0;
-    render();
+  const item = topic.items[gq.expandedItem];
+  const key = generalsAnswerKey(gq.index, gq.expandedItem);
+  const answer = gq.answers[key];
+  if (!answer || answer.choice !== 'yes') return;
+
+  const realChildren = getRealDetailChildren(topic.pathTokens[0], item.path);
+  if (realChildren.length === 0) return;
+
+  const selected = answer.detailPaths || [];
+  const allChildPaths = realChildren.map(([tok]) => item.path + ', ' + tok);
+  state.completeCase = state.completeCase.filter(e =>
+    !(e.source === 'generals' && allChildPaths.includes(e.path) && !selected.includes(e.path)));
+  for (const p of selected) {
+    const already = state.completeCase.some(e => e.source === 'generals' && e.path === p);
+    if (!already) {
+      const rubric = findRubricByExactPath(topic.pathTokens[0], p);
+      if (rubric) state.completeCase.push({ rubricId: rubric.id, path: rubric.path, remedyCount: rubric.remedyCount, source: 'generals' });
+    }
   }
 }
 
-function onSkipGeneralsTopic() {
-  // Jumps straight to the next topic without recording anything for whichever
-  // questions in the current topic haven't been answered yet.
+// Tapping a question's header: expanding a different one finalizes+collapses
+// whatever was open first (accordion — only one open at a time); tapping the
+// already-open one closes it.
+function onGeneralsItemExpand(idx) {
   const gq = state.generalsQueue;
-  gq.inDetail = false;
-  gq.detailSearch = {};
-  const nextTopic = gq.index + 1;
-  if (nextTopic >= gq.order.length) {
-    gq.active = false;
-    onSubmitCase();
+  if (gq.expandedItem === idx) {
+    finalizeGeneralsItemDetail();
+    gq.expandedItem = null;
   } else {
-    gq.index = nextTopic;
-    gq.itemIndex = 0;
-    render();
+    finalizeGeneralsItemDetail();
+    gq.expandedItem = idx;
   }
+  gq.detailSearch = {};
+  render();
 }
 
-// A "Yes" here checks the REAL dataset for children of this exact rubric —
-// same lookup the complaint tree-walker uses. If there are any, we show a
-// follow-up detail screen (categorized the same way as the tree-walker:
-// "When it happens", "What it feels like", etc.); if not, this question was
-// already a leaf and we just record it and move on.
 function onGeneralsAnswer(choice) {
   const gq = state.generalsQueue;
   const topic = gq.order[gq.index];
-  const item = currentGeneralsItem();
-  const key = generalsAnswerKey(gq.index, gq.itemIndex);
+  const idx = gq.expandedItem;
+  const item = topic.items[idx];
+  const key = generalsAnswerKey(gq.index, idx);
   const prior = gq.answers[key];
 
-  // Remove this question's own earlier rubric, and any previously-picked
-  // follow-up detail rubrics, before deciding what happens next — covers
-  // both changing an answer and simple re-visits.
   state.completeCase = state.completeCase.filter(e => !(e.source === 'generals' && e.path === item.path));
   if (prior && prior.detailPaths && prior.detailPaths.length) {
     state.completeCase = state.completeCase.filter(e => !(e.source === 'generals' && prior.detailPaths.includes(e.path)));
   }
 
+  let hasDetail = false;
   if (choice === 'yes') {
     const rubric = findRubricByExactPath(topic.pathTokens[0], item.path);
     if (rubric) {
       state.completeCase.push({ rubricId: rubric.id, path: rubric.path, remedyCount: rubric.remedyCount, source: 'generals' });
     }
-    const { nextOptions } = getNextOptions(itemPathTokens(item));
-    if (Object.keys(nextOptions).length > 0) {
-      gq.answers[key] = { choice: 'yes', detailPaths: [] };
-      gq.inDetail = true;
-      gq.detailSearch = {};
-      render();
-      return;
-    }
+    hasDetail = getRealDetailChildren(topic.pathTokens[0], item.path).length > 0;
   }
-
   gq.answers[key] = { choice, detailPaths: [] };
-  advanceGeneralsTopItem();
+
+  if (!hasDetail) {
+    // Nothing further to fill in for this one — collapse straight back to
+    // the list so the next question is easy to get to.
+    gq.expandedItem = null;
+    gq.detailSearch = {};
+  }
+  render();
 }
 
-// Small categories (≤5 real options) render as direct tappable checkboxes.
-// Larger ones use this instead — toggling adds/removes one specific rubric
-// from the current question's follow-up selections.
 function onGeneralsDetailToggle(path) {
   const gq = state.generalsQueue;
-  const key = generalsAnswerKey(gq.index, gq.itemIndex);
+  const key = generalsAnswerKey(gq.index, gq.expandedItem);
   if (!gq.answers[key]) gq.answers[key] = { choice: 'yes', detailPaths: [] };
   const list = gq.answers[key].detailPaths;
   const idx = list.indexOf(path);
@@ -750,62 +761,35 @@ function onGeneralsDetailSearch(categoryKind, text) {
   }
 }
 
-function onGeneralsDetailNext() {
+// The explicit "Done" link inside an expanded question's follow-up detail —
+// functionally identical to tapping the header again, just closer at hand
+// when the detail section has pushed the header out of view.
+function onGeneralsDetailDone() {
+  onGeneralsItemExpand(state.generalsQueue.expandedItem);
+}
+
+function onGeneralsTopicContinue() {
+  finalizeGeneralsItemDetail();
   const gq = state.generalsQueue;
-  const topic = gq.order[gq.index];
-  const item = currentGeneralsItem();
-  const key = generalsAnswerKey(gq.index, gq.itemIndex);
-  const selected = (gq.answers[key] && gq.answers[key].detailPaths) || [];
-
-  const { nextOptions } = getNextOptions(itemPathTokens(item));
-  const allChildPaths = Object.keys(nextOptions).map(tok => item.path + ', ' + tok);
-  state.completeCase = state.completeCase.filter(e =>
-    !(e.source === 'generals' && allChildPaths.includes(e.path) && !selected.includes(e.path)));
-  for (const p of selected) {
-    const already = state.completeCase.some(e => e.source === 'generals' && e.path === p);
-    if (!already) {
-      const rubric = findRubricByExactPath(topic.pathTokens[0], p);
-      if (rubric) state.completeCase.push({ rubricId: rubric.id, path: rubric.path, remedyCount: rubric.remedyCount, source: 'generals' });
-    }
+  gq.expandedItem = null;
+  gq.detailSearch = {};
+  const nextTopic = gq.index + 1;
+  if (nextTopic >= gq.order.length) {
+    gq.active = false;
+    onSubmitCase();
+  } else {
+    gq.index = nextTopic;
+    render();
   }
-  advanceGeneralsTopItem();
-}
-
-function onGeneralsDetailBack() {
-  state.generalsQueue.inDetail = false;
-  state.generalsQueue.detailSearch = {};
-  render();
-}
-
-// Whether stepping back onto a given (already-answered) question should land
-// on its detail screen — true only if it was answered "yes" AND actually has
-// real children (cheap enough to just check again rather than store it).
-function generalsItemHasDetail(item, priorAnswer) {
-  if (!priorAnswer || priorAnswer.choice !== 'yes') return false;
-  const { nextOptions } = getNextOptions(itemPathTokens(item));
-  return Object.keys(nextOptions).length > 0;
 }
 
 function onGeneralsItemBack() {
+  finalizeGeneralsItemDetail();
   const gq = state.generalsQueue;
-  if (gq.inDetail) { onGeneralsDetailBack(); return; }
-
-  if (gq.itemIndex > 0) {
-    gq.itemIndex--;
-    const prevKey = generalsAnswerKey(gq.index, gq.itemIndex);
-    gq.inDetail = generalsItemHasDetail(currentGeneralsItem(), gq.answers[prevKey]);
-    gq.detailSearch = {};
-    render();
-    return;
-  }
-
+  gq.expandedItem = null;
+  gq.detailSearch = {};
   if (gq.index > 0) {
     gq.index--;
-    const prevTopic = gq.order[gq.index];
-    gq.itemIndex = prevTopic.items.length - 1;
-    const prevKey = generalsAnswerKey(gq.index, gq.itemIndex);
-    gq.inDetail = generalsItemHasDetail(currentGeneralsItem(), gq.answers[prevKey]);
-    gq.detailSearch = {};
     render();
   } else {
     gq.active = false;
@@ -814,12 +798,98 @@ function onGeneralsItemBack() {
   }
 }
 
+function renderGeneralsAnswerBadge(answer) {
+  if (!answer) return '';
+  if (answer.choice === 'yes') {
+    const n = (answer.detailPaths || []).length;
+    return `<span style="font-size:12px;font-weight:600;color:var(--teal);white-space:nowrap;">&#10003; Yes${n ? ' (' + n + ')' : ''}</span>`;
+  }
+  if (answer.choice === 'no') return `<span style="font-size:12px;color:var(--ink3);white-space:nowrap;">No</span>`;
+  return `<span style="font-size:12px;color:var(--ink3);white-space:nowrap;">Not sure</span>`;
+}
+
+// Renders the categorized follow-up detail for one question — identical
+// small-category/large-category (search + browse-all) logic as before, just
+// placed inline under the question instead of on its own screen.
+function renderGeneralsDetailInline(topic, item, key) {
+  const chapter = topic.pathTokens[0];
+  let entries = getRealDetailChildren(chapter, item.path);
+  entries.sort((a, b) => b[1].rubricCount - a[1].rubricCount);
+
+  const grouped = {};
+  for (const [token, info] of entries) {
+    const kind = classifyOptionKind(token);
+    if (!grouped[kind]) grouped[kind] = [];
+    grouped[kind].push([token, info]);
+  }
+
+  const gq = state.generalsQueue;
+  const selected = (gq.answers[key] && gq.answers[key].detailPaths) || [];
+
+  const renderOptCard = (token) => {
+    const childPath = item.path + ', ' + token;
+    const disp = getDisplayText(chapter, childPath, token);
+    const checked = selected.includes(childPath);
+    const border = checked ? 'border:1.5px solid var(--teal);background:#F0F7F4;' : '';
+    return `<div class="opt-card" style="cursor:pointer;${border}" onclick="onGeneralsDetailToggle('${escAttr(childPath)}')">
+      <div class="kent">${checked ? '&#10003; ' : ''}${esc(disp.en || disp.kent)}</div>
+      ${disp.hi ? `<div class="hi">${esc(disp.hi)}</div>` : ''}
+    </div>`;
+  };
+
+  const categoriesHtml = Object.entries(grouped).map(([kind, opts]) => {
+    if (opts.length <= 4) {
+      const optsHtml = opts.map(([token]) => renderOptCard(token)).join('');
+      return `<div class="option-group"><div class="option-group-label">${esc(kind)}</div>${optsHtml}</div>`;
+    }
+
+    const inputId = 'genSearch_' + kind.replace(/[^a-zA-Z0-9]/g, '');
+    const searchText = gq.detailSearch[kind] || '';
+    const searchLower = searchText.toLowerCase();
+    const chosen = opts.filter(([token]) => selected.includes(item.path + ', ' + token));
+    const unchosen = opts.filter(([token]) => !selected.includes(item.path + ', ' + token));
+    const matches = searchLower
+      ? unchosen.filter(([token]) => {
+          const disp = getDisplayText(chapter, item.path + ', ' + token, token);
+          return (disp.en + ' ' + disp.hi + ' ' + disp.kent + ' ' + disp.roman).toLowerCase().includes(searchLower);
+        }).slice(0, 8)
+      : [];
+
+    const chosenHtml = chosen.map(([token]) => renderOptCard(token)).join('');
+    const matchesHtml = matches.map(([token]) => renderOptCard(token)).join('');
+
+    const browseCap = 20;
+    const browseList = unchosen.slice(0, browseCap);
+    const browseMoreCount = unchosen.length - browseList.length;
+    const browseHtml = browseList.map(([token]) => renderOptCard(token)).join('')
+      + (browseMoreCount > 0 ? `<div style="font-size:12px;color:var(--ink3);padding:6px 2px;">+${browseMoreCount} more — use search above to find them</div>` : '');
+    const groupKey = 'genDetail::' + key + '::' + kind;
+
+    return `<div class="option-group">
+      <div class="option-group-label">${esc(kind)} <span style="font-weight:400;color:var(--ink3)">(${opts.length})</span></div>
+      ${chosenHtml}
+      <input id="${inputId}" class="search-box" type="text" placeholder="Type to search…" value="${escAttr(searchText)}"
+        oninput="onGeneralsDetailSearch('${escAttr(kind)}', this.value)">
+      ${matchesHtml}
+      ${renderCollapsibleSection(groupKey, 'Browse all', opts.length + ' option(s)', browseHtml)}
+    </div>`;
+  }).join('');
+
+  return `
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:8px;">A bit more detail on that —</div>
+      ${categoriesHtml}
+      <div style="text-align:center;margin-top:4px;">
+        <span style="color:var(--teal);text-decoration:underline;cursor:pointer;font-size:13px;font-weight:600;" onclick="onGeneralsDetailDone()">Done with this one</span>
+      </div>
+    </div>
+  `;
+}
+
 function renderGeneralsQuestionStep() {
   const gq = state.generalsQueue;
   const topic = gq.order[gq.index];
-  const item = currentGeneralsItem();
   const topicTotal = gq.order.length;
-  const key = generalsAnswerKey(gq.index, gq.itemIndex);
 
   const progressHtml = `<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--cream);border-bottom:1px solid var(--border);">
     <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
@@ -828,122 +898,50 @@ function renderGeneralsQuestionStep() {
     <div style="font-size:12px;color:var(--ink3);white-space:nowrap;">${gq.index + 1} of ${topicTotal}</div>
   </div>`;
 
-  const skipTopicHtml = `<button class="back-btn" style="color:var(--ink3);text-decoration:underline;" onclick="onSkipGeneralsTopic()">Doesn't apply to me — skip this section</button>`;
+  const itemsHtml = topic.items.map((item, idx) => {
+    const key = generalsAnswerKey(gq.index, idx);
+    const answer = gq.answers[key];
+    const isExpanded = gq.expandedItem === idx;
 
-  if (gq.inDetail) {
-    const chapter = topic.pathTokens[0];
-    const { nextOptions } = getNextOptions(itemPathTokens(item));
-    let entries = Object.entries(nextOptions);
-    entries.sort((a, b) => b[1].rubricCount - a[1].rubricCount);
-
-    const grouped = {};
-    for (const [token, info] of entries) {
-      const kind = classifyOptionKind(token);
-      if (!grouped[kind]) grouped[kind] = [];
-      grouped[kind].push([token, info]);
+    if (!isExpanded) {
+      return `<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;" onclick="onGeneralsItemExpand(${idx})">
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:600;color:var(--ink);">${esc(item.en)}</div>
+          ${!answer ? `<div style="font-size:12px;color:var(--ink3);margin-top:2px;">${esc(item.hi)}</div>` : ''}
+        </div>
+        ${renderGeneralsAnswerBadge(answer)}
+        <span style="color:var(--ink3);font-size:11px;">&#9656;</span>
+      </div>`;
     }
 
-    const selected = (gq.answers[key] && gq.answers[key].detailPaths) || [];
+    const yesStyle = answer && answer.choice === 'yes' ? 'outline:2px solid var(--teal);outline-offset:-2px;' : '';
+    const noStyle = answer && answer.choice === 'no' ? 'outline:2px solid var(--ink3);outline-offset:-2px;' : '';
+    const skipStyle = answer && answer.choice === 'skip' ? 'outline:2px solid var(--ink3);outline-offset:-2px;' : '';
+    const hasDetail = getRealDetailChildren(topic.pathTokens[0], item.path).length > 0;
+    const showDetail = answer && answer.choice === 'yes' && hasDetail;
 
-    const categoriesHtml = Object.entries(grouped).map(([kind, opts]) => {
-      if (opts.length <= 4) {
-        // Small category — every real option shown directly as a checkbox.
-        const optsHtml = opts.map(([token]) => {
-          const childPath = item.path + ', ' + token;
-          const disp = getDisplayText(chapter, childPath, token);
-          const checked = selected.includes(childPath);
-          const border = checked ? 'border:1.5px solid var(--teal);background:#F0F7F4;' : '';
-          return `<div class="opt-card" style="cursor:pointer;${border}" onclick="onGeneralsDetailToggle('${escAttr(childPath)}')">
-            <div class="kent">${checked ? '&#10003; ' : ''}${esc(disp.en || disp.kent)}</div>
-            ${disp.hi ? `<div class="hi">${esc(disp.hi)}</div>` : ''}
-          </div>`;
-        }).join('');
-        return `<div class="option-group"><div class="option-group-label">${esc(kind)}</div>${optsHtml}</div>`;
-      }
-
-      // Larger category (5+ real options) — type-ahead search, PLUS an
-      // expandable section (same collapsible component the tree-walker uses)
-      // to browse every option directly instead of typing.
-      const inputId = 'genSearch_' + kind.replace(/[^a-zA-Z0-9]/g, '');
-      const searchText = gq.detailSearch[kind] || '';
-      const searchLower = searchText.toLowerCase();
-      const chosen = opts.filter(([token]) => selected.includes(item.path + ', ' + token));
-      const unchosen = opts.filter(([token]) => !selected.includes(item.path + ', ' + token));
-      const matches = searchLower
-        ? unchosen.filter(([token]) => {
-            const disp = getDisplayText(chapter, item.path + ', ' + token, token);
-            return (disp.en + ' ' + disp.hi + ' ' + disp.kent + ' ' + disp.roman).toLowerCase().includes(searchLower);
-          }).slice(0, 8)
-        : [];
-
-      const renderOptCard = ([token]) => {
-        const childPath = item.path + ', ' + token;
-        const disp = getDisplayText(chapter, childPath, token);
-        const checked = selected.includes(childPath);
-        const border = checked ? 'border:1.5px solid var(--teal);background:#F0F7F4;' : '';
-        return `<div class="opt-card" style="cursor:pointer;${border}" onclick="onGeneralsDetailToggle('${escAttr(childPath)}')">
-          <div class="kent">${checked ? '&#10003; ' : ''}${esc(disp.en || disp.kent)}</div>
-          ${disp.hi ? `<div class="hi">${esc(disp.hi)}</div>` : ''}
-        </div>`;
-      };
-
-      const chosenHtml = chosen.map(renderOptCard).join('');
-      const matchesHtml = matches.map(renderOptCard).join('');
-
-      const browseCap = 20;
-      const browseList = unchosen.slice(0, browseCap);
-      const browseMoreCount = unchosen.length - browseList.length;
-      const browseHtml = browseList.map(renderOptCard).join('')
-        + (browseMoreCount > 0 ? `<div style="font-size:12px;color:var(--ink3);padding:6px 2px;">+${browseMoreCount} more — use search above to find them</div>` : '');
-      const groupKey = 'genDetail::' + key + '::' + kind;
-
-      return `<div class="option-group">
-        <div class="option-group-label">${esc(kind)} <span style="font-weight:400;color:var(--ink3)">(${opts.length})</span></div>
-        ${chosenHtml}
-        <input id="${inputId}" class="search-box" type="text" placeholder="Type to search…" value="${escAttr(searchText)}"
-          oninput="onGeneralsDetailSearch('${escAttr(kind)}', this.value)">
-        ${matchesHtml}
-        ${renderCollapsibleSection(groupKey, 'Browse all', opts.length + ' option(s)', browseHtml)}
-      </div>`;
-    }).join('');
-
-    return `
-      ${renderTopbar('General Health', topic.label + ' — ' + (gq.index + 1) + ' of ' + topicTotal)}
-      ${progressHtml}
-      <div class="body">
-        <button class="back-btn" onclick="onGeneralsItemBack()">&larr; Back</button>
-        ${skipTopicHtml}
-        <h2 class="step-title" style="margin-top:10px;">Any more detail on that?</h2>
-        <p class="step-sub">Pick anything that applies — small lists are shown directly, bigger ones you can search.</p>
-        ${categoriesHtml}
+    return `<div style="border:1.5px solid var(--teal);border-radius:8px;padding:14px;margin-bottom:8px;">
+      <div style="font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;" onclick="onGeneralsItemExpand(${idx})">${esc(item.en)}</div>
+      <div class="hi" style="margin-bottom:14px;">${esc(item.hi)}</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary" style="flex:1;${yesStyle}" onclick="onGeneralsAnswer('yes')">Yes</button>
+        <button class="btn-outline" style="flex:1;${noStyle}" onclick="onGeneralsAnswer('no')">No</button>
+        <button class="btn-outline" style="flex:1;${skipStyle}" onclick="onGeneralsAnswer('skip')">Not sure</button>
       </div>
-      <div class="footer-bar">
-        <button class="btn-primary" onclick="onGeneralsDetailNext()">Next →</button>
-      </div>
-    `;
-  }
-
-  // If the patient stepped back into an already-answered question, highlight
-  // whichever choice they picked so it's clear what's currently recorded.
-  const priorAnswer = gq.answers[key];
-  const priorChoice = priorAnswer && priorAnswer.choice;
-  const yesStyle = priorChoice === 'yes' ? 'outline:2px solid var(--teal);outline-offset:-2px;' : '';
-  const noStyle = priorChoice === 'no' ? 'outline:2px solid var(--ink3);outline-offset:-2px;' : '';
-  const skipStyle = priorChoice === 'skip' ? 'outline:2px solid var(--ink3);outline-offset:-2px;' : '';
+      ${showDetail ? renderGeneralsDetailInline(topic, item, key) : ''}
+    </div>`;
+  }).join('');
 
   return `
     ${renderTopbar('General Health', topic.label + ' — ' + (gq.index + 1) + ' of ' + topicTotal)}
     ${progressHtml}
     <div class="body">
       <button class="back-btn" onclick="onGeneralsItemBack()">&larr; Back</button>
-      ${skipTopicHtml}
-      <h2 class="step-title" style="margin-top:10px;">${esc(item.en)}</h2>
-      <p class="hi" style="margin-bottom:22px;">${esc(item.hi)}</p>
-      <div style="display:flex;gap:8px;">
-        <button class="btn-primary" style="flex:1;${yesStyle}" onclick="onGeneralsAnswer('yes')">Yes</button>
-        <button class="btn-outline" style="flex:1;${noStyle}" onclick="onGeneralsAnswer('no')">No</button>
-        <button class="btn-outline" style="flex:1;${skipStyle}" onclick="onGeneralsAnswer('skip')">Not sure</button>
-      </div>
+      <h2 class="step-title" style="margin-bottom:14px;">${esc(topic.label)}</h2>
+      ${itemsHtml}
+    </div>
+    <div class="footer-bar">
+      <button class="btn-primary" onclick="onGeneralsTopicContinue()">Continue →</button>
     </div>
   `;
 }
