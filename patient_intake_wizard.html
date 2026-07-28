@@ -533,80 +533,80 @@ async function onLockSubmit() {
 const GENERALS_WALKS = [
   { label: 'Appetite', pathTokens: ['Appetite'],
     items: [
-      { path: 'Appetite, increased (hunger in general)', en: 'Is your appetite increased — do you feel hungrier than usual?', hi: 'क्या आपकी भूख सामान्य से ज़्यादा बढ़ गई है?' },
-      { path: 'Appetite, diminished', en: 'Is your appetite reduced or poor?', hi: 'क्या आपकी भूख कम हो गई है?' },
-      { path: 'Appetite, ravenous', en: 'Do you get an extreme, ravenous hunger?', hi: 'क्या आपको बहुत ज़बरदस्त और तेज़ भूख लगती है?' },
-      { path: 'Appetite, wanting', en: 'Do you have almost no appetite at all?', hi: 'क्या आपको लगभग बिल्कुल भूख नहीं लगती?' },
-      { path: 'Appetite, insatiable', en: 'Do you feel hungry no matter how much you eat?', hi: 'क्या कितना भी खा लें, भूख नहीं मिटती?' },
-      { path: 'Appetite, gnawing', en: 'Do you get a gnawing, empty feeling, as if you need to eat?', hi: 'क्या पेट में कुछ कुरेदने जैसा, खाली-सा एहसास होता है?' },
-      { path: 'Appetite, satiety', en: 'Do you feel full very quickly, after eating just a little?', hi: 'क्या थोड़ा खाते ही पेट भरा हुआ लगने लगता है?' },
-      { path: 'Appetite, disgust', en: 'Do you feel disgusted by food — does nothing appeal to you?', hi: 'क्या खाने से मन उचट जाता है — कुछ भी खाने का मन नहीं करता?' },
+      { path: 'Appetite, increased (hunger in general)', en: 'Is your appetite increased — do you feel hungrier than usual?', hi: 'क्या आपकी भूख सामान्य से ज़्यादा बढ़ गई है?', roman: 'Kya aapki bhookh saamaanya se zyaada badh gayi hai?' },
+      { path: 'Appetite, diminished', en: 'Is your appetite reduced or poor?', hi: 'क्या आपकी भूख कम हो गई है?', roman: 'Kya aapki bhookh kam ho gayi hai?' },
+      { path: 'Appetite, ravenous', en: 'Do you get an extreme, ravenous hunger?', hi: 'क्या आपको बहुत ज़बरदस्त और तेज़ भूख लगती है?', roman: 'Kya aapko zabardast aur tez bhookh lagti hai?' },
+      { path: 'Appetite, wanting', en: 'Do you have almost no appetite at all?', hi: 'क्या आपको लगभग बिल्कुल भूख नहीं लगती?', roman: 'Kya aapko lagbhag bilkul bhookh nahi lagti?' },
+      { path: 'Appetite, insatiable', en: 'Do you feel hungry no matter how much you eat?', hi: 'क्या कितना भी खा लें, भूख नहीं मिटती?', roman: 'Kya kitna bhi kha len, bhookh nahi mitti?' },
+      { path: 'Appetite, gnawing', en: 'Do you get a gnawing, empty feeling, as if you need to eat?', hi: 'क्या पेट में कुछ कुरेदने जैसा, खाली-सा एहसास होता है?', roman: 'Kya pet mein kuch kuredne jaisa, khaali-sa ehsaas hota hai?' },
+      { path: 'Appetite, satiety', en: 'Do you feel full very quickly, after eating just a little?', hi: 'क्या थोड़ा खाते ही पेट भरा हुआ लगने लगता है?', roman: 'Kya thoda khaate hi pet bhara hua lagne lagta hai?' },
+      { path: 'Appetite, disgust', en: 'Do you feel disgusted by food — does nothing appeal to you?', hi: 'क्या खाने से मन उचट जाता है — कुछ भी खाने का मन नहीं करता?', roman: 'Kya khaane se man uchat jaata hai — kuch bhi khaane ka man nahi karta?' },
     ] },
   { label: 'Thirst', pathTokens: ['Stomach', 'thirst'],
     items: [
-      { path: 'Stomach, thirst, extreme', en: 'Are you extremely thirsty?', hi: 'क्या आपको बहुत ज़्यादा प्यास लगती है?' },
-      { path: 'Stomach, thirstless', en: 'Do you have little or no thirst at all?', hi: 'क्या आपको बहुत कम या बिल्कुल प्यास नहीं लगती?' },
-      { path: 'Stomach, thirst, large quantities', en: 'When thirsty, do you want to drink large amounts at once?', hi: 'क्या प्यास लगने पर एक साथ बहुत सारा पानी पीने का मन करता है?' },
-      { path: 'Stomach, thirst, small quantities', en: 'Do you drink only small sips at a time, even when thirsty?', hi: 'क्या प्यास लगने पर भी सिर्फ़ थोड़ा-थोड़ा पानी पीते हैं?' },
-      { path: 'Stomach, thirst, water, drinking, cold', en: 'Do you specifically crave cold water?', hi: 'क्या आपको खासतौर पर ठंडा पानी पीने की इच्छा होती है?' },
-      { path: 'Stomach, thirst, unquenchable', en: 'Does your thirst stay unsatisfied no matter how much you drink?', hi: 'क्या कितना भी पानी पी लें, प्यास बुझती नहीं?' },
+      { path: 'Stomach, thirst, extreme', en: 'Are you extremely thirsty?', hi: 'क्या आपको बहुत ज़्यादा प्यास लगती है?', roman: 'Kya aapko bahut zyaada pyaas lagti hai?' },
+      { path: 'Stomach, thirstless', en: 'Do you have little or no thirst at all?', hi: 'क्या आपको बहुत कम या बिल्कुल प्यास नहीं लगती?', roman: 'Kya aapko bahut kam ya bilkul pyaas nahi lagti?' },
+      { path: 'Stomach, thirst, large quantities', en: 'When thirsty, do you want to drink large amounts at once?', hi: 'क्या प्यास लगने पर एक साथ बहुत सारा पानी पीने का मन करता है?', roman: 'Kya pyaas lagne par ek saath bahut saara paani peene ka man karta hai?' },
+      { path: 'Stomach, thirst, small quantities', en: 'Do you drink only small sips at a time, even when thirsty?', hi: 'क्या प्यास लगने पर भी सिर्फ़ थोड़ा-थोड़ा पानी पीते हैं?', roman: 'Kya pyaas lagne par bhi sirf thoda-thoda paani peete hain?' },
+      { path: 'Stomach, thirst, water, drinking, cold', en: 'Do you specifically crave cold water?', hi: 'क्या आपको खासतौर पर ठंडा पानी पीने की इच्छा होती है?', roman: 'Kya aapko khaastaur par thanda paani peene ki ichha hoti hai?' },
+      { path: 'Stomach, thirst, unquenchable', en: 'Does your thirst stay unsatisfied no matter how much you drink?', hi: 'क्या कितना भी पानी पी लें, प्यास बुझती नहीं?', roman: 'Kya kitna bhi paani pi len, pyaas bujhti nahi?' },
     ] },
   { label: 'Perspiration', pathTokens: ['Perspiration'],
     items: [
-      { path: 'Perspiration, profuse', en: 'Do you sweat heavily?', hi: 'क्या आपको बहुत ज़्यादा पसीना आता है?' },
-      { path: 'Perspiration, scanty sweat', en: 'Do you sweat very little?', hi: 'क्या आपको बहुत कम पसीना आता है?' },
-      { path: 'Perspiration, night', en: 'Do you sweat mainly at night?', hi: 'क्या आपको ज़्यादातर रात के समय पसीना आता है?' },
-      { path: 'Perspiration, cold', en: 'Does your sweat feel cold on the skin?', hi: 'क्या आपका पसीना त्वचा पर ठंडा महसूस होता है?' },
-      { path: 'Perspiration, odor', en: 'Does your sweat have a noticeable smell?', hi: 'क्या आपके पसीने से कोई खास गंध आती है?' },
-      { path: 'Perspiration, staining the linen', en: 'Does your sweat leave stains on your clothes or bedding?', hi: 'क्या पसीने से कपड़ों या चादर पर दाग पड़ जाते हैं?' },
-      { path: 'Perspiration, anxiety', en: 'Do you sweat along with anxiety or nervousness?', hi: 'क्या घबराहट या चिंता होने पर पसीना आता है?' },
-      { path: 'Perspiration, exertion', en: 'Does physical exertion easily bring on sweating?', hi: 'क्या थोड़ी मेहनत या कसरत से ही पसीना आ जाता है?' },
+      { path: 'Perspiration, profuse', en: 'Do you sweat heavily?', hi: 'क्या आपको बहुत ज़्यादा पसीना आता है?', roman: 'Kya aapko bahut zyaada paseena aata hai?' },
+      { path: 'Perspiration, scanty sweat', en: 'Do you sweat very little?', hi: 'क्या आपको बहुत कम पसीना आता है?', roman: 'Kya aapko bahut kam paseena aata hai?' },
+      { path: 'Perspiration, night', en: 'Do you sweat mainly at night?', hi: 'क्या आपको ज़्यादातर रात के समय पसीना आता है?', roman: 'Kya aapko zyaadatar raat ke samay paseena aata hai?' },
+      { path: 'Perspiration, cold', en: 'Does your sweat feel cold on the skin?', hi: 'क्या आपका पसीना त्वचा पर ठंडा महसूस होता है?', roman: 'Kya aapka paseena tvacha par thanda mehsoos hota hai?' },
+      { path: 'Perspiration, odor', en: 'Does your sweat have a noticeable smell?', hi: 'क्या आपके पसीने से कोई खास गंध आती है?', roman: 'Kya aapke paseene se koi khaas gandh aati hai?' },
+      { path: 'Perspiration, staining the linen', en: 'Does your sweat leave stains on your clothes or bedding?', hi: 'क्या पसीने से कपड़ों या चादर पर दाग पड़ जाते हैं?', roman: 'Kya paseene se kapdon ya chaadar par daag pad jaate hain?' },
+      { path: 'Perspiration, anxiety', en: 'Do you sweat along with anxiety or nervousness?', hi: 'क्या घबराहट या चिंता होने पर पसीना आता है?', roman: 'Kya ghabraahat ya chinta hone par paseena aata hai?' },
+      { path: 'Perspiration, exertion', en: 'Does physical exertion easily bring on sweating?', hi: 'क्या थोड़ी मेहनत या कसरत से ही पसीना आ जाता है?', roman: 'Kya thodi mehnat ya kasrat se hi paseena aa jaata hai?' },
     ] },
   { label: 'Sleep', pathTokens: ['Sleep'],
     items: [
-      { path: 'Sleep, sleeplessness', en: 'Do you have trouble falling or staying asleep?', hi: 'क्या आपको नींद आने या नींद बनाए रखने में परेशानी होती है?' },
-      { path: 'Sleep, sleepiness', en: 'Do you feel unusually drowsy, with a strong urge to sleep?', hi: 'क्या आपको बहुत ज़्यादा नींद और ऊँघ आती रहती है?' },
-      { path: 'Sleep, restless', en: 'Is your sleep restless and unsettled?', hi: 'क्या आपकी नींद बेचैन और अशांत रहती है?' },
-      { path: 'Sleep, deep', en: 'Is your sleep unusually deep and heavy?', hi: 'क्या आपको बहुत गहरी नींद आती है?' },
-      { path: 'Sleep, disturbed', en: 'Is your sleep disturbed, breaking up through the night?', hi: 'क्या रात में बार-बार नींद टूटती है?' },
-      { path: 'Sleep, unrefreshing', en: 'Do you wake up feeling unrefreshed, even after sleeping?', hi: 'क्या सोने के बाद भी तरोताज़ा महसूस नहीं होता?' },
-      { path: 'Sleep, dreams', en: 'Do you dream a lot, or have vivid, repeated dreams?', hi: 'क्या आपको बहुत सपने आते हैं, या बार-बार वही सपने आते हैं?' },
+      { path: 'Sleep, sleeplessness', en: 'Do you have trouble falling or staying asleep?', hi: 'क्या आपको नींद आने या नींद बनाए रखने में परेशानी होती है?', roman: 'Kya aapko neend aane ya neend banaaye rakhne mein pareshaani hoti hai?' },
+      { path: 'Sleep, sleepiness', en: 'Do you feel unusually drowsy, with a strong urge to sleep?', hi: 'क्या आपको बहुत ज़्यादा नींद और ऊँघ आती रहती है?', roman: 'Kya aapko bahut zyaada neend aur oongh aati rehti hai?' },
+      { path: 'Sleep, restless', en: 'Is your sleep restless and unsettled?', hi: 'क्या आपकी नींद बेचैन और अशांत रहती है?', roman: 'Kya aapki neend bechain aur ashaant rehti hai?' },
+      { path: 'Sleep, deep', en: 'Is your sleep unusually deep and heavy?', hi: 'क्या आपको बहुत गहरी नींद आती है?', roman: 'Kya aapko bahut gehri neend aati hai?' },
+      { path: 'Sleep, disturbed', en: 'Is your sleep disturbed, breaking up through the night?', hi: 'क्या रात में बार-बार नींद टूटती है?', roman: 'Kya raat mein baar-baar neend tootti hai?' },
+      { path: 'Sleep, unrefreshing', en: 'Do you wake up feeling unrefreshed, even after sleeping?', hi: 'क्या सोने के बाद भी तरोताज़ा महसूस नहीं होता?', roman: 'Kya sone ke baad bhi tarotaaza mehsoos nahi hota?' },
+      { path: 'Sleep, dreams', en: 'Do you dream a lot, or have vivid, repeated dreams?', hi: 'क्या आपको बहुत सपने आते हैं, या बार-बार वही सपने आते हैं?', roman: 'Kya aapko bahut sapne aate hain, ya baar-baar wahi sapne aate hain?' },
     ] },
   { label: 'Stool', pathTokens: ['Stool'],
     items: [
-      { path: 'Stool, hard', en: 'Is your stool hard?', hi: 'क्या आपका मल सख्त होता है?' },
-      { path: 'Stool, soft', en: 'Is your stool soft?', hi: 'क्या आपका मल नरम होता है?' },
-      { path: 'Stool, watery', en: 'Is your stool watery?', hi: 'क्या आपका मल पानी जैसा पतला होता है?' },
-      { path: 'Stool, mucous', en: 'Does your stool contain mucus?', hi: 'क्या आपके मल में बलगम आता है?' },
-      { path: 'Stool, odor', en: 'Does your stool have a noticeable, strong smell?', hi: 'क्या आपके मल से खास या तेज़ गंध आती है?' },
-      { path: 'Stool, copious', en: 'Is the amount unusually large each time?', hi: 'क्या हर बार मल की मात्रा सामान्य से ज़्यादा होती है?' },
-      { path: 'Stool, scanty', en: 'Is the amount unusually small each time?', hi: 'क्या हर बार मल की मात्रा बहुत कम होती है?' },
+      { path: 'Stool, hard', en: 'Is your stool hard?', hi: 'क्या आपका मल सख्त होता है?', roman: 'Kya aapka mal sakht hota hai?' },
+      { path: 'Stool, soft', en: 'Is your stool soft?', hi: 'क्या आपका मल नरम होता है?', roman: 'Kya aapka mal naram hota hai?' },
+      { path: 'Stool, watery', en: 'Is your stool watery?', hi: 'क्या आपका मल पानी जैसा पतला होता है?', roman: 'Kya aapka mal paani jaisa patla hota hai?' },
+      { path: 'Stool, mucous', en: 'Does your stool contain mucus?', hi: 'क्या आपके मल में बलगम आता है?', roman: 'Kya aapke mal mein balgam aata hai?' },
+      { path: 'Stool, odor', en: 'Does your stool have a noticeable, strong smell?', hi: 'क्या आपके मल से खास या तेज़ गंध आती है?', roman: 'Kya aapke mal se khaas ya tez gandh aati hai?' },
+      { path: 'Stool, copious', en: 'Is the amount unusually large each time?', hi: 'क्या हर बार मल की मात्रा सामान्य से ज़्यादा होती है?', roman: 'Kya har baar mal ki maatra saamaanya se zyaada hoti hai?' },
+      { path: 'Stool, scanty', en: 'Is the amount unusually small each time?', hi: 'क्या हर बार मल की मात्रा बहुत कम होती है?', roman: 'Kya har baar mal ki maatra bahut kam hoti hai?' },
     ] },
   { label: 'Constipation', pathTokens: ['Rectum', 'constipation'],
     items: [
-      { path: 'Rectum, constipation', en: 'Do you tend to stay constipated in general?', hi: 'क्या आपको आमतौर पर कब्ज़ रहता है?' },
-      { path: 'Rectum, constipation, difficult stool', en: 'Is passing stool very difficult, needing a lot of straining?', hi: 'क्या मल त्यागने में बहुत ज़ोर लगाना पड़ता है?' },
-      { path: 'Rectum, constipation, ineffectual urging and straining', en: 'Do you feel a strong urge to go, but straining brings nothing?', hi: 'क्या शौच की तेज़ इच्छा होती है लेकिन ज़ोर लगाने पर भी कुछ नहीं निकलता?' },
-      { path: 'Rectum, constipation, alternating with diarrhea', en: 'Does your constipation alternate with bouts of diarrhoea?', hi: 'क्या कभी कब्ज़ रहती है तो कभी दस्त लग जाते हैं?' },
+      { path: 'Rectum, constipation', en: 'Do you tend to stay constipated in general?', hi: 'क्या आपको आमतौर पर कब्ज़ रहता है?', roman: 'Kya aapko aam taur par kabz rehta hai?' },
+      { path: 'Rectum, constipation, difficult stool', en: 'Is passing stool very difficult, needing a lot of straining?', hi: 'क्या मल त्यागने में बहुत ज़ोर लगाना पड़ता है?', roman: 'Kya mal tyaagne mein bahut zor lagaana padta hai?' },
+      { path: 'Rectum, constipation, ineffectual urging and straining', en: 'Do you feel a strong urge to go, but straining brings nothing?', hi: 'क्या शौच की तेज़ इच्छा होती है लेकिन ज़ोर लगाने पर भी कुछ नहीं निकलता?', roman: 'Kya shauch ki tez ichha hoti hai lekin zor lagaane par bhi kuch nahi nikalta?' },
+      { path: 'Rectum, constipation, alternating with diarrhea', en: 'Does your constipation alternate with bouts of diarrhoea?', hi: 'क्या कभी कब्ज़ रहती है तो कभी दस्त लग जाते हैं?', roman: 'Kya kabhi kabz rehti hai to kabhi dast lag jaate hain?' },
     ] },
   { label: 'Urine', pathTokens: ['Urine'],
     items: [
-      { path: 'Urine, copious (increased)', en: 'Is your urine output larger than usual?', hi: 'क्या आपका पेशाब सामान्य से ज़्यादा मात्रा में आता है?' },
-      { path: 'Urine, scanty', en: 'Is your urine output smaller than usual?', hi: 'क्या आपका पेशाब सामान्य से बहुत कम आता है?' },
-      { path: 'Urine, cloudy', en: 'Does your urine look cloudy or murky?', hi: 'क्या आपका पेशाब गंदला या मटमैला दिखता है?' },
-      { path: 'Urine, odor', en: 'Does your urine have an unusual or noticeable smell?', hi: 'क्या आपके पेशाब से कोई खास गंध आती है?' },
-      { path: 'Urine, burning (includes hot)', en: 'Does it burn or feel hot when you urinate?', hi: 'क्या पेशाब करते समय जलन या गर्माहट महसूस होती है?' },
-      { path: 'Urine, colorless', en: 'Is your urine unusually clear or colourless?', hi: 'क्या आपका पेशाब बिल्कुल साफ़, बेरंग जैसा आता है?' },
+      { path: 'Urine, copious (increased)', en: 'Is your urine output larger than usual?', hi: 'क्या आपका पेशाब सामान्य से ज़्यादा मात्रा में आता है?', roman: 'Kya aapka peshaab saamaanya se zyaada maatra mein aata hai?' },
+      { path: 'Urine, scanty', en: 'Is your urine output smaller than usual?', hi: 'क्या आपका पेशाब सामान्य से बहुत कम आता है?', roman: 'Kya aapka peshaab saamaanya se bahut kam aata hai?' },
+      { path: 'Urine, cloudy', en: 'Does your urine look cloudy or murky?', hi: 'क्या आपका पेशाब गंदला या मटमैला दिखता है?', roman: 'Kya aapka peshaab gandla ya matmaila dikhta hai?' },
+      { path: 'Urine, odor', en: 'Does your urine have an unusual or noticeable smell?', hi: 'क्या आपके पेशाब से कोई खास गंध आती है?', roman: 'Kya aapke peshaab se koi khaas gandh aati hai?' },
+      { path: 'Urine, burning (includes hot)', en: 'Does it burn or feel hot when you urinate?', hi: 'क्या पेशाब करते समय जलन या गर्माहट महसूस होती है?', roman: 'Kya peshaab karte samay jalan ya garmaahat mehsoos hoti hai?' },
+      { path: 'Urine, colorless', en: 'Is your urine unusually clear or colourless?', hi: 'क्या आपका पेशाब बिल्कुल साफ़, बेरंग जैसा आता है?', roman: 'Kya aapka peshaab bilkul saaf, berang jaisa aata hai?' },
     ] },
   { label: 'Menses', pathTokens: ['Genitalia female', 'menses'], femaleOnly: true,
     items: [
-      { path: 'Genitalia female, menses, irregular', en: 'Are your periods irregular?', hi: 'क्या आपके मासिक धर्म अनियमित हैं?' },
-      { path: 'Genitalia female, menses, copious', en: 'Is the flow unusually heavy?', hi: 'क्या माहवारी में बहुत ज़्यादा खून आता है?' },
-      { path: 'Genitalia female, menses, scanty', en: 'Is the flow unusually light?', hi: 'क्या माहवारी में बहुत कम खून आता है?' },
-      { path: 'Genitalia female, menses, painful', en: 'Are your periods painful?', hi: 'क्या माहवारी में बहुत दर्द होता है?' },
-      { path: 'Genitalia female, menses, late', en: 'Do your periods tend to come later than expected?', hi: 'क्या आपकी माहवारी अक्सर देर से आती है?' },
-      { path: 'Genitalia female, menses, dark', en: 'Is the blood dark in colour?', hi: 'क्या माहवारी का खून गहरे रंग का होता है?' },
-      { path: 'Genitalia female, menses, bright-red', en: 'Is the blood bright red in colour?', hi: 'क्या माहवारी का खून चमकीला लाल रंग का होता है?' },
+      { path: 'Genitalia female, menses, irregular', en: 'Are your periods irregular?', hi: 'क्या आपके मासिक धर्म अनियमित हैं?', roman: 'Kya aapke maasik dharm aniyamit hain?' },
+      { path: 'Genitalia female, menses, copious', en: 'Is the flow unusually heavy?', hi: 'क्या माहवारी में बहुत ज़्यादा खून आता है?', roman: 'Kya maahvaari mein bahut zyaada khoon aata hai?' },
+      { path: 'Genitalia female, menses, scanty', en: 'Is the flow unusually light?', hi: 'क्या माहवारी में बहुत कम खून आता है?', roman: 'Kya maahvaari mein bahut kam khoon aata hai?' },
+      { path: 'Genitalia female, menses, painful', en: 'Are your periods painful?', hi: 'क्या माहवारी में बहुत दर्द होता है?', roman: 'Kya maahvaari mein bahut dard hota hai?' },
+      { path: 'Genitalia female, menses, late', en: 'Do your periods tend to come later than expected?', hi: 'क्या आपकी माहवारी अक्सर देर से आती है?', roman: 'Kya aapki maahvaari aksar der se aati hai?' },
+      { path: 'Genitalia female, menses, dark', en: 'Is the blood dark in colour?', hi: 'क्या माहवारी का खून गहरे रंग का होता है?', roman: 'Kya maahvaari ka khoon gehre rang ka hota hai?' },
+      { path: 'Genitalia female, menses, bright-red', en: 'Is the blood bright red in colour?', hi: 'क्या माहवारी का खून चमकीला लाल रंग का होता है?', roman: 'Kya maahvaari ka khoon chamkeela laal rang ka hota hai?' },
     ] },
 ];
 
@@ -832,8 +832,9 @@ function renderGeneralsDetailInline(topic, item, key) {
     const checked = selected.includes(childPath);
     const border = checked ? 'border:1.5px solid var(--teal);background:#F0F7F4;' : '';
     return `<div class="opt-card" style="cursor:pointer;${border}" onclick="onGeneralsDetailToggle('${escAttr(childPath)}')">
-      <div class="kent">${checked ? '&#10003; ' : ''}${esc(disp.en || disp.kent)}</div>
-      ${disp.hi ? `<div class="hi">${esc(disp.hi)}</div>` : ''}
+      <div class="kent">${checked ? '&#10003; ' : ''}${esc(disp.kent)}</div>
+      ${disp.en ? `<div class="en">${esc(disp.en)}</div>` : ''}
+      ${disp.roman ? `<div class="hi">${esc(disp.roman)}</div>` : ''}
     </div>`;
   };
 
@@ -907,7 +908,7 @@ function renderGeneralsQuestionStep() {
       return `<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;" onclick="onGeneralsItemExpand(${idx})">
         <div style="flex:1;">
           <div style="font-size:14px;font-weight:600;color:var(--ink);">${esc(item.en)}</div>
-          ${!answer ? `<div style="font-size:12px;color:var(--ink3);margin-top:2px;">${esc(item.hi)}</div>` : ''}
+          ${!answer ? `<div style="font-size:12px;color:var(--ink3);margin-top:2px;">${esc(item.roman)}</div>` : ''}
         </div>
         ${renderGeneralsAnswerBadge(answer)}
         <span style="color:var(--ink3);font-size:11px;">&#9656;</span>
@@ -922,7 +923,7 @@ function renderGeneralsQuestionStep() {
 
     return `<div style="border:1.5px solid var(--teal);border-radius:8px;padding:14px;margin-bottom:8px;">
       <div style="font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;" onclick="onGeneralsItemExpand(${idx})">${esc(item.en)}</div>
-      <div class="hi" style="margin-bottom:14px;">${esc(item.hi)}</div>
+      <div class="hi" style="margin-bottom:14px;">${esc(item.roman)}</div>
       <div style="display:flex;gap:8px;">
         <button class="btn-primary" style="flex:1;${yesStyle}" onclick="onGeneralsAnswer('yes')">Yes</button>
         <button class="btn-outline" style="flex:1;${noStyle}" onclick="onGeneralsAnswer('no')">No</button>
