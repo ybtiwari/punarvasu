@@ -846,7 +846,7 @@ function renderGeneralsQuestionStep() {
     const selected = (gq.answers[key] && gq.answers[key].detailPaths) || [];
 
     const categoriesHtml = Object.entries(grouped).map(([kind, opts]) => {
-      if (opts.length <= 5) {
+      if (opts.length <= 4) {
         // Small category — every real option shown directly as a checkbox.
         const optsHtml = opts.map(([token]) => {
           const childPath = item.path + ', ' + token;
@@ -861,44 +861,49 @@ function renderGeneralsQuestionStep() {
         return `<div class="option-group"><div class="option-group-label">${esc(kind)}</div>${optsHtml}</div>`;
       }
 
-      // Larger category — type-ahead search instead of a wall of checkboxes;
-      // whatever's already chosen stays visible above the search box.
+      // Larger category (5+ real options) — type-ahead search, PLUS an
+      // expandable section (same collapsible component the tree-walker uses)
+      // to browse every option directly instead of typing.
       const inputId = 'genSearch_' + kind.replace(/[^a-zA-Z0-9]/g, '');
       const searchText = gq.detailSearch[kind] || '';
       const searchLower = searchText.toLowerCase();
       const chosen = opts.filter(([token]) => selected.includes(item.path + ', ' + token));
+      const unchosen = opts.filter(([token]) => !selected.includes(item.path + ', ' + token));
       const matches = searchLower
-        ? opts.filter(([token]) => {
-            if (selected.includes(item.path + ', ' + token)) return false;
+        ? unchosen.filter(([token]) => {
             const disp = getDisplayText(chapter, item.path + ', ' + token, token);
             return (disp.en + ' ' + disp.hi + ' ' + disp.kent + ' ' + disp.roman).toLowerCase().includes(searchLower);
           }).slice(0, 8)
         : [];
 
-      const chosenHtml = chosen.map(([token]) => {
+      const renderOptCard = ([token]) => {
         const childPath = item.path + ', ' + token;
         const disp = getDisplayText(chapter, childPath, token);
-        return `<div class="opt-card" style="cursor:pointer;border:1.5px solid var(--teal);background:#F0F7F4;" onclick="onGeneralsDetailToggle('${escAttr(childPath)}')">
-          <div class="kent">&#10003; ${esc(disp.en || disp.kent)}</div>
+        const checked = selected.includes(childPath);
+        const border = checked ? 'border:1.5px solid var(--teal);background:#F0F7F4;' : '';
+        return `<div class="opt-card" style="cursor:pointer;${border}" onclick="onGeneralsDetailToggle('${escAttr(childPath)}')">
+          <div class="kent">${checked ? '&#10003; ' : ''}${esc(disp.en || disp.kent)}</div>
           ${disp.hi ? `<div class="hi">${esc(disp.hi)}</div>` : ''}
         </div>`;
-      }).join('');
+      };
 
-      const matchesHtml = matches.map(([token]) => {
-        const childPath = item.path + ', ' + token;
-        const disp = getDisplayText(chapter, childPath, token);
-        return `<div class="opt-card" style="cursor:pointer;" onclick="onGeneralsDetailToggle('${escAttr(childPath)}')">
-          <div class="kent">${esc(disp.en || disp.kent)}</div>
-          ${disp.hi ? `<div class="hi">${esc(disp.hi)}</div>` : ''}
-        </div>`;
-      }).join('');
+      const chosenHtml = chosen.map(renderOptCard).join('');
+      const matchesHtml = matches.map(renderOptCard).join('');
+
+      const browseCap = 20;
+      const browseList = unchosen.slice(0, browseCap);
+      const browseMoreCount = unchosen.length - browseList.length;
+      const browseHtml = browseList.map(renderOptCard).join('')
+        + (browseMoreCount > 0 ? `<div style="font-size:12px;color:var(--ink3);padding:6px 2px;">+${browseMoreCount} more — use search above to find them</div>` : '');
+      const groupKey = 'genDetail::' + key + '::' + kind;
 
       return `<div class="option-group">
-        <div class="option-group-label">${esc(kind)} <span style="font-weight:400;color:var(--ink3)">(${opts.length} — type to search)</span></div>
+        <div class="option-group-label">${esc(kind)} <span style="font-weight:400;color:var(--ink3)">(${opts.length})</span></div>
         ${chosenHtml}
         <input id="${inputId}" class="search-box" type="text" placeholder="Type to search…" value="${escAttr(searchText)}"
           oninput="onGeneralsDetailSearch('${escAttr(kind)}', this.value)">
         ${matchesHtml}
+        ${renderCollapsibleSection(groupKey, 'Browse all', opts.length + ' option(s)', browseHtml)}
       </div>`;
     }).join('');
 
