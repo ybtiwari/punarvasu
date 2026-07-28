@@ -532,25 +532,29 @@ const GENERALS_WALKS = [
   { label: 'Appetite', pathTokens: ['Appetite'],
     items: [
       { path: 'Appetite, increased (hunger in general)', en: 'Is your appetite increased — do you feel hungrier than usual?', hi: 'क्या आपकी भूख सामान्य से ज़्यादा बढ़ गई है?',
-        sub: [
-          { path: 'Appetite, increased (hunger in general), morning', en: 'Is it worse in the morning?', hi: 'क्या यह सुबह के समय ज़्यादा होता है?' },
-          { path: 'Appetite, increased (hunger in general), evening', en: 'Is it worse in the evening?', hi: 'क्या यह शाम के समय ज़्यादा होता है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'When is it worse? (pick any that fit)', hi: 'यह कब ज़्यादा होता है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Appetite, increased (hunger in general), morning', en: 'Morning', hi: 'सुबह' },
+            { path: 'Appetite, increased (hunger in general), evening', en: 'Evening', hi: 'शाम' },
+          ] } ] },
       { path: 'Appetite, diminished', en: 'Is your appetite reduced or poor?', hi: 'क्या आपकी भूख कम हो गई है?',
-        sub: [
-          { path: 'Appetite, diminished, morning', en: 'Is it worse in the morning?', hi: 'क्या यह सुबह के समय ज़्यादा होता है?' },
-          { path: 'Appetite, diminished, evening', en: 'Is it worse in the evening?', hi: 'क्या यह शाम के समय ज़्यादा होता है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'When is it worse? (pick any that fit)', hi: 'यह कब ज़्यादा होता है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Appetite, diminished, morning', en: 'Morning', hi: 'सुबह' },
+            { path: 'Appetite, diminished, evening', en: 'Evening', hi: 'शाम' },
+          ] } ] },
       { path: 'Appetite, ravenous', en: 'Do you get an extreme, ravenous hunger?', hi: 'क्या आपको बहुत ज़बरदस्त और तेज़ भूख लगती है?',
-        sub: [
-          { path: 'Appetite, ravenous, evening', en: 'Is it worse in the evening?', hi: 'क्या यह शाम के समय ज़्यादा होता है?' },
-          { path: 'Appetite, ravenous, morning', en: 'Is it worse in the morning?', hi: 'क्या यह सुबह के समय ज़्यादा होता है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'When is it worse? (pick any that fit)', hi: 'यह कब ज़्यादा होता है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Appetite, ravenous, evening', en: 'Evening', hi: 'शाम' },
+            { path: 'Appetite, ravenous, morning', en: 'Morning', hi: 'सुबह' },
+          ] } ] },
       { path: 'Appetite, wanting', en: 'Do you have almost no appetite at all?', hi: 'क्या आपको लगभग बिल्कुल भूख नहीं लगती?',
-        sub: [
-          { path: 'Appetite, wanting, morning', en: 'Is it worse in the morning?', hi: 'क्या यह सुबह के समय ज़्यादा होता है?' },
-          { path: 'Appetite, wanting, evening', en: 'Is it worse in the evening?', hi: 'क्या यह शाम के समय ज़्यादा होता है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'When is it worse? (pick any that fit)', hi: 'यह कब ज़्यादा होता है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Appetite, wanting, morning', en: 'Morning', hi: 'सुबह' },
+            { path: 'Appetite, wanting, evening', en: 'Evening', hi: 'शाम' },
+          ] } ] },
       { path: 'Appetite, insatiable', en: 'Do you feel hungry no matter how much you eat?', hi: 'क्या कितना भी खा लें, भूख नहीं मिटती?' },
       { path: 'Appetite, gnawing', en: 'Do you get a gnawing, empty feeling, as if you need to eat?', hi: 'क्या पेट में कुछ कुरेदने जैसा, खाली-सा एहसास होता है?' },
       { path: 'Appetite, satiety', en: 'Do you feel full very quickly, after eating just a little?', hi: 'क्या थोड़ा खाते ही पेट भरा हुआ लगने लगता है?' },
@@ -571,98 +575,114 @@ const GENERALS_WALKS = [
   { label: 'Perspiration', pathTokens: ['Perspiration'],
     items: [
       { path: 'Perspiration, profuse', en: 'Do you sweat heavily?', hi: 'क्या आपको बहुत ज़्यादा पसीना आता है?',
-        sub: [
-          { path: 'Perspiration, profuse, night', en: 'Is it worse at night?', hi: 'क्या यह रात के समय ज़्यादा होता है?' },
-          { path: 'Perspiration, profuse, morning', en: 'Is it worse in the morning?', hi: 'क्या यह सुबह के समय ज़्यादा होता है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'When is it worse? (pick any that fit)', hi: 'यह कब ज़्यादा होता है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Perspiration, profuse, night', en: 'Night', hi: 'रात' },
+            { path: 'Perspiration, profuse, morning', en: 'Morning', hi: 'सुबह' },
+          ] } ] },
       { path: 'Perspiration, scanty sweat', en: 'Do you sweat very little?', hi: 'क्या आपको बहुत कम पसीना आता है?' },
       { path: 'Perspiration, night', en: 'Do you sweat mainly at night?', hi: 'क्या आपको ज़्यादातर रात के समय पसीना आता है?' },
       { path: 'Perspiration, cold', en: 'Does your sweat feel cold on the skin?', hi: 'क्या आपका पसीना त्वचा पर ठंडा महसूस होता है?',
-        sub: [
-          { path: 'Perspiration, cold, night', en: 'Is it worse at night?', hi: 'क्या यह रात के समय ज़्यादा होता है?' },
-          { path: 'Perspiration, cold, morning', en: 'Is it worse in the morning?', hi: 'क्या यह सुबह के समय ज़्यादा होता है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'When is it worse? (pick any that fit)', hi: 'यह कब ज़्यादा होता है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Perspiration, cold, night', en: 'Night', hi: 'रात' },
+            { path: 'Perspiration, cold, morning', en: 'Morning', hi: 'सुबह' },
+          ] } ] },
       { path: 'Perspiration, odor', en: 'Does your sweat have a noticeable smell?', hi: 'क्या आपके पसीने से कोई खास गंध आती है?',
-        sub: [
-          { path: 'Perspiration, odor, offensive', en: 'Is the smell unpleasant or offensive?', hi: 'क्या गंध बहुत बुरी या तेज़ है?' },
-          { path: 'Perspiration, odor, sour', en: 'Does it smell sour?', hi: 'क्या इसमें खट्टी गंध आती है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'What does it smell like? (pick any that fit)', hi: 'इसमें कैसी गंध आती है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Perspiration, odor, offensive', en: 'Unpleasant or offensive', hi: 'बुरी या तेज़' },
+            { path: 'Perspiration, odor, sour', en: 'Sour', hi: 'खट्टी' },
+          ] } ] },
       { path: 'Perspiration, staining the linen', en: 'Does your sweat leave stains on your clothes or bedding?', hi: 'क्या पसीने से कपड़ों या चादर पर दाग पड़ जाते हैं?',
-        sub: [
-          { path: 'Perspiration, staining the linen, yellow', en: 'Are the stains yellow?', hi: 'क्या दाग पीले रंग के होते हैं?' },
-          { path: 'Perspiration, staining the linen, bloody', en: 'Are the stains bloody?', hi: 'क्या दाग खून जैसे लाल होते हैं?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'What colour are the stains? (pick any that fit)', hi: 'दाग किस रंग के होते हैं? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Perspiration, staining the linen, yellow', en: 'Yellow', hi: 'पीले' },
+            { path: 'Perspiration, staining the linen, bloody', en: 'Bloody (red)', hi: 'खून जैसे लाल' },
+          ] } ] },
       { path: 'Perspiration, anxiety', en: 'Do you sweat along with anxiety or nervousness?', hi: 'क्या घबराहट या चिंता होने पर पसीना आता है?',
         sub: [
           { path: 'Perspiration, anxiety, night', en: 'Does it happen mainly at night?', hi: 'क्या यह ज़्यादातर रात के समय होता है?' },
         ] },
       { path: 'Perspiration, exertion', en: 'Does physical exertion easily bring on sweating?', hi: 'क्या थोड़ी मेहनत या कसरत से ही पसीना आ जाता है?',
-        sub: [
-          { path: 'Perspiration, exertion, during slight', en: 'Does even very light activity bring it on?', hi: 'क्या बहुत हल्की सी मेहनत से भी यह हो जाता है?' },
-          { path: 'Perspiration, exertion, mental agg.', en: 'Does mental effort or stress bring it on?', hi: 'क्या दिमागी मेहनत या तनाव से भी पसीना आता है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'What tends to trigger it? (pick any that fit)', hi: 'यह किससे होता है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Perspiration, exertion, during slight', en: 'Even very light activity', hi: 'बहुत हल्की मेहनत से भी' },
+            { path: 'Perspiration, exertion, mental agg.', en: 'Mental effort or stress', hi: 'दिमागी मेहनत या तनाव से' },
+          ] } ] },
     ] },
   { label: 'Sleep', pathTokens: ['Sleep'],
     items: [
       { path: 'Sleep, sleeplessness', en: 'Do you have trouble falling or staying asleep?', hi: 'क्या आपको नींद आने या नींद बनाए रखने में परेशानी होती है?',
-        sub: [
-          { path: 'Sleep, sleeplessness, night', en: 'Is it worse at night?', hi: 'क्या यह रात के समय ज़्यादा होता है?' },
-          { path: 'Sleep, sleeplessness, coldness', en: 'Is it because you feel cold?', hi: 'क्या यह ठंड लगने की वजह से होता है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: "What's connected to it? (pick any that fit)", hi: 'यह किससे जुड़ा है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Sleep, sleeplessness, night', en: 'Happens mainly at night', hi: 'ज़्यादातर रात में होता है' },
+            { path: 'Sleep, sleeplessness, coldness', en: 'Feeling cold', hi: 'ठंड लगने से' },
+          ] } ] },
       { path: 'Sleep, sleepiness', en: 'Do you feel unusually drowsy, with a strong urge to sleep?', hi: 'क्या आपको बहुत ज़्यादा नींद और ऊँघ आती रहती है?',
-        sub: [
-          { path: 'Sleep, sleepiness, afternoon', en: 'Is it worse in the afternoon?', hi: 'क्या यह दोपहर बाद ज़्यादा होता है?' },
-          { path: 'Sleep, sleepiness, evening', en: 'Is it worse in the evening?', hi: 'क्या यह शाम के समय ज़्यादा होता है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'When is it worse? (pick any that fit)', hi: 'यह कब ज़्यादा होता है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Sleep, sleepiness, afternoon', en: 'Afternoon', hi: 'दोपहर बाद' },
+            { path: 'Sleep, sleepiness, evening', en: 'Evening', hi: 'शाम' },
+          ] } ] },
       { path: 'Sleep, restless', en: 'Is your sleep restless and unsettled?', hi: 'क्या आपकी नींद बेचैन और अशांत रहती है?',
-        sub: [
-          { path: 'Sleep, restless, night', en: 'Is it worse at night?', hi: 'क्या यह रात के समय ज़्यादा होता है?' },
-          { path: 'Sleep, restless, menses', en: 'Is it worse around your period?', hi: 'क्या यह माहवारी के आसपास ज़्यादा होता है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'When is it worse? (pick any that fit)', hi: 'यह कब ज़्यादा होता है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Sleep, restless, night', en: 'At night', hi: 'रात में' },
+            { path: 'Sleep, restless, menses', en: 'Around your period', hi: 'माहवारी के आसपास' },
+          ] } ] },
       { path: 'Sleep, deep', en: 'Is your sleep unusually deep and heavy?', hi: 'क्या आपको बहुत गहरी नींद आती है?',
-        sub: [
-          { path: 'Sleep, deep, morning', en: 'Is it worse in the morning?', hi: 'क्या यह सुबह के समय ज़्यादा होता है?' },
-          { path: 'Sleep, deep, chill', en: 'Does it happen when you have chills?', hi: 'क्या यह ठंड लगने (कंपकंपी) के समय होता है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'When does it happen? (pick any that fit)', hi: 'यह कब होता है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Sleep, deep, morning', en: 'In the morning', hi: 'सुबह के समय' },
+            { path: 'Sleep, deep, chill', en: 'When you have chills', hi: 'ठंड लगने (कंपकंपी) के समय' },
+          ] } ] },
       { path: 'Sleep, disturbed', en: 'Is your sleep disturbed, breaking up through the night?', hi: 'क्या रात में बार-बार नींद टूटती है?',
-        sub: [
-          { path: 'Sleep, disturbed, visions', en: 'Are you disturbed by visions or vivid images?', hi: 'क्या आँखों के आगे दृश्य दिखने से नींद टूटती है?' },
-          { path: 'Sleep, disturbed, hunger', en: 'Are you disturbed by hunger?', hi: 'क्या भूख लगने से नींद टूटती है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'What disturbs it? (pick any that fit)', hi: 'इसे क्या बाधित करता है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Sleep, disturbed, visions', en: 'Visions or vivid images', hi: 'दृश्य दिखने से' },
+            { path: 'Sleep, disturbed, hunger', en: 'Hunger', hi: 'भूख लगने से' },
+          ] } ] },
       { path: 'Sleep, unrefreshing', en: 'Do you wake up feeling unrefreshed, even after sleeping?', hi: 'क्या सोने के बाद भी तरोताज़ा महसूस नहीं होता?',
-        sub: [
-          { path: 'Sleep, unrefreshing, morning', en: 'Is it worse in the morning?', hi: 'क्या यह सुबह के समय ज़्यादा होता है?' },
-          { path: 'Sleep, unrefreshing, afternoon', en: 'Is it worse in the afternoon?', hi: 'क्या यह दोपहर बाद ज़्यादा होता है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'When is it worse? (pick any that fit)', hi: 'यह कब ज़्यादा होता है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Sleep, unrefreshing, morning', en: 'Morning', hi: 'सुबह' },
+            { path: 'Sleep, unrefreshing, afternoon', en: 'Afternoon', hi: 'दोपहर बाद' },
+          ] } ] },
       { path: 'Sleep, dreams', en: 'Do you dream a lot, or have vivid, repeated dreams?', hi: 'क्या आपको बहुत सपने आते हैं, या बार-बार वही सपने आते हैं?',
-        sub: [
-          { path: 'Sleep, dreams, anxious', en: 'Are your dreams anxious or fearful?', hi: 'क्या सपनों में डर या घबराहट रहती है?' },
-          { path: 'Sleep, dreams, frightful', en: 'Are your dreams frightening or terrifying?', hi: 'क्या सपने डरावने होते हैं?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'What are your dreams like? (pick any that fit)', hi: 'आपके सपने कैसे होते हैं? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Sleep, dreams, anxious', en: 'Anxious or fearful', hi: 'डर या घबराहट वाले' },
+            { path: 'Sleep, dreams, frightful', en: 'Frightening or terrifying', hi: 'डरावने' },
+          ] } ] },
     ] },
   { label: 'Stool', pathTokens: ['Stool'],
     items: [
       { path: 'Stool, hard', en: 'Is your stool hard?', hi: 'क्या आपका मल सख्त होता है?',
-        sub: [
-          { path: 'Stool, hard, first', en: 'Is only the first part hard, with the rest softer?', hi: 'क्या शुरुआत में मल सख्त और बाद में नरम होता है?' },
-          { path: 'Stool, hard, alternating hard and soft', en: 'Does it alternate between hard and soft?', hi: 'क्या यह कभी सख्त और कभी नरम होता रहता है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'Which pattern fits? (pick any that fit)', hi: 'कौन-सा पैटर्न आपसे मिलता है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Stool, hard, first', en: 'Only the first part is hard, rest softer', hi: 'शुरुआत में सख्त, बाद में नरम' },
+            { path: 'Stool, hard, alternating hard and soft', en: 'Alternates between hard and soft', hi: 'कभी सख्त कभी नरम' },
+          ] } ] },
       { path: 'Stool, soft', en: 'Is your stool soft?', hi: 'क्या आपका मल नरम होता है?' },
       { path: 'Stool, watery', en: 'Is your stool watery?', hi: 'क्या आपका मल पानी जैसा पतला होता है?',
-        sub: [
-          { path: 'Stool, watery, yellow', en: 'Is it yellow in colour?', hi: 'क्या इसका रंग पीला होता है?' },
-          { path: 'Stool, watery, morning', en: 'Does it happen mainly in the morning?', hi: 'क्या यह ज़्यादातर सुबह के समय होता है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'Anything else that applies? (pick any that fit)', hi: 'क्या इनमें से कुछ भी लागू होता है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Stool, watery, yellow', en: 'Yellow in colour', hi: 'रंग पीला' },
+            { path: 'Stool, watery, morning', en: 'Mainly in the morning', hi: 'ज़्यादातर सुबह के समय' },
+          ] } ] },
       { path: 'Stool, mucous', en: 'Does your stool contain mucus?', hi: 'क्या आपके मल में बलगम आता है?',
-        sub: [
-          { path: 'Stool, mucous, slimy', en: 'Is the mucus slimy?', hi: 'क्या बलगम चिपचिपा होता है?' },
-          { path: 'Stool, mucous, bloody', en: 'Is there blood mixed with the mucus?', hi: 'क्या बलगम में खून मिला होता है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'What kind? (pick any that fit)', hi: 'किस तरह का? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Stool, mucous, slimy', en: 'Slimy', hi: 'चिपचिपा' },
+            { path: 'Stool, mucous, bloody', en: 'Mixed with blood', hi: 'खून मिला हुआ' },
+          ] } ] },
       { path: 'Stool, odor', en: 'Does your stool have a noticeable, strong smell?', hi: 'क्या आपके मल से खास या तेज़ गंध आती है?',
-        sub: [
-          { path: 'Stool, odor, offensive', en: 'Is the smell very strong and unpleasant?', hi: 'क्या गंध बहुत तेज़ और बुरी है?' },
-          { path: 'Stool, odor, sour', en: 'Does it smell sour?', hi: 'क्या इसमें खट्टी गंध आती है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'What does it smell like? (pick any that fit)', hi: 'इसमें कैसी गंध आती है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Stool, odor, offensive', en: 'Strong and unpleasant', hi: 'तेज़ और बुरी' },
+            { path: 'Stool, odor, sour', en: 'Sour', hi: 'खट्टी' },
+          ] } ] },
       { path: 'Stool, copious', en: 'Is the amount unusually large each time?', hi: 'क्या हर बार मल की मात्रा सामान्य से ज़्यादा होती है?',
         sub: [
           { path: 'Stool, copious, night', en: 'Does it happen mainly at night?', hi: 'क्या यह ज़्यादातर रात के समय होता है?' },
@@ -676,35 +696,40 @@ const GENERALS_WALKS = [
           { path: 'Rectum, constipation, menses', en: 'Is it connected to your periods?', hi: 'क्या यह माहवारी के समय से जुड़ा है?' },
         ] },
       { path: 'Rectum, constipation, difficult stool', en: 'Is passing stool very difficult, needing a lot of straining?', hi: 'क्या मल त्यागने में बहुत ज़ोर लगाना पड़ता है?',
-        sub: [
-          { path: 'Rectum, constipation, difficult stool, soft stool', en: 'Is it hard to pass even when the stool itself is soft?', hi: 'क्या मल नरम होने पर भी निकालने में ज़ोर लगाना पड़ता है?' },
-          { path: 'Rectum, constipation, difficult stool, stool recedes', en: 'Does the stool start to come out and then slip back in?', hi: 'क्या मल थोड़ा बाहर आकर वापस अंदर चला जाता है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'Which pattern fits? (pick any that fit)', hi: 'कौन-सा पैटर्न आपसे मिलता है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Rectum, constipation, difficult stool, soft stool', en: 'Even soft stool is hard to pass', hi: 'मल नरम होने पर भी मुश्किल होता है' },
+            { path: 'Rectum, constipation, difficult stool, stool recedes', en: 'Stool slips back in after starting to come out', hi: 'मल थोड़ा बाहर आकर वापस अंदर चला जाता है' },
+          ] } ] },
       { path: 'Rectum, constipation, ineffectual urging and straining', en: 'Do you feel a strong urge to go, but straining brings nothing?', hi: 'क्या शौच की तेज़ इच्छा होती है लेकिन ज़ोर लगाने पर भी कुछ नहीं निकलता?' },
       { path: 'Rectum, constipation, alternating with diarrhea', en: 'Does your constipation alternate with bouts of diarrhoea?', hi: 'क्या कभी कब्ज़ रहती है तो कभी दस्त लग जाते हैं?' },
     ] },
   { label: 'Urine', pathTokens: ['Urine'],
     items: [
       { path: 'Urine, copious (increased)', en: 'Is your urine output larger than usual?', hi: 'क्या आपका पेशाब सामान्य से ज़्यादा मात्रा में आता है?',
-        sub: [
-          { path: 'Urine, copious (increased), night', en: 'Is it worse at night?', hi: 'क्या यह रात के समय ज़्यादा होता है?' },
-          { path: 'Urine, copious (increased), headache', en: 'Does it happen along with a headache?', hi: 'क्या यह सिरदर्द के साथ होता है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'Anything else that applies? (pick any that fit)', hi: 'क्या इनमें से कुछ भी लागू होता है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Urine, copious (increased), night', en: 'Worse at night', hi: 'रात में ज़्यादा' },
+            { path: 'Urine, copious (increased), headache', en: 'Comes with a headache', hi: 'सिरदर्द के साथ' },
+          ] } ] },
       { path: 'Urine, scanty', en: 'Is your urine output smaller than usual?', hi: 'क्या आपका पेशाब सामान्य से बहुत कम आता है?',
-        sub: [
-          { path: 'Urine, scanty, morning', en: 'Is it worse in the morning?', hi: 'क्या यह सुबह के समय ज़्यादा होता है?' },
-          { path: 'Urine, scanty, evening', en: 'Is it worse in the evening?', hi: 'क्या यह शाम के समय ज़्यादा होता है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'When is it worse? (pick any that fit)', hi: 'यह कब ज़्यादा होता है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Urine, scanty, morning', en: 'Morning', hi: 'सुबह' },
+            { path: 'Urine, scanty, evening', en: 'Evening', hi: 'शाम' },
+          ] } ] },
       { path: 'Urine, cloudy', en: 'Does your urine look cloudy or murky?', hi: 'क्या आपका पेशाब गंदला या मटमैला दिखता है?',
-        sub: [
-          { path: 'Urine, cloudy, white clouds', en: 'Does it have white, cloud-like specks floating in it?', hi: 'क्या इसमें सफेद बादल जैसी गंदलाहट दिखती है?' },
-          { path: 'Urine, cloudy, morning', en: 'Is it worse in the morning?', hi: 'क्या यह सुबह के समय ज़्यादा होता है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'Anything else that applies? (pick any that fit)', hi: 'क्या इनमें से कुछ भी लागू होता है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Urine, cloudy, white clouds', en: 'White, cloud-like specks', hi: 'सफेद बादल जैसी गंदलाहट' },
+            { path: 'Urine, cloudy, morning', en: 'Worse in the morning', hi: 'सुबह ज़्यादा' },
+          ] } ] },
       { path: 'Urine, odor', en: 'Does your urine have an unusual or noticeable smell?', hi: 'क्या आपके पेशाब से कोई खास गंध आती है?',
-        sub: [
-          { path: 'Urine, odor, acrid', en: 'Is the smell sharp or acrid?', hi: 'क्या गंध बहुत तीखी या चुभने वाली है?' },
-          { path: 'Urine, odor, ammoniacal', en: 'Does it smell like ammonia?', hi: 'क्या इसमें अमोनिया जैसी गंध आती है?' },
-        ] },
+        sub: [ { kind: 'group', question: { en: 'What does it smell like? (pick any that fit)', hi: 'इसमें कैसी गंध आती है? (जो लागू हो चुनें)' },
+          options: [
+            { path: 'Urine, odor, acrid', en: 'Sharp or acrid', hi: 'तीखी या चुभने वाली' },
+            { path: 'Urine, odor, ammoniacal', en: 'Like ammonia', hi: 'अमोनिया जैसी' },
+          ] } ] },
       { path: 'Urine, burning (includes hot)', en: 'Does it burn or feel hot when you urinate?', hi: 'क्या पेशाब करते समय जलन या गर्माहट महसूस होती है?',
         sub: [
           { path: 'Urine, burning (includes hot), menses', en: 'Does it happen around your period?', hi: 'क्या यह माहवारी के आसपास होता है?' },
@@ -763,7 +788,10 @@ function siblingListForPath(topic, path) {
 // itself — used to clean up completeCase when a "Yes" is later reversed.
 function collectSubPaths(item) {
   let paths = [];
-  if (item.sub) for (const s of item.sub) { paths.push(s.path); paths = paths.concat(collectSubPaths(s)); }
+  if (item.sub) for (const s of item.sub) {
+    if (s.kind === 'group') { paths = paths.concat(s.options.map(o => o.path)); }
+    else { paths.push(s.path); paths = paths.concat(collectSubPaths(s)); }
+  }
   return paths;
 }
 
@@ -870,6 +898,43 @@ function onGeneralsAnswer(choice) {
   advanceGenerals(descend);
 }
 
+// Group-kind follow-ups let the patient check several relevant details at
+// once (e.g. "When is it worse? Morning / Evening") instead of a sequence of
+// separate yes/no taps. Toggling just flips a checkbox; Next commits whatever
+// is checked and moves on, same as advanceGenerals(false) would after a
+// regular answer.
+function onGeneralsGroupToggle(optionPath) {
+  const gq = state.generalsQueue;
+  const key = generalsAnswerKey(gq.index, gq.itemPath);
+  if (!Array.isArray(gq.answers[key])) gq.answers[key] = [];
+  const idx = gq.answers[key].indexOf(optionPath);
+  if (idx === -1) gq.answers[key].push(optionPath); else gq.answers[key].splice(idx, 1);
+  render();
+}
+
+function onGeneralsGroupNext() {
+  const gq = state.generalsQueue;
+  const topic = gq.order[gq.index];
+  const item = resolveGeneralsItem(topic, gq.itemPath);
+  const key = generalsAnswerKey(gq.index, gq.itemPath);
+  const selected = gq.answers[key] || [];
+
+  // Sync completeCase to exactly what's checked — drop anything unchecked,
+  // add anything newly checked that isn't already recorded.
+  const allOptionPaths = item.options.map(o => o.path);
+  state.completeCase = state.completeCase.filter(e =>
+    !(e.source === 'generals' && allOptionPaths.includes(e.path) && !selected.includes(e.path)));
+  for (const optPath of selected) {
+    const already = state.completeCase.some(e => e.source === 'generals' && e.path === optPath);
+    if (!already) {
+      const opt = item.options.find(o => o.path === optPath);
+      const rubric = findRubricByExactPath(topic.pathTokens[0], opt.path);
+      if (rubric) state.completeCase.push({ rubricId: rubric.id, path: rubric.path, remedyCount: rubric.remedyCount, source: 'generals' });
+    }
+  }
+  advanceGenerals(false);
+}
+
 function onGeneralsItemBack() {
   const gq = state.generalsQueue;
   const topic = gq.order[gq.index];
@@ -922,6 +987,7 @@ function renderGeneralsQuestionStep() {
   const topic = gq.order[gq.index];
   const item = resolveGeneralsItem(topic, gq.itemPath);
   const topicTotal = gq.order.length;
+  const key = generalsAnswerKey(gq.index, gq.itemPath);
 
   const progressHtml = `<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--cream);border-bottom:1px solid var(--border);">
     <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
@@ -930,9 +996,37 @@ function renderGeneralsQuestionStep() {
     <div style="font-size:12px;color:var(--ink3);white-space:nowrap;">${gq.index + 1} of ${topicTotal}</div>
   </div>`;
 
+  const skipTopicHtml = `<button class="back-btn" style="color:var(--ink3);text-decoration:underline;" onclick="onSkipGeneralsTopic()">Doesn't apply to me — skip this section</button>`;
+
+  if (item.kind === 'group') {
+    const selected = gq.answers[key] || [];
+    const optsHtml = item.options.map(o => {
+      const checked = selected.includes(o.path);
+      const border = checked ? 'border:1.5px solid var(--teal);background:#F0F7F4;' : '';
+      return `<div class="opt-card" style="cursor:pointer;${border}" onclick="onGeneralsGroupToggle('${escAttr(o.path)}')">
+        <div class="kent">${checked ? '&#10003; ' : ''}${esc(o.en)}</div>
+        <div class="hi">${esc(o.hi)}</div>
+      </div>`;
+    }).join('');
+    return `
+      ${renderTopbar('General Health', topic.label + ' — ' + (gq.index + 1) + ' of ' + topicTotal)}
+      ${progressHtml}
+      <div class="body">
+        <button class="back-btn" onclick="onGeneralsItemBack()">&larr; Back</button>
+        ${skipTopicHtml}
+        <h2 class="step-title" style="margin-top:10px;">${esc(item.question.en)}</h2>
+        <p class="hi" style="margin-bottom:16px;">${esc(item.question.hi)}</p>
+        ${optsHtml}
+      </div>
+      <div class="footer-bar">
+        <button class="btn-primary" onclick="onGeneralsGroupNext()">Next →</button>
+      </div>
+    `;
+  }
+
   // If the patient stepped back into an already-answered question, highlight
   // whichever choice they picked so it's clear what's currently recorded.
-  const priorAnswer = gq.answers[generalsAnswerKey(gq.index, gq.itemPath)];
+  const priorAnswer = gq.answers[key];
   const yesStyle = priorAnswer === 'yes' ? 'outline:2px solid var(--teal);outline-offset:-2px;' : '';
   const noStyle = priorAnswer === 'no' ? 'outline:2px solid var(--ink3);outline-offset:-2px;' : '';
   const skipStyle = priorAnswer === 'skip' ? 'outline:2px solid var(--ink3);outline-offset:-2px;' : '';
@@ -945,7 +1039,7 @@ function renderGeneralsQuestionStep() {
     ${progressHtml}
     <div class="body">
       <button class="back-btn" onclick="onGeneralsItemBack()">&larr; Back</button>
-      <button class="back-btn" style="color:var(--ink3);text-decoration:underline;" onclick="onSkipGeneralsTopic()">Doesn't apply to me — skip this section</button>
+      ${skipTopicHtml}
       ${depthNote}
       <h2 class="step-title" style="margin-top:10px;">${esc(item.en)}</h2>
       <p class="hi" style="margin-bottom:22px;">${esc(item.hi)}</p>
