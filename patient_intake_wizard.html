@@ -147,11 +147,13 @@ const state = {
   },
   submit: { busy: false, error: '' },
   // Generals runs as a fixed sequence of topics. Each topic has a short curated
-  // list of yes/no/skip items grounded in real rubric paths (verified against
-  // the loaded dataset). `itemIndex` is the current item within the current
-  // topic; `answers` remembers each item's answer keyed by 'topicIdx:itemIdx'
-  // so stepping back shows what was already answered and lets it be changed.
-  generalsQueue: { active: false, index: -1, order: [], itemIndex: 0, answers: {} },
+  // tree of yes/no/not-sure questions grounded in real rubric paths (verified
+  // against the loaded dataset) — a "yes" on a question with follow-up detail
+  // drills one level deeper, using the same three-way answer. `itemPath` is the
+  // current position in that tree (e.g. [2,1] = this topic's 3rd question,
+  // its 2nd follow-up); `answers` remembers each position's answer keyed by
+  // 'topicIdx-path' so stepping back shows what was already answered.
+  generalsQueue: { active: false, index: -1, order: [], itemPath: [0], answers: {} },
   search: {
     query: '',
     activeTab: 'all',          // all | sensation | timing | modality | laterality | cause | sequence | content
@@ -529,14 +531,33 @@ async function onLockSubmit() {
 const GENERALS_WALKS = [
   { label: 'Appetite', pathTokens: ['Appetite'],
     items: [
-      { path: 'Appetite, increased (hunger in general)', en: 'Is your appetite increased — do you feel hungrier than usual?', hi: 'क्या आपकी भूख सामान्य से ज़्यादा बढ़ गई है?' },
-      { path: 'Appetite, diminished', en: 'Is your appetite reduced or poor?', hi: 'क्या आपकी भूख कम हो गई है?' },
-      { path: 'Appetite, ravenous', en: 'Do you get an extreme, ravenous hunger?', hi: 'क्या आपको बहुत ज़बरदस्त और तेज़ भूख लगती है?' },
-      { path: 'Appetite, wanting', en: 'Do you have almost no appetite at all?', hi: 'क्या आपको लगभग बिल्कुल भूख नहीं लगती?' },
+      { path: 'Appetite, increased (hunger in general)', en: 'Is your appetite increased — do you feel hungrier than usual?', hi: 'क्या आपकी भूख सामान्य से ज़्यादा बढ़ गई है?',
+        sub: [
+          { path: 'Appetite, increased (hunger in general), morning', en: 'Is it worse in the morning?', hi: 'क्या यह सुबह के समय ज़्यादा होता है?' },
+          { path: 'Appetite, increased (hunger in general), evening', en: 'Is it worse in the evening?', hi: 'क्या यह शाम के समय ज़्यादा होता है?' },
+        ] },
+      { path: 'Appetite, diminished', en: 'Is your appetite reduced or poor?', hi: 'क्या आपकी भूख कम हो गई है?',
+        sub: [
+          { path: 'Appetite, diminished, morning', en: 'Is it worse in the morning?', hi: 'क्या यह सुबह के समय ज़्यादा होता है?' },
+          { path: 'Appetite, diminished, evening', en: 'Is it worse in the evening?', hi: 'क्या यह शाम के समय ज़्यादा होता है?' },
+        ] },
+      { path: 'Appetite, ravenous', en: 'Do you get an extreme, ravenous hunger?', hi: 'क्या आपको बहुत ज़बरदस्त और तेज़ भूख लगती है?',
+        sub: [
+          { path: 'Appetite, ravenous, evening', en: 'Is it worse in the evening?', hi: 'क्या यह शाम के समय ज़्यादा होता है?' },
+          { path: 'Appetite, ravenous, morning', en: 'Is it worse in the morning?', hi: 'क्या यह सुबह के समय ज़्यादा होता है?' },
+        ] },
+      { path: 'Appetite, wanting', en: 'Do you have almost no appetite at all?', hi: 'क्या आपको लगभग बिल्कुल भूख नहीं लगती?',
+        sub: [
+          { path: 'Appetite, wanting, morning', en: 'Is it worse in the morning?', hi: 'क्या यह सुबह के समय ज़्यादा होता है?' },
+          { path: 'Appetite, wanting, evening', en: 'Is it worse in the evening?', hi: 'क्या यह शाम के समय ज़्यादा होता है?' },
+        ] },
       { path: 'Appetite, insatiable', en: 'Do you feel hungry no matter how much you eat?', hi: 'क्या कितना भी खा लें, भूख नहीं मिटती?' },
       { path: 'Appetite, gnawing', en: 'Do you get a gnawing, empty feeling, as if you need to eat?', hi: 'क्या पेट में कुछ कुरेदने जैसा, खाली-सा एहसास होता है?' },
       { path: 'Appetite, satiety', en: 'Do you feel full very quickly, after eating just a little?', hi: 'क्या थोड़ा खाते ही पेट भरा हुआ लगने लगता है?' },
-      { path: 'Appetite, disgust', en: 'Do you feel disgusted by food — does nothing appeal to you?', hi: 'क्या खाने से मन उचट जाता है — कुछ भी खाने का मन नहीं करता?' },
+      { path: 'Appetite, disgust', en: 'Do you feel disgusted by food — does nothing appeal to you?', hi: 'क्या खाने से मन उचट जाता है — कुछ भी खाने का मन नहीं करता?',
+        sub: [
+          { path: 'Appetite, disgust, evening', en: 'Is it worse in the evening?', hi: 'क्या यह शाम के समय ज़्यादा होता है?' },
+        ] },
     ] },
   { label: 'Thirst', pathTokens: ['Stomach', 'thirst'],
     items: [
@@ -549,60 +570,165 @@ const GENERALS_WALKS = [
     ] },
   { label: 'Perspiration', pathTokens: ['Perspiration'],
     items: [
-      { path: 'Perspiration, profuse', en: 'Do you sweat heavily?', hi: 'क्या आपको बहुत ज़्यादा पसीना आता है?' },
+      { path: 'Perspiration, profuse', en: 'Do you sweat heavily?', hi: 'क्या आपको बहुत ज़्यादा पसीना आता है?',
+        sub: [
+          { path: 'Perspiration, profuse, night', en: 'Is it worse at night?', hi: 'क्या यह रात के समय ज़्यादा होता है?' },
+          { path: 'Perspiration, profuse, morning', en: 'Is it worse in the morning?', hi: 'क्या यह सुबह के समय ज़्यादा होता है?' },
+        ] },
       { path: 'Perspiration, scanty sweat', en: 'Do you sweat very little?', hi: 'क्या आपको बहुत कम पसीना आता है?' },
       { path: 'Perspiration, night', en: 'Do you sweat mainly at night?', hi: 'क्या आपको ज़्यादातर रात के समय पसीना आता है?' },
-      { path: 'Perspiration, cold', en: 'Does your sweat feel cold on the skin?', hi: 'क्या आपका पसीना त्वचा पर ठंडा महसूस होता है?' },
-      { path: 'Perspiration, odor', en: 'Does your sweat have a noticeable smell?', hi: 'क्या आपके पसीने से कोई खास गंध आती है?' },
-      { path: 'Perspiration, staining the linen', en: 'Does your sweat leave stains on your clothes or bedding?', hi: 'क्या पसीने से कपड़ों या चादर पर दाग पड़ जाते हैं?' },
-      { path: 'Perspiration, anxiety', en: 'Do you sweat along with anxiety or nervousness?', hi: 'क्या घबराहट या चिंता होने पर पसीना आता है?' },
-      { path: 'Perspiration, exertion', en: 'Does physical exertion easily bring on sweating?', hi: 'क्या थोड़ी मेहनत या कसरत से ही पसीना आ जाता है?' },
+      { path: 'Perspiration, cold', en: 'Does your sweat feel cold on the skin?', hi: 'क्या आपका पसीना त्वचा पर ठंडा महसूस होता है?',
+        sub: [
+          { path: 'Perspiration, cold, night', en: 'Is it worse at night?', hi: 'क्या यह रात के समय ज़्यादा होता है?' },
+          { path: 'Perspiration, cold, morning', en: 'Is it worse in the morning?', hi: 'क्या यह सुबह के समय ज़्यादा होता है?' },
+        ] },
+      { path: 'Perspiration, odor', en: 'Does your sweat have a noticeable smell?', hi: 'क्या आपके पसीने से कोई खास गंध आती है?',
+        sub: [
+          { path: 'Perspiration, odor, offensive', en: 'Is the smell unpleasant or offensive?', hi: 'क्या गंध बहुत बुरी या तेज़ है?' },
+          { path: 'Perspiration, odor, sour', en: 'Does it smell sour?', hi: 'क्या इसमें खट्टी गंध आती है?' },
+        ] },
+      { path: 'Perspiration, staining the linen', en: 'Does your sweat leave stains on your clothes or bedding?', hi: 'क्या पसीने से कपड़ों या चादर पर दाग पड़ जाते हैं?',
+        sub: [
+          { path: 'Perspiration, staining the linen, yellow', en: 'Are the stains yellow?', hi: 'क्या दाग पीले रंग के होते हैं?' },
+          { path: 'Perspiration, staining the linen, bloody', en: 'Are the stains bloody?', hi: 'क्या दाग खून जैसे लाल होते हैं?' },
+        ] },
+      { path: 'Perspiration, anxiety', en: 'Do you sweat along with anxiety or nervousness?', hi: 'क्या घबराहट या चिंता होने पर पसीना आता है?',
+        sub: [
+          { path: 'Perspiration, anxiety, night', en: 'Does it happen mainly at night?', hi: 'क्या यह ज़्यादातर रात के समय होता है?' },
+        ] },
+      { path: 'Perspiration, exertion', en: 'Does physical exertion easily bring on sweating?', hi: 'क्या थोड़ी मेहनत या कसरत से ही पसीना आ जाता है?',
+        sub: [
+          { path: 'Perspiration, exertion, during slight', en: 'Does even very light activity bring it on?', hi: 'क्या बहुत हल्की सी मेहनत से भी यह हो जाता है?' },
+          { path: 'Perspiration, exertion, mental agg.', en: 'Does mental effort or stress bring it on?', hi: 'क्या दिमागी मेहनत या तनाव से भी पसीना आता है?' },
+        ] },
     ] },
   { label: 'Sleep', pathTokens: ['Sleep'],
     items: [
-      { path: 'Sleep, sleeplessness', en: 'Do you have trouble falling or staying asleep?', hi: 'क्या आपको नींद आने या नींद बनाए रखने में परेशानी होती है?' },
-      { path: 'Sleep, sleepiness', en: 'Do you feel unusually drowsy, with a strong urge to sleep?', hi: 'क्या आपको बहुत ज़्यादा नींद और ऊँघ आती रहती है?' },
-      { path: 'Sleep, restless', en: 'Is your sleep restless and unsettled?', hi: 'क्या आपकी नींद बेचैन और अशांत रहती है?' },
-      { path: 'Sleep, deep', en: 'Is your sleep unusually deep and heavy?', hi: 'क्या आपको बहुत गहरी नींद आती है?' },
-      { path: 'Sleep, disturbed', en: 'Is your sleep disturbed, breaking up through the night?', hi: 'क्या रात में बार-बार नींद टूटती है?' },
-      { path: 'Sleep, unrefreshing', en: 'Do you wake up feeling unrefreshed, even after sleeping?', hi: 'क्या सोने के बाद भी तरोताज़ा महसूस नहीं होता?' },
-      { path: 'Sleep, dreams', en: 'Do you dream a lot, or have vivid, repeated dreams?', hi: 'क्या आपको बहुत सपने आते हैं, या बार-बार वही सपने आते हैं?' },
+      { path: 'Sleep, sleeplessness', en: 'Do you have trouble falling or staying asleep?', hi: 'क्या आपको नींद आने या नींद बनाए रखने में परेशानी होती है?',
+        sub: [
+          { path: 'Sleep, sleeplessness, night', en: 'Is it worse at night?', hi: 'क्या यह रात के समय ज़्यादा होता है?' },
+          { path: 'Sleep, sleeplessness, coldness', en: 'Is it because you feel cold?', hi: 'क्या यह ठंड लगने की वजह से होता है?' },
+        ] },
+      { path: 'Sleep, sleepiness', en: 'Do you feel unusually drowsy, with a strong urge to sleep?', hi: 'क्या आपको बहुत ज़्यादा नींद और ऊँघ आती रहती है?',
+        sub: [
+          { path: 'Sleep, sleepiness, afternoon', en: 'Is it worse in the afternoon?', hi: 'क्या यह दोपहर बाद ज़्यादा होता है?' },
+          { path: 'Sleep, sleepiness, evening', en: 'Is it worse in the evening?', hi: 'क्या यह शाम के समय ज़्यादा होता है?' },
+        ] },
+      { path: 'Sleep, restless', en: 'Is your sleep restless and unsettled?', hi: 'क्या आपकी नींद बेचैन और अशांत रहती है?',
+        sub: [
+          { path: 'Sleep, restless, night', en: 'Is it worse at night?', hi: 'क्या यह रात के समय ज़्यादा होता है?' },
+          { path: 'Sleep, restless, menses', en: 'Is it worse around your period?', hi: 'क्या यह माहवारी के आसपास ज़्यादा होता है?' },
+        ] },
+      { path: 'Sleep, deep', en: 'Is your sleep unusually deep and heavy?', hi: 'क्या आपको बहुत गहरी नींद आती है?',
+        sub: [
+          { path: 'Sleep, deep, morning', en: 'Is it worse in the morning?', hi: 'क्या यह सुबह के समय ज़्यादा होता है?' },
+          { path: 'Sleep, deep, chill', en: 'Does it happen when you have chills?', hi: 'क्या यह ठंड लगने (कंपकंपी) के समय होता है?' },
+        ] },
+      { path: 'Sleep, disturbed', en: 'Is your sleep disturbed, breaking up through the night?', hi: 'क्या रात में बार-बार नींद टूटती है?',
+        sub: [
+          { path: 'Sleep, disturbed, visions', en: 'Are you disturbed by visions or vivid images?', hi: 'क्या आँखों के आगे दृश्य दिखने से नींद टूटती है?' },
+          { path: 'Sleep, disturbed, hunger', en: 'Are you disturbed by hunger?', hi: 'क्या भूख लगने से नींद टूटती है?' },
+        ] },
+      { path: 'Sleep, unrefreshing', en: 'Do you wake up feeling unrefreshed, even after sleeping?', hi: 'क्या सोने के बाद भी तरोताज़ा महसूस नहीं होता?',
+        sub: [
+          { path: 'Sleep, unrefreshing, morning', en: 'Is it worse in the morning?', hi: 'क्या यह सुबह के समय ज़्यादा होता है?' },
+          { path: 'Sleep, unrefreshing, afternoon', en: 'Is it worse in the afternoon?', hi: 'क्या यह दोपहर बाद ज़्यादा होता है?' },
+        ] },
+      { path: 'Sleep, dreams', en: 'Do you dream a lot, or have vivid, repeated dreams?', hi: 'क्या आपको बहुत सपने आते हैं, या बार-बार वही सपने आते हैं?',
+        sub: [
+          { path: 'Sleep, dreams, anxious', en: 'Are your dreams anxious or fearful?', hi: 'क्या सपनों में डर या घबराहट रहती है?' },
+          { path: 'Sleep, dreams, frightful', en: 'Are your dreams frightening or terrifying?', hi: 'क्या सपने डरावने होते हैं?' },
+        ] },
     ] },
   { label: 'Stool', pathTokens: ['Stool'],
     items: [
-      { path: 'Stool, hard', en: 'Is your stool hard?', hi: 'क्या आपका मल सख्त होता है?' },
+      { path: 'Stool, hard', en: 'Is your stool hard?', hi: 'क्या आपका मल सख्त होता है?',
+        sub: [
+          { path: 'Stool, hard, first', en: 'Is only the first part hard, with the rest softer?', hi: 'क्या शुरुआत में मल सख्त और बाद में नरम होता है?' },
+          { path: 'Stool, hard, alternating hard and soft', en: 'Does it alternate between hard and soft?', hi: 'क्या यह कभी सख्त और कभी नरम होता रहता है?' },
+        ] },
       { path: 'Stool, soft', en: 'Is your stool soft?', hi: 'क्या आपका मल नरम होता है?' },
-      { path: 'Stool, watery', en: 'Is your stool watery?', hi: 'क्या आपका मल पानी जैसा पतला होता है?' },
-      { path: 'Stool, mucous', en: 'Does your stool contain mucus?', hi: 'क्या आपके मल में बलगम आता है?' },
-      { path: 'Stool, odor', en: 'Does your stool have a noticeable, strong smell?', hi: 'क्या आपके मल से खास या तेज़ गंध आती है?' },
-      { path: 'Stool, copious', en: 'Is the amount unusually large each time?', hi: 'क्या हर बार मल की मात्रा सामान्य से ज़्यादा होती है?' },
+      { path: 'Stool, watery', en: 'Is your stool watery?', hi: 'क्या आपका मल पानी जैसा पतला होता है?',
+        sub: [
+          { path: 'Stool, watery, yellow', en: 'Is it yellow in colour?', hi: 'क्या इसका रंग पीला होता है?' },
+          { path: 'Stool, watery, morning', en: 'Does it happen mainly in the morning?', hi: 'क्या यह ज़्यादातर सुबह के समय होता है?' },
+        ] },
+      { path: 'Stool, mucous', en: 'Does your stool contain mucus?', hi: 'क्या आपके मल में बलगम आता है?',
+        sub: [
+          { path: 'Stool, mucous, slimy', en: 'Is the mucus slimy?', hi: 'क्या बलगम चिपचिपा होता है?' },
+          { path: 'Stool, mucous, bloody', en: 'Is there blood mixed with the mucus?', hi: 'क्या बलगम में खून मिला होता है?' },
+        ] },
+      { path: 'Stool, odor', en: 'Does your stool have a noticeable, strong smell?', hi: 'क्या आपके मल से खास या तेज़ गंध आती है?',
+        sub: [
+          { path: 'Stool, odor, offensive', en: 'Is the smell very strong and unpleasant?', hi: 'क्या गंध बहुत तेज़ और बुरी है?' },
+          { path: 'Stool, odor, sour', en: 'Does it smell sour?', hi: 'क्या इसमें खट्टी गंध आती है?' },
+        ] },
+      { path: 'Stool, copious', en: 'Is the amount unusually large each time?', hi: 'क्या हर बार मल की मात्रा सामान्य से ज़्यादा होती है?',
+        sub: [
+          { path: 'Stool, copious, night', en: 'Does it happen mainly at night?', hi: 'क्या यह ज़्यादातर रात के समय होता है?' },
+        ] },
       { path: 'Stool, scanty', en: 'Is the amount unusually small each time?', hi: 'क्या हर बार मल की मात्रा बहुत कम होती है?' },
     ] },
   { label: 'Constipation', pathTokens: ['Rectum', 'constipation'],
     items: [
-      { path: 'Rectum, constipation', en: 'Do you tend to stay constipated in general?', hi: 'क्या आपको आमतौर पर कब्ज़ रहता है?' },
-      { path: 'Rectum, constipation, difficult stool', en: 'Is passing stool very difficult, needing a lot of straining?', hi: 'क्या मल त्यागने में बहुत ज़ोर लगाना पड़ता है?' },
+      { path: 'Rectum, constipation', en: 'Do you tend to stay constipated in general?', hi: 'क्या आपको आमतौर पर कब्ज़ रहता है?',
+        sub: [
+          { path: 'Rectum, constipation, menses', en: 'Is it connected to your periods?', hi: 'क्या यह माहवारी के समय से जुड़ा है?' },
+        ] },
+      { path: 'Rectum, constipation, difficult stool', en: 'Is passing stool very difficult, needing a lot of straining?', hi: 'क्या मल त्यागने में बहुत ज़ोर लगाना पड़ता है?',
+        sub: [
+          { path: 'Rectum, constipation, difficult stool, soft stool', en: 'Is it hard to pass even when the stool itself is soft?', hi: 'क्या मल नरम होने पर भी निकालने में ज़ोर लगाना पड़ता है?' },
+          { path: 'Rectum, constipation, difficult stool, stool recedes', en: 'Does the stool start to come out and then slip back in?', hi: 'क्या मल थोड़ा बाहर आकर वापस अंदर चला जाता है?' },
+        ] },
       { path: 'Rectum, constipation, ineffectual urging and straining', en: 'Do you feel a strong urge to go, but straining brings nothing?', hi: 'क्या शौच की तेज़ इच्छा होती है लेकिन ज़ोर लगाने पर भी कुछ नहीं निकलता?' },
       { path: 'Rectum, constipation, alternating with diarrhea', en: 'Does your constipation alternate with bouts of diarrhoea?', hi: 'क्या कभी कब्ज़ रहती है तो कभी दस्त लग जाते हैं?' },
     ] },
   { label: 'Urine', pathTokens: ['Urine'],
     items: [
-      { path: 'Urine, copious (increased)', en: 'Is your urine output larger than usual?', hi: 'क्या आपका पेशाब सामान्य से ज़्यादा मात्रा में आता है?' },
-      { path: 'Urine, scanty', en: 'Is your urine output smaller than usual?', hi: 'क्या आपका पेशाब सामान्य से बहुत कम आता है?' },
-      { path: 'Urine, cloudy', en: 'Does your urine look cloudy or murky?', hi: 'क्या आपका पेशाब गंदला या मटमैला दिखता है?' },
-      { path: 'Urine, odor', en: 'Does your urine have an unusual or noticeable smell?', hi: 'क्या आपके पेशाब से कोई खास गंध आती है?' },
-      { path: 'Urine, burning (includes hot)', en: 'Does it burn or feel hot when you urinate?', hi: 'क्या पेशाब करते समय जलन या गर्माहट महसूस होती है?' },
+      { path: 'Urine, copious (increased)', en: 'Is your urine output larger than usual?', hi: 'क्या आपका पेशाब सामान्य से ज़्यादा मात्रा में आता है?',
+        sub: [
+          { path: 'Urine, copious (increased), night', en: 'Is it worse at night?', hi: 'क्या यह रात के समय ज़्यादा होता है?' },
+          { path: 'Urine, copious (increased), headache', en: 'Does it happen along with a headache?', hi: 'क्या यह सिरदर्द के साथ होता है?' },
+        ] },
+      { path: 'Urine, scanty', en: 'Is your urine output smaller than usual?', hi: 'क्या आपका पेशाब सामान्य से बहुत कम आता है?',
+        sub: [
+          { path: 'Urine, scanty, morning', en: 'Is it worse in the morning?', hi: 'क्या यह सुबह के समय ज़्यादा होता है?' },
+          { path: 'Urine, scanty, evening', en: 'Is it worse in the evening?', hi: 'क्या यह शाम के समय ज़्यादा होता है?' },
+        ] },
+      { path: 'Urine, cloudy', en: 'Does your urine look cloudy or murky?', hi: 'क्या आपका पेशाब गंदला या मटमैला दिखता है?',
+        sub: [
+          { path: 'Urine, cloudy, white clouds', en: 'Does it have white, cloud-like specks floating in it?', hi: 'क्या इसमें सफेद बादल जैसी गंदलाहट दिखती है?' },
+          { path: 'Urine, cloudy, morning', en: 'Is it worse in the morning?', hi: 'क्या यह सुबह के समय ज़्यादा होता है?' },
+        ] },
+      { path: 'Urine, odor', en: 'Does your urine have an unusual or noticeable smell?', hi: 'क्या आपके पेशाब से कोई खास गंध आती है?',
+        sub: [
+          { path: 'Urine, odor, acrid', en: 'Is the smell sharp or acrid?', hi: 'क्या गंध बहुत तीखी या चुभने वाली है?' },
+          { path: 'Urine, odor, ammoniacal', en: 'Does it smell like ammonia?', hi: 'क्या इसमें अमोनिया जैसी गंध आती है?' },
+        ] },
+      { path: 'Urine, burning (includes hot)', en: 'Does it burn or feel hot when you urinate?', hi: 'क्या पेशाब करते समय जलन या गर्माहट महसूस होती है?',
+        sub: [
+          { path: 'Urine, burning (includes hot), menses', en: 'Does it happen around your period?', hi: 'क्या यह माहवारी के आसपास होता है?' },
+        ] },
       { path: 'Urine, colorless', en: 'Is your urine unusually clear or colourless?', hi: 'क्या आपका पेशाब बिल्कुल साफ़, बेरंग जैसा आता है?' },
     ] },
   { label: 'Menses', pathTokens: ['Genitalia female', 'menses'], femaleOnly: true,
     items: [
       { path: 'Genitalia female, menses, irregular', en: 'Are your periods irregular?', hi: 'क्या आपके मासिक धर्म अनियमित हैं?' },
-      { path: 'Genitalia female, menses, copious', en: 'Is the flow unusually heavy?', hi: 'क्या माहवारी में बहुत ज़्यादा खून आता है?' },
+      { path: 'Genitalia female, menses, copious', en: 'Is the flow unusually heavy?', hi: 'क्या माहवारी में बहुत ज़्यादा खून आता है?',
+        sub: [
+          { path: 'Genitalia female, menses, copious, motion', en: 'Is it heavier with movement or activity?', hi: 'क्या हिलने-डुलने या काम करने पर खून ज़्यादा आता है?' },
+        ] },
       { path: 'Genitalia female, menses, scanty', en: 'Is the flow unusually light?', hi: 'क्या माहवारी में बहुत कम खून आता है?' },
       { path: 'Genitalia female, menses, painful', en: 'Are your periods painful?', hi: 'क्या माहवारी में बहुत दर्द होता है?' },
-      { path: 'Genitalia female, menses, late', en: 'Do your periods tend to come later than expected?', hi: 'क्या आपकी माहवारी अक्सर देर से आती है?' },
+      { path: 'Genitalia female, menses, late', en: 'Do your periods tend to come later than expected?', hi: 'क्या आपकी माहवारी अक्सर देर से आती है?',
+        sub: [
+          { path: 'Genitalia female, menses, late, profuse', en: 'Is the flow heavy when it does come?', hi: 'क्या जब माहवारी आती है तो बहुत ज़्यादा आती है?' },
+        ] },
       { path: 'Genitalia female, menses, dark', en: 'Is the blood dark in colour?', hi: 'क्या माहवारी का खून गहरे रंग का होता है?' },
-      { path: 'Genitalia female, menses, bright-red', en: 'Is the blood bright red in colour?', hi: 'क्या माहवारी का खून चमकीला लाल रंग का होता है?' },
+      { path: 'Genitalia female, menses, bright-red', en: 'Is the blood bright red in colour?', hi: 'क्या माहवारी का खून चमकीला लाल रंग का होता है?',
+        sub: [
+          { path: 'Genitalia female, menses, bright-red, mingled with dark clots', en: 'Does bright red blood come mixed with dark clots?', hi: 'क्या चमकीले लाल खून के साथ गहरे रंग के थक्के भी आते हैं?' },
+        ] },
     ] },
 ];
 
@@ -611,36 +737,82 @@ function findRubricByExactPath(chapter, fullPath) {
   for (const [id, path, remedies] of bucket) {
     if (path.trim() === fullPath.trim()) return { id, path, remedyCount: remedies.length };
   }
-  return null; // shouldn't happen — every path above was checked against the live dataset before inclusion
+  return null; // shouldn't happen — every path was checked against the live dataset before inclusion
+}
+
+// Walks a topic's item tree following a path of indices (e.g. [2,1] = this
+// topic's 3rd item, its 2nd sub-item) and returns the item sitting there.
+function resolveGeneralsItem(topic, path) {
+  let items = topic.items;
+  let item = null;
+  for (const idx of path) {
+    item = items[idx];
+    items = (item && item.sub) || [];
+  }
+  return item;
+}
+
+// The sibling list a path's last index was chosen from — topic.items for a
+// top-level path, or the parent item's `sub` array otherwise.
+function siblingListForPath(topic, path) {
+  if (path.length <= 1) return topic.items;
+  return resolveGeneralsItem(topic, path.slice(0, -1)).sub;
+}
+
+// Every rubric path anywhere under an item's sub-tree, not including the item
+// itself — used to clean up completeCase when a "Yes" is later reversed.
+function collectSubPaths(item) {
+  let paths = [];
+  if (item.sub) for (const s of item.sub) { paths.push(s.path); paths = paths.concat(collectSubPaths(s)); }
+  return paths;
+}
+
+function generalsAnswerKey(topicIdx, path) {
+  return topicIdx + '-' + path.join('-');
 }
 
 function startGeneralsSequence() {
   const isFemale = (state.patient.sex || '').toLowerCase() === 'female';
   const order = GENERALS_WALKS.filter(w => !w.femaleOnly || isFemale);
-  state.generalsQueue = { active: true, index: 0, order, itemIndex: 0, answers: {} };
+  state.generalsQueue = { active: true, index: 0, order, itemPath: [0], answers: {} };
   state.screen = 'generalsWalk';
   render();
 }
 
-// Moves to the next item within the current topic, or the next topic if that
-// was the last item, or submits if that was the last topic (mirrors the old
-// design's "Submit my case" on the final screen).
-function advanceGeneralsItem() {
+// Moves forward: descends into the item just answered "yes" if it has
+// follow-up sub-questions, otherwise steps to the next sibling at the current
+// depth — popping up a level (and retrying) whenever a level runs out. Moves
+// to the next topic once this topic's whole tree is exhausted, or submits if
+// that was the last topic (mirrors the old "Submit my case" on the final screen).
+function advanceGenerals(descendInto) {
   const gq = state.generalsQueue;
   const topic = gq.order[gq.index];
-  const nextItem = gq.itemIndex + 1;
-  if (nextItem < topic.items.length) {
-    gq.itemIndex = nextItem;
+
+  if (descendInto) {
+    gq.itemPath.push(0);
     render();
     return;
   }
+
+  let path = gq.itemPath;
+  while (path.length > 0) {
+    const lastIdx = path[path.length - 1];
+    const siblings = siblingListForPath(topic, path);
+    if (lastIdx + 1 < siblings.length) {
+      gq.itemPath = path.slice(0, -1).concat([lastIdx + 1]);
+      render();
+      return;
+    }
+    path = path.slice(0, -1);
+  }
+
   const nextTopic = gq.index + 1;
   if (nextTopic >= gq.order.length) {
     gq.active = false;
     onSubmitCase();
   } else {
     gq.index = nextTopic;
-    gq.itemIndex = 0;
+    gq.itemPath = [0];
     render();
   }
 }
@@ -655,7 +827,7 @@ function onSkipGeneralsTopic() {
     onSubmitCase();
   } else {
     gq.index = nextTopic;
-    gq.itemIndex = 0;
+    gq.itemPath = [0];
     render();
   }
 }
@@ -663,35 +835,80 @@ function onSkipGeneralsTopic() {
 function onGeneralsAnswer(choice) {
   const gq = state.generalsQueue;
   const topic = gq.order[gq.index];
-  const item = topic.items[gq.itemIndex];
-  const key = gq.index + ':' + gq.itemIndex;
+  const item = resolveGeneralsItem(topic, gq.itemPath);
+  const key = generalsAnswerKey(gq.index, gq.itemPath);
+  const priorAnswer = gq.answers[key];
 
-  // If this exact item was already answered "yes" before (patient stepped
-  // back and is changing their mind), remove that earlier entry first so
-  // changing an answer never leaves a duplicate or stale rubric behind.
+  // Remove this item's own earlier rubric entry, if any, before deciding
+  // what to do next — covers both changing an answer and simple re-visits.
   const existingIdx = state.completeCase.findIndex(e => e.source === 'generals' && e.path === item.path);
   if (existingIdx !== -1) state.completeCase.splice(existingIdx, 1);
 
+  // If this item was previously "yes" and led into sub-questions, and the
+  // answer is being changed now, clear that whole sub-tree's rubrics and
+  // recorded answers — they only made sense under the old answer.
+  if (priorAnswer === 'yes' && item.sub && item.sub.length) {
+    const subPaths = collectSubPaths(item);
+    if (subPaths.length) {
+      state.completeCase = state.completeCase.filter(e => !(e.source === 'generals' && subPaths.includes(e.path)));
+    }
+    const prefix = key + '-';
+    for (const k of Object.keys(gq.answers)) {
+      if (k.startsWith(prefix)) delete gq.answers[k];
+    }
+  }
+
+  let descend = false;
   if (choice === 'yes') {
     const rubric = findRubricByExactPath(topic.pathTokens[0], item.path);
     if (rubric) {
       state.completeCase.push({ rubricId: rubric.id, path: rubric.path, remedyCount: rubric.remedyCount, source: 'generals' });
     }
+    if (item.sub && item.sub.length) descend = true;
   }
   gq.answers[key] = choice;
-  advanceGeneralsItem();
+  advanceGenerals(descend);
 }
 
 function onGeneralsItemBack() {
   const gq = state.generalsQueue;
-  if (gq.itemIndex > 0) {
-    gq.itemIndex--;
+  const topic = gq.order[gq.index];
+  let path = gq.itemPath;
+  const lastIdx = path[path.length - 1];
+
+  if (lastIdx > 0) {
+    // Previous sibling at this depth, then descend to ITS deepest last
+    // sub-item if it has any — mirrors how forward navigation would have
+    // reached this point, so Back always retraces the same steps.
+    path = path.slice(0, -1).concat([lastIdx - 1]);
+    let node = resolveGeneralsItem(topic, path);
+    while (node.sub && node.sub.length) {
+      path = path.concat([node.sub.length - 1]);
+      node = node.sub[node.sub.length - 1];
+    }
+    gq.itemPath = path;
     render();
     return;
   }
+
+  if (path.length > 1) {
+    // First item of a sub-list — back goes up to the parent question itself.
+    gq.itemPath = path.slice(0, -1);
+    render();
+    return;
+  }
+
+  // Very first question of the current topic.
   if (gq.index > 0) {
     gq.index--;
-    gq.itemIndex = gq.order[gq.index].items.length - 1;
+    const prevTopic = gq.order[gq.index];
+    let newPath = [prevTopic.items.length - 1];
+    let node = prevTopic.items[newPath[0]];
+    while (node.sub && node.sub.length) {
+      newPath = newPath.concat([node.sub.length - 1]);
+      node = node.sub[node.sub.length - 1];
+    }
+    gq.itemPath = newPath;
     render();
   } else {
     gq.active = false;
@@ -703,9 +920,8 @@ function onGeneralsItemBack() {
 function renderGeneralsQuestionStep() {
   const gq = state.generalsQueue;
   const topic = gq.order[gq.index];
-  const item = topic.items[gq.itemIndex];
+  const item = resolveGeneralsItem(topic, gq.itemPath);
   const topicTotal = gq.order.length;
-  const itemTotal = topic.items.length;
 
   const progressHtml = `<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--cream);border-bottom:1px solid var(--border);">
     <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
@@ -714,11 +930,15 @@ function renderGeneralsQuestionStep() {
     <div style="font-size:12px;color:var(--ink3);white-space:nowrap;">${gq.index + 1} of ${topicTotal}</div>
   </div>`;
 
-  // If the patient stepped back into an already-answered item, highlight
+  // If the patient stepped back into an already-answered question, highlight
   // whichever choice they picked so it's clear what's currently recorded.
-  const priorAnswer = gq.answers[gq.index + ':' + gq.itemIndex];
+  const priorAnswer = gq.answers[generalsAnswerKey(gq.index, gq.itemPath)];
   const yesStyle = priorAnswer === 'yes' ? 'outline:2px solid var(--teal);outline-offset:-2px;' : '';
   const noStyle = priorAnswer === 'no' ? 'outline:2px solid var(--ink3);outline-offset:-2px;' : '';
+  const skipStyle = priorAnswer === 'skip' ? 'outline:2px solid var(--ink3);outline-offset:-2px;' : '';
+
+  const depthNote = gq.itemPath.length > 1
+    ? `<div style="font-size:12px;color:var(--ink3);margin:10px 0 0;">A bit more detail on that —</div>` : '';
 
   return `
     ${renderTopbar('General Health', topic.label + ' — ' + (gq.index + 1) + ' of ' + topicTotal)}
@@ -726,15 +946,13 @@ function renderGeneralsQuestionStep() {
     <div class="body">
       <button class="back-btn" onclick="onGeneralsItemBack()">&larr; Back</button>
       <button class="back-btn" style="color:var(--ink3);text-decoration:underline;" onclick="onSkipGeneralsTopic()">Doesn't apply to me — skip this section</button>
-      <div style="font-size:12px;color:var(--ink3);margin:10px 0;">Question ${gq.itemIndex + 1} of ${itemTotal}</div>
-      <h2 class="step-title">${esc(item.en)}</h2>
+      ${depthNote}
+      <h2 class="step-title" style="margin-top:10px;">${esc(item.en)}</h2>
       <p class="hi" style="margin-bottom:22px;">${esc(item.hi)}</p>
-      <div style="display:flex;gap:10px;">
-        <button class="btn-primary" style="${yesStyle}" onclick="onGeneralsAnswer('yes')">Yes</button>
-        <button class="btn-outline" style="${noStyle}" onclick="onGeneralsAnswer('no')">No</button>
-      </div>
-      <div style="text-align:center;margin-top:16px;">
-        <span style="color:var(--ink3);text-decoration:underline;cursor:pointer;font-size:13px;" onclick="onGeneralsAnswer('skip')">Not sure — skip this one</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary" style="flex:1;${yesStyle}" onclick="onGeneralsAnswer('yes')">Yes</button>
+        <button class="btn-outline" style="flex:1;${noStyle}" onclick="onGeneralsAnswer('no')">No</button>
+        <button class="btn-outline" style="flex:1;${skipStyle}" onclick="onGeneralsAnswer('skip')">Not sure</button>
       </div>
     </div>
   `;
