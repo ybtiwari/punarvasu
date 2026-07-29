@@ -598,6 +598,16 @@ const GENERALS_WALKS = [
       { path: 'Urine, burning (includes hot)', en: 'Does it burn or feel hot when you urinate?', hi: 'क्या पेशाब करते समय जलन या गर्माहट महसूस होती है?', roman: 'Kya peshaab karte samay jalan ya garmaahat mehsoos hoti hai?' },
       { path: 'Urine, colorless', en: 'Is your urine unusually clear or colourless?', hi: 'क्या आपका पेशाब बिल्कुल साफ़, बेरंग जैसा आता है?', roman: 'Kya aapka peshaab bilkul saaf, berang jaisa aata hai?' },
     ] },
+  { label: 'Menses', pathTokens: ['Genitalia female', 'menses'], femaleOnly: true,
+    items: [
+      { path: 'Genitalia female, menses, irregular', en: 'Are your periods irregular?', hi: 'क्या आपके मासिक धर्म अनियमित हैं?', roman: 'Kya aapke maasik dharm aniyamit hain?' },
+      { path: 'Genitalia female, menses, copious', en: 'Is the flow unusually heavy?', hi: 'क्या माहवारी में बहुत ज़्यादा खून आता है?', roman: 'Kya maahvaari mein bahut zyaada khoon aata hai?' },
+      { path: 'Genitalia female, menses, scanty', en: 'Is the flow unusually light?', hi: 'क्या माहवारी में बहुत कम खून आता है?', roman: 'Kya maahvaari mein bahut kam khoon aata hai?' },
+      { path: 'Genitalia female, menses, painful', en: 'Are your periods painful?', hi: 'क्या माहवारी में बहुत दर्द होता है?', roman: 'Kya maahvaari mein bahut dard hota hai?' },
+      { path: 'Genitalia female, menses, late', en: 'Do your periods tend to come later than expected?', hi: 'क्या आपकी माहवारी अक्सर देर से आती है?', roman: 'Kya aapki maahvaari aksar der se aati hai?' },
+      { path: 'Genitalia female, menses, dark', en: 'Is the blood dark in colour?', hi: 'क्या माहवारी का खून गहरे रंग का होता है?', roman: 'Kya maahvaari ka khoon gehre rang ka hota hai?' },
+      { path: 'Genitalia female, menses, bright-red', en: 'Is the blood bright red in colour?', hi: 'क्या माहवारी का खून चमकीला लाल रंग का होता है?', roman: 'Kya maahvaari ka khoon chamkeela laal rang ka hota hai?' },
+    ] },
   { label: 'Physical Generals', pathTokens: ['Generalities'],
     items: [
       { kind: 'select',
@@ -616,7 +626,13 @@ const GENERALS_WALKS = [
           { path: 'Generalities, winter, in', en: 'Winter', hi: 'सर्दी', roman: 'Sardi' },
           { path: 'Generalities, wet, weather', en: 'Monsoon / rainy season', hi: 'बरसात / मानसून', roman: 'Barsaat / monsoon' },
         ] },
-      { path: 'Generalities, food and drinks', en: 'Is there any food that makes you feel worse?', hi: 'क्या कोई ऐसा खाना है जिससे आपकी तबीयत ज़्यादा खराब हो जाती है?', roman: 'Kya koi aisa khaana hai jisse aapki tabiyat zyaada kharaab ho jaati hai?' },
+      { path: 'Generalities, food', en: 'Is there any food that makes you feel worse?', hi: 'क्या कोई ऐसा खाना है जिससे आपकी तबीयत ज़्यादा खराब हो जाती है?', roman: 'Kya koi aisa khaana hai jisse aapki tabiyat zyaada kharaab ho jaati hai?',
+        // Kent's "Generalities, food" has ~70 children, but only about half are
+        // specific FOOD ITEMS marked "agg." (aggravates) — the rest are neutral
+        // "connected to X" entries or the one "amel." (warm drinks) outlier,
+        // which don't belong under a "makes you worse" question. Filtered to
+        // just the named foods that aggravate, per your request.
+        childFilter: (token) => /agg\.$/.test(token.trim()) && token.trim() !== 'agg.' },
     ] },
   { label: 'Mental Generals', pathTokens: ['Mind'],
     items: [
@@ -626,24 +642,18 @@ const GENERALS_WALKS = [
       { kind: 'select',
         en: 'What are your hobbies?', hi: 'आपके शौक क्या हैं?', roman: 'Aapke shauk kya hain?',
         // Kent's Mind chapter does have rubrics for these — not as "hobbies"
-        // but as psychological relationships to the activity (aversion to,
-        // desire for, agg./amel.), which is genuinely useful generals data.
+        // but as psychological relationships to the activity. Each option is
+        // filtered down to just the specific modifiers you asked to keep.
         options: [
-          { path: 'Mind, reading', en: 'Reading', hi: 'पढ़ना', roman: 'Padhna' },
-          { path: 'Mind, writing', en: 'Writing', hi: 'लिखना', roman: 'Likhna' },
-          { path: 'Mind, music', en: 'Music', hi: 'संगीत', roman: 'Sangeet' },
-          { path: 'Mind, singing', en: 'Singing', hi: 'गाना', roman: 'Gaana' },
+          { path: 'Mind, reading', en: 'Reading', hi: 'पढ़ना', roman: 'Padhna',
+            childFilter: (token) => ['desires', 'desires to be read to'].includes(token.trim()) },
+          { path: 'Mind, writing', en: 'Writing', hi: 'लिखना', roman: 'Likhna',
+            childFilter: (token) => token.trim() === 'desire for' },
+          { path: 'Mind, music', en: 'Music', hi: 'संगीत', roman: 'Sangeet',
+            childFilter: (token) => token.trim() === 'amel.' },
+          { path: 'Mind, singing', en: 'Singing', hi: 'गाना', roman: 'Gaana',
+            childFilter: (token) => ['amel. complaints', 'alternating with anger', 'alternating with hatred of work', 'hilarious'].includes(token.trim()) },
         ] },
-    ] },
-  { label: 'Menses', pathTokens: ['Genitalia female', 'menses'], femaleOnly: true,
-    items: [
-      { path: 'Genitalia female, menses, irregular', en: 'Are your periods irregular?', hi: 'क्या आपके मासिक धर्म अनियमित हैं?', roman: 'Kya aapke maasik dharm aniyamit hain?' },
-      { path: 'Genitalia female, menses, copious', en: 'Is the flow unusually heavy?', hi: 'क्या माहवारी में बहुत ज़्यादा खून आता है?', roman: 'Kya maahvaari mein bahut zyaada khoon aata hai?' },
-      { path: 'Genitalia female, menses, scanty', en: 'Is the flow unusually light?', hi: 'क्या माहवारी में बहुत कम खून आता है?', roman: 'Kya maahvaari mein bahut kam khoon aata hai?' },
-      { path: 'Genitalia female, menses, painful', en: 'Are your periods painful?', hi: 'क्या माहवारी में बहुत दर्द होता है?', roman: 'Kya maahvaari mein bahut dard hota hai?' },
-      { path: 'Genitalia female, menses, late', en: 'Do your periods tend to come later than expected?', hi: 'क्या आपकी माहवारी अक्सर देर से आती है?', roman: 'Kya aapki maahvaari aksar der se aati hai?' },
-      { path: 'Genitalia female, menses, dark', en: 'Is the blood dark in colour?', hi: 'क्या माहवारी का खून गहरे रंग का होता है?', roman: 'Kya maahvaari ka khoon gehre rang ka hota hai?' },
-      { path: 'Genitalia female, menses, bright-red', en: 'Is the blood bright red in colour?', hi: 'क्या माहवारी का खून चमकीला लाल रंग का होता है?', roman: 'Kya maahvaari ka khoon chamkeela laal rang ka hota hai?' },
     ] },
 ];
 
@@ -664,11 +674,14 @@ function itemPathTokens(item) {
 // exist beneath them) with no rubric of their own at exactly that path — so
 // they can't be added directly. This filters down to only the ones that
 // really do resolve to a complete, addable rubric, which is what this
-// one-level-deep follow-up screen needs.
-function getRealDetailChildren(chapter, itemPath) {
+// one-level-deep follow-up screen needs. An optional filterFn narrows the
+// result further (e.g. only "agg." foods, or only specific named modifiers)
+// for questions that shouldn't offer every real child.
+function getRealDetailChildren(chapter, itemPath, filterFn) {
   const { nextOptions } = getNextOptions(itemPath.split(',').map(s => s.trim()));
   const result = [];
   for (const [token, info] of Object.entries(nextOptions)) {
+    if (filterFn && !filterFn(token)) continue;
     if (findRubricByExactPath(chapter, itemPath + ', ' + token)) result.push([token, info]);
   }
   return result;
@@ -706,7 +719,7 @@ function finalizeGeneralsItemDetail() {
   const answer = gq.answers[key];
   if (!answer || answer.choice !== 'yes') return;
 
-  const realChildren = getRealDetailChildren(topic.pathTokens[0], item.path);
+  const realChildren = getRealDetailChildren(topic.pathTokens[0], item.path, item.childFilter);
   if (realChildren.length === 0) return;
 
   const selected = answer.detailPaths || [];
@@ -757,7 +770,7 @@ function onGeneralsAnswer(choice) {
     if (rubric) {
       state.completeCase.push({ rubricId: rubric.id, path: rubric.path, remedyCount: rubric.remedyCount, source: 'generals' });
     }
-    hasDetail = getRealDetailChildren(topic.pathTokens[0], item.path).length > 0;
+    hasDetail = getRealDetailChildren(topic.pathTokens[0], item.path, item.childFilter).length > 0;
   }
   gq.answers[key] = { choice, detailPaths: [] };
 
@@ -913,9 +926,9 @@ function renderGeneralsAnswerBadge(answer) {
 // Renders the categorized follow-up detail for one question — identical
 // small-category/large-category (search + browse-all) logic as before, just
 // placed inline under the question instead of on its own screen.
-function renderGeneralsDetailInline(topic, itemPath, key, hideDoneLink) {
+function renderGeneralsDetailInline(topic, itemPath, key, hideDoneLink, filterFn) {
   const chapter = topic.pathTokens[0];
-  let entries = getRealDetailChildren(chapter, itemPath);
+  let entries = getRealDetailChildren(chapter, itemPath, filterFn);
   entries.sort((a, b) => b[1].rubricCount - a[1].rubricCount);
 
   const grouped = {};
@@ -1034,8 +1047,8 @@ function renderGeneralsQuestionStep() {
         // children (e.g. "Mind, reading" -> averse to / desires / agg.),
         // show that detail right under it once it's checked.
         let optDetail = '';
-        if (checked && opt.path && getRealDetailChildren(topic.pathTokens[0], opt.path).length > 0) {
-          optDetail = renderGeneralsDetailInline(topic, opt.path, key + '-opt' + optIdx, true);
+        if (checked && opt.path && getRealDetailChildren(topic.pathTokens[0], opt.path, opt.childFilter).length > 0) {
+          optDetail = renderGeneralsDetailInline(topic, opt.path, key + '-opt' + optIdx, true, opt.childFilter);
         }
         return card + optDetail;
       }).join('');
@@ -1049,7 +1062,7 @@ function renderGeneralsQuestionStep() {
     const yesStyle = answer && answer.choice === 'yes' ? 'outline:2px solid var(--teal);outline-offset:-2px;' : '';
     const noStyle = answer && answer.choice === 'no' ? 'outline:2px solid var(--ink3);outline-offset:-2px;' : '';
     const skipStyle = answer && answer.choice === 'skip' ? 'outline:2px solid var(--ink3);outline-offset:-2px;' : '';
-    const hasDetail = getRealDetailChildren(topic.pathTokens[0], item.path).length > 0;
+    const hasDetail = getRealDetailChildren(topic.pathTokens[0], item.path, item.childFilter).length > 0;
     const showDetail = answer && answer.choice === 'yes' && hasDetail;
 
     return `<div style="border:1.5px solid var(--teal);border-radius:8px;padding:14px;margin-bottom:8px;">
@@ -1060,7 +1073,7 @@ function renderGeneralsQuestionStep() {
         <button class="btn-outline" style="flex:1;${noStyle}" onclick="onGeneralsAnswer('no')">No</button>
         <button class="btn-outline" style="flex:1;${skipStyle}" onclick="onGeneralsAnswer('skip')">Not sure</button>
       </div>
-      ${showDetail ? renderGeneralsDetailInline(topic, item.path, key) : ''}
+      ${showDetail ? renderGeneralsDetailInline(topic, item.path, key, false, item.childFilter) : ''}
     </div>`;
   }).join('');
 
