@@ -572,6 +572,13 @@ const GENERALS_WALKS = [
       { path: 'Sleep, unrefreshing', en: 'Do you wake up feeling unrefreshed, even after sleeping?', hi: 'क्या सोने के बाद भी तरोताज़ा महसूस नहीं होता?', roman: 'Kya sone ke baad bhi tarotaaza mehsoos nahi hota?' },
       { path: 'Sleep, dreams', en: 'Do you dream a lot, or have vivid, repeated dreams?', hi: 'क्या आपको बहुत सपने आते हैं, या बार-बार वही सपने आते हैं?', roman: 'Kya aapko bahut sapne aate hain, ya baar-baar wahi sapne aate hain?' },
     ] },
+  { label: 'Constipation', pathTokens: ['Rectum', 'constipation'],
+    items: [
+      { path: 'Rectum, constipation', en: 'Do you tend to stay constipated in general?', hi: 'क्या आपको आमतौर पर कब्ज़ रहता है?', roman: 'Kya aapko aam taur par kabz rehta hai?' },
+      { path: 'Rectum, constipation, difficult stool', en: 'Is passing stool very difficult, needing a lot of straining?', hi: 'क्या मल त्यागने में बहुत ज़ोर लगाना पड़ता है?', roman: 'Kya mal tyaagne mein bahut zor lagaana padta hai?' },
+      { path: 'Rectum, constipation, ineffectual urging and straining', en: 'Do you feel a strong urge to go, but straining brings nothing?', hi: 'क्या शौच की तेज़ इच्छा होती है लेकिन ज़ोर लगाने पर भी कुछ नहीं निकलता?', roman: 'Kya shauch ki tez ichha hoti hai lekin zor lagaane par bhi kuch nahi nikalta?' },
+      { path: 'Rectum, constipation, alternating with diarrhea', en: 'Does your constipation alternate with bouts of diarrhoea?', hi: 'क्या कभी कब्ज़ रहती है तो कभी दस्त लग जाते हैं?', roman: 'Kya kabhi kabz rehti hai to kabhi dast lag jaate hain?' },
+    ] },
   { label: 'Stool', pathTokens: ['Stool'],
     items: [
       { path: 'Stool, hard', en: 'Is your stool hard?', hi: 'क्या आपका मल सख्त होता है?', roman: 'Kya aapka mal sakht hota hai?' },
@@ -581,13 +588,6 @@ const GENERALS_WALKS = [
       { path: 'Stool, odor', en: 'Does your stool have a noticeable, strong smell?', hi: 'क्या आपके मल से खास या तेज़ गंध आती है?', roman: 'Kya aapke mal se khaas ya tez gandh aati hai?' },
       { path: 'Stool, copious', en: 'Is the amount unusually large each time?', hi: 'क्या हर बार मल की मात्रा सामान्य से ज़्यादा होती है?', roman: 'Kya har baar mal ki maatra saamaanya se zyaada hoti hai?' },
       { path: 'Stool, scanty', en: 'Is the amount unusually small each time?', hi: 'क्या हर बार मल की मात्रा बहुत कम होती है?', roman: 'Kya har baar mal ki maatra bahut kam hoti hai?' },
-    ] },
-  { label: 'Constipation', pathTokens: ['Rectum', 'constipation'],
-    items: [
-      { path: 'Rectum, constipation', en: 'Do you tend to stay constipated in general?', hi: 'क्या आपको आमतौर पर कब्ज़ रहता है?', roman: 'Kya aapko aam taur par kabz rehta hai?' },
-      { path: 'Rectum, constipation, difficult stool', en: 'Is passing stool very difficult, needing a lot of straining?', hi: 'क्या मल त्यागने में बहुत ज़ोर लगाना पड़ता है?', roman: 'Kya mal tyaagne mein bahut zor lagaana padta hai?' },
-      { path: 'Rectum, constipation, ineffectual urging and straining', en: 'Do you feel a strong urge to go, but straining brings nothing?', hi: 'क्या शौच की तेज़ इच्छा होती है लेकिन ज़ोर लगाने पर भी कुछ नहीं निकलता?', roman: 'Kya shauch ki tez ichha hoti hai lekin zor lagaane par bhi kuch nahi nikalta?' },
-      { path: 'Rectum, constipation, alternating with diarrhea', en: 'Does your constipation alternate with bouts of diarrhoea?', hi: 'क्या कभी कब्ज़ रहती है तो कभी दस्त लग जाते हैं?', roman: 'Kya kabhi kabz rehti hai to kabhi dast lag jaate hain?' },
     ] },
   { label: 'Urine', pathTokens: ['Urine'],
     items: [
@@ -616,7 +616,7 @@ const GENERALS_WALKS = [
           { path: 'Generalities, winter, in', en: 'Winter', hi: 'सर्दी', roman: 'Sardi' },
           { path: 'Generalities, wet, weather', en: 'Monsoon / rainy season', hi: 'बरसात / मानसून', roman: 'Barsaat / monsoon' },
         ] },
-      { path: 'Generalities, food and drinks', en: 'Is there any food that generally makes you feel unwell?', hi: 'क्या कोई ऐसा खाना है जिससे आपको आमतौर पर तबीयत खराब लगती है?', roman: 'Kya koi aisa khaana hai jisse aapko aam taur par tabiyat kharaab lagti hai?' },
+      { path: 'Generalities, food and drinks', en: 'Is there any food that makes you feel worse?', hi: 'क्या कोई ऐसा खाना है जिससे आपकी तबीयत ज़्यादा खराब हो जाती है?', roman: 'Kya koi aisa khaana hai jisse aapki tabiyat zyaada kharaab ho jaati hai?' },
     ] },
   { label: 'Mental Generals', pathTokens: ['Mind'],
     items: [
@@ -625,13 +625,14 @@ const GENERALS_WALKS = [
       { path: 'Mind, weeping', en: 'Do you weep or cry easily?', hi: 'क्या आप आसानी से रो पड़ते हैं?', roman: 'Kya aap aasaani se ro padte hain?' },
       { kind: 'select',
         en: 'What are your hobbies?', hi: 'आपके शौक क्या हैं?', roman: 'Aapke shauk kya hain?',
-        // Hobbies aren't Kent rubrics — this is background context for the doctor, not a
-        // symptom, so these options don't map to any rubric and add nothing to the case data.
+        // Kent's Mind chapter does have rubrics for these — not as "hobbies"
+        // but as psychological relationships to the activity (aversion to,
+        // desire for, agg./amel.), which is genuinely useful generals data.
         options: [
-          { path: null, en: 'Reading', hi: 'पढ़ना', roman: 'Padhna' },
-          { path: null, en: 'Writing', hi: 'लिखना', roman: 'Likhna' },
-          { path: null, en: 'Music', hi: 'संगीत', roman: 'Sangeet' },
-          { path: null, en: 'Singing', hi: 'गाना', roman: 'Gaana' },
+          { path: 'Mind, reading', en: 'Reading', hi: 'पढ़ना', roman: 'Padhna' },
+          { path: 'Mind, writing', en: 'Writing', hi: 'लिखना', roman: 'Likhna' },
+          { path: 'Mind, music', en: 'Music', hi: 'संगीत', roman: 'Sangeet' },
+          { path: 'Mind, singing', en: 'Singing', hi: 'गाना', roman: 'Gaana' },
         ] },
     ] },
   { label: 'Menses', pathTokens: ['Genitalia female', 'menses'], femaleOnly: true,
@@ -796,17 +797,46 @@ function onGeneralsSelectToggle(optionIndex) {
     if (option.path) {
       state.completeCase = state.completeCase.filter(e => !(e.source === 'generals' && e.path === option.path));
     }
+    // Unchecking the option means whatever further detail was picked under
+    // it no longer applies either — clear that option's own rubrics and its
+    // recorded state so nothing orphaned is left behind.
+    const optKey = key + '-opt' + optionIndex;
+    const optAnswer = gq.answers[optKey];
+    if (optAnswer && optAnswer.detailPaths && optAnswer.detailPaths.length) {
+      const paths = optAnswer.detailPaths;
+      state.completeCase = state.completeCase.filter(e => !(e.source === 'generals' && paths.includes(e.path)));
+    }
+    delete gq.answers[optKey];
   }
   render();
 }
 
-function onGeneralsDetailToggle(path) {
+function onGeneralsDetailToggle(path, keyOverride) {
   const gq = state.generalsQueue;
-  const key = generalsAnswerKey(gq.index, gq.expandedItem);
+  const key = keyOverride || generalsAnswerKey(gq.index, gq.expandedItem);
   if (!gq.answers[key]) gq.answers[key] = { choice: 'yes', detailPaths: [] };
   const list = gq.answers[key].detailPaths;
   const idx = list.indexOf(path);
-  if (idx === -1) list.push(path); else list.splice(idx, 1);
+  const nowSelected = idx === -1;
+  if (nowSelected) list.push(path); else list.splice(idx, 1);
+
+  if (keyOverride) {
+    // Option-level detail (nested inside a select-kind question, e.g. a
+    // hobby's modifiers) has no separate "Done"/finalize step of its own, so
+    // sync straight to completeCase here instead of waiting for a call that
+    // will never come. Top-level item detail (no override) keeps the
+    // existing deferred behavior, finalized on collapse/switch/continue.
+    if (nowSelected) {
+      const already = state.completeCase.some(e => e.source === 'generals' && e.path === path);
+      if (!already) {
+        const chapter = path.split(',')[0].trim();
+        const rubric = findRubricByExactPath(chapter, path);
+        if (rubric) state.completeCase.push({ rubricId: rubric.id, path: rubric.path, remedyCount: rubric.remedyCount, source: 'generals' });
+      }
+    } else {
+      state.completeCase = state.completeCase.filter(e => !(e.source === 'generals' && e.path === path));
+    }
+  }
   render();
 }
 
@@ -883,9 +913,9 @@ function renderGeneralsAnswerBadge(answer) {
 // Renders the categorized follow-up detail for one question — identical
 // small-category/large-category (search + browse-all) logic as before, just
 // placed inline under the question instead of on its own screen.
-function renderGeneralsDetailInline(topic, item, key) {
+function renderGeneralsDetailInline(topic, itemPath, key, hideDoneLink) {
   const chapter = topic.pathTokens[0];
-  let entries = getRealDetailChildren(chapter, item.path);
+  let entries = getRealDetailChildren(chapter, itemPath);
   entries.sort((a, b) => b[1].rubricCount - a[1].rubricCount);
 
   const grouped = {};
@@ -899,11 +929,11 @@ function renderGeneralsDetailInline(topic, item, key) {
   const selected = (gq.answers[key] && gq.answers[key].detailPaths) || [];
 
   const renderOptCard = (token) => {
-    const childPath = item.path + ', ' + token;
+    const childPath = itemPath + ', ' + token;
     const disp = getDisplayText(chapter, childPath, token);
     const checked = selected.includes(childPath);
     const border = checked ? 'border:1.5px solid var(--teal);background:#F0F7F4;' : '';
-    return `<div class="opt-card" style="cursor:pointer;${border}" onclick="onGeneralsDetailToggle('${escAttr(childPath)}')">
+    return `<div class="opt-card" style="cursor:pointer;${border}" onclick="onGeneralsDetailToggle('${escAttr(childPath)}', '${escAttr(key)}')">
       <div class="kent">${checked ? '&#10003; ' : ''}${esc(disp.kent)}</div>
       ${disp.en ? `<div class="en">${esc(disp.en)}</div>` : ''}
       ${disp.hi ? `<div class="hi">${esc(disp.hi)}</div>` : ''}
@@ -916,14 +946,15 @@ function renderGeneralsDetailInline(topic, item, key) {
       return `<div class="option-group"><div class="option-group-label">${esc(kind)}</div>${optsHtml}</div>`;
     }
 
-    const inputId = 'genSearch_' + kind.replace(/[^a-zA-Z0-9]/g, '');
-    const searchText = gq.detailSearch[kind] || '';
+    const searchKey = key + '::' + kind;
+    const inputId = 'genSearch_' + searchKey.replace(/[^a-zA-Z0-9]/g, '');
+    const searchText = gq.detailSearch[searchKey] || '';
     const searchLower = searchText.toLowerCase();
-    const chosen = opts.filter(([token]) => selected.includes(item.path + ', ' + token));
-    const unchosen = opts.filter(([token]) => !selected.includes(item.path + ', ' + token));
+    const chosen = opts.filter(([token]) => selected.includes(itemPath + ', ' + token));
+    const unchosen = opts.filter(([token]) => !selected.includes(itemPath + ', ' + token));
     const matches = searchLower
       ? unchosen.filter(([token]) => {
-          const disp = getDisplayText(chapter, item.path + ', ' + token, token);
+          const disp = getDisplayText(chapter, itemPath + ', ' + token, token);
           return (disp.en + ' ' + disp.hi + ' ' + disp.kent + ' ' + disp.roman).toLowerCase().includes(searchLower);
         }).slice(0, 8)
       : [];
@@ -936,25 +967,28 @@ function renderGeneralsDetailInline(topic, item, key) {
     const browseMoreCount = unchosen.length - browseList.length;
     const browseHtml = browseList.map(([token]) => renderOptCard(token)).join('')
       + (browseMoreCount > 0 ? `<div style="font-size:12px;color:var(--ink3);padding:6px 2px;">+${browseMoreCount} more — use search above to find them</div>` : '');
-    const groupKey = 'genDetail::' + key + '::' + kind;
+    const groupKey = 'genDetail::' + searchKey;
 
     return `<div class="option-group">
       <div class="option-group-label">${esc(kind)} <span style="font-weight:400;color:var(--ink3)">(${opts.length})</span></div>
       ${chosenHtml}
       <input id="${inputId}" class="search-box" type="text" placeholder="Type to search…" value="${escAttr(searchText)}"
-        oninput="onGeneralsDetailSearch('${escAttr(kind)}', this.value)">
+        oninput="onGeneralsDetailSearch('${escAttr(searchKey)}', this.value)">
       ${matchesHtml}
       ${renderCollapsibleSection(groupKey, 'Browse all', opts.length + ' option(s)', browseHtml)}
     </div>`;
   }).join('');
 
+  const doneHtml = hideDoneLink ? '' : `
+      <div style="text-align:center;margin-top:4px;">
+        <span style="color:var(--teal);text-decoration:underline;cursor:pointer;font-size:13px;font-weight:600;" onclick="onGeneralsDetailDone()">Done with this one</span>
+      </div>`;
+
   return `
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
       <div style="font-size:12px;color:var(--ink3);margin-bottom:8px;">A bit more detail on that —</div>
       ${categoriesHtml}
-      <div style="text-align:center;margin-top:4px;">
-        <span style="color:var(--teal);text-decoration:underline;cursor:pointer;font-size:13px;font-weight:600;" onclick="onGeneralsDetailDone()">Done with this one</span>
-      </div>
+      ${doneHtml}
     </div>
   `;
 }
@@ -992,10 +1026,18 @@ function renderGeneralsQuestionStep() {
       const optsHtml = item.options.map((opt, optIdx) => {
         const checked = selected.includes(optIdx);
         const border = checked ? 'border:1.5px solid var(--teal);background:#F0F7F4;' : '';
-        return `<div class="opt-card" style="cursor:pointer;${border}" onclick="onGeneralsSelectToggle(${optIdx})">
+        const card = `<div class="opt-card" style="cursor:pointer;${border}" onclick="onGeneralsSelectToggle(${optIdx})">
           <div class="kent">${checked ? '&#10003; ' : ''}${esc(opt.en)}</div>
           <div class="hi">${esc(opt.hi)}</div>
         </div>`;
+        // If this option maps to a real rubric that itself has further real
+        // children (e.g. "Mind, reading" -> averse to / desires / agg.),
+        // show that detail right under it once it's checked.
+        let optDetail = '';
+        if (checked && opt.path && getRealDetailChildren(topic.pathTokens[0], opt.path).length > 0) {
+          optDetail = renderGeneralsDetailInline(topic, opt.path, key + '-opt' + optIdx, true);
+        }
+        return card + optDetail;
       }).join('');
       return `<div style="border:1.5px solid var(--teal);border-radius:8px;padding:14px;margin-bottom:8px;">
         <div style="font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;" onclick="onGeneralsItemExpand(${idx})">${esc(item.en)}</div>
@@ -1018,7 +1060,7 @@ function renderGeneralsQuestionStep() {
         <button class="btn-outline" style="flex:1;${noStyle}" onclick="onGeneralsAnswer('no')">No</button>
         <button class="btn-outline" style="flex:1;${skipStyle}" onclick="onGeneralsAnswer('skip')">Not sure</button>
       </div>
-      ${showDetail ? renderGeneralsDetailInline(topic, item, key) : ''}
+      ${showDetail ? renderGeneralsDetailInline(topic, item.path, key) : ''}
     </div>`;
   }).join('');
 
