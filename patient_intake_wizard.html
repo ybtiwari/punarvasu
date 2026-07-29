@@ -598,6 +598,42 @@ const GENERALS_WALKS = [
       { path: 'Urine, burning (includes hot)', en: 'Does it burn or feel hot when you urinate?', hi: 'क्या पेशाब करते समय जलन या गर्माहट महसूस होती है?', roman: 'Kya peshaab karte samay jalan ya garmaahat mehsoos hoti hai?' },
       { path: 'Urine, colorless', en: 'Is your urine unusually clear or colourless?', hi: 'क्या आपका पेशाब बिल्कुल साफ़, बेरंग जैसा आता है?', roman: 'Kya aapka peshaab bilkul saaf, berang jaisa aata hai?' },
     ] },
+  { label: 'Physical Generals', pathTokens: ['Generalities'],
+    items: [
+      { kind: 'select',
+        en: 'Which weather do you feel more comfortable in?', hi: 'आप किस मौसम में ज़्यादा आराम महसूस करते हैं?', roman: 'Aap kis mausam mein zyaada aaraam mehsoos karte hain?',
+        // No verified rubric for a general "summer/warmth amelioration" — Kent's data has
+        // clean rubrics for weather AGGRAVATION (below) but not a parallel "prefers warmth"
+        // entry, so Summer is left out here rather than mapped to something unverified.
+        options: [
+          { path: 'Generalities, cold, becoming, amel.', en: 'Winter / cool weather', hi: 'सर्दी / ठंडा मौसम', roman: 'Sardi / thanda mausam' },
+          { path: 'Generalities, wet, weather, amel.', en: 'Monsoon / rainy weather', hi: 'बरसात / मानसून', roman: 'Barsaat / monsoon' },
+        ] },
+      { kind: 'select',
+        en: 'Which weather makes you feel worse?', hi: 'कौन-सा मौसम आपको ज़्यादा परेशान करता है?', roman: 'Kaun-sa mausam aapko zyaada pareshaan karta hai?',
+        options: [
+          { path: 'Generalities, summer, in', en: 'Summer', hi: 'गर्मी', roman: 'Garmi' },
+          { path: 'Generalities, winter, in', en: 'Winter', hi: 'सर्दी', roman: 'Sardi' },
+          { path: 'Generalities, wet, weather', en: 'Monsoon / rainy season', hi: 'बरसात / मानसून', roman: 'Barsaat / monsoon' },
+        ] },
+      { path: 'Generalities, food and drinks', en: 'Is there any food that generally makes you feel unwell?', hi: 'क्या कोई ऐसा खाना है जिससे आपको आमतौर पर तबीयत खराब लगती है?', roman: 'Kya koi aisa khaana hai jisse aapko aam taur par tabiyat kharaab lagti hai?' },
+    ] },
+  { label: 'Mental Generals', pathTokens: ['Mind'],
+    items: [
+      { path: 'Mind, irritability', en: 'Are you irritable?', hi: 'क्या आपको चिड़चिड़ापन रहता है?', roman: 'Kya aapko chidchidaapan rehta hai?' },
+      { path: 'Mind, anger', en: 'Do you get angry easily?', hi: 'क्या आपको आसानी से गुस्सा आ जाता है?', roman: 'Kya aapko aasaani se gussa aa jaata hai?' },
+      { path: 'Mind, weeping', en: 'Do you weep or cry easily?', hi: 'क्या आप आसानी से रो पड़ते हैं?', roman: 'Kya aap aasaani se ro padte hain?' },
+      { kind: 'select',
+        en: 'What are your hobbies?', hi: 'आपके शौक क्या हैं?', roman: 'Aapke shauk kya hain?',
+        // Hobbies aren't Kent rubrics — this is background context for the doctor, not a
+        // symptom, so these options don't map to any rubric and add nothing to the case data.
+        options: [
+          { path: null, en: 'Reading', hi: 'पढ़ना', roman: 'Padhna' },
+          { path: null, en: 'Writing', hi: 'लिखना', roman: 'Likhna' },
+          { path: null, en: 'Music', hi: 'संगीत', roman: 'Sangeet' },
+          { path: null, en: 'Singing', hi: 'गाना', roman: 'Gaana' },
+        ] },
+    ] },
   { label: 'Menses', pathTokens: ['Genitalia female', 'menses'], femaleOnly: true,
     items: [
       { path: 'Genitalia female, menses, irregular', en: 'Are your periods irregular?', hi: 'क्या आपके मासिक धर्म अनियमित हैं?', roman: 'Kya aapke maasik dharm aniyamit hain?' },
@@ -733,6 +769,37 @@ function onGeneralsAnswer(choice) {
   render();
 }
 
+// select-kind questions (weather, hobbies) let the patient tap several named
+// options rather than answer yes/no. Each toggle commits immediately — no
+// separate follow-up/Done step, since these options don't drill any deeper.
+// Options without a `path` (e.g. hobbies) are recorded as picked but add
+// nothing to completeCase, since they aren't Kent rubrics.
+function onGeneralsSelectToggle(optionIndex) {
+  const gq = state.generalsQueue;
+  const topic = gq.order[gq.index];
+  const item = topic.items[gq.expandedItem];
+  const key = generalsAnswerKey(gq.index, gq.expandedItem);
+  const option = item.options[optionIndex];
+
+  if (!gq.answers[key]) gq.answers[key] = { choice: 'select', selected: [] };
+  const selected = gq.answers[key].selected;
+  const idx = selected.indexOf(optionIndex);
+
+  if (idx === -1) {
+    selected.push(optionIndex);
+    if (option.path) {
+      const rubric = findRubricByExactPath(topic.pathTokens[0], option.path);
+      if (rubric) state.completeCase.push({ rubricId: rubric.id, path: rubric.path, remedyCount: rubric.remedyCount, source: 'generals' });
+    }
+  } else {
+    selected.splice(idx, 1);
+    if (option.path) {
+      state.completeCase = state.completeCase.filter(e => !(e.source === 'generals' && e.path === option.path));
+    }
+  }
+  render();
+}
+
 function onGeneralsDetailToggle(path) {
   const gq = state.generalsQueue;
   const key = generalsAnswerKey(gq.index, gq.expandedItem);
@@ -800,6 +867,11 @@ function onGeneralsItemBack() {
 
 function renderGeneralsAnswerBadge(answer) {
   if (!answer) return '';
+  if (answer.choice === 'select') {
+    const n = (answer.selected || []).length;
+    if (!n) return '';
+    return `<span style="font-size:12px;font-weight:600;color:var(--teal);white-space:nowrap;">&#10003; ${n} chosen</span>`;
+  }
   if (answer.choice === 'yes') {
     const n = (answer.detailPaths || []).length;
     return `<span style="font-size:12px;font-weight:600;color:var(--teal);white-space:nowrap;">&#10003; Yes${n ? ' (' + n + ')' : ''}</span>`;
@@ -912,6 +984,23 @@ function renderGeneralsQuestionStep() {
         </div>
         ${renderGeneralsAnswerBadge(answer)}
         <span style="color:var(--ink3);font-size:11px;">&#9656;</span>
+      </div>`;
+    }
+
+    if (item.kind === 'select') {
+      const selected = (answer && answer.selected) || [];
+      const optsHtml = item.options.map((opt, optIdx) => {
+        const checked = selected.includes(optIdx);
+        const border = checked ? 'border:1.5px solid var(--teal);background:#F0F7F4;' : '';
+        return `<div class="opt-card" style="cursor:pointer;${border}" onclick="onGeneralsSelectToggle(${optIdx})">
+          <div class="kent">${checked ? '&#10003; ' : ''}${esc(opt.en)}</div>
+          <div class="hi">${esc(opt.hi)}</div>
+        </div>`;
+      }).join('');
+      return `<div style="border:1.5px solid var(--teal);border-radius:8px;padding:14px;margin-bottom:8px;">
+        <div style="font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;" onclick="onGeneralsItemExpand(${idx})">${esc(item.en)}</div>
+        <div class="hi" style="margin-bottom:14px;">${esc(item.hi)}</div>
+        ${optsHtml}
       </div>`;
     }
 
