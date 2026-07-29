@@ -1136,7 +1136,18 @@ const CHAPTER_GROUPS = [
   { label: 'Rectum & Stool', chapters: ['Rectum', 'Stool'] },
   { label: 'Stomach, Appetite & Abdomen', chapters: ['Stomach', 'Appetite', 'Abdomen'] },
   { label: 'Urine, Bladder & Kidneys', chapters: ['Urine', 'Bladder', 'Kidneys'] },
+  { label: 'Nose, Throat & Larynx', chapters: ['Nose', 'Throat', 'External throat', 'Larynx and trachea'] },
+  { label: 'Cough, Expectoration & Respiration', chapters: ['Cough', 'Expectoration', 'Respiration'] },
+  { label: 'Chill, Fever & Perspiration', chapters: ['Chill', 'Fever', 'Perspiration'] },
+  { label: 'Mouth & Teeth', chapters: ['Mouth', 'Teeth'] },
+  { label: 'Chest & Heart / Circulation', chapters: ['Chest', 'Heart & Circulation'] },
+  { label: 'Head, Face & Vertigo', chapters: ['Head', 'Face', 'Vertigo'] },
+  { label: 'Back & Extremities', chapters: ['Back', 'Extremities'] },
+  { label: 'Male Genitalia, Prostate & Urethra', chapters: ['Genitalia male', 'Prostate gland', 'Urethra'] },
 ];
+// Left standalone deliberately, same as everything else not listed above:
+// Blood, Clinical, Generalities, Genitalia female, Mind, Skin, Sleep — none
+// of these has an equally obvious partner among the remaining chapters.
 
 function renderChapterCard(ch) {
   const disp = getDisplayText(ch, ch, ch);
@@ -1160,7 +1171,7 @@ function renderChapterSelect() {
     const present = g.chapters.filter(ch => visibleSet.has(ch));
     if (!present.length) return '';
     present.forEach(ch => groupedSet.add(ch));
-    const cols = Math.min(present.length, 3);
+    const cols = present.length === 4 ? 2 : Math.min(present.length, 3);
     return `<div style="grid-column:1 / -1;border:1.5px solid var(--border);border-radius:10px;padding:10px;background:var(--cream);">
       <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.02em;margin-bottom:8px;">${esc(g.label)}</div>
       <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:8px;">
