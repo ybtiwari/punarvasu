@@ -1126,6 +1126,26 @@ function renderBreadcrumb() {
   return `<div class="breadcrumb">${segs}</div>`;
 }
 
+// Chapters a patient might not know how to categorize on their own — grouped
+// so related complaint areas sit together instead of being scattered through
+// a single alphabetical list. Every other chapter stays exactly as before,
+// in its normal alphabetical spot in the flat grid below the groups.
+const CHAPTER_GROUPS = [
+  { label: 'Ear & Hearing', chapters: ['Ear', 'Hearing'] },
+  { label: 'Eye & Vision', chapters: ['Eye', 'Vision'] },
+  { label: 'Rectum & Stool', chapters: ['Rectum', 'Stool'] },
+  { label: 'Stomach, Appetite & Abdomen', chapters: ['Stomach', 'Appetite', 'Abdomen'] },
+  { label: 'Urine, Bladder & Kidneys', chapters: ['Urine', 'Bladder', 'Kidneys'] },
+];
+
+function renderChapterCard(ch) {
+  const disp = getDisplayText(ch, ch, ch);
+  return `<div class="ch-card" onclick="onChapterPick('${escAttr(ch)}')">
+    <div class="en">${esc(ch)}</div>
+    ${disp.hi ? `<div class="hi">${esc(disp.hi.slice(0,20))}</div>` : ''}
+  </div>`;
+}
+
 function renderChapterSelect() {
   const sex = state.patient.sex;
   const visibleChapters = state.data.chapterList.filter(ch => {
@@ -1133,13 +1153,24 @@ function renderChapterSelect() {
     if (sex === 'female' && ch === 'Genitalia male') return false;
     return true;
   });
-  const cards = visibleChapters.map(ch => {
-    const disp = getDisplayText(ch, ch, ch);
-    return `<div class="ch-card" onclick="onChapterPick('${escAttr(ch)}')">
-      <div class="en">${esc(ch)}</div>
-      ${disp.hi ? `<div class="hi">${esc(disp.hi.slice(0,20))}</div>` : ''}
+  const visibleSet = new Set(visibleChapters);
+  const groupedSet = new Set();
+
+  const groupsHtml = CHAPTER_GROUPS.map(g => {
+    const present = g.chapters.filter(ch => visibleSet.has(ch));
+    if (!present.length) return '';
+    present.forEach(ch => groupedSet.add(ch));
+    const cols = Math.min(present.length, 3);
+    return `<div style="grid-column:1 / -1;border:1.5px solid var(--border);border-radius:10px;padding:10px;background:var(--cream);">
+      <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.02em;margin-bottom:8px;">${esc(g.label)}</div>
+      <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:8px;">
+        ${present.map(renderChapterCard).join('')}
+      </div>
     </div>`;
   }).join('');
+
+  const remaining = visibleChapters.filter(ch => !groupedSet.has(ch));
+  const cards = remaining.map(renderChapterCard).join('');
 
   const caseCount = state.completeCase.length;
 
@@ -1148,7 +1179,7 @@ function renderChapterSelect() {
     <div class="body">
       <h2 class="step-title">Where is the main problem, or what kind of problem is it?</h2>
       <p class="step-sub">Pick the one that best matches — you can add more complaints after this one.</p>
-      <div class="chapter-grid">${cards}</div>
+      <div class="chapter-grid">${groupsHtml}${cards}</div>
     </div>
     ${caseCount ? `<div class="footer-bar">
       <button class="btn-outline" onclick="goToCaseReview()">Review case (${caseCount} added)</button>
