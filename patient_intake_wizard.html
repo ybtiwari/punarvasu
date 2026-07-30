@@ -140,6 +140,11 @@ const state = {
   completeCase: [],            // [{ rubricId, path, remedyCount, source? }] — source:'generals' tags entries added via the generals sequence
   connectorQueue: [],          // pending optional connector suggestions to show
   editingCaseIndex: null,      // index into completeCase currently being re-walked/edited, or null
+  submittedCaseId: null,       // Firebase key returned after the first successful submission — reused to UPDATE the same case on any post-submission revision, rather than creating a duplicate
+  submittedAtOriginal: null,   // the true original submission timestamp, preserved across any later revisions
+  reviewMode: 'normal',        // 'normal' (pre-submission case review) | 'postSubmission' (revising an already-submitted case — resubmits on any change, subject to the 30-min session window)
+  reviewSessionExpiresAt: null, // timestamp; post-submission review access is only live until this, resetting on every interaction
+  reviewExpiredNotice: false,   // shows a one-time notice on the confirmation screen after a 30-min review session times out
   returnScreenAfterSearch: 'chapters', // where to go back to if search is cancelled without a pick
   patient: {
     name: '', age: '', sex: '', location: '', reason: ''
@@ -369,6 +374,9 @@ function classifyOptionKind(token) {
 // RENDER
 // =================================================================
 function render() {
+  if (state.reviewMode === 'postSubmission' && state.screen !== 'submitted') {
+    state.reviewSessionExpiresAt = Date.now() + REVIEW_SESSION_MINUTES * 60 * 1000; // any interaction resets the 30-min window
+  }
   const app = document.getElementById('app');
   if (state.screen === 'loading') app.innerHTML = renderLoading();
   else if (state.screen === 'intake') app.innerHTML = renderIntakeScreen();
@@ -1113,6 +1121,8 @@ function findChapterKey(name) {
 
 
 function renderSubmittedScreen() {
+  const expiredNoticeHtml = state.reviewExpiredNotice ? `<p style="margin-top:14px;max-width:280px;font-size:12.5px;color:var(--danger);">Your 30-minute review window timed out from inactivity. आपका 30 मिनट का समीक्षा सत्र निष्क्रियता के कारण समाप्त हो गया। Your submitted case is safe — tap below to start a fresh review window.</p>` : '';
+  state.reviewExpiredNotice = false; // one-time notice — clears once rendered so it doesn't persist on later visits
   return `
     ${renderTopbar('Punarvasu Clinic', 'All done')}
     <div class="body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;">
@@ -1120,6 +1130,8 @@ function renderSubmittedScreen() {
       <h2 class="step-title">Your case has been submitted</h2>
       <p class="en" style="margin-top:8px;max-width:280px;">The doctor will review your symptoms and contact you shortly.</p>
       <p class="hi" style="margin-top:8px;max-width:280px;">डॉक्टर आपके लक्षणों की समीक्षा करेंगे और जल्द आपसे संपर्क करेंगे।</p>
+      ${expiredNoticeHtml}
+      ${state.submittedCaseId ? `<button class="btn-outline" style="margin-top:22px;max-width:280px;" onclick="onReviewSubmittedCase()">Review your submitted case</button>` : ''}
       <p class="step-sub" style="margin-top:20px;">You may now close this page.</p>
     </div>
   `;
@@ -1545,6 +1557,7 @@ function renderConnectorPrompt() {
 }
 
 function renderCaseReview() {
+  const isPostSubmission = state.reviewMode === 'postSubmission';
   const items = state.completeCase.map((c, i) => {
     const chapter = c.path.split(',')[0].trim();
     const disp = getDisplayText(chapter, c.path, c.path.split(',').map(s=>s.trim()).pop());
@@ -1570,16 +1583,29 @@ function renderCaseReview() {
   `;
   }).join('');
 
-  return `
-    ${renderTopbar('Your Symptoms', 'Review before continuing')}
-    <div class="body">
-      <h2 class="step-title">Complaints added so far</h2>
-      ${state.completeCase.length ? items : '<div class="empty-state">No complaints added yet.</div>'}
+  const postSubmissionNotice = isPostSubmission ? `<div class="editing-banner">Reviewing your already-submitted case — you have 30 minutes of activity to make changes before this window closes. आपके पास बदलाव करने के लिए 30 मिनट हैं।</div>` : '';
+
+  const footerHtml = isPostSubmission ? `
+    <div class="footer-bar" style="flex-direction:column">
+      <button class="btn-outline" onclick="onAddAnotherComplaint()">+ Add another complaint</button>
+      <button class="btn-primary" onclick="onSubmitCase()">Submit revised case →</button>
+      <button class="btn-outline" style="color:var(--ink3);" onclick="onDoneReviewingSubmittedCase()">Done — back to confirmation, no changes</button>
     </div>
+  ` : `
     <div class="footer-bar" style="flex-direction:column">
       <button class="btn-primary" onclick="onAddAnotherComplaint()">+ Add another complaint</button>
       ${state.completeCase.length ? `<button class="btn-outline" onclick="startGeneralsSequence()">Continue →</button>` : ''}
     </div>
+  `;
+
+  return `
+    ${renderTopbar('Your Symptoms', isPostSubmission ? 'Reviewing submitted case' : 'Review before continuing')}
+    <div class="body">
+      <h2 class="step-title">Complaints added so far</h2>
+      ${postSubmissionNotice}
+      ${state.completeCase.length ? items : '<div class="empty-state">No complaints added yet.</div>'}
+    </div>
+    ${footerHtml}
   `;
 }
 
@@ -1862,6 +1888,39 @@ function onSearchResultPick(path) {
 }
 
 
+const REVIEW_SESSION_MINUTES = 30;
+let reviewExpiryChecker = null;
+
+function onReviewSubmittedCase() {
+  state.reviewMode = 'postSubmission';
+  state.reviewSessionExpiresAt = Date.now() + REVIEW_SESSION_MINUTES * 60 * 1000;
+  if (reviewExpiryChecker) clearInterval(reviewExpiryChecker);
+  reviewExpiryChecker = setInterval(() => {
+    if (state.reviewMode === 'postSubmission' && state.reviewSessionExpiresAt && Date.now() > state.reviewSessionExpiresAt) {
+      onReviewSessionExpired();
+    }
+  }, 15000);
+  caseItemLockState = {};
+  state.screen = 'caseReview';
+  render();
+}
+
+function onReviewSessionExpired() {
+  if (reviewExpiryChecker) { clearInterval(reviewExpiryChecker); reviewExpiryChecker = null; }
+  state.reviewMode = 'normal';
+  state.reviewExpiredNotice = true;
+  state.screen = 'submitted';
+  render();
+}
+
+function onDoneReviewingSubmittedCase() {
+  if (reviewExpiryChecker) { clearInterval(reviewExpiryChecker); reviewExpiryChecker = null; }
+  state.reviewMode = 'normal';
+  state.reviewExpiredNotice = false;
+  state.screen = 'submitted';
+  render();
+}
+
 function goToCaseReview() {
   caseItemLockState = {};
   state.screen = 'caseReview';
@@ -1872,17 +1931,26 @@ async function onSubmitCase() {
   state.submit.error = '';
   render();
 
+  const isRevision = !!state.submittedCaseId;
   const payload = {
     patient: state.patient,
     accessCodeUsed: state.lock.accessCodeUsed,
     complaints: state.completeCase, // includes both complaint- and generals-sourced entries; generals ones carry source:'generals'
-    submittedAt: new Date().toISOString()
+    submittedAt: state.submittedAtOriginal || new Date().toISOString(),
   };
+  if (isRevision) payload.revisedAt = new Date().toISOString();
 
-  const result = await window.submitCaseToFirebase(payload);
+  const result = await window.submitCaseToFirebase(payload, state.submittedCaseId);
   state.submit.busy = false;
 
   if (result.ok) {
+    if (!isRevision) {
+      state.submittedCaseId = result.caseId;
+      state.submittedAtOriginal = payload.submittedAt;
+    }
+    if (reviewExpiryChecker) { clearInterval(reviewExpiryChecker); reviewExpiryChecker = null; }
+    state.reviewMode = 'normal';
+    state.reviewExpiredNotice = false;
     state.screen = 'submitted';
     render();
   } else {
@@ -1948,16 +2016,20 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // Writes the completed case to a new /cases node — patient info, the full
-  // selected-rubric list, which access code unlocked this session, and a
-  // timestamp. Security rules (separate from this file) ensure a patient can
-  // only write their own new case, never read anyone else's.
-  window.submitCaseToFirebase = async function (payload) {
+  // Writes the completed case to /cases — a new push() node on first
+  // submission, or an update to that SAME node (via its key) for any later
+  // revision, so a revision never creates a duplicate case. NOTE: the
+  // existing Firebase security rules (configured separately, outside this
+  // file) were written to only allow a patient to WRITE A NEW case, per the
+  // comment above — allowing this update path in practice will need those
+  // rules extended to also permit updating a case matching the same access
+  // code within the review window, or this call will simply fail at the
+  // Firebase layer even though the client-side logic here is correct.
+  window.submitCaseToFirebase = async function (payload, existingCaseId) {
     try {
-      const casesRef = ref(db, 'cases');
-      const newCaseRef = push(casesRef);
-      await set(newCaseRef, payload);
-      return { ok: true, caseId: newCaseRef.key };
+      const caseRef = existingCaseId ? ref(db, 'cases/' + existingCaseId) : push(ref(db, 'cases'));
+      await set(caseRef, payload);
+      return { ok: true, caseId: existingCaseId || caseRef.key };
     } catch (e) {
       console.error('[patient-intake] case submission failed:', e);
       return { ok: false, error: e.message };
