@@ -1165,42 +1165,71 @@ function renderChapterSelect() {
     return true;
   });
   const visibleSet = new Set(visibleChapters);
-  const groupedSet = new Set();
+  const caseCount = state.completeCase.length;
+  const caseFooter = caseCount ? `<div class="footer-bar">
+      <button class="btn-outline" onclick="goToCaseReview()">Review case (${caseCount} added)</button>
+    </div>` : '';
 
-  const groupsHtml = CHAPTER_GROUPS.map(g => {
+  // Level 2 — a block was tapped; show just its chapters, with a way back
+  // to the overview instead of every chapter in the repertory at once.
+  if (chapterBlockView !== null) {
+    const group = CHAPTER_GROUPS[chapterBlockView];
+    const present = group.chapters.filter(ch => visibleSet.has(ch));
+    const cols = present.length === 4 ? 2 : Math.min(present.length, 3);
+    return `
+      ${renderTopbar('Guided Case Wizard', group.label)}
+      <div class="body">
+        <button class="back-btn" onclick="onChapterBlockBack()">&larr; Back</button>
+        <h2 class="step-title">${esc(group.label)}</h2>
+        <p class="step-sub">Pick the one that best matches.</p>
+        <div class="chapter-grid" style="grid-template-columns:repeat(${cols},1fr);">${present.map(renderChapterCard).join('')}</div>
+      </div>
+      ${caseFooter}
+    `;
+  }
+
+  // Level 1 — every related-chapter block shown as a single tile (tap to see
+  // its specific chapters), plus every chapter that isn't part of any block,
+  // exactly as before.
+  const groupedSet = new Set();
+  const blockTilesHtml = CHAPTER_GROUPS.map((g, idx) => {
     const present = g.chapters.filter(ch => visibleSet.has(ch));
     if (!present.length) return '';
     present.forEach(ch => groupedSet.add(ch));
-    const cols = present.length === 4 ? 2 : Math.min(present.length, 3);
-    return `<div style="grid-column:1 / -1;border:1.5px solid var(--border);border-radius:10px;padding:10px;background:var(--cream);">
-      <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.02em;margin-bottom:8px;">${esc(g.label)}</div>
-      <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:8px;">
-        ${present.map(renderChapterCard).join('')}
-      </div>
+    return `<div class="ch-card" onclick="onChapterBlockPick(${idx})">
+      <div class="en">${esc(g.label)}</div>
+      <div style="font-size:10px;color:var(--ink3);margin-top:3px;">${present.length} areas &rsaquo;</div>
     </div>`;
   }).join('');
 
   const remaining = visibleChapters.filter(ch => !groupedSet.has(ch));
   const cards = remaining.map(renderChapterCard).join('');
 
-  const caseCount = state.completeCase.length;
-
   return `
     ${renderTopbar('Guided Case Wizard', 'Select what is troubling the patient')}
     <div class="body">
       <h2 class="step-title">Where is the main problem, or what kind of problem is it?</h2>
       <p class="step-sub">Pick the one that best matches — you can add more complaints after this one.</p>
-      <div class="chapter-grid">${groupsHtml}${cards}</div>
+      <div class="chapter-grid">${blockTilesHtml}${cards}</div>
     </div>
-    ${caseCount ? `<div class="footer-bar">
-      <button class="btn-outline" onclick="goToCaseReview()">Review case (${caseCount} added)</button>
-    </div>` : ''}
+    ${caseFooter}
   `;
+}
+
+function onChapterBlockPick(groupIndex) {
+  chapterBlockView = groupIndex;
+  render();
+}
+
+function onChapterBlockBack() {
+  chapterBlockView = null;
+  render();
 }
 
 let searchFilter = '';
 let showAllOptions = false;
 let collapsedGroups = {}; // { groupLabel: true/false } — true = collapsed. Reusable pattern.
+let chapterBlockView = null; // null = showing the block/chapter overview; a CHAPTER_GROUPS index = drilled into that one block's chapters
 
 // Reusable collapsible-section renderer — used for option groups here, and
 // intended for reuse anywhere else in the app that needs the same
