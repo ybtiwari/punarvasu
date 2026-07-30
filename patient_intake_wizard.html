@@ -914,6 +914,7 @@ function onGeneralsItemBack() {
     render();
   } else {
     gq.active = false;
+    caseItemLockState = {};
     state.screen = 'caseReview';
     render();
   }
@@ -1318,12 +1319,22 @@ let searchFilter = '';
 let showAllOptions = false;
 let collapsedGroups = {}; // { groupLabel: true/false } — true = collapsed. Reusable pattern.
 let chapterBlockView = null; // null = showing the block/chapter overview; a CHAPTER_GROUPS index = drilled into that one block's chapters
-// The "stop here" card starts LOCKED as a safety default — tapping a locked
-// card just unlocks it (arms it, nothing added yet); tapping again while
-// unlocked is what actually adds the rubric and finalizes (same
-// connector/case-review routing the old single-tap design used to do
-// immediately). Reset to 'locked' whenever the current node changes.
-let stopHereLockState = 'locked';
+// The "stop here" card starts UNLOCKED — tapping it locks the rubric in
+// (adds it to the case) and never auto-navigates anywhere; the patient uses
+// the explicit "Add more complaints" / "Continue" buttons to move on, on
+// their own schedule. Tapping a locked card unlocks it again to reconsider —
+// for a fresh (non-editing) pick that removes it from the case until
+// something is locked again; when re-entering an already-added item to
+// reconsider it, the original stays untouched until a new lock replaces it.
+// Reset to 'unlocked' whenever the current node changes.
+let stopHereLockState = 'unlocked';
+// Case review list: every item shows locked by default (it's already in the
+// case). Tapping it unlocks in place first ("click to reconsider"); tapping
+// again while in that state is what navigates to the rubric's origin. Reset
+// whenever the case list screen is freshly entered. Keyed by completeCase
+// index — cleared entirely on any removal so a shifted index never carries
+// stale state onto the wrong item.
+let caseItemLockState = {};
 
 // Reusable collapsible-section renderer — used for option groups here, and
 // intended for reuse anywhere else in the app that needs the same
@@ -1412,6 +1423,10 @@ function renderWalkStep() {
         <p class="step-sub">जो लागू हो उसे चुनें</p>
         ${historyHtml}
       </div>
+      ${state.completeCase.length ? `<div class="footer-bar">
+        <button class="btn-outline" onclick="onAddAnotherComplaint()">Add more complaints · और शिकायतें जोड़ें</button>
+        <button class="btn-primary" onclick="goToCaseReview()">Continue → · जारी रखें</button>
+      </div>` : ''}
     `;
   }
 
@@ -1446,19 +1461,22 @@ function renderWalkStep() {
   if (exactMatchRubric) {
     const disp = getDisplayText(chapter, exactMatchRubric.path, pathTokens[pathTokens.length - 1]);
     const tapArgs = `'${exactMatchRubric.id}', '${escAttr(exactMatchRubric.path)}', ${exactMatchRubric.remedyCount}`;
-    const stopHereLabels = {
-      locked: { icon: 'lockClosed', en: 'Tap to unlock', hi: 'अनलॉक करने के लिए टैप करें' },
-      unlocked: { icon: 'lockOpen', en: 'Tap to select', hi: 'चुनने के लिए टैप करें' },
+    const captions = {
+      unlocked: { icon: 'lockOpen', en: 'Tap to lock', hi: 'लॉक करें' },
+      locked: { icon: 'lockClosed', en: 'Tap to unlock', hi: 'अनलॉक करें' },
     };
-    const s = stopHereLabels[stopHereLockState] || stopHereLabels.locked;
-    const lockSvg = `<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">${ICON_PATHS[s.icon]}</svg>`;
+    const s = captions[stopHereLockState] || captions.unlocked;
+    const lockSvg = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">${ICON_PATHS[s.icon]}</svg>`;
     stopHereHtml = `<div class="stop-here-card" onclick="onStopHereTap(${tapArgs})">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
         <div style="flex:1;min-width:0;">
-          <div class="label">${esc(s.en)} · ${esc(s.hi)}</div>
+          <div class="label">Yes, this is it · हाँ, यही है</div>
           ${renderTrilingualBlock(disp)}
         </div>
-        ${lockSvg}
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
+          ${lockSvg}
+          <div style="font-size:10px;color:var(--teal);font-weight:600;text-align:center;max-width:74px;line-height:1.25;">${esc(s.en)} · ${esc(s.hi)}</div>
+        </div>
       </div>
     </div>`;
   }
@@ -1501,6 +1519,10 @@ function renderWalkStep() {
         ${showAllLink}
       </div>
     </div>
+    ${state.completeCase.length ? `<div class="footer-bar">
+      <button class="btn-outline" onclick="onAddAnotherComplaint()">Add more complaints · और शिकायतें जोड़ें</button>
+      <button class="btn-primary" onclick="goToCaseReview()">Continue → · जारी रखें</button>
+    </div>` : ''}
   `;
 }
 
@@ -1524,12 +1546,24 @@ function renderCaseReview() {
   const items = state.completeCase.map((c, i) => {
     const chapter = c.path.split(',')[0].trim();
     const disp = getDisplayText(chapter, c.path, c.path.split(',').map(s=>s.trim()).pop());
+    const reconsidering = caseItemLockState[i] === 'reconsidering';
+    const caption = reconsidering
+      ? { icon: 'lockOpen', en: 'Click to reconsider', hi: 'फिर से सोचने के लिए दबाएं' }
+      : { icon: 'lockClosed', en: 'Tap to unlock', hi: 'अनलॉक करें' };
+    const lockSvg = `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">${ICON_PATHS[caption.icon]}</svg>`;
     return `
-    <div class="case-item" onclick="onEditCaseItem(${i})">
+    <div class="case-item" onclick="onCaseItemTap(${i})">
       <button class="remove-btn" onclick="event.stopPropagation(); onRemoveCaseItem(${i})">Remove</button>
-      ${renderTrilingualBlock(disp)}
-      <div class="remedy-count">${c.remedyCount} remedy-references on file</div>
-      <div class="case-item-hint">Tap to review or change this selection</div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+        <div style="flex:1;min-width:0;">
+          ${renderTrilingualBlock(disp)}
+          <div class="remedy-count">${c.remedyCount} remedy-references on file</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
+          ${lockSvg}
+          <div style="font-size:10px;color:var(--teal);font-weight:600;text-align:center;max-width:80px;line-height:1.25;">${esc(caption.en)} · ${esc(caption.hi)}</div>
+        </div>
+      </div>
     </div>
   `;
   }).join('');
@@ -1627,7 +1661,7 @@ function onChapterPick(chapter) {
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
-  stopHereLockState = 'locked';
+  stopHereLockState = 'unlocked';
   state.screen = 'walk';
   render();
 }
@@ -1637,7 +1671,7 @@ function onOptionPick(token) {
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
-  stopHereLockState = 'locked';
+  stopHereLockState = 'unlocked';
   render();
 }
 
@@ -1651,7 +1685,7 @@ function onWalkBack() {
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
-  stopHereLockState = 'locked';
+  stopHereLockState = 'unlocked';
   render();
 }
 
@@ -1669,6 +1703,7 @@ function onEditCaseItem(index) {
 
 function onCancelEdit() {
   state.editingCaseIndex = null;
+  caseItemLockState = {};
   state.screen = 'caseReview';
   render();
 }
@@ -1692,33 +1727,31 @@ function onShowAllOptions() {
   render();
 }
 
-// The "stop here" card starts locked as a safety default — tap 1 just
-// unlocks/arms it (nothing added yet, no surprise selection from a stray
-// tap); tap 2, while unlocked, is what actually adds the rubric and
-// finalizes — the same connector/case-review routing the original
-// single-tap design used to do immediately.
+// The "stop here" card starts unlocked. Tapping it locks the rubric in —
+// adds it to the case (or replaces the item being reconsidered, if this is
+// a re-entry from the case list) — and never auto-navigates anywhere; the
+// patient moves on using the explicit "Add more complaints" / "Continue"
+// buttons, whenever they're ready. Tapping a locked card unlocks it again:
+// for a fresh pick that just undoes the add (nothing stays half-committed);
+// for a reconsidered existing item, the original stays untouched until a
+// new lock actually replaces it, so just looking around never loses data.
 function onStopHereTap(rubricId, path, remedyCount) {
-  if (stopHereLockState === 'locked') {
-    stopHereLockState = 'unlocked';
-    render();
-  } else {
+  if (stopHereLockState === 'unlocked') {
     const entry = { rubricId, path, remedyCount };
     if (state.editingCaseIndex !== null) {
       state.completeCase[state.editingCaseIndex] = entry;
-      state.editingCaseIndex = null;
-      state.screen = 'caseReview';
     } else {
       state.completeCase.push(entry);
-      const suggestions = (state.data.connectorMap[rubricId] || []);
-      if (suggestions.length) {
-        state.connectorQueue = suggestions.slice(0, 3); // cap at 3 to avoid overwhelming
-        state.screen = 'connectorPrompt';
-      } else {
-        state.screen = 'caseReview';
-      }
     }
-    render();
+    stopHereLockState = 'locked';
+  } else {
+    if (state.editingCaseIndex === null) {
+      const idx = state.completeCase.findIndex(e => e.path === path);
+      if (idx !== -1) state.completeCase.splice(idx, 1);
+    }
+    stopHereLockState = 'unlocked';
   }
+  render();
 }
 
 function onConnectorAccept(connectedChapter) {
@@ -1727,7 +1760,7 @@ function onConnectorAccept(connectedChapter) {
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
-  stopHereLockState = 'locked';
+  stopHereLockState = 'unlocked';
   state.screen = 'walk';
   render();
 }
@@ -1737,6 +1770,7 @@ function onConnectorSkip() {
   if (state.connectorQueue.length) {
     render(); // show next queued suggestion
   } else {
+    caseItemLockState = {};
     state.screen = 'caseReview';
     render();
   }
@@ -1744,7 +1778,21 @@ function onConnectorSkip() {
 
 function onRemoveCaseItem(index) {
   state.completeCase.splice(index, 1);
+  caseItemLockState = {}; // indices shift after removal — start every item fresh-locked rather than risk stale state on the wrong item
   render();
+}
+
+// Case review's own 2-tap flow: first tap on a (default-locked) item just
+// unlocks it in place ("click to reconsider"), staying on this screen;
+// tapping again while in that state is what actually navigates to the
+// rubric's origin so it can be reconsidered or replaced.
+function onCaseItemTap(index) {
+  if (caseItemLockState[index] === 'reconsidering') {
+    onEditCaseItem(index);
+  } else {
+    caseItemLockState[index] = 'reconsidering';
+    render();
+  }
 }
 
 function onAddAnotherComplaint() {
@@ -1803,13 +1851,14 @@ function onSearchResultPick(path) {
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
-  stopHereLockState = 'locked';
+  stopHereLockState = 'unlocked';
   state.screen = 'walk';
   render();
 }
 
 
 function goToCaseReview() {
+  caseItemLockState = {};
   state.screen = 'caseReview';
   render();
 }
