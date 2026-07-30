@@ -1318,12 +1318,12 @@ let searchFilter = '';
 let showAllOptions = false;
 let collapsedGroups = {}; // { groupLabel: true/false } — true = collapsed. Reusable pattern.
 let chapterBlockView = null; // null = showing the block/chapter overview; a CHAPTER_GROUPS index = drilled into that one block's chapters
-// Tracks the 3-tap cycle on the "stop here" card at the CURRENT node:
-// 'unlocked' (not yet added) -> tap adds it, locks -> 'locked' -> tap
-// unlocks (still added, reconsidering) -> 'unlockedAfterLock' -> tap finalizes
-// (same connector/case-review routing the old single-tap used to do
-// immediately). Reset whenever the current node changes.
-let stopHereLockState = 'unlocked';
+// The "stop here" card starts LOCKED as a safety default — tapping a locked
+// card just unlocks it (arms it, nothing added yet); tapping again while
+// unlocked is what actually adds the rubric and finalizes (same
+// connector/case-review routing the old single-tap design used to do
+// immediately). Reset to 'locked' whenever the current node changes.
+let stopHereLockState = 'locked';
 
 // Reusable collapsible-section renderer — used for option groups here, and
 // intended for reuse anywhere else in the app that needs the same
@@ -1447,11 +1447,10 @@ function renderWalkStep() {
     const disp = getDisplayText(chapter, exactMatchRubric.path, pathTokens[pathTokens.length - 1]);
     const tapArgs = `'${exactMatchRubric.id}', '${escAttr(exactMatchRubric.path)}', ${exactMatchRubric.remedyCount}`;
     const stopHereLabels = {
-      unlocked: { icon: 'lockOpen', en: 'Tap to lock', hi: 'लॉक करने के लिए टैप करें' },
       locked: { icon: 'lockClosed', en: 'Tap to unlock', hi: 'अनलॉक करने के लिए टैप करें' },
-      unlockedAfterLock: { icon: 'lockOpen', en: 'Tap to confirm & continue', hi: 'जारी रखने के लिए टैप करें' },
+      unlocked: { icon: 'lockOpen', en: 'Tap to select', hi: 'चुनने के लिए टैप करें' },
     };
-    const s = stopHereLabels[stopHereLockState] || stopHereLabels.unlocked;
+    const s = stopHereLabels[stopHereLockState] || stopHereLabels.locked;
     const lockSvg = `<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">${ICON_PATHS[s.icon]}</svg>`;
     stopHereHtml = `<div class="stop-here-card" onclick="onStopHereTap(${tapArgs})">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
@@ -1628,7 +1627,7 @@ function onChapterPick(chapter) {
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
-  stopHereLockState = 'unlocked';
+  stopHereLockState = 'locked';
   state.screen = 'walk';
   render();
 }
@@ -1638,7 +1637,7 @@ function onOptionPick(token) {
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
-  stopHereLockState = 'unlocked';
+  stopHereLockState = 'locked';
   render();
 }
 
@@ -1652,7 +1651,7 @@ function onWalkBack() {
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
-  stopHereLockState = 'unlocked';
+  stopHereLockState = 'locked';
   render();
 }
 
@@ -1663,7 +1662,7 @@ function onEditCaseItem(index) {
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
-  stopHereLockState = 'locked'; // this rubric is already the current answer for this item
+  stopHereLockState = 'unlocked'; // this rubric is already the current answer for this item — shown armed/ready
   state.screen = 'walk';
   render();
 }
@@ -1693,29 +1692,23 @@ function onShowAllOptions() {
   render();
 }
 
-// The "stop here" card now works in three taps instead of one immediate
-// add-and-navigate: tap 1 adds the rubric and locks the card (visible
-// confirmation, no surprise navigation); tap 2 unlocks it again for
-// reconsideration without removing it; tap 3 finalizes — exactly the same
-// connector/case-review routing the old single-tap design used to do right away.
+// The "stop here" card starts locked as a safety default — tap 1 just
+// unlocks/arms it (nothing added yet, no surprise selection from a stray
+// tap); tap 2, while unlocked, is what actually adds the rubric and
+// finalizes — the same connector/case-review routing the original
+// single-tap design used to do immediately.
 function onStopHereTap(rubricId, path, remedyCount) {
-  if (stopHereLockState === 'unlocked') {
+  if (stopHereLockState === 'locked') {
+    stopHereLockState = 'unlocked';
+    render();
+  } else {
     const entry = { rubricId, path, remedyCount };
     if (state.editingCaseIndex !== null) {
       state.completeCase[state.editingCaseIndex] = entry;
-    } else {
-      state.completeCase.push(entry);
-    }
-    stopHereLockState = 'locked';
-    render();
-  } else if (stopHereLockState === 'locked') {
-    stopHereLockState = 'unlockedAfterLock';
-    render();
-  } else {
-    if (state.editingCaseIndex !== null) {
       state.editingCaseIndex = null;
       state.screen = 'caseReview';
     } else {
+      state.completeCase.push(entry);
       const suggestions = (state.data.connectorMap[rubricId] || []);
       if (suggestions.length) {
         state.connectorQueue = suggestions.slice(0, 3); // cap at 3 to avoid overwhelming
@@ -1734,7 +1727,7 @@ function onConnectorAccept(connectedChapter) {
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
-  stopHereLockState = 'unlocked';
+  stopHereLockState = 'locked';
   state.screen = 'walk';
   render();
 }
@@ -1810,7 +1803,7 @@ function onSearchResultPick(path) {
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
-  stopHereLockState = 'unlocked';
+  stopHereLockState = 'locked';
   state.screen = 'walk';
   render();
 }
