@@ -2019,19 +2019,31 @@ window.addEventListener('DOMContentLoaded', () => {
   };
 
   // Writes the completed case to /cases — a new push() node on first
-  // submission, or an update to that SAME node (via its key) for any later
-  // revision, so a revision never creates a duplicate case. NOTE: the
-  // existing Firebase security rules (configured separately, outside this
-  // file) were written to only allow a patient to WRITE A NEW case, per the
-  // comment above — allowing this update path in practice will need those
-  // rules extended to also permit updating a case matching the same access
-  // code within the review window, or this call will simply fail at the
-  // Firebase layer even though the client-side logic here is correct.
+  // submission. On any later revision, whatever is CURRENTLY on file gets
+  // archived to cases/{caseId}/revisions/{pushId} first (so nothing is ever
+  // lost — the doctor asked to keep every version, not just the latest),
+  // and only then does cases/{caseId} itself get overwritten with the new
+  // data. NOTE: this needs the Firebase security rules extended — both to
+  // allow overwriting cases/{caseId} when the access code matches, and to
+  // allow a brand-new entry under revisions/ under the same condition —
+  // or this will fail at the Firebase layer even though this code is correct.
   window.submitCaseToFirebase = async function (payload, existingCaseId) {
     try {
-      const caseRef = existingCaseId ? ref(db, 'cases/' + existingCaseId) : push(ref(db, 'cases'));
-      await set(caseRef, payload);
-      return { ok: true, caseId: existingCaseId || caseRef.key };
+      if (existingCaseId) {
+        const caseRef = ref(db, 'cases/' + existingCaseId);
+        const currentSnap = await get(caseRef);
+        if (currentSnap.exists()) {
+          const { revisions, ...dataToArchive } = currentSnap.val(); // never nest the revision trail inside itself
+          const archiveRef = push(ref(db, 'cases/' + existingCaseId + '/revisions'));
+          await set(archiveRef, { ...dataToArchive, archivedAt: new Date().toISOString() });
+        }
+        await update(caseRef, payload); // update(), not set() — set() would replace the whole node and destroy the revisions child just written above
+        return { ok: true, caseId: existingCaseId };
+      } else {
+        const newCaseRef = push(ref(db, 'cases'));
+        await set(newCaseRef, payload);
+        return { ok: true, caseId: newCaseRef.key };
+      }
     } catch (e) {
       console.error('[patient-intake] case submission failed:', e);
       return { ok: false, error: e.message };
