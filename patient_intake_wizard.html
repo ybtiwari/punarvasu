@@ -1131,27 +1131,37 @@ function renderBreadcrumb() {
 // a single alphabetical list. Every other chapter stays exactly as before,
 // in its normal alphabetical spot in the flat grid below the groups.
 const CHAPTER_GROUPS = [
-  { label: 'Ear & Hearing', chapters: ['Ear', 'Hearing'] },
-  { label: 'Eye & Vision', chapters: ['Eye', 'Vision'] },
-  { label: 'Rectum & Stool', chapters: ['Rectum', 'Stool'] },
-  { label: 'Stomach, Appetite & Abdomen', chapters: ['Stomach', 'Appetite', 'Abdomen'] },
-  { label: 'Urine, Urethra, Bladder & Kidneys', chapters: ['Urine', 'Urethra', 'Bladder', 'Kidneys'] },
-  { label: 'Nose, Throat & Larynx', chapters: ['Nose', 'Throat', 'External throat', 'Larynx and trachea'] },
-  { label: 'Cough, Expectoration & Respiration', chapters: ['Cough', 'Expectoration', 'Respiration'] },
-  { label: 'Chill, Fever & Perspiration', chapters: ['Chill', 'Fever', 'Perspiration'] },
-  { label: 'Face, Mouth & Teeth', chapters: ['Face', 'Mouth', 'Teeth'] },
-  { label: 'Chest & Heart / Circulation', chapters: ['Chest', 'Heart & Circulation'] },
-  { label: 'Mind, Head & Vertigo', chapters: ['Mind', 'Head', 'Vertigo'] },
-  { label: 'Back & Extremities', chapters: ['Back', 'Extremities'] },
-  { label: 'Male Genitalia & Prostate', chapters: ['Genitalia male', 'Prostate gland'] },
+  { label: 'Ear & Hearing', icon: '👂', chapters: ['Ear', 'Hearing'] },
+  { label: 'Eye & Vision', icon: '👁️', chapters: ['Eye', 'Vision'] },
+  { label: 'Rectum & Stool', icon: '🚽', chapters: ['Rectum', 'Stool'] },
+  { label: 'Stomach, Appetite & Abdomen', icon: '🍽️', chapters: ['Stomach', 'Appetite', 'Abdomen'] },
+  { label: 'Urine, Urethra, Bladder & Kidneys', icon: '💧', chapters: ['Urine', 'Urethra', 'Bladder', 'Kidneys'] },
+  { label: 'Nose, Throat & Larynx', icon: '👃', chapters: ['Nose', 'Throat', 'External throat', 'Larynx and trachea'] },
+  { label: 'Cough, Expectoration & Respiration', icon: '🫁', chapters: ['Cough', 'Expectoration', 'Respiration'] },
+  { label: 'Chill, Fever & Perspiration', icon: '🌡️', chapters: ['Chill', 'Fever', 'Perspiration'] },
+  { label: 'Face, Mouth & Teeth', icon: '🦷', chapters: ['Face', 'Mouth', 'Teeth'] },
+  { label: 'Chest & Heart / Circulation', icon: '❤️', chapters: ['Chest', 'Heart & Circulation'] },
+  { label: 'Mind, Head & Vertigo', icon: '🧠', chapters: ['Mind', 'Head', 'Vertigo'] },
+  { label: 'Back & Extremities', icon: '🦴', chapters: ['Back', 'Extremities'] },
+  { label: 'Male Genitalia & Prostate', icon: '♂️', chapters: ['Genitalia male', 'Prostate gland'] },
 ];
 // Left standalone deliberately, same as everything else not listed above:
 // Blood, Clinical, Generalities, Genitalia female, Skin, Sleep — none of
 // these has an equally obvious partner among the remaining chapters.
+const STANDALONE_CHAPTER_ICONS = {
+  'Blood': '🩸',
+  'Clinical': '📋',
+  'Generalities': '🧍',
+  'Genitalia female': '♀️',
+  'Skin': '✋',
+  'Sleep': '😴',
+};
 
-function renderChapterCard(ch) {
+function renderChapterCard(ch, iconOverride) {
   const disp = getDisplayText(ch, ch, ch);
+  const icon = iconOverride || STANDALONE_CHAPTER_ICONS[ch];
   return `<div class="ch-card" onclick="onChapterPick('${escAttr(ch)}')">
+    ${icon ? `<div style="font-size:22px;line-height:1;margin-bottom:4px;">${icon}</div>` : ''}
     <div class="en">${esc(ch)}</div>
     ${disp.hi ? `<div class="hi">${esc(disp.hi.slice(0,20))}</div>` : ''}
   </div>`;
@@ -1182,7 +1192,7 @@ function renderChapterSelect() {
         <button class="back-btn" onclick="onChapterBlockBack()">&larr; Back</button>
         <h2 class="step-title">${esc(group.label)}</h2>
         <p class="step-sub">Pick the one that best matches.</p>
-        <div class="chapter-grid" style="grid-template-columns:repeat(${cols},1fr);">${present.map(renderChapterCard).join('')}</div>
+        <div class="chapter-grid" style="grid-template-columns:repeat(${cols},1fr);">${present.map(ch => renderChapterCard(ch, group.icon)).join('')}</div>
       </div>
       ${caseFooter}
     `;
@@ -1197,13 +1207,14 @@ function renderChapterSelect() {
     if (!present.length) return '';
     present.forEach(ch => groupedSet.add(ch));
     return `<div class="ch-card" onclick="onChapterBlockPick(${idx})">
+      <div style="font-size:22px;line-height:1;margin-bottom:4px;">${g.icon}</div>
       <div class="en">${esc(g.label)}</div>
       <div style="font-size:10px;color:var(--ink3);margin-top:3px;">${present.length} areas &rsaquo;</div>
     </div>`;
   }).join('');
 
   const remaining = visibleChapters.filter(ch => !groupedSet.has(ch));
-  const cards = remaining.map(renderChapterCard).join('');
+  const cards = remaining.map(ch => renderChapterCard(ch)).join('');
 
   return `
     ${renderTopbar('Guided Case Wizard', 'Select what is troubling the patient')}
