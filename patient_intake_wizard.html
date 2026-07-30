@@ -1584,12 +1584,14 @@ function renderCaseReview() {
   }).join('');
 
   const postSubmissionNotice = isPostSubmission ? `<div class="editing-banner">Reviewing your already-submitted case — you have 30 minutes of activity to make changes before this window closes. आपके पास बदलाव करने के लिए 30 मिनट हैं।</div>` : '';
+  const submitErrorHtml = state.submit.error ? `<div class="no-match-msg" style="margin:0 0 10px;">${esc(state.submit.error)}</div>` : '';
 
   const footerHtml = isPostSubmission ? `
     <div class="footer-bar" style="flex-direction:column">
-      <button class="btn-outline" onclick="onAddAnotherComplaint()">+ Add another complaint</button>
-      <button class="btn-primary" onclick="onSubmitCase()">Submit revised case →</button>
-      <button class="btn-outline" style="color:var(--ink3);" onclick="onDoneReviewingSubmittedCase()">Done — back to confirmation, no changes</button>
+      ${submitErrorHtml}
+      <button class="btn-outline" onclick="onAddAnotherComplaint()" ${state.submit.busy ? 'disabled' : ''}>+ Add another complaint</button>
+      <button class="btn-primary" onclick="onSubmitCase()" ${state.submit.busy ? 'disabled' : ''}>${state.submit.busy ? 'Submitting…' : 'Submit revised case →'}</button>
+      <button class="btn-outline" style="color:var(--ink3);" onclick="onDoneReviewingSubmittedCase()" ${state.submit.busy ? 'disabled' : ''}>Done — back to confirmation, no changes</button>
     </div>
   ` : `
     <div class="footer-bar" style="flex-direction:column">
