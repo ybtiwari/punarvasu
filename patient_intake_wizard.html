@@ -1135,14 +1135,14 @@ const CHAPTER_GROUPS = [
   { label: 'Eye & Vision', icon: 'eye', chapters: ['Eye', 'Vision'] },
   { label: 'Rectum & Stool', icon: 'toilet', chapters: ['Rectum', 'Stool'] },
   { label: 'Stomach, Appetite & Abdomen', icon: 'plate', chapters: ['Stomach', 'Appetite', 'Abdomen'] },
-  { label: 'Urine, Urethra, Bladder & Kidneys', icon: 'droplet', chapters: ['Urine', 'Urethra', 'Bladder', 'Kidneys'] },
+  { label: 'Urine, Urethra, Bladder & Kidneys', icon: 'kidneys', chapters: ['Urine', 'Urethra', 'Bladder', 'Kidneys'] },
   { label: 'Nose, Throat & Larynx', icon: 'nose', chapters: ['Nose', 'Throat', 'External throat', 'Larynx and trachea'] },
   { label: 'Cough, Expectoration & Respiration', icon: 'lungs', chapters: ['Cough', 'Expectoration', 'Respiration'] },
   { label: 'Chill, Fever & Perspiration', icon: 'thermometer', chapters: ['Chill', 'Fever', 'Perspiration'] },
-  { label: 'Face, Mouth & Teeth', icon: 'tooth', chapters: ['Face', 'Mouth', 'Teeth'] },
+  { label: 'Face, Mouth & Teeth', icon: ['face', 'mouth', 'tooth'], chapters: ['Face', 'Mouth', 'Teeth'] },
   { label: 'Chest & Heart / Circulation', icon: 'heart', chapters: ['Chest', 'Heart & Circulation'] },
-  { label: 'Mind, Head & Vertigo', icon: 'brain', chapters: ['Mind', 'Head', 'Vertigo'] },
-  { label: 'Back & Extremities', icon: 'bone', chapters: ['Back', 'Extremities'] },
+  { label: 'Mind, Head & Vertigo', icon: ['brain', 'forehead'], chapters: ['Mind', 'Head', 'Vertigo'] },
+  { label: 'Back & Extremities', icon: ['back', 'leg'], chapters: ['Back', 'Extremities'] },
   { label: 'Male Genitalia & Prostate', icon: 'male', chapters: ['Genitalia male', 'Prostate gland'] },
 ];
 // Left standalone deliberately, same as everything else not listed above:
@@ -1164,16 +1164,21 @@ const STANDALONE_CHAPTER_ICONS = {
 const ICON_PATHS = {
   ear: '<path d="M9 13a4 4 0 1 0 4-6.7A5.5 5.5 0 0 1 17.5 12c0 2-1 3.3-2 4.3-1 1-1.5 1.9-1.5 3a2.5 2.5 0 0 1-5 0"/>',
   eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
-  toilet: '<path d="M7 3.5h8A1.5 1.5 0 0 1 16.5 5v3h-9V5A1.5 1.5 0 0 1 7 3.5z"/><path d="M5 8.5h14a1 1 0 0 1 1 1c0 6-3 11-8 11s-8-5-8-11a1 1 0 0 1 1-1z"/>',
+  toilet: '<rect x="7" y="3" width="8" height="4" rx="1"/><rect x="5" y="7.3" width="12" height="2.4" rx="1"/><path d="M7 10c0 5.8 2 10 5 10s5-4.2 5-10"/>',
   plate: '<circle cx="12" cy="12" r="9"/><path d="M8 6.5v4.5a1.5 1.5 0 0 0 3 0V6.5M9.5 11v6.5M16 6.5v11M16 6.5a2.3 2.3 0 0 1 0 4.6"/>',
-  droplet: '<path d="M12 2.5s6.5 7.3 6.5 11.8a6.5 6.5 0 1 1-13 0C5.5 9.8 12 2.5 12 2.5z"/>',
-  nose: '<path d="M10 3.5v7.3a3 3 0 0 0 3 3h.7a2 2 0 0 1 1.7 3 3 3 0 0 1-2.6 1.5H9.5"/><circle cx="9.3" cy="17.3" r=".4" fill="currentColor"/>',
+  kidneys: '<path d="M8.3 4c-2 0-3.3 2-3.3 4.7S6.3 13 8.3 13c1.4 0 2.2-1 2.2-2.6V6.6C10.5 5 9.7 4 8.3 4z"/><path d="M15.7 4c2 0 3.3 2 3.3 4.7S17.7 13 15.7 13c-1.4 0-2.2-1-2.2-2.6V6.6c0-1.6.8-2.6 2.2-2.6z"/><path d="M8.3 13v3M15.7 13v3"/><ellipse cx="12" cy="19" rx="3" ry="2"/>',
+  nose: '<path d="M10 3.5v7.3a3 3 0 0 0 3 3h.7a2 2 0 0 1 1.7 3 3 3 0 0 1-2.6 1.5H9.5"/><circle cx="9.3" cy="17.3" r=".4" fill="var(--teal)"/>',
   lungs: '<path d="M12 3v8.5"/><path d="M12 11.5c-.8-2.7-2.7-2.9-3.7-2-1.2 1-2 4.6-1.1 8.6.4 1.8 1.8 1.8 2.7.9.9-.9 1.6-3.7 1.6-7"/><path d="M12 11.5c.8-2.7 2.7-2.9 3.7-2 1.2 1 2 4.6 1.1 8.6-.4 1.8-1.8 1.8-2.7.9-.9-.9-1.6-3.7-1.6-7"/><path d="M8.3 9.5 6 7.3M15.7 9.5 18 7.3"/>',
   thermometer: '<path d="M13 14.7V4.5a1.7 1.7 0 0 0-3.4 0v10.2a4 4 0 1 0 3.4 0z"/><path d="M9.6 8h2"/>',
   tooth: '<path d="M12 4.3c-1.8 0-3.1.9-4.5.9-1.6 0-2.5-.3-2.5 2 0 2.8.9 4.6 1.4 7.6.3 1.7.9 2.7 1.8 2.7s1.1-1.8 1.4-3.6c.2-1.3.5-1.8 1.4-1.8s1.2.5 1.4 1.8c.3 1.8.5 3.6 1.4 3.6s1.5-1 1.8-2.7c.5-3 1.4-4.8 1.4-7.6 0-2.3-.9-2-2.5-2-1.4 0-2.7-.9-4.5-.9z"/>',
+  face: '<circle cx="12" cy="12" r="8.5"/><circle cx="9" cy="10" r=".7" fill="var(--teal)"/><circle cx="15" cy="10" r=".7" fill="var(--teal)"/><path d="M8.7 14.8c1 1.3 5.6 1.3 6.6 0"/>',
+  mouth: '<path d="M4 12c2.7 3.2 13.3 3.2 16 0"/><path d="M7.5 12.6c1.9 1.2 7.1 1.2 9 0"/>',
   heart: '<path d="M12 20.5s-7.5-4.2-7.5-10.2a4.3 4.3 0 0 1 7.5-2.8 4.3 4.3 0 0 1 7.5 2.8c0 6-7.5 10.2-7.5 10.2z"/>',
   brain: '<path d="M9.3 3.5A2.7 2.7 0 0 0 6.6 6a2.7 2.7 0 0 0-1 5.2A2.7 2.7 0 0 0 7 15.7a2.7 2.7 0 0 0 2.7 2.8h1V4.4a2.7 2.7 0 0 0-1.4-.9z"/><path d="M14.7 3.5A2.7 2.7 0 0 1 17.4 6a2.7 2.7 0 0 1 1 5.2A2.7 2.7 0 0 1 17 15.7a2.7 2.7 0 0 1-2.7 2.8h-1V4.4a2.7 2.7 0 0 1 1.4-.9z"/>',
+  forehead: '<path d="M7 20v-3.2c-1.6-1.1-2.7-3.2-2.7-5.8A7.7 7.7 0 0 1 12 3.3c3 0 5.2 1.5 6.2 3.6.3.6.9 1 1.6 1a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-1v2.8a2 2 0 0 1-2 2H15v3"/>',
   bone: '<path d="M5.2 5.2a2.3 2.3 0 0 1 3.2 3.2l7.2 7.2a2.3 2.3 0 1 1-3.2 3.2l-7.2-7.2a2.3 2.3 0 0 1 0-6.4z"/>',
+  back: '<path d="M9 21c-1.2-3.2-1.2-6.4 0-9.5M15 21c1.2-3.2 1.2-6.4 0-9.5"/><path d="M12 3v16"/><path d="M9.7 6.2h4.6M9.7 9.4h4.6M9.7 12.6h4.6M9.7 15.8h4.6"/>',
+  leg: '<path d="M10.3 3h3.4l.4 7.5-1.2 3.3.4 7.2h-2l-.6-6.7-2.1 6.7H6.4l1.5-7.8-1.1-3.7z"/>',
   male: '<circle cx="9.5" cy="14.5" r="6"/><path d="M14 10 19.5 4.5M15 4.5h4.5V9"/>',
   blood: '<path d="M12 2.5s6 7 6 11.3A6 6 0 1 1 6 13.8C6 9.5 12 2.5 12 2.5z"/>',
   clipboard: '<rect x="5" y="4.5" width="14" height="16.5" rx="2"/><rect x="9" y="2.5" width="6" height="3.6" rx="1"/><path d="M8.5 11h7M8.5 14.5h7M8.5 18h4.5"/>',
@@ -1183,9 +1188,19 @@ const ICON_PATHS = {
   moon: '<path d="M20 14.7A8.5 8.5 0 1 1 9.3 4a7 7 0 0 0 10.7 10.7z"/>',
 };
 
-function renderIcon(key) {
-  if (!key || !ICON_PATHS[key]) return '';
-  return `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:4px;">${ICON_PATHS[key]}</svg>`;
+// A block's icon can be one key (single SVG) or an array of keys (a few
+// small ones shown side by side) for groups that cover several distinct
+// body parts at once, e.g. Face + Mouth + Teeth.
+function renderIcon(keyOrKeys) {
+  if (!keyOrKeys) return '';
+  const keys = Array.isArray(keyOrKeys) ? keyOrKeys : [keyOrKeys];
+  const size = keys.length > 1 ? 20 : 26;
+  const svgs = keys.filter(k => ICON_PATHS[k]).map(k =>
+    `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[k]}</svg>`
+  );
+  if (!svgs.length) return '';
+  if (svgs.length === 1) return `<div style="margin-bottom:4px;">${svgs[0]}</div>`;
+  return `<div style="display:flex;justify-content:center;gap:4px;margin-bottom:4px;">${svgs.join('')}</div>`;
 }
 
 function renderChapterCard(ch, iconOverride) {
