@@ -1550,7 +1550,7 @@ function renderCaseReview() {
     const disp = getDisplayText(chapter, c.path, c.path.split(',').map(s=>s.trim()).pop());
     const reconsidering = caseItemLockState[i] === 'reconsidering';
     const caption = reconsidering
-      ? { icon: 'lockOpen', en: 'Click to reconsider', hi: 'फिर से सोचने के लिए दबाएं' }
+      ? { icon: 'lockOpen', en: 'Tap again to reconsider', hi: 'फिर से सोचने के लिए दोबारा टैप करें' }
       : { icon: 'lockClosed', en: 'Tap to unlock', hi: 'अनलॉक करें' };
     const lockSvg = `<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="var(--danger)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">${ICON_PATHS[caption.icon]}</svg>`;
     return `
@@ -1664,6 +1664,7 @@ function onChapterPick(chapter) {
   showAllOptions = false;
   collapsedGroups = {};
   stopHereLockState = 'unlocked';
+  state.editingCaseIndex = null; // starting a chapter fresh is never "editing" a specific existing entry
   state.screen = 'walk';
   render();
 }
@@ -1799,6 +1800,8 @@ function onCaseItemTap(index) {
 
 function onAddAnotherComplaint() {
   state.currentWalk = { pathTokens: [] };
+  state.editingCaseIndex = null; // adding ANOTHER complaint must never continue editing whichever item was last being reconsidered
+  caseItemLockState = {};
   state.screen = 'chapters';
   render();
 }
