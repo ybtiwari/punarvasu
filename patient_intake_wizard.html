@@ -82,9 +82,9 @@ p.step-sub{font-size:13px;color:var(--ink3);margin-bottom:14px}
 .ch-card .hi{font-size:10.5px;color:var(--lang-hi);margin-top:1px}
 .general-block{margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid var(--cream);}
 .general-block:last-child{border-bottom:none;}
-.stop-here-card{border:1.5px solid var(--teal);background:var(--cream);border-radius:10px;padding:11px 12px;margin-bottom:16px;cursor:pointer;transition:all .12s}
-.stop-here-card:hover{background:var(--white)}
-.stop-here-card .label{font-size:12.5px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.03em}
+.stop-here-card{border:2.5px solid var(--teal);background:#E8F8F5;border-radius:12px;padding:13px 14px;margin-bottom:16px;cursor:pointer;transition:all .12s;box-shadow:0 2px 10px rgba(28,107,90,.16)}
+.stop-here-card:hover{background:#DEF4F0}
+.stop-here-card .label{font-size:12.5px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.03em;display:flex;align-items:center;gap:6px}
 .stop-here-card .kent{font-size:14px;font-weight:700;margin-top:3px}
 .stop-here-card .en{font-size:12.5px;color:var(--lang-en);margin-top:2px}
 .stop-here-card .hi{font-size:12px;color:var(--lang-hi);margin-top:1px}
@@ -336,6 +336,17 @@ function getNextOptions(pathTokens) {
 // Soft, cosmetic-only classification of an option token, purely to group same-kind
 // options under a heading. Never used to hide or filter — every option from
 // getNextOptions is always shown somewhere.
+// Hindi pairing for the 5 distinguisher categories above — shown alongside
+// the English wherever a category label appears, same trilingual convention
+// as everything else patient-facing.
+const KIND_HINDI = {
+  'What it feels like': 'कैसा महसूस होता है',
+  'When it happens': 'कब होता है',
+  'What affects it': 'इससे क्या असर पड़ता है',
+  'Which side': 'कौन-सी तरफ',
+  'Other details': 'अन्य जानकारी',
+};
+
 const SENSATION_RE = /\b(pain|ache|burning|stitching|cutting|tearing|throbbing|pressing|drawing|numbness|itching|heaviness|constriction|tension)\b/i;
 const TIMING_RE = /\b(morning|forenoon|noon|afternoon|evening|night|midnight|before|after|during|periodic|every|annually|monthly|daily|hourly)\b/i;
 const MODALITY_RE = /\b(agg|amel|better|worse|from|during|while|motion|rest|touch|pressure|warm|cold|damp|eating|lying|standing|sitting)\b/i;
@@ -1139,10 +1150,10 @@ const CHAPTER_GROUPS = [
   { label: 'Nose, Throat & Larynx', icon: 'nose', chapters: ['Nose', 'Throat', 'External throat', 'Larynx and trachea'] },
   { label: 'Cough, Expectoration & Respiration', icon: 'lungs', chapters: ['Cough', 'Expectoration', 'Respiration'] },
   { label: 'Chill, Fever & Perspiration', icon: 'thermometer', chapters: ['Chill', 'Fever', 'Perspiration'] },
-  { label: 'Face, Mouth & Teeth', icon: ['face', 'mouth', 'tooth'], chapters: ['Face', 'Mouth', 'Teeth'] },
+  { label: 'Face, Mouth & Teeth', icon: ['mouth', 'tooth'], chapters: ['Face', 'Mouth', 'Teeth'] },
   { label: 'Chest & Heart / Circulation', icon: 'heart', chapters: ['Chest', 'Heart & Circulation'] },
-  { label: 'Mind, Head & Vertigo', icon: ['brain', 'forehead'], chapters: ['Mind', 'Head', 'Vertigo'] },
-  { label: 'Back & Extremities', icon: ['back', 'leg'], chapters: ['Back', 'Extremities'] },
+  { label: 'Mind, Head & Vertigo', icon: 'brain', chapters: ['Mind', 'Head', 'Vertigo'] },
+  { label: 'Back & Extremities', icon: 'leg', chapters: ['Back', 'Extremities'] },
   { label: 'Male Genitalia & Prostate', icon: 'male', chapters: ['Genitalia male', 'Prostate gland'] },
 ];
 // Left standalone deliberately, same as everything else not listed above:
@@ -1186,6 +1197,8 @@ const ICON_PATHS = {
   female: '<circle cx="12" cy="9" r="6"/><path d="M12 15v6M9 18h6"/>',
   hand: '<path d="M8 12.3V5.3a1.5 1.5 0 0 1 3 0v5M11 10.3V4.3a1.5 1.5 0 0 1 3 0v6M14 10.7V5.3a1.5 1.5 0 0 1 3 0v7.7c0 4-2 7-6 7h-.7c-2.7 0-3.8-1-5.1-3.7l-1.8-3.7a1.4 1.4 0 0 1 2.3-1.5L8 13.3"/>',
   moon: '<path d="M20 14.7A8.5 8.5 0 1 1 9.3 4a7 7 0 0 0 10.7 10.7z"/>',
+  lockClosed: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.3" r="1.3" fill="var(--teal)"/>',
+  lockOpen: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 7.5-2"/><circle cx="12" cy="15.3" r="1.3" fill="var(--teal)"/>',
 };
 
 // A block's icon can be one key (single SVG) or an array of keys (a few
@@ -1237,7 +1250,7 @@ function renderChapterSelect() {
       <div class="body">
         <button class="back-btn" onclick="onChapterBlockBack()">&larr; Back</button>
         <h2 class="step-title">${esc(group.label)}</h2>
-        <p class="step-sub">Pick the one that best matches.</p>
+        <p class="step-sub">Pick the one that best matches. जो सबसे सही लगे उसे चुनें।</p>
         <div class="chapter-grid" style="grid-template-columns:repeat(${cols},1fr);">${present.map(ch => renderChapterCard(ch, group.icon)).join('')}</div>
       </div>
       ${caseFooter}
@@ -1255,7 +1268,7 @@ function renderChapterSelect() {
     return `<div class="ch-card" onclick="onChapterBlockPick(${idx})">
       ${renderIcon(g.icon)}
       <div class="en">${esc(g.label)}</div>
-      <div style="font-size:10px;color:var(--ink3);margin-top:3px;">${present.length} areas &rsaquo;</div>
+      <div style="font-size:10px;color:var(--ink3);margin-top:3px;">${present.length} areas · ${present.length} क्षेत्र &rsaquo;</div>
     </div>`;
   }).join('');
 
@@ -1266,7 +1279,7 @@ function renderChapterSelect() {
     ${renderTopbar('Guided Case Wizard', 'Select what is troubling the patient')}
     <div class="body">
       <h2 class="step-title">Where is the main problem, or what kind of problem is it?</h2>
-      <p class="step-sub">Pick the one that best matches — you can add more complaints after this one.</p>
+      <p class="step-sub">Pick the one that best matches — you can add more complaints after this one. जो सबसे सही लगे उसे चुनें — इसके बाद आप और शिकायतें भी जोड़ सकते हैं।</p>
       <div class="chapter-grid">${blockTilesHtml}${cards}</div>
     </div>
     ${caseFooter}
@@ -1287,6 +1300,12 @@ let searchFilter = '';
 let showAllOptions = false;
 let collapsedGroups = {}; // { groupLabel: true/false } — true = collapsed. Reusable pattern.
 let chapterBlockView = null; // null = showing the block/chapter overview; a CHAPTER_GROUPS index = drilled into that one block's chapters
+// Tracks the 3-tap cycle on the "stop here" card at the CURRENT node:
+// 'unlocked' (not yet added) -> tap adds it, locks -> 'locked' -> tap
+// unlocks (still added, reconsidering) -> 'unlockedAfterLock' -> tap finalizes
+// (same connector/case-review routing the old single-tap used to do
+// immediately). Reset whenever the current node changes.
+let stopHereLockState = 'unlocked';
 
 // Reusable collapsible-section renderer — used for option groups here, and
 // intended for reuse anywhere else in the app that needs the same
@@ -1370,8 +1389,9 @@ function renderWalkStep() {
       ${renderBreadcrumb()}
       <div class="body">
         <button class="back-btn" onclick="onWalkBack()">&larr; Back</button>
-      ${state.editingCaseIndex !== null ? `<div class="editing-banner">Editing an existing complaint. <span class="cancel-edit-link" onclick="onCancelEdit()">Cancel — keep original</span></div>` : ''}
+      ${state.editingCaseIndex !== null ? `<div class="editing-banner">Editing an existing complaint. मौजूदा शिकायत में बदलाव किया जा रहा है। <span class="cancel-edit-link" onclick="onCancelEdit()">Cancel — keep original · रद्द करें, पहले जैसा रखें</span></div>` : ''}
         <h2 class="step-title">Choose what applies</h2>
+        <p class="step-sub">जो लागू हो उसे चुनें</p>
         ${historyHtml}
       </div>
     `;
@@ -1407,8 +1427,16 @@ function renderWalkStep() {
   let stopHereHtml = '';
   if (exactMatchRubric) {
     const disp = getDisplayText(chapter, exactMatchRubric.path, pathTokens[pathTokens.length - 1]);
-    stopHereHtml = `<div class="stop-here-card" onclick="onAddRubric('${exactMatchRubric.id}', '${escAttr(exactMatchRubric.path)}', ${exactMatchRubric.remedyCount})">
-      <div class="label">✓ This describes it</div>
+    const tapArgs = `'${exactMatchRubric.id}', '${escAttr(exactMatchRubric.path)}', ${exactMatchRubric.remedyCount}`;
+    const stopHereLabels = {
+      unlocked: { icon: 'lockOpen', en: 'Yes, this is it', hi: 'हाँ, यही है' },
+      locked: { icon: 'lockClosed', en: 'Added — tap to reconsider', hi: 'जोड़ दिया — फिर से सोचने के लिए टैप करें' },
+      unlockedAfterLock: { icon: 'lockOpen', en: 'Tap again to continue', hi: 'जारी रखने के लिए फिर से टैप करें' },
+    };
+    const s = stopHereLabels[stopHereLockState] || stopHereLabels.unlocked;
+    const lockSvg = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--teal)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">${ICON_PATHS[s.icon]}</svg>`;
+    stopHereHtml = `<div class="stop-here-card" onclick="onStopHereTap(${tapArgs})">
+      <div class="label">${lockSvg}<span>${esc(s.en)} · ${esc(s.hi)}</span></div>
       ${renderTrilingualBlock(disp)}
     </div>`;
   }
@@ -1422,11 +1450,12 @@ function renderWalkStep() {
         <div class="meta">${info.totalRemedies} remedy-references</div>
       </div>`;
     }).join('');
-    return renderCollapsibleSection(chapter + '::' + pathTokens.join(',') + '::' + kind, kind, opts.length + ' option(s)', inner);
+    const kindLabel = kind + ' · ' + (KIND_HINDI[kind] || kind);
+    return renderCollapsibleSection(chapter + '::' + pathTokens.join(',') + '::' + kind, kindLabel, opts.length + ' विकल्प · option(s)', inner);
   }).join('');
 
   const showAllLink = (!showAllOptions && totalCount > 15)
-    ? `<div class="show-all-link" onclick="onShowAllOptions()">Show all ${totalCount} options</div>` : '';
+    ? `<div class="show-all-link" onclick="onShowAllOptions()">Show all ${totalCount} options · सभी ${totalCount} विकल्प देखें</div>` : '';
 
   const noMoreOptions = totalCount === 0;
   const filterMatchedNothing = noMoreOptions && searchFilter.length > 0;
@@ -1437,15 +1466,15 @@ function renderWalkStep() {
     ${renderBreadcrumb()}
     <div class="body">
       <button class="back-btn" onclick="onWalkBack()">&larr; Back</button>
-      ${state.editingCaseIndex !== null ? `<div class="editing-banner">Editing an existing complaint. <span class="cancel-edit-link" onclick="onCancelEdit()">Cancel — keep original</span></div>` : ''}
+      ${state.editingCaseIndex !== null ? `<div class="editing-banner">Editing an existing complaint. मौजूदा शिकायत में बदलाव किया जा रहा है। <span class="cancel-edit-link" onclick="onCancelEdit()">Cancel — keep original · रद्द करें, पहले जैसा रखें</span></div>` : ''}
       <h2 class="step-title">Choose what applies</h2>
-      <p class="step-sub">Select one to go more specific, or use "This describes it" to stop here.</p>
+      <p class="step-sub">जो लागू हो उसे चुनें। Select one to go more specific, or tap "Yes, this is it" to stop here. अधिक विशेष जानकारी के लिए एक चुनें, या यहीं रुकने के लिए "हाँ, यही है" चुनें।</p>
       ${historyHtml}
       <div style="margin-left:${liveIndent}px">
-        ${totalCount > 8 || searchFilter ? `<input id="walkFilterInput" class="search-box ${filterMatchedNothing ? 'no-match' : ''}" type="text" placeholder="Search these options…" value="${escAttr(searchFilter)}" oninput="onSearchFilterChange(this.value)">` : ''}
-        ${filterMatchedNothing ? `<div class="no-match-msg">No option here matches "${esc(searchFilter)}" — try a shorter part of the word, or clear this to see everything again.</div>` : ''}
+        ${totalCount > 8 || searchFilter ? `<input id="walkFilterInput" class="search-box ${filterMatchedNothing ? 'no-match' : ''}" type="text" placeholder="Search these options… · यहाँ खोजें…" value="${escAttr(searchFilter)}" oninput="onSearchFilterChange(this.value)">` : ''}
+        ${filterMatchedNothing ? `<div class="no-match-msg">No option here matches "${esc(searchFilter)}" — try a shorter part of the word, or clear this to see everything again. "${esc(searchFilter)}" से कोई विकल्प मेल नहीं खाता — शब्द का छोटा हिस्सा आज़माएं, या सब देखने के लिए इसे हटाएं।</div>` : ''}
         ${stopHereHtml}
-        ${genuinelyNoData && !exactMatchRubric ? `<div class="empty-state">No further detail on file for this exact combination.</div>` : ''}
+        ${genuinelyNoData && !exactMatchRubric ? `<div class="empty-state">No further detail on file for this exact combination. इस सटीक जानकारी के लिए कोई और विवरण उपलब्ध नहीं है।</div>` : ''}
         ${groupsHtml}
         ${showAllLink}
       </div>
@@ -1576,6 +1605,7 @@ function onChapterPick(chapter) {
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
+  stopHereLockState = 'unlocked';
   state.screen = 'walk';
   render();
 }
@@ -1585,6 +1615,7 @@ function onOptionPick(token) {
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
+  stopHereLockState = 'unlocked';
   render();
 }
 
@@ -1598,6 +1629,7 @@ function onWalkBack() {
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
+  stopHereLockState = 'unlocked';
   render();
 }
 
@@ -1608,6 +1640,7 @@ function onEditCaseItem(index) {
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
+  stopHereLockState = 'locked'; // this rubric is already the current answer for this item
   state.screen = 'walk';
   render();
 }
@@ -1637,25 +1670,39 @@ function onShowAllOptions() {
   render();
 }
 
-function onAddRubric(rubricId, path, remedyCount) {
-  const entry = { rubricId, path, remedyCount };
-
-  if (state.editingCaseIndex !== null) {
-    state.completeCase[state.editingCaseIndex] = entry;
-    state.editingCaseIndex = null;
+// The "stop here" card now works in three taps instead of one immediate
+// add-and-navigate: tap 1 adds the rubric and locks the card (visible
+// confirmation, no surprise navigation); tap 2 unlocks it again for
+// reconsideration without removing it; tap 3 finalizes — exactly the same
+// connector/case-review routing the old single-tap design used to do right away.
+function onStopHereTap(rubricId, path, remedyCount) {
+  if (stopHereLockState === 'unlocked') {
+    const entry = { rubricId, path, remedyCount };
+    if (state.editingCaseIndex !== null) {
+      state.completeCase[state.editingCaseIndex] = entry;
+    } else {
+      state.completeCase.push(entry);
+    }
+    stopHereLockState = 'locked';
+    render();
+  } else if (stopHereLockState === 'locked') {
+    stopHereLockState = 'unlockedAfterLock';
+    render();
   } else {
-    state.completeCase.push(entry);
+    if (state.editingCaseIndex !== null) {
+      state.editingCaseIndex = null;
+      state.screen = 'caseReview';
+    } else {
+      const suggestions = (state.data.connectorMap[rubricId] || []);
+      if (suggestions.length) {
+        state.connectorQueue = suggestions.slice(0, 3); // cap at 3 to avoid overwhelming
+        state.screen = 'connectorPrompt';
+      } else {
+        state.screen = 'caseReview';
+      }
+    }
+    render();
   }
-
-  // Connector check — optional, skippable, never forced (Decision 6)
-  const suggestions = (state.data.connectorMap[rubricId] || []);
-  if (suggestions.length) {
-    state.connectorQueue = suggestions.slice(0, 3); // cap at 3 to avoid overwhelming
-    state.screen = 'connectorPrompt';
-  } else {
-    state.screen = 'caseReview';
-  }
-  render();
 }
 
 function onConnectorAccept(connectedChapter) {
@@ -1664,6 +1711,7 @@ function onConnectorAccept(connectedChapter) {
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
+  stopHereLockState = 'unlocked';
   state.screen = 'walk';
   render();
 }
@@ -1739,6 +1787,7 @@ function onSearchResultPick(path) {
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
+  stopHereLockState = 'unlocked';
   state.screen = 'walk';
   render();
 }
