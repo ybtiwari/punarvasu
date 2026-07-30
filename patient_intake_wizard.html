@@ -1142,19 +1142,19 @@ function renderBreadcrumb() {
 // a single alphabetical list. Every other chapter stays exactly as before,
 // in its normal alphabetical spot in the flat grid below the groups.
 const CHAPTER_GROUPS = [
-  { label: 'Ear & Hearing', icon: 'ear', chapters: ['Ear', 'Hearing'] },
-  { label: 'Eye & Vision', icon: 'eye', chapters: ['Eye', 'Vision'] },
-  { label: 'Rectum & Stool', icon: 'toilet', chapters: ['Rectum', 'Stool'] },
-  { label: 'Stomach, Appetite & Abdomen', icon: 'plate', chapters: ['Stomach', 'Appetite', 'Abdomen'] },
-  { label: 'Urine, Urethra, Bladder & Kidneys', icon: 'kidneys', chapters: ['Urine', 'Urethra', 'Bladder', 'Kidneys'] },
-  { label: 'Nose, Throat & Larynx', icon: 'nose', chapters: ['Nose', 'Throat', 'External throat', 'Larynx and trachea'] },
-  { label: 'Cough, Expectoration & Respiration', icon: 'lungs', chapters: ['Cough', 'Expectoration', 'Respiration'] },
-  { label: 'Chill, Fever & Perspiration', icon: 'thermometer', chapters: ['Chill', 'Fever', 'Perspiration'] },
-  { label: 'Face, Mouth & Teeth', icon: ['mouth', 'tooth'], chapters: ['Face', 'Mouth', 'Teeth'] },
-  { label: 'Chest & Heart / Circulation', icon: 'heart', chapters: ['Chest', 'Heart & Circulation'] },
-  { label: 'Mind, Head & Vertigo', icon: 'brain', chapters: ['Mind', 'Head', 'Vertigo'] },
-  { label: 'Back & Extremities', icon: 'leg', chapters: ['Back', 'Extremities'] },
-  { label: 'Male Genitalia & Prostate', icon: 'male', chapters: ['Genitalia male', 'Prostate gland'] },
+  { label: 'Ear & Hearing', hindi: 'कान और सुनना', icon: 'ear', chapters: ['Ear', 'Hearing'] },
+  { label: 'Eye & Vision', hindi: 'आँख और दृष्टि', icon: 'eye', chapters: ['Eye', 'Vision'] },
+  { label: 'Rectum & Stool', hindi: 'मलाशय और मल', icon: 'toilet', chapters: ['Rectum', 'Stool'] },
+  { label: 'Stomach, Appetite & Abdomen', hindi: 'आमाशय, भूख और पेट', icon: 'plate', chapters: ['Stomach', 'Appetite', 'Abdomen'] },
+  { label: 'Urine, Urethra, Bladder & Kidneys', hindi: 'मूत्र, मूत्रमार्ग, मूत्राशय और गुर्दे', icon: 'kidneys', chapters: ['Urine', 'Urethra', 'Bladder', 'Kidneys'] },
+  { label: 'Nose, Throat & Larynx', hindi: 'नाक, गला और स्वरयंत्र', icon: 'nose', chapters: ['Nose', 'Throat', 'External throat', 'Larynx and trachea'] },
+  { label: 'Cough, Expectoration & Respiration', hindi: 'खांसी, कफ और श्वास', icon: 'lungs', chapters: ['Cough', 'Expectoration', 'Respiration'] },
+  { label: 'Chill, Fever & Perspiration', hindi: 'ठंड, बुखार और पसीना', icon: 'thermometer', chapters: ['Chill', 'Fever', 'Perspiration'] },
+  { label: 'Face, Mouth & Teeth', hindi: 'चेहरा, मुँह और दांत', icon: ['mouth', 'tooth'], chapters: ['Face', 'Mouth', 'Teeth'] },
+  { label: 'Chest & Heart / Circulation', hindi: 'छाती और हृदय', icon: 'heart', chapters: ['Chest', 'Heart & Circulation'] },
+  { label: 'Mind, Head & Vertigo', hindi: 'मन, सिर और चक्कर', icon: 'brain', chapters: ['Mind', 'Head', 'Vertigo'] },
+  { label: 'Back & Extremities', hindi: 'पीठ और हाथ-पैर', icon: 'leg', chapters: ['Back', 'Extremities'] },
+  { label: 'Male Genitalia & Prostate', hindi: 'पुरुष जननांग और प्रोस्टेट', icon: 'male', chapters: ['Genitalia male', 'Prostate gland'] },
 ];
 // Left standalone deliberately, same as everything else not listed above:
 // Blood, Clinical, Generalities, Genitalia female, Skin, Sleep — none of
@@ -1166,6 +1166,24 @@ const STANDALONE_CHAPTER_ICONS = {
   'Genitalia female': 'female',
   'Skin': 'hand',
   'Sleep': 'moon',
+};
+
+// Short, complete Hindi name for every chapter — used instead of the long
+// "general problem with X" sentence the translation data returns for a bare
+// chapter name (which only fit on screen if truncated mid-word, which is
+// exactly the "incomplete" look this replaces).
+const CHAPTER_HINDI_NAMES = {
+  'Abdomen': 'पेट', 'Appetite': 'भूख', 'Back': 'पीठ', 'Bladder': 'मूत्राशय',
+  'Blood': 'खून', 'Chest': 'छाती', 'Chill': 'ठंड लगना', 'Clinical': 'नैदानिक',
+  'Cough': 'खांसी', 'Ear': 'कान', 'Expectoration': 'कफ', 'External throat': 'बाहरी गला',
+  'Extremities': 'हाथ-पैर', 'Eye': 'आँख', 'Face': 'चेहरा', 'Fever': 'बुखार',
+  'Generalities': 'सामान्य लक्षण', 'Genitalia female': 'स्त्री जननांग', 'Genitalia male': 'पुरुष जननांग',
+  'Head': 'सिर', 'Hearing': 'सुनना', 'Heart & Circulation': 'हृदय और रक्त संचार',
+  'Kidneys': 'गुर्दे', 'Larynx and trachea': 'स्वरयंत्र और श्वासनली', 'Mind': 'मन',
+  'Mouth': 'मुँह', 'Nose': 'नाक', 'Perspiration': 'पसीना', 'Prostate gland': 'प्रोस्टेट ग्रंथि',
+  'Rectum': 'मलाशय', 'Respiration': 'श्वास', 'Skin': 'त्वचा', 'Sleep': 'नींद',
+  'Stomach': 'आमाशय', 'Stool': 'मल', 'Teeth': 'दांत', 'Throat': 'गला',
+  'Urethra': 'मूत्रमार्ग', 'Urine': 'पेशाब', 'Vertigo': 'चक्कर', 'Vision': 'दृष्टि',
 };
 
 // Simple line-icons drawn directly as SVG paths rather than emoji — emoji
@@ -1217,12 +1235,11 @@ function renderIcon(keyOrKeys) {
 }
 
 function renderChapterCard(ch, iconOverride) {
-  const disp = getDisplayText(ch, ch, ch);
   const iconKey = iconOverride || STANDALONE_CHAPTER_ICONS[ch];
   return `<div class="ch-card" onclick="onChapterPick('${escAttr(ch)}')">
     ${renderIcon(iconKey)}
     <div class="en">${esc(ch)}</div>
-    ${disp.hi ? `<div class="hi">${esc(disp.hi.slice(0,20))}</div>` : ''}
+    ${CHAPTER_HINDI_NAMES[ch] ? `<div class="hi">${esc(CHAPTER_HINDI_NAMES[ch])}</div>` : ''}
   </div>`;
 }
 
@@ -1250,6 +1267,7 @@ function renderChapterSelect() {
       <div class="body">
         <button class="back-btn" onclick="onChapterBlockBack()">&larr; Back</button>
         <h2 class="step-title">${esc(group.label)}</h2>
+        <p class="hi" style="margin-bottom:10px;">${esc(group.hindi)}</p>
         <p class="step-sub">Pick the one that best matches. जो सबसे सही लगे उसे चुनें।</p>
         <div class="chapter-grid" style="grid-template-columns:repeat(${cols},1fr);">${present.map(ch => renderChapterCard(ch, group.icon)).join('')}</div>
       </div>
@@ -1268,7 +1286,7 @@ function renderChapterSelect() {
     return `<div class="ch-card" onclick="onChapterBlockPick(${idx})">
       ${renderIcon(g.icon)}
       <div class="en">${esc(g.label)}</div>
-      <div style="font-size:10px;color:var(--ink3);margin-top:3px;">${present.length} areas · ${present.length} क्षेत्र &rsaquo;</div>
+      <div class="hi">${esc(g.hindi)} &rsaquo;</div>
     </div>`;
   }).join('');
 
