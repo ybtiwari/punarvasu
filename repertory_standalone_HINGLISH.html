@@ -371,6 +371,8 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); heig
 #rubric-nav.visible { display: flex; }
 .nav-btn { background: var(--bg2); border: 1px solid var(--border2); border-radius: 5px; padding: 3px 9px; font-size: 11px; font-family: var(--font); color: var(--text2); cursor: pointer; white-space: nowrap; transition: all 0.12s; }
 .nav-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.nav-btn:disabled { opacity: 0.3; cursor: default; }
+.nav-btn:disabled:hover { border-color: var(--border2); color: var(--text2); background: var(--bg2); }
 .crumbs { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; flex: 1; min-width: 0; line-height: 1.6; }
 .crumb { color: var(--link); cursor: pointer; padding: 1px 4px; border-radius: 3px; }
 .crumb:hover { background: var(--link-bg); text-decoration: underline; }
@@ -1015,6 +1017,7 @@ function clearKeywordSearch() {
   document.getElementById('keyword-clear').classList.remove('visible');
   closeDropdown('keyword-dropdown');
   navHistory = [];
+  navFuture = [];
   currentView = null;
   setNavBar(null);
   filteredRubrics = [];
@@ -1055,6 +1058,7 @@ function runKeywordSearch(q) {
   }
 
   navHistory = [];
+  navFuture = [];
   currentView = { mode: 'search', q: q.trim(), tokens: tokens, list: filteredRubrics };
   setNavBar(null);
   renderRubrics(filteredRubrics, q.trim(), tokens);
@@ -1127,7 +1131,8 @@ function closeDropdown(dropdownId) { const dd = document.getElementById(dropdown
 
 let linksEnabled = true;   // toggled by the 🔗 Links button in the list header
 let NAV         = null;    // lazily-built path trie:  Map(path -> node)
-let navHistory  = [];      // view stack for the ◀ Back button
+let navHistory  = [];      // views already visited — the ◀ Back trail
+let navFuture   = [];      // views stepped back out of — the Forward ▶ trail
 let currentView = null;    // {mode:'search'|'browse'|'chapters', …}
 
 // ── Cross-reference vocabulary ────────────────────────────────────────
@@ -1308,6 +1313,7 @@ function descendantsOf(path) {
 function pushHistory() {
   if (currentView) navHistory.push(currentView);
   if (navHistory.length > 60) navHistory.shift();
+  navFuture = [];   // stepping somewhere new abandons the forward trail
 }
 
 function openRubricPage(path) {
@@ -1315,7 +1321,7 @@ function openRubricPage(path) {
   const node = NAV.get(path);
   if (!node) return;
   pushHistory();
-  currentView = { mode: 'browse', path };
+  currentView = { mode: 'browse', path: path };
   renderBrowse(node);
   document.getElementById('rubric-pane').scrollTop = 0;
 }
@@ -1327,25 +1333,46 @@ function showChapterIndex() {
   renderChapterIndex();
 }
 
-function navBack() {
-  const prev = navHistory.pop();
-  if (!prev) { navHome(); return; }
-  currentView = prev;
-  if (prev.mode === 'search') {
-    filteredRubrics = prev.list;
-    renderRubrics(prev.list, prev.q, prev.tokens);
+// Repaint any stored view without touching the Back/Forward stacks —
+// shared by both navBack() and navFwd().
+function restoreView(v) {
+  currentView = v;
+  if (v.mode === 'search') {
+    filteredRubrics = v.list;
     setNavBar(null);
+    renderRubrics(v.list, v.q, v.tokens);
     document.getElementById('search-stats').textContent =
-      `${prev.list.length} rubric${prev.list.length !== 1 ? 's' : ''} containing "${prev.q}"`;
-  } else if (prev.mode === 'chapters') {
+      `${v.list.length} rubric${v.list.length !== 1 ? 's' : ''} containing "${v.q}"`;
+  } else if (v.mode === 'chapters') {
     renderChapterIndex();
+  } else if (v.mode === 'flat') {
+    const list = descendantsOf(v.path);
+    filteredRubrics = list;
+    setNavBar(v.path);
+    renderRubrics(list);
   } else {
-    renderBrowse(NAV.get(prev.path));
+    renderBrowse(NAV.get(v.path));
   }
+  document.getElementById('rubric-pane').scrollTop = 0;
+}
+
+function navBack() {
+  if (!navHistory.length) return;
+  const prev = navHistory.pop();
+  if (currentView) navFuture.push(currentView);
+  restoreView(prev);
+}
+
+function navFwd() {
+  if (!navFuture.length) return;
+  const next = navFuture.pop();
+  if (currentView) navHistory.push(currentView);
+  restoreView(next);
 }
 
 function navHome() {
   navHistory = [];
+  navFuture = [];
   currentView = null;
   filteredRubrics = [];
   setNavBar(null);
@@ -1355,18 +1382,40 @@ function navHome() {
 function backToSearch() {
   const q = document.getElementById('keyword-search').value;
   if (!q.trim()) { navHome(); return; }
-  navHistory = [];
   runKeywordSearch(q);
 }
 
+// Plain-language name for a stored view, used in the Back/Forward tooltips
+// so you can see where a step will land before taking it.
+function describeView(v) {
+  if (!v) return '';
+  if (v.mode === 'search')   return 'search results for "' + v.q + '"';
+  if (v.mode === 'chapters') return 'the chapter index';
+  if (v.mode === 'flat')     return 'all rubrics under ' + v.path;
+  return v.path;
+}
+
 // ── the breadcrumb strip above the rubric list ──
+// path === null  →  a keyword-search result list (no tree position)
+// path === ''    →  the chapter index
 function setNavBar(path) {
   const bar = document.getElementById('rubric-nav');
   if (!bar) return;
-  if (path === null) { bar.classList.remove('visible'); bar.innerHTML = ''; return; }
+  const canBack = navHistory.length > 0, canFwd = navFuture.length > 0;
+
+  // Nothing to show and nowhere to step: keep the strip out of the way.
+  if (path === null && !canBack && !canFwd) {
+    bar.classList.remove('visible'); bar.innerHTML = ''; return;
+  }
 
   const crumbs = [`<span class="crumb" data-nav="home" title="All chapters">⌂ Chapters</span>`];
-  if (path !== '') {
+  if (path === null) {
+    const q = (currentView && currentView.q) || document.getElementById('keyword-search').value.trim();
+    if (q) {
+      crumbs.push('<span class="crumb-sep">›</span>');
+      crumbs.push(`<span class="crumb current">search: "${eh(q)}"</span>`);
+    }
+  } else if (path !== '') {
     const segs = path.split(', ');
     let acc = '';
     segs.forEach((s, i) => {
@@ -1378,11 +1427,16 @@ function setNavBar(path) {
         : `<span class="crumb" data-jump="${eh(acc)}" title="Open: ${eh(acc)}">${eh(s)}</span>`);
     });
   }
+
+  const backTip = canBack ? 'Back to ' + describeView(navHistory[navHistory.length - 1]) : 'Nothing to go back to';
+  const fwdTip  = canFwd  ? 'Forward to ' + describeView(navFuture[navFuture.length - 1]) : 'Nothing to go forward to';
   const hasSearch = document.getElementById('keyword-search').value.trim().length > 0;
+
   bar.innerHTML =
-    `<button class="nav-btn" onclick="navBack()" title="Go back one step">◀ Back</button>` +
+    `<button class="nav-btn" onclick="navBack()"${canBack ? '' : ' disabled'} title="${eh(backTip)}">◀ Back</button>` +
+    `<button class="nav-btn" onclick="navFwd()"${canFwd ? '' : ' disabled'} title="${eh(fwdTip)}">Forward ▶</button>` +
     `<div class="crumbs">${crumbs.join('')}</div>` +
-    (hasSearch ? `<button class="nav-btn" onclick="backToSearch()" title="Return to your keyword search results">↩ Search results</button>` : '');
+    (hasSearch && path !== null ? `<button class="nav-btn" onclick="backToSearch()" title="Return to your keyword search results">↩ Search results</button>` : '');
   bar.classList.add('visible');
   const home = bar.querySelector('[data-nav="home"]');
   if (home) home.onclick = showChapterIndex;
@@ -1481,10 +1535,12 @@ function renderBrowse(node) {
 
 // flat list of every rubric beneath a branch (so several can be added quickly)
 function showAllUnder(path) {
+  pushHistory();
+  currentView = { mode: 'flat', path: path };
   const list = descendantsOf(path);
   filteredRubrics = list;
-  renderRubrics(list);
   setNavBar(path);
+  renderRubrics(list);
   document.getElementById('rubric-pane').scrollTop = 0;
 }
 
@@ -1498,6 +1554,7 @@ function toggleLinks() {
   // repaint whatever is on screen
   if (currentView && currentView.mode === 'browse' && NAV) renderBrowse(NAV.get(currentView.path));
   else if (currentView && currentView.mode === 'chapters') renderChapterIndex();
+  else if (currentView && currentView.mode === 'flat') renderRubrics(filteredRubrics);
   else {
     const q = document.getElementById('keyword-search').value;
     if (q.trim()) runKeywordSearch(q); else renderRubrics(filteredRubrics);
