@@ -16,6 +16,8 @@
   --shadow: 0 2px 12px rgba(0,0,0,0.1);
   --font: Georgia, "Times New Roman", serif;
   --radius: 8px;
+  --link: #2f6fb5; --link-bg: #e7eefa;
+  --xref: #8e3a9d; --xref-bg: #f6e9f8;
   --sidebar-w: 230px;
   --analysis-w: 360px;
 }
@@ -350,6 +352,45 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); heig
 #drag-overlay.active { display: block; }
 #drag-overlay.row { cursor: row-resize; }
 
+/* ══════════════════════════════════════════════════
+   CROSS-LINK NAVIGATION
+══════════════════════════════════════════════════ */
+/* a level of the rubric path — click to open that rubric's page */
+.rl-seg { color: var(--link); cursor: pointer; border-radius: 3px; padding: 0 1px; transition: background 0.1s; }
+.rl-seg:hover { background: var(--link-bg); text-decoration: underline; }
+/* a word naming ANOTHER chapter — click to jump there */
+.rl-xref { color: var(--xref); font-weight: 600; cursor: pointer; border-radius: 3px; padding: 0 1px; transition: background 0.1s; }
+.rl-xref:hover { background: var(--xref-bg); text-decoration: underline; }
+.rl-jump { color: var(--xref); cursor: pointer; font-size: 0.78em; vertical-align: super; margin-left: 1px; font-weight: 700; }
+.rl-jump:hover { text-decoration: underline; }
+.rl-sep { color: var(--text3); }
+.rubric-path-caption .rl-seg, .rubric-path-caption .rl-xref { font-style: normal; }
+
+/* breadcrumb strip above the rubric list */
+#rubric-nav { display: none; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 12px; background: var(--bg2); border-bottom: 1px solid var(--border); flex-shrink: 0; font-size: 12px; }
+#rubric-nav.visible { display: flex; }
+.nav-btn { background: var(--bg2); border: 1px solid var(--border2); border-radius: 5px; padding: 3px 9px; font-size: 11px; font-family: var(--font); color: var(--text2); cursor: pointer; white-space: nowrap; transition: all 0.12s; }
+.nav-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.crumbs { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; flex: 1; min-width: 0; line-height: 1.6; }
+.crumb { color: var(--link); cursor: pointer; padding: 1px 4px; border-radius: 3px; }
+.crumb:hover { background: var(--link-bg); text-decoration: underline; }
+.crumb.current { color: var(--text); font-weight: 700; cursor: default; }
+.crumb.current:hover { background: none; text-decoration: none; }
+.crumb-sep { color: var(--text3); padding: 0 3px; }
+
+/* rubric "page" view */
+.browse-head { font-size: 10px; font-weight: 600; letter-spacing: 0.8px; color: var(--text3); text-transform: uppercase; margin: 12px 2px 6px; }
+.browse-hint { padding: 8px 4px; font-size: 12px; color: var(--text3); font-style: italic; }
+.rubric-row.self-row { background: var(--gold-light); border-color: rgba(138,82,0,0.25); }
+.rubric-row.child-row .kid-arrow { color: var(--text3); font-size: 11px; width: 10px; flex-shrink: 0; margin-top: 3px; }
+.child-seg { font-weight: 600; }
+
+/* chapter index */
+.chapter-grid { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0 10px; }
+.chapter-chip { border: 1px solid var(--border2); background: var(--bg2); border-radius: 14px; padding: 4px 12px; font-size: 12px; color: var(--link); cursor: pointer; font-family: var(--font); transition: all 0.12s; }
+.chapter-chip:hover { border-color: var(--link); background: var(--link-bg); }
+.chip-count { color: var(--text3); font-size: 10px; margin-left: 2px; }
+
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
@@ -432,11 +473,22 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); heig
       <!-- Center header with collapse/expand button -->
       <div id="center-header">
         <span id="center-header-title">Rubric List</span>
-        <button id="center-collapse-btn" onclick="collapseCenter()" title="Collapse rubric list to maximise Repertorization pane">
-          <span class="btn-icon">◀◀</span>
-          <span class="btn-label">Collapse &amp; Analyse</span>
-        </button>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button class="sort-btn" onclick="showChapterIndex()" title="Browse the repertory chapter by chapter">
+            <span>⌂</span><span>Chapters</span>
+          </button>
+          <button id="links-toggle-btn" class="sort-btn" onclick="toggleLinks()" title="Turn the clickable rubric cross-links on or off">
+            <span>🔗</span><span class="btn-label">Links on</span>
+          </button>
+          <button id="center-collapse-btn" onclick="collapseCenter()" title="Collapse rubric list to maximise Repertorization pane">
+            <span class="btn-icon">◀◀</span>
+            <span class="btn-label">Collapse &amp; Analyse</span>
+          </button>
+        </div>
       </div>
+
+      <!-- Breadcrumb strip: shown while walking the rubric tree -->
+      <div id="rubric-nav"></div>
 
       <div id="rubric-pane">
         <div class="empty-state">
@@ -594,6 +646,8 @@ async function loadData() {
       throw new Error('repertory_data.js did not load (check the file is present next to this HTML file, and that it is being served over http:// rather than opened directly as a file:// URL in browsers that block local script loading).');
     }
     DB = EMBEDDED_DATA;
+    setProgress(70, 'Indexing rubric tree…'); await tick(20);
+    try { ensureNavIndex(); } catch (err) { console.warn('Rubric tree index could not be built:', err); }
     fetch('remedy_pathophysiology_db.json?v=6').then(r => r.json()).then(d => { window.remedyDB = d; }).catch(() => { console.warn('remedy_pathophysiology_db.json not found — Generate Case Narrative will be unavailable until it is added next to this file.'); });
     fetch('symptom_affinity_table_v3.json?v=6').then(r => r.json()).then(d => { window.symptomAffinityTable = d; }).catch(() => { console.warn('symptom_affinity_table_v3.json not found — cross-rubric correlation section will be skipped.'); });
     setProgress(90, 'Initialising…'); await tick(30);
@@ -885,6 +939,7 @@ let ROM_INDEX_MAP = new Map();
 
 function init() {
   setupAutocomplete('keyword-search', 'keyword-dropdown', 'keyword-clear', getKeywordSuggestions, onKeywordSelected, onKeywordChanged);
+  initCrossLinks();
 
   if (typeof TRANSLATIONS_HINDI !== 'undefined') {
     HI_INDEX = buildTranslationIndex(TRANSLATIONS_HINDI);
@@ -959,6 +1014,9 @@ function clearKeywordSearch() {
   document.getElementById('keyword-search').value = '';
   document.getElementById('keyword-clear').classList.remove('visible');
   closeDropdown('keyword-dropdown');
+  navHistory = [];
+  currentView = null;
+  setNavBar(null);
   filteredRubrics = [];
   renderRubrics([]);
   document.getElementById('search-stats').textContent = '';
@@ -996,6 +1054,9 @@ function runKeywordSearch(q) {
     });
   }
 
+  navHistory = [];
+  currentView = { mode: 'search', q: q.trim(), tokens: tokens, list: filteredRubrics };
+  setNavBar(null);
   renderRubrics(filteredRubrics, q.trim(), tokens);
   document.getElementById('search-stats').textContent = `${filteredRubrics.length} rubric${filteredRubrics.length !== 1 ? 's' : ''} containing "${q.trim()}"`;
 }
@@ -1045,12 +1106,411 @@ function renderDropdown(dropdownId, suggestions, query, onPick) {
 function updateHighlight(dd, idx) { dd.querySelectorAll('.ac-item').forEach((item, i) => { item.classList.toggle('highlighted', i === idx); if (i === idx) item.scrollIntoView({ block: 'nearest' }); }); }
 function closeDropdown(dropdownId) { const dd = document.getElementById(dropdownId); dd.classList.remove('open'); dd.innerHTML = ''; }
 
+// ══════════════════════════════════════════════════════════════════════
+//  CROSS-LINK NAVIGATION
+//  Makes every rubric / sub-rubric word in the rubric list clickable, so
+//  the clinician can walk the repertory tree and jump between chapters
+//  without retyping anything in the search box.
+//
+//  Two kinds of link are produced:
+//    .rl-seg   (blue)   — a level of the rubric path itself.  Clicking it
+//                         opens that rubric's page: the rubric plus its
+//                         direct sub-rubrics.
+//    .rl-xref  (plum)   — a word inside a rubric that names ANOTHER
+//                         chapter (e.g. "head" inside
+//                         "Abdomen, pain, extending to head").  Clicking
+//                         it jumps straight to that chapter.
+//                         When the whole segment is the chapter name, a
+//                         small ↗ badge carries the chapter jump so that
+//                         the drill-down click is not lost.
+// ══════════════════════════════════════════════════════════════════════
+
+let linksEnabled = true;   // toggled by the 🔗 Links button in the list header
+let NAV         = null;    // lazily-built path trie:  Map(path -> node)
+let navHistory  = [];      // view stack for the ◀ Back button
+let currentView = null;    // {mode:'search'|'browse'|'chapters', …}
+
+// ── Cross-reference vocabulary ────────────────────────────────────────
+// lowercase word (or phrase) found inside a rubric  →  chapter to open.
+// Entries whose chapter is not present in the loaded database are dropped
+// automatically at init time.
+const XREF_MAP = {
+  'abdomen':'Abdomen','abdominal':'Abdomen','hypochondria':'Abdomen','umbilicus':'Abdomen','liver':'Abdomen',
+  'spleen':'Abdomen','inguinal region':'Abdomen','groin':'Abdomen',
+  'appetite':'Appetite','hunger':'Appetite',
+  'back':'Back','spine':'Back','lumbar region':'Back','dorsal region':'Back',
+  'cervical region':'Back','sacral region':'Back','coccyx':'Back','loins':'Back','backache':'Back',
+  'bladder':'Bladder',
+  'blood':'Blood',
+  'chest':'Chest','mammae':'Chest','breasts':'Chest','axilla':'Chest','sternum':'Chest','ribs':'Chest',
+  'chill':'Chill','chilliness':'Chill','shivering':'Chill',
+  'cough':'Cough','coughing':'Cough',
+  'ear':'Ear','ears':'Ear','earache':'Ear',
+  'expectoration':'Expectoration','sputum':'Expectoration',
+  'external throat':'External throat',
+  'extremities':'Extremities','limbs':'Extremities','upper limbs':'Extremities',
+  'lower limbs':'Extremities','upper arm':'Extremities','forearm':'Extremities',
+  'hand':'Extremities','hands':'Extremities','foot':'Extremities','feet':'Extremities',
+  'arm':'Extremities','arms':'Extremities','leg':'Extremities','legs':'Extremities',
+  'finger':'Extremities','fingers':'Extremities','toes':'Extremities','nails':'Extremities',
+  'knee':'Extremities','knees':'Extremities','elbow':'Extremities','wrist':'Extremities',
+  'shoulder':'Extremities','shoulders':'Extremities','thigh':'Extremities','thighs':'Extremities',
+  'ankle':'Extremities','ankles':'Extremities','hip':'Extremities','hips':'Extremities','calf':'Extremities',
+  'eye':'Eye','eyes':'Eye','eyelids':'Eye','lachrymation':'Eye',
+  'face':'Face','cheeks':'Face','lips':'Face','jaws':'Face','chin':'Face',
+  'fever':'Fever',
+  'generalities':'Generalities',
+  'menses':'Genitalia female','uterus':'Genitalia female','vagina':'Genitalia female',
+  'ovaries':'Genitalia female','leucorrhoea':'Genitalia female','vulva':'Genitalia female',
+  'penis':'Genitalia male','testes':'Genitalia male','scrotum':'Genitalia male','prepuce':'Genitalia male',
+  'head':'Head','headache':'Head','forehead':'Head','occiput':'Head','temples':'Head',
+  'vertex':'Head','scalp':'Head','hair':'Head',
+  'hearing':'Hearing',
+  'heart':'Heart & Circulation','palpitation':'Heart & Circulation','pulse':'Heart & Circulation',
+  'kidney':'Kidneys','kidneys':'Kidneys',
+  'larynx':'Larynx and trachea','trachea':'Larynx and trachea','voice':'Larynx and trachea','hoarseness':'Larynx and trachea',
+  'mind':'Mind','mental':'Mind','mental exertion':'Mind',
+  'mouth':'Mouth','tongue':'Mouth','gums':'Mouth','palate':'Mouth','saliva':'Mouth',
+  'nose':'Nose','nostril':'Nose','nostrils':'Nose','coryza':'Nose','epistaxis':'Nose','smell':'Nose',
+  'perspiration':'Perspiration','sweat':'Perspiration',
+  'prostate':'Prostate gland','prostate gland':'Prostate gland',
+  'rectum':'Rectum','anus':'Rectum',
+  'respiration':'Respiration','breathing':'Respiration','dyspnoea':'Respiration',
+  'skin':'Skin','eruptions':'Skin','itching':'Skin',
+  'sleep':'Sleep','sleeplessness':'Sleep','dreams':'Sleep','waking':'Sleep','yawning':'Sleep',
+  'stomach':'Stomach','nausea':'Stomach','vomiting':'Stomach','eructations':'Stomach','thirst':'Stomach',
+  'stool':'Stool','stools':'Stool','diarrhoea':'Stool','constipation':'Stool',
+  'teeth':'Teeth','tooth':'Teeth','toothache':'Teeth',
+  'throat':'Throat',
+  'urethra':'Urethra',
+  'urine':'Urine','urination':'Urine','urinating':'Urine',
+  'vertigo':'Vertigo',
+  'vision':'Vision','sight':'Vision'
+};
+let XREF_RE = null;
+
+function initCrossLinks() {
+  const valid = new Set(DB.chapters || []);
+  Object.keys(XREF_MAP).forEach(k => { if (!valid.has(XREF_MAP[k])) delete XREF_MAP[k]; });
+  const keys = Object.keys(XREF_MAP)
+    .sort((a, b) => b.length - a.length)
+    .map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  XREF_RE = new RegExp('\\b(' + keys.join('|') + ')\\b', 'gi');
+
+  const pane = document.getElementById('rubric-pane');
+  if (pane) {
+    pane.addEventListener('click', e => {
+      if (e.target.closest('.add-btn')) return;          // let + Add do its own job
+      const el = e.target.closest('[data-jump]');
+      if (!el) return;
+      e.preventDefault(); e.stopPropagation();
+      openRubricPage(el.dataset.jump);
+    });
+  }
+  const nav = document.getElementById('rubric-nav');
+  if (nav) {
+    nav.addEventListener('click', e => {
+      const el = e.target.closest('[data-jump]');
+      if (!el) return;
+      e.preventDefault();
+      openRubricPage(el.dataset.jump);
+    });
+  }
+}
+
+// ── escape + search-term highlight in a single pass ──
+function mark(text, hre) {
+  let s = eh(text);
+  if (hre) s = s.replace(hre, '<em>$1</em>');
+  return s;
+}
+
+// ── one comma-segment of a path, with chapter cross-refs picked out ──
+function linkifySegment(seg, chapter, hre) {
+  if (!linksEnabled || !XREF_RE) return mark(seg, hre);
+  const wholeTarget = XREF_MAP[seg.toLowerCase()];
+  if (wholeTarget && wholeTarget !== chapter) {
+    // The whole segment IS a chapter name. Keep the drill-down click on the
+    // word and hang the chapter jump on a small ↗ badge beside it.
+    return mark(seg, hre) +
+      `<span class="rl-jump" data-jump="${eh(wholeTarget)}" title="Jump to chapter: ${eh(wholeTarget)}">↗</span>`;
+  }
+  const out = [];
+  let last = 0, m;
+  XREF_RE.lastIndex = 0;
+  while ((m = XREF_RE.exec(seg)) !== null) {
+    const target = XREF_MAP[m[0].toLowerCase()];
+    if (!target || target === chapter) continue;
+    out.push(mark(seg.slice(last, m.index), hre));
+    out.push(`<span class="rl-xref" data-jump="${eh(target)}" title="Jump to chapter: ${eh(target)}">${mark(m[0], hre)}</span>`);
+    last = m.index + m[0].length;
+  }
+  if (!out.length) return mark(seg, hre);
+  out.push(mark(seg.slice(last), hre));
+  return out.join('');
+}
+
+// ── a full "Chapter, level, level…" path rendered as clickable links ──
+function linkifyPath(path, hre) {
+  if (!linksEnabled || !XREF_RE) return mark(path, hre);
+  const segs = path.split(', ');
+  const chapter = segs[0];
+  let acc = '';
+  const out = [];
+  for (let i = 0; i < segs.length; i++) {
+    acc = i === 0 ? segs[0] : acc + ', ' + segs[i];
+    const inner = i === 0 ? mark(segs[i], hre) : linkifySegment(segs[i], chapter, hre);
+    out.push(`<span class="rl-seg" data-jump="${eh(acc)}" title="Open: ${eh(acc)}">${inner}</span>`);
+  }
+  return out.join('<span class="rl-sep">, </span>');
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  PATH TRIE — built once, on the first navigation click
+// ══════════════════════════════════════════════════════════════════════
+// Roughly 10% of Kent's paths skip an intermediate level (e.g.
+// "Abdomen, acids, after, agg" exists while "Abdomen, acids, after" does
+// not). Those missing levels are created here as heading-only nodes so
+// that walking the tree never loses a branch.
+function ensureNavIndex() {
+  if (NAV) return NAV;
+  const nodes = new Map();
+  for (const r of DB.rubrics) {
+    const segs = r[1].split(', ');
+    const last = segs.length - 1;
+    let acc = '', parent = null;
+    for (let i = 0; i <= last; i++) {
+      acc = i === 0 ? segs[0] : acc + ', ' + segs[i];
+      let n = nodes.get(acc);
+      if (!n) {
+        n = { path: acc, seg: segs[i], rubric: null, kids: [], desc: 0 };
+        nodes.set(acc, n);
+        if (parent) parent.kids.push(acc);
+      }
+      if (i < last) n.desc++;      // this rubric lies beneath n
+      parent = n;
+    }
+    parent.rubric = r;
+  }
+  NAV = nodes;
+  return NAV;
+}
+
+// all real rubrics at or beneath a path
+function descendantsOf(path) {
+  const pre = path + ', ';
+  return DB.rubrics.filter(r => r[1] === path || r[1].startsWith(pre));
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  VIEWS
+// ══════════════════════════════════════════════════════════════════════
+function pushHistory() {
+  if (currentView) navHistory.push(currentView);
+  if (navHistory.length > 60) navHistory.shift();
+}
+
+function openRubricPage(path) {
+  ensureNavIndex();
+  const node = NAV.get(path);
+  if (!node) return;
+  pushHistory();
+  currentView = { mode: 'browse', path };
+  renderBrowse(node);
+  document.getElementById('rubric-pane').scrollTop = 0;
+}
+
+function showChapterIndex() {
+  ensureNavIndex();
+  pushHistory();
+  currentView = { mode: 'chapters' };
+  renderChapterIndex();
+}
+
+function navBack() {
+  const prev = navHistory.pop();
+  if (!prev) { navHome(); return; }
+  currentView = prev;
+  if (prev.mode === 'search') {
+    filteredRubrics = prev.list;
+    renderRubrics(prev.list, prev.q, prev.tokens);
+    setNavBar(null);
+    document.getElementById('search-stats').textContent =
+      `${prev.list.length} rubric${prev.list.length !== 1 ? 's' : ''} containing "${prev.q}"`;
+  } else if (prev.mode === 'chapters') {
+    renderChapterIndex();
+  } else {
+    renderBrowse(NAV.get(prev.path));
+  }
+}
+
+function navHome() {
+  navHistory = [];
+  currentView = null;
+  filteredRubrics = [];
+  setNavBar(null);
+  renderRubrics([]);
+}
+
+function backToSearch() {
+  const q = document.getElementById('keyword-search').value;
+  if (!q.trim()) { navHome(); return; }
+  navHistory = [];
+  runKeywordSearch(q);
+}
+
+// ── the breadcrumb strip above the rubric list ──
+function setNavBar(path) {
+  const bar = document.getElementById('rubric-nav');
+  if (!bar) return;
+  if (path === null) { bar.classList.remove('visible'); bar.innerHTML = ''; return; }
+
+  const crumbs = [`<span class="crumb" data-nav="home" title="All chapters">⌂ Chapters</span>`];
+  if (path !== '') {
+    const segs = path.split(', ');
+    let acc = '';
+    segs.forEach((s, i) => {
+      acc = i === 0 ? s : acc + ', ' + s;
+      const isLast = i === segs.length - 1;
+      crumbs.push('<span class="crumb-sep">›</span>');
+      crumbs.push(isLast
+        ? `<span class="crumb current">${eh(s)}</span>`
+        : `<span class="crumb" data-jump="${eh(acc)}" title="Open: ${eh(acc)}">${eh(s)}</span>`);
+    });
+  }
+  const hasSearch = document.getElementById('keyword-search').value.trim().length > 0;
+  bar.innerHTML =
+    `<button class="nav-btn" onclick="navBack()" title="Go back one step">◀ Back</button>` +
+    `<div class="crumbs">${crumbs.join('')}</div>` +
+    (hasSearch ? `<button class="nav-btn" onclick="backToSearch()" title="Return to your keyword search results">↩ Search results</button>` : '');
+  bar.classList.add('visible');
+  const home = bar.querySelector('[data-nav="home"]');
+  if (home) home.onclick = showChapterIndex;
+}
+
+// ── chapter index ──
+function renderChapterIndex() {
+  setNavBar('');
+  const pane = document.getElementById('rubric-pane');
+  ensureNavIndex();
+  filteredRubrics = [];
+  const chips = (DB.chapters || []).map(c => {
+    const n = NAV.get(c);
+    const cnt = n ? n.desc : 0;
+    return `<span class="chapter-chip" data-jump="${eh(c)}" title="Open chapter: ${eh(c)}">${eh(c)} <span class="chip-count">${cnt}</span></span>`;
+  }).join('');
+  pane.innerHTML = `<div class="browse-head">Kent's Repertory — ${(DB.chapters || []).length} chapters</div>
+    <div class="chapter-grid">${chips}</div>
+    <div class="browse-hint">Click a chapter to open it, then keep walking down through its sub-rubrics.<br>
+      In the rubric list, <span class="rl-seg" style="cursor:default">blue words</span> open that level of the rubric and
+      <span class="rl-xref" style="cursor:default">plum words</span> (or a <span class="rl-jump" style="cursor:default">↗</span>)
+      jump across to another chapter.</div>`;
+  pane.scrollTop = 0;
+}
+
+// ── a single rubric's "page": the rubric itself + its direct sub-rubrics ──
+function renderBrowse(node) {
+  if (!node) return;
+  setNavBar(node.path);
+  const pane = document.getElementById('rubric-pane');
+  const selectedIds = new Set(selectedRubrics.map(r => r.id));
+  filteredRubrics = [];
+  const html = [];
+
+  // the rubric itself
+  if (node.rubric) {
+    const [id, path, rems] = node.rubric;
+    const idx = filteredRubrics.push(node.rubric) - 1;
+    const isSel = selectedIds.has(id);
+    html.push(`<div class="rubric-row self-row${isSel ? ' selected' : ''}" data-idx="${idx}">
+      <div style="flex:1;min-width:0">
+        <div class="rubric-path">${linkifyPath(path, null)}</div>
+        <div class="rubric-count">${rems ? rems.length : 0} remedies · this rubric</div>
+      </div>
+      <button class="add-btn${isSel ? ' added' : ''}" onclick="addRubric(${idx})">${isSel ? '✓ Added' : '+ Add'}</button>
+    </div>`);
+  } else {
+    html.push(`<div class="rubric-row self-row" style="cursor:default">
+      <div style="flex:1;min-width:0">
+        <div class="rubric-path">${linkifyPath(node.path, null)}</div>
+        <div class="rubric-count">heading only — no remedies listed at this level</div>
+      </div>
+    </div>`);
+  }
+
+  const chapter = node.path.split(', ')[0];
+  const kids = node.kids.slice(0, 800);
+
+  if (node.kids.length) {
+    html.push(`<div class="browse-head">Sub-rubrics (${node.kids.length})</div>`);
+    kids.forEach(kp => {
+      const k = NAV.get(kp);
+      if (!k) return;
+      let idx = -1, addBtn = '';
+      if (k.rubric) {
+        idx = filteredRubrics.push(k.rubric) - 1;
+        const isSel = selectedIds.has(k.rubric[0]);
+        addBtn = `<button class="add-btn${isSel ? ' added' : ''}" onclick="addRubric(${idx})">${isSel ? '✓ Added' : '+ Add'}</button>`;
+      }
+      const isSel = k.rubric && selectedIds.has(k.rubric[0]);
+      const meta = [
+        k.rubric ? `${k.rubric[2] ? k.rubric[2].length : 0} remedies` : 'heading',
+        k.desc ? `${k.desc} below` : ''
+      ].filter(Boolean).join(' · ');
+      html.push(`<div class="rubric-row child-row${isSel ? ' selected' : ''}"${idx >= 0 ? ` data-idx="${idx}"` : ''} data-jump="${eh(k.path)}" title="Open: ${eh(k.path)}">
+        <span class="kid-arrow">${k.kids.length ? '▸' : '·'}</span>
+        <div style="flex:1;min-width:0">
+          <div class="rubric-path child-seg">${linkifySegment(k.seg, chapter, null)}</div>
+          <div class="rubric-count">${meta}</div>
+        </div>
+        ${addBtn}
+      </div>`);
+    });
+    if (node.kids.length > kids.length) {
+      html.push(`<div class="browse-hint">Showing first ${kids.length} of ${node.kids.length} sub-rubrics.</div>`);
+    }
+    if (node.desc > node.kids.length) {
+      html.push(`<div style="padding:8px 2px"><button class="nav-btn" onclick="showAllUnder('${es(node.path)}')">▤ List all ${node.desc} rubrics under this branch</button></div>`);
+    }
+  } else {
+    html.push(`<div class="browse-hint">No sub-rubrics — this is the last level of this branch.</div>`);
+  }
+
+  pane.innerHTML = html.join('');
+}
+
+// flat list of every rubric beneath a branch (so several can be added quickly)
+function showAllUnder(path) {
+  const list = descendantsOf(path);
+  filteredRubrics = list;
+  renderRubrics(list);
+  setNavBar(path);
+  document.getElementById('rubric-pane').scrollTop = 0;
+}
+
+function toggleLinks() {
+  linksEnabled = !linksEnabled;
+  const btn = document.getElementById('links-toggle-btn');
+  if (btn) {
+    btn.classList.toggle('desc', !linksEnabled);
+    btn.querySelector('.btn-label').textContent = linksEnabled ? 'Links on' : 'Links off';
+  }
+  // repaint whatever is on screen
+  if (currentView && currentView.mode === 'browse' && NAV) renderBrowse(NAV.get(currentView.path));
+  else if (currentView && currentView.mode === 'chapters') renderChapterIndex();
+  else {
+    const q = document.getElementById('keyword-search').value;
+    if (q.trim()) runKeywordSearch(q); else renderRubrics(filteredRubrics);
+  }
+}
+
 // ── RENDER RUBRICS ──
 function renderRubrics(rubrics, query, tokens) {
   const pane = document.getElementById('rubric-pane');
   if (!rubrics.length) {
     const msg = query ? 'No rubrics found containing all these words' : 'Type a keyword above to search rubrics';
-    pane.innerHTML = `<div class="empty-state"><div class="icon">☯</div><div>${msg}</div></div>`;
+    pane.innerHTML = `<div class="empty-state"><div class="icon">☯</div><div>${msg}</div>
+      <button class="nav-btn" onclick="showChapterIndex()">⌂ Browse chapters instead</button></div>`;
     return;
   }
   const selectedIds = new Set(selectedRubrics.map(r => r.id));
@@ -1064,11 +1524,18 @@ function renderRubrics(rubrics, query, tokens) {
   pane.innerHTML = show.map((r, i) => {
     const [id, path, rems] = r, isSelected = selectedIds.has(id);
     const displayText = getDisplayText(path);
-    let display = eh(displayText);
-    if (highlightRe) display = display.replace(highlightRe, '<em>$1</em>');
-    // In translated modes, show the original Kent's path as a small caption
-    // underneath, so the clinician can still see/confirm the technical term.
-    const caption = isTranslated ? `<div class="rubric-path-caption">${eh(path)}</div>` : '';
+    // Kent's mode: the path itself becomes the clickable link trail.
+    // Translated modes: the plain-language text is left as-is (with the search
+    // words highlighted) and the Kent's path caption underneath carries the
+    // links, since only Kent's text maps onto the repertory tree.
+    let display;
+    if (isTranslated) {
+      display = eh(displayText);
+      if (highlightRe) display = display.replace(highlightRe, '<em>$1</em>');
+    } else {
+      display = linkifyPath(path, highlightRe);
+    }
+    const caption = isTranslated ? `<div class="rubric-path-caption">${linkifyPath(path, null)}</div>` : '';
     return `<div class="rubric-row${isSelected ? ' selected' : ''}" data-idx="${i}">
       <div style="flex:1;min-width:0"><div class="rubric-path">${display}</div>${caption}<div class="rubric-count">${rems ? rems.length : 0} remedies</div></div>
       <button class="add-btn${isSelected ? ' added' : ''}" onclick="addRubric(${i})">${isSelected ? '✓ Added' : '+ Add'}</button>
