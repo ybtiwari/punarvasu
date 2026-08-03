@@ -147,7 +147,7 @@ const state = {
   reviewExpiredNotice: false,   // shows a one-time notice on the confirmation screen after a 30-min review session times out
   returnScreenAfterSearch: 'chapters', // where to go back to if search is cancelled without a pick
   patient: {
-    name: '', age: '', sex: '', location: '', reason: ''
+    name: '', age: '', sex: '', location: '', reason: '', phone: '', uid: null, accountBusy: false
   },
   lock: {
     codeInput: '', error: '', isUnlocked: false, accessCodeUsed: '', busy: false
@@ -411,6 +411,10 @@ function renderIntakeScreen() {
         <input id="intakeNameField" class="search-box" type="text" placeholder="Full name" value="${escAttr(p.name)}">
       </div>
       <div class="option-group">
+        <div class="option-group-label">Mobile number</div>
+        <input id="intakePhoneField" class="search-box" type="tel" placeholder="10-digit mobile number" value="${escAttr(p.phone)}">
+      </div>
+      <div class="option-group">
         <div class="option-group-label">Age</div>
         <input id="intakeAgeField" class="search-box" type="number" min="0" max="120" placeholder="Age in years" value="${escAttr(p.age)}">
       </div>
@@ -434,17 +438,19 @@ function renderIntakeScreen() {
       </div>
 
       ${state.lock.error && state.screen==='intake' ? `<div class="no-match-msg">${esc(state.lock.error)}</div>` : ''}
-      <button class="btn-primary" onclick="onIntakeContinue()">Continue</button>
+      <button class="btn-primary" onclick="onIntakeContinue()" ${state.patient.accountBusy ? 'disabled' : ''}>${state.patient.accountBusy ? 'Setting up your account…' : 'Continue'}</button>
     </div>
   `;
 }
 
 function wireIntakeScreen() {
   const nameF = document.getElementById('intakeNameField');
+  const phoneF = document.getElementById('intakePhoneField');
   const ageF = document.getElementById('intakeAgeField');
   const locF = document.getElementById('intakeLocationField');
   const reasonF = document.getElementById('intakeReasonField');
   if (nameF) nameF.addEventListener('input', () => { state.patient.name = nameF.value; });
+  if (phoneF) phoneF.addEventListener('input', () => { state.patient.phone = phoneF.value; });
   if (ageF) ageF.addEventListener('input', () => { state.patient.age = ageF.value; });
   if (locF) locF.addEventListener('input', () => { state.patient.location = locF.value; });
   if (reasonF) reasonF.addEventListener('input', () => { state.patient.reason = reasonF.value; });
@@ -455,15 +461,36 @@ function onIntakeSexPick(sex) {
   render();
 }
 
-function onIntakeContinue() {
+async function onIntakeContinue() {
   const p = state.patient;
   if (!p.name.trim() || !p.age || !p.sex) {
     state.lock.error = 'Please fill in name, age, and sex before continuing.';
     render();
     return;
   }
+  if (!p.phone.trim()) {
+    state.lock.error = 'Please enter a mobile number before continuing.';
+    render();
+    return;
+  }
   state.lock.error = '';
-  // If already unlocked via URL code, skip lock screen and go straight to chapters
+  state.patient.accountBusy = true;
+  render();
+
+  // Creates (or recovers) this patient's portal account in the background —
+  // same synthetic-email/deterministic-password scheme admin-panel.html
+  // already uses, so this patient can log into the SAME portal later via
+  // the existing WhatsApp magic-link flow. Deliberately never blocks the
+  // intake itself: if this fails for any reason, the case still submits
+  // normally, it just won't be linked to a portal account.
+  try {
+    state.patient.uid = await window.ensurePatientAccount(p.name, p.phone);
+  } catch (e) {
+    console.error('[patient-intake] portal account creation/recovery failed:', e);
+    state.patient.uid = null;
+  }
+  state.patient.accountBusy = false;
+
   state.screen = 'lock';
   render();
 }
@@ -1934,8 +1961,9 @@ async function onSubmitCase() {
   render();
 
   const isRevision = !!state.submittedCaseId;
+  const { accountBusy, ...patientForSubmission } = state.patient; // accountBusy is transient UI state, not part of the saved record
   const payload = {
-    patient: state.patient,
+    patient: patientForSubmission,
     accessCodeUsed: state.lock.accessCodeUsed,
     complaints: state.completeCase, // includes both complaint- and generals-sourced entries; generals ones carry source:'generals'
     submittedAt: state.submittedAtOriginal || new Date().toISOString(),
@@ -1987,6 +2015,8 @@ window.addEventListener('DOMContentLoaded', () => {
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getDatabase, ref, get, update, push, set }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAqzKPqBzNoBJc5FWjnVXMER4prgrbhqag",
@@ -2000,6 +2030,68 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const app = initializeApp(firebaseConfig, 'patientIntakeApp');
   const db = getDatabase(app);
+  const auth = getAuth(app);
+
+  // Creates (or recovers) a patient portal account, using the exact same
+  // synthetic-email/deterministic-password scheme admin-panel.html already
+  // uses for patients added manually — so a patient who fills this form
+  // themselves gets the SAME kind of account, usable through the SAME
+  // existing WhatsApp magic-link + patient-portal.html login, rather than a
+  // second, separate account system. Returns the resulting uid, or null if
+  // neither creating nor recovering succeeds — never throws; a null uid
+  // just means this case won't be linked to a portal account, the case
+  // itself should still submit normally regardless.
+  window.ensurePatientAccount = async function (name, phone) {
+    const rawDigits = phone.replace(/[^0-9]/g, '');
+    if (!rawDigits) return null;
+    const stripped = rawDigits.replace(/^0+/, '');
+    const cleanPhone = stripped.slice(-10); // canonical form used for all NEW accounts going forward
+
+    // Check for an existing account across every plausible format FIRST,
+    // before ever creating anything. This matters because the normal flow
+    // is: admin-panel.html creates the account when the patient is first
+    // added (using whatever raw digits the admin typed, unnormalized), and
+    // only later does the patient themselves fill this form. If creation
+    // were tried first, a phone typed with extra digits (leading zero,
+    // country code) by the admin wouldn't match this form's normalized
+    // attempt, and would silently create a genuine duplicate account
+    // instead of finding the one that already exists.
+    const variants = [...new Set([rawDigits, stripped, cleanPhone])];
+    for (const v of variants) {
+      const tryEmail = v + '@punarvasu.clinic';
+      const tryPass = 'Pun@' + v.slice(-6) + 'Cl!';
+      try {
+        const cred = await signInWithEmailAndPassword(auth, tryEmail, tryPass);
+        const uid = cred.user.uid;
+        const existing = await get(ref(db, 'patients/' + uid));
+        if (!existing.exists()) {
+          await set(ref(db, 'patients/' + uid), {
+            name, phone, email: tryEmail, status: 'active', createdAt: Date.now()
+          });
+        }
+        return uid;
+      } catch (e) {
+        // try next variant
+      }
+    }
+
+    // No existing account found under any variant — create a fresh one,
+    // using the normalized 10-digit form as the canonical choice for every
+    // new account from here on, so future lookups stay simple and reliable.
+    if (!cleanPhone) return null;
+    const internalEmail = cleanPhone + '@punarvasu.clinic';
+    const autoPass = 'Pun@' + cleanPhone.slice(-6) + 'Cl!';
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, internalEmail, autoPass);
+      await set(ref(db, 'patients/' + cred.user.uid), {
+        name, phone, email: internalEmail, status: 'active', createdAt: Date.now()
+      });
+      return cred.user.uid;
+    } catch (e) {
+      console.error('[patient-intake] account creation failed:', e);
+      return null; // every attempt failed — case still submits, just unlinked from a portal account
+    }
+  };
 
   // Identical logic to questionnaire_prototype.html's access-code check —
   // same rules, same behavior: burns the code the instant it's valid.
