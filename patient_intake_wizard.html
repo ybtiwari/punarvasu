@@ -232,16 +232,22 @@ async function initData() {
   }
 
   // If a ?code=XXXXXXXX parameter is present in the URL (sent via the
-  // WhatsApp welcome message), pre-fill the lock screen code field and show
-  // the lock screen FIRST — the patient sees their code pre-filled, taps
-  // Unlock, then fills their basic details. Without a URL code, the normal
-  // flow applies: intake details first, then the lock screen.
-  // If a ?code=XXXXXXXX parameter is in the URL, pre-fill it in the lock
-  // screen field so the patient just taps Unlock — no typing needed.
-  // The flow stays: basic details first, then lock screen (pre-filled), then tree-walker.
+  // WhatsApp welcome message), pre-fill it into the lock screen's field so
+  // the patient just taps Unlock later — no typing needed. The flow stays
+  // basic details first, then the lock screen, then the tree-walker.
+  // If this code is one of the newer, patient-linked ones (generated per
+  // patient from admin-panel.html), do a read-only peek at it now — NOT a
+  // full validate-and-mark-used, just a check — so their name can already
+  // be sitting in the name field by the time they see the very first
+  // screen, instead of asking them to type something the clinic already knows.
   const urlCode = new URLSearchParams(window.location.search).get('code');
   if (urlCode) {
     state.lock.codeInput = urlCode.trim().toUpperCase();
+    const peek = await window.peekAccessCodePatient(state.lock.codeInput);
+    if (peek) {
+      state.patient.uid = peek.uid;
+      if (peek.name) state.patient.name = peek.name;
+    }
   }
   state.screen = 'intake';
   render();
@@ -2134,10 +2140,38 @@ window.addEventListener('DOMContentLoaded', () => {
       const data = snap.val();
       if (data.used === true) return { ok: false, reason: 'used' };
       await update(codeRef, { used: true });
-      return { ok: true };
+      // Newer codes (generated per-patient from admin-panel.html) carry
+      // patientUid + patientName directly on the code record itself — read
+      // straight from here, not from patients/{uid}, since that path
+      // requires authentication and the patient hasn't signed into
+      // anything yet at this point. Older, unlinked codes simply won't
+      // have these fields, and the existing ensurePatientAccount flow at
+      // submission time covers that case exactly as it did before this change.
+      return { ok: true, patientUid: data.patientUid || null, patientName: data.patientName || null };
     } catch (e) {
       console.error('[patient-intake] access code check failed:', e);
       return { ok: false, reason: 'error' };
+    }
+  };
+
+  // Read-only "peek" at an access code — checks whether it's linked to a
+  // patient WITHOUT marking it used. Called at boot, before the intake
+  // screen even renders, so the name can be pre-filled on that very first
+  // screen. Deliberately does NOT call update()/mark used — burning the
+  // code just from the page loading (e.g. if WhatsApp's own link-preview
+  // crawler fetches the URL before the patient ever taps it) would lock
+  // them out before they've done anything.
+  window.peekAccessCodePatient = async function (code) {
+    try {
+      const snap = await get(ref(db, 'accessCodes/' + code));
+      if (!snap.exists()) return null;
+      const data = snap.val();
+      if (data.used === true) return null; // don't reveal info about an already-used code
+      if (!data.patientUid) return null;
+      return { uid: data.patientUid, name: data.patientName || null };
+    } catch (e) {
+      console.error('[patient-intake] access code peek failed:', e);
+      return null;
     }
   };
 
