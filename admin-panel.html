@@ -765,100 +765,90 @@ window.addPatient = async function() {
   errEl.textContent = '';
   if (!name || !phone) { errEl.textContent = 'Name and phone number are required.'; return; }
 
-  // Use phone number as internal email: 9274791141@punarvasu.clinic
-  const cleanPhone    = phone.replace(/[^0-9]/g, '');
-  const internalEmail = cleanPhone + '@punarvasu.clinic';
-  // Deterministic password — based on phone only, no random part
-  const autoPass      = 'Pun@' + cleanPhone.slice(-6) + 'Cl!';
+  // Same phone+name compound keying fix as patient_intake_wizard.html: a
+  // phone number alone would silently merge two different people sharing
+  // that number (e.g. a father and daughter) into one account and casefile.
+  const rawDigits = phone.replace(/[^0-9]/g, '');
+  const stripped = rawDigits.replace(/^0+/, '');
+  const cleanPhone = stripped.slice(-10);
+  const normalizedName = name.toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.+|\.+$/g, '');
+  if (!cleanPhone || !normalizedName) { errEl.textContent = 'Please enter a valid name and phone number.'; return; }
+
+  const canonicalEmail = cleanPhone + '.' + normalizedName + '@punarvasu.clinic';
+  const canonicalPass  = 'Pun@' + cleanPhone.slice(-6) + 'Cl!';
 
   try {
-    // Create user using secondary app — admin session stays active
-    const cred = await createUserWithEmailAndPassword(secondaryAuth, internalEmail, autoPass);
+    // Check the canonical (phone+name) form first — the expected case for
+    // a patient who already has an account under this scheme.
+    let uid = null;
+    try {
+      const cred = await signInWithEmailAndPassword(secondaryAuth, canonicalEmail, canonicalPass);
+      uid = cred.user.uid;
+    } catch (notFoundErr) {
+      // Not found under canonical form — check legacy phone-only accounts
+      // (created before this fix), but ONLY treat a match as the same
+      // person if the stored name also matches. A different name on that
+      // legacy account means it belongs to someone else sharing the phone,
+      // and a new, separate account should be created instead.
+      const legacyVariants = [...new Set([rawDigits, stripped, cleanPhone])];
+      for (const v of legacyVariants) {
+        const tryEmail = v + '@punarvasu.clinic';
+        const tryPass  = 'Pun@' + v.slice(-6) + 'Cl!';
+        try {
+          const cred = await signInWithEmailAndPassword(secondaryAuth, tryEmail, tryPass);
+          const existing = await get(ref(db, 'patients/' + cred.user.uid));
+          const existingNormalized = existing.exists()
+            ? (existing.val().name || '').toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.+|\.+$/g, '')
+            : '';
+          if (existingNormalized && existingNormalized === normalizedName) {
+            uid = cred.user.uid;
+            break;
+          }
+          await signOut(secondaryAuth); // belongs to someone else sharing the phone — sign back out, keep searching
+        } catch (tryErr) {
+          // try next variant
+        }
+      }
+    }
+
+    if (uid) {
+      // Existing account found (canonical or legacy-matched) — just make
+      // sure the DB record is present and current, no new account needed.
+      await set(ref(db, `patients/${uid}`), {
+        name, phone, email: canonicalEmail, status: 'active', createdAt: Date.now()
+      });
+      await signOut(secondaryAuth);
+      ['newPatName','newPatPhone'].forEach(id => { document.getElementById(id).value = ''; });
+      document.getElementById('addPatientForm').style.display = 'none';
+      alert(`✅ Existing account found and confirmed for ${name}.\n\nUse the "📲 Send WhatsApp invite" button on their row in the patient list whenever you're ready to invite them.`);
+      return;
+    }
+
+    // No existing account anywhere — create a fresh one under the
+    // canonical (phone+name) key, so future lookups for this exact person stay reliable.
+    let cred;
+    try {
+      cred = await createUserWithEmailAndPassword(secondaryAuth, canonicalEmail, canonicalPass);
+    } catch (createErr) {
+      if (createErr.code === 'auth/email-already-in-use') {
+        // Rare race condition — try signing in to the canonical account once more.
+        cred = await signInWithEmailAndPassword(secondaryAuth, canonicalEmail, canonicalPass);
+      } else {
+        throw createErr;
+      }
+    }
     await updateProfile(cred.user, { displayName: name });
-
-    // Save patient record
     await set(ref(db, `patients/${cred.user.uid}`), {
-      name, phone,
-      email: internalEmail,
-      status: 'active',
-      createdAt: Date.now()
+      name, phone, email: canonicalEmail, status: 'active', createdAt: Date.now()
     });
-
-    // Sign out secondary app immediately
     await signOut(secondaryAuth);
 
-    // Clear form
-    ['newPatName','newPatPhone'].forEach(id => {
-      document.getElementById(id).value = '';
-    });
+    ['newPatName','newPatPhone'].forEach(id => { document.getElementById(id).value = ''; });
     document.getElementById('addPatientForm').style.display = 'none';
-
     alert(`✅ Patient account created for ${name}.\n\nUse the "📲 Send WhatsApp invite" button on their row in the patient list whenever you're ready to invite them.`);
 
   } catch(e) {
-    if (e.code === 'auth/email-already-in-use') {
-      // Auth account exists but DB record may be missing.
-      // Try all plausible phone/email variants to find the right credentials.
-      try {
-        errEl.textContent = 'Account exists, recovering...';
-
-        // Build all variants: with/without leading zero, last 10 digits, last 10 without leading zero
-        const stripped = cleanPhone.replace(/^0+/, '');   // remove leading zeros
-        const variants = [...new Set([
-          cleanPhone,                      // exactly as typed, e.g. 09274791141
-          stripped,                        // without leading zero, e.g. 9274791141
-          cleanPhone.slice(-10),           // last 10 digits
-          stripped.slice(-10)              // last 10 digits without leading zero
-        ])];
-
-        let recoverCred = null;
-        let usedEmail = null;
-        let usedPass = null;
-        for (const v of variants) {
-          const tryEmail = v + '@punarvasu.clinic';
-          const tryPass  = 'Pun@' + v.slice(-6) + 'Cl!';
-          try {
-            recoverCred = await signInWithEmailAndPassword(secondaryAuth, tryEmail, tryPass);
-            usedEmail = tryEmail;
-            usedPass  = tryPass;
-            break;
-          } catch(tryErr) {
-            // try next variant
-          }
-        }
-
-        if (!recoverCred) {
-          // Cannot sign in — show actionable instructions
-          errEl.innerHTML = 'Recovery failed. Go to <b>Firebase Console &rarr; Authentication &rarr; Users</b>, ' +
-            'find and delete the account for <b>' + cleanPhone + '@punarvasu.clinic</b> ' +
-            '(or any variant), then try adding this patient again.';
-          return;
-        }
-
-        const uid = recoverCred.user.uid;
-        const existing = await get(ref(db, 'patients/' + uid));
-        if (!existing.exists()) {
-          await set(ref(db, 'patients/' + uid), {
-            name, phone,
-            email: usedEmail,
-            status: 'active',
-            createdAt: Date.now()
-          });
-        }
-        await signOut(secondaryAuth);
-
-        ['newPatName','newPatPhone'].forEach(id => {
-          document.getElementById(id).value = '';
-        });
-        document.getElementById('addPatientForm').style.display = 'none';
-        errEl.textContent = '';
-        alert('Patient account recovered for ' + name + '. Use the "Send WhatsApp invite" button on their row whenever ready.');
-      } catch(recoverErr) {
-        errEl.textContent = 'Could not recover account: ' + recoverErr.message;
-      }
-    } else {
-      errEl.textContent = e.message;
-    }
+    errEl.textContent = e.message;
   }
 };
 
