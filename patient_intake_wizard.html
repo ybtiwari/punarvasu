@@ -379,10 +379,36 @@ function classifyOptionKind(token) {
 // =================================================================
 // RENDER
 // =================================================================
+let lastSavedDraftSnapshot = null;
+let draftSaveTimer = null;
+
+// Checked on every render (same pattern as the review-session timer reset
+// below it) — compares the current case against what was last saved, and
+// if different, schedules a save after a short pause rather than writing to
+// Firebase on every single tap. Only applies once the patient is actually
+// signed in (state.patient.uid set) and past the point where there's
+// anything meaningful to save yet.
+function scheduleDraftSaveIfChanged() {
+  if (!state.patient.uid) return;
+  if (state.screen === 'intake' || state.screen === 'lock' || state.screen === 'loading' || state.screen === 'submitted') return;
+  const snapshot = JSON.stringify(state.completeCase);
+  if (snapshot === lastSavedDraftSnapshot) return; // nothing changed since the last save
+  clearTimeout(draftSaveTimer);
+  draftSaveTimer = setTimeout(() => {
+    // Re-check at the moment the timer actually fires, not just when it was
+    // scheduled — the patient may have submitted or navigated away by then.
+    if (state.patient.uid && state.screen !== 'submitted') {
+      window.saveDraftCase(state.patient.uid, state.completeCase);
+      lastSavedDraftSnapshot = snapshot;
+    }
+  }, 2000);
+}
+
 function render() {
   if (state.reviewMode === 'postSubmission' && state.screen !== 'submitted') {
     state.reviewSessionExpiresAt = Date.now() + REVIEW_SESSION_MINUTES * 60 * 1000; // any interaction resets the 30-min window
   }
+  scheduleDraftSaveIfChanged();
   const app = document.getElementById('app');
   if (state.screen === 'loading') app.innerHTML = renderLoading();
   else if (state.screen === 'intake') app.innerHTML = renderIntakeScreen();
@@ -495,6 +521,24 @@ async function onIntakeContinue() {
     console.error('[patient-intake] portal account creation/recovery failed:', e);
     state.patient.uid = null;
   }
+
+  // If they have an in-progress draft from a previous session (closed the
+  // tab, came back later with another of their codes), pick it back up
+  // rather than starting from zero. completeCase should always be empty
+  // here anyway (this runs right at the very first screen), but the check
+  // costs nothing and avoids ever silently overwriting something real.
+  if (state.patient.uid && state.completeCase.length === 0) {
+    try {
+      const draft = await window.loadDraftCase(state.patient.uid);
+      if (draft && draft.length) {
+        state.completeCase = draft;
+        lastSavedDraftSnapshot = JSON.stringify(draft); // so the very next render doesn't immediately re-save what we just loaded
+      }
+    } catch (e) {
+      console.error('[patient-intake] draft load failed:', e);
+    }
+  }
+
   state.patient.accountBusy = false;
 
   state.screen = 'lock';
@@ -1987,6 +2031,10 @@ async function onSubmitCase() {
     if (reviewExpiryChecker) { clearInterval(reviewExpiryChecker); reviewExpiryChecker = null; }
     state.reviewMode = 'normal';
     state.reviewExpiredNotice = false;
+    if (state.patient.uid) {
+      window.saveDraftCase(state.patient.uid, []); // clears the draft — a submitted case is no longer "in progress"
+      lastSavedDraftSnapshot = JSON.stringify([]);
+    }
     state.screen = 'submitted';
     render();
   } else {
@@ -2051,6 +2099,35 @@ window.addEventListener('DOMContentLoaded', () => {
   function normalizeNameForEmail(name) {
     return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.+|\.+$/g, '');
   }
+
+  // Draft autosave — writes to patients/{uid}/draftCase, allowed under the
+  // existing rules since the patient is signed in as themselves (auth.uid
+  // == uid) by the time this can ever fire. Failures are deliberately
+  // silent to the patient: a missed autosave shouldn't interrupt them or
+  // look like an error, since final submission is what actually matters.
+  window.saveDraftCase = async function (uid, completeCase) {
+    try {
+      if (!completeCase || completeCase.length === 0) {
+        await set(ref(db, 'patients/' + uid + '/draftCase'), null); // nothing to save — clear any stale draft
+      } else {
+        await set(ref(db, 'patients/' + uid + '/draftCase'), { complaints: completeCase, savedAt: Date.now() });
+      }
+    } catch (e) {
+      console.error('[patient-intake] draft autosave failed:', e);
+    }
+  };
+
+  window.loadDraftCase = async function (uid) {
+    try {
+      const snap = await get(ref(db, 'patients/' + uid + '/draftCase'));
+      if (!snap.exists()) return null;
+      const data = snap.val();
+      return (data && data.complaints) || null;
+    } catch (e) {
+      console.error('[patient-intake] draft load failed:', e);
+      return null;
+    }
+  };
 
   window.ensurePatientAccount = async function (name, phone) {
     const rawDigits = phone.replace(/[^0-9]/g, '');
