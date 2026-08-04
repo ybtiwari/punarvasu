@@ -2032,62 +2032,93 @@ window.addEventListener('DOMContentLoaded', () => {
   const db = getDatabase(app);
   const auth = getAuth(app);
 
-  // Creates (or recovers) a patient portal account, using the exact same
-  // synthetic-email/deterministic-password scheme admin-panel.html already
-  // uses for patients added manually — so a patient who fills this form
-  // themselves gets the SAME kind of account, usable through the SAME
-  // existing WhatsApp magic-link + patient-portal.html login, rather than a
-  // second, separate account system. Returns the resulting uid, or null if
-  // neither creating nor recovering succeeds — never throws; a null uid
-  // just means this case won't be linked to a portal account, the case
-  // itself should still submit normally regardless.
+  // Creates (or recovers) a patient portal account, using the same
+  // synthetic-email/deterministic-password scheme admin-panel.html uses for
+  // patients added manually, extended with one important fix: the account is
+  // now keyed by PHONE + NAME together, not phone alone. A phone number is
+  // very often shared within a household — without the name in the key, a
+  // father and daughter using the same number would be silently folded into
+  // one account, mixing their symptoms and prescriptions into one casefile.
+  // Returns the resulting uid, or null if nothing succeeds — never throws; a
+  // null uid just means this case won't be linked to a portal account, the
+  // case itself should still submit normally regardless.
+  function normalizeNameForEmail(name) {
+    return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.+|\.+$/g, '');
+  }
+
   window.ensurePatientAccount = async function (name, phone) {
     const rawDigits = phone.replace(/[^0-9]/g, '');
     if (!rawDigits) return null;
     const stripped = rawDigits.replace(/^0+/, '');
-    const cleanPhone = stripped.slice(-10); // canonical form used for all NEW accounts going forward
+    const cleanPhone = stripped.slice(-10);
+    if (!cleanPhone) return null;
+    const normalizedName = normalizeNameForEmail(name);
+    if (!normalizedName) return null; // name is required now — it's part of the account's identity, not just a display field
 
-    // Check for an existing account across every plausible format FIRST,
-    // before ever creating anything. This matters because the normal flow
-    // is: admin-panel.html creates the account when the patient is first
-    // added (using whatever raw digits the admin typed, unnormalized), and
-    // only later does the patient themselves fill this form. If creation
-    // were tried first, a phone typed with extra digits (leading zero,
-    // country code) by the admin wouldn't match this form's normalized
-    // attempt, and would silently create a genuine duplicate account
-    // instead of finding the one that already exists.
-    const variants = [...new Set([rawDigits, stripped, cleanPhone])];
-    for (const v of variants) {
+    const canonicalEmail = cleanPhone + '.' + normalizedName + '@punarvasu.clinic';
+    const canonicalPass = 'Pun@' + cleanPhone.slice(-6) + 'Cl!';
+
+    // Check the canonical (phone+name) form first — the expected case for a
+    // returning patient who already has an account under this scheme.
+    try {
+      const cred = await signInWithEmailAndPassword(auth, canonicalEmail, canonicalPass);
+      const uid = cred.user.uid;
+      const existing = await get(ref(db, 'patients/' + uid));
+      if (!existing.exists()) {
+        await set(ref(db, 'patients/' + uid), { name, phone, email: canonicalEmail, status: 'active', createdAt: Date.now() });
+      }
+      return uid;
+    } catch (e) {
+      // not found under the canonical form — fall through
+    }
+
+    // Safety net for accounts created before this fix (phone-only key, via
+    // admin-panel.html or an earlier version of this form): only treat a
+    // legacy match as the SAME person if the name stored on that account
+    // also matches. If it doesn't, that phone belongs to someone else
+    // entirely — correctly fall through to creating a new, separate account
+    // instead of merging this patient into a stranger's casefile.
+    const legacyVariants = [...new Set([rawDigits, stripped, cleanPhone])];
+    for (const v of legacyVariants) {
       const tryEmail = v + '@punarvasu.clinic';
       const tryPass = 'Pun@' + v.slice(-6) + 'Cl!';
       try {
         const cred = await signInWithEmailAndPassword(auth, tryEmail, tryPass);
         const uid = cred.user.uid;
         const existing = await get(ref(db, 'patients/' + uid));
-        if (!existing.exists()) {
-          await set(ref(db, 'patients/' + uid), {
-            name, phone, email: tryEmail, status: 'active', createdAt: Date.now()
-          });
+        const existingNormalized = existing.exists() ? normalizeNameForEmail(existing.val().name || '') : '';
+        if (existingNormalized && existingNormalized === normalizedName) {
+          return uid; // genuinely the same person under the old scheme
         }
-        return uid;
+        // Name doesn't match — this legacy account belongs to someone else
+        // sharing the phone. Do not reuse it; keep checking other variants,
+        // then fall through to creating a new canonical account below.
       } catch (e) {
-        // try next variant
+        // not found under this legacy variant either
       }
     }
 
-    // No existing account found under any variant — create a fresh one,
-    // using the normalized 10-digit form as the canonical choice for every
-    // new account from here on, so future lookups stay simple and reliable.
-    if (!cleanPhone) return null;
-    const internalEmail = cleanPhone + '@punarvasu.clinic';
-    const autoPass = 'Pun@' + cleanPhone.slice(-6) + 'Cl!';
+    // No match anywhere — create a fresh account under the new canonical
+    // (phone+name) key, so future lookups for this exact person stay simple.
     try {
-      const cred = await createUserWithEmailAndPassword(auth, internalEmail, autoPass);
+      const cred = await createUserWithEmailAndPassword(auth, canonicalEmail, canonicalPass);
       await set(ref(db, 'patients/' + cred.user.uid), {
-        name, phone, email: internalEmail, status: 'active', createdAt: Date.now()
+        name, phone, email: canonicalEmail, status: 'active', createdAt: Date.now()
       });
       return cred.user.uid;
     } catch (e) {
+      if (e.code === 'auth/email-already-in-use') {
+        // Rare race condition — e.g. the same patient submitted from two
+        // tabs at once. Try signing in to the canonical account one more
+        // time, now that it's had a moment to exist.
+        try {
+          const cred = await signInWithEmailAndPassword(auth, canonicalEmail, canonicalPass);
+          return cred.user.uid;
+        } catch (e2) {
+          console.error('[patient-intake] race-condition recovery failed:', e2);
+          return null;
+        }
+      }
       console.error('[patient-intake] account creation failed:', e);
       return null; // every attempt failed — case still submits, just unlinked from a portal account
     }
