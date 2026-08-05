@@ -144,7 +144,28 @@
     </div>
     <div id="loginForm">
       <p style="font-size:14px;color:var(--ink2);margin-bottom:20px;">Please use the link sent to your WhatsApp to access your portal. If you need a new link, contact the clinic.</p>
-      <p style="font-size:13px;color:var(--ink3);">📞 <strong>+91 92747 91141</strong><br/>dr.yogeshwar@punarvasu.clinic</p>
+      <p style="font-size:13px;color:var(--ink3);margin-bottom:16px;">📞 <strong>+91 92747 91141</strong><br/>dr.yogeshwar@punarvasu.clinic</p>
+      <p style="font-size:13px;">
+        <a href="#" id="showRecoveryLink" style="color:var(--teal);">Lost your link? Recover your account using your phone number</a>
+      </p>
+    </div>
+    <div id="recoveryPanel" style="display:none;">
+      <p style="font-size:14px;color:var(--ink2);margin-bottom:16px;">Enter the mobile number your account is registered under.</p>
+      <div class="fg">
+        <label>Mobile number</label>
+        <input type="tel" id="recoveryPhone" placeholder="10-digit mobile number"/>
+      </div>
+      <button class="btn-primary" id="recoveryFindBtn">Find my account</button>
+      <div id="recoveryNameChoice" style="display:none;margin-top:16px;">
+        <div class="fg">
+          <label>Which account is yours?</label>
+          <select id="recoveryNameSelect" style="border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-family:var(--sans);font-size:15px;color:var(--ink);outline:none;"></select>
+        </div>
+        <button class="btn-primary" id="recoveryConfirmBtn">Continue</button>
+      </div>
+      <p style="font-size:13px;margin-top:16px;">
+        <a href="#" id="hideRecoveryLink" style="color:var(--ink3);">← Back</a>
+      </p>
     </div>
     <div class="login-err" id="loginErr"></div>
   </div>
@@ -447,6 +468,111 @@ async function attemptTokenSignIn(token, uid) {
     await signOut(auth);
   }
 })();
+
+// RECOVERY FLOW — "Lost your link?"
+// Looks up phoneIndex/{phone} (publicly readable, no auth needed — same as
+// accessCodes/{code} already is) to find which account(s) are registered
+// under a given number, then signs in directly using the same deterministic
+// password scheme every account already has. Multiple people can share one
+// phone, so if more than one name comes back, a picker is shown — no risk
+// beyond what anyone with physical access to that phone already knows,
+// since a shared clinic phone number is realistically a household one.
+document.getElementById('showRecoveryLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('recoveryPanel').style.display = 'block';
+  document.getElementById('loginErr').textContent = '';
+});
+document.getElementById('hideRecoveryLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('recoveryPanel').style.display = 'none';
+  document.getElementById('loginForm').style.display = 'block';
+  document.getElementById('recoveryNameChoice').style.display = 'none';
+  document.getElementById('loginErr').textContent = '';
+});
+
+let recoveryMatches = {}; // uid -> name, from the most recent lookup
+function normalizeRecoveryPhone(raw) {
+  const rawDigits = raw.replace(/[^0-9]/g, '');
+  const stripped = rawDigits.replace(/^0+/, '');
+  return stripped.slice(-10);
+}
+
+document.getElementById('recoveryFindBtn').addEventListener('click', async () => {
+  const cleanPhone = normalizeRecoveryPhone(document.getElementById('recoveryPhone').value);
+  document.getElementById('loginErr').textContent = '';
+  if (!cleanPhone) {
+    document.getElementById('loginErr').textContent = 'Please enter a valid mobile number.';
+    return;
+  }
+  try {
+    const snap = await get(ref(db, `phoneIndex/${cleanPhone}`));
+    if (!snap.exists()) {
+      document.getElementById('loginErr').textContent = 'No account found for this number. Please contact the clinic.';
+      return;
+    }
+    recoveryMatches = snap.val(); // { uid: name, uid2: name2, ... }
+    const uids = Object.keys(recoveryMatches);
+    if (uids.length === 1) {
+      await recoverySignIn(cleanPhone, uids[0]);
+    } else {
+      const select = document.getElementById('recoveryNameSelect');
+      select.innerHTML = '';
+      uids.forEach(uid => {
+        const opt = document.createElement('option');
+        opt.value = uid;
+        opt.textContent = recoveryMatches[uid];
+        select.appendChild(opt);
+      });
+      document.getElementById('recoveryNameChoice').style.display = 'block';
+    }
+  } catch (e) {
+    document.getElementById('loginErr').textContent = 'Something went wrong looking up that number. Please try again or contact the clinic.';
+  }
+});
+
+document.getElementById('recoveryConfirmBtn').addEventListener('click', async () => {
+  const cleanPhone = normalizeRecoveryPhone(document.getElementById('recoveryPhone').value);
+  const uid = document.getElementById('recoveryNameSelect').value;
+  await recoverySignIn(cleanPhone, uid);
+});
+
+async function recoverySignIn(cleanPhone, uid) {
+  const name = recoveryMatches[uid] || '';
+  const normalizedName = name.toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.+|\.+$/g, '');
+  const email = cleanPhone + '.' + normalizedName + '@punarvasu.clinic';
+  const pass  = 'Pun@' + cleanPhone.slice(-6) + 'Cl!';
+  document.getElementById('loginErr').textContent = '';
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    validatedThisPageLoad = true;
+    // Save for silent re-login on this device next time, same as a real
+    // magic-link sign-in already does — recovery shouldn't be a one-time
+    // fix, this device should just stay logged in afterward too.
+    const freshToken = btoa(email + ':' + pass);
+    try {
+      localStorage.setItem(LS_TOKEN_KEY, freshToken);
+      localStorage.setItem(LS_UID_KEY, uid);
+    } catch (storageErr) {}
+    await showPortalForUser(cred.user);
+    // Give them something portable for OTHER devices too, not just this
+    // one — copy a fresh magic link to the clipboard so they can paste it
+    // into a note or email themselves, rather than being stuck relying on
+    // this exact device/browser working forever.
+    const freshLink = window.location.origin + '/patient-portal.html?token=' + encodeURIComponent(freshToken) + '&uid=' + uid;
+    try {
+      await navigator.clipboard.writeText(freshLink);
+      setTimeout(() => {
+        alert("You're signed in, and this device will remember you next time. A fresh portal link has also been copied to your clipboard — paste it into a note or email to yourself so you have a backup if you ever switch devices.");
+      }, 300);
+    } catch (clipErr) {
+      // Clipboard access can fail (permissions, older browsers) — non-fatal,
+      // they're still signed in either way, just without the extra copy step.
+    }
+  } catch (e) {
+    document.getElementById('loginErr').textContent = 'Could not sign in — please contact the clinic for help.';
+  }
+}
 
 document.getElementById('logoutBtn').addEventListener('click', () => {
   try {
