@@ -215,6 +215,13 @@
           <h3>Account status</h3>
           <p>Your account is active. <span class="badge badge-active">Active</span></p>
         </div>
+        <div class="info-card">
+          <h3>Save your login for later</h3>
+          <p style="margin-bottom:10px;">Message yourself a link to sign back in on any device.</p>
+          <button onclick="sendCredentialsViaWhatsApp()" style="background:#25D366;color:white;border:none;border-radius:6px;padding:10px 18px;font-size:14px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px;">
+            💬 Send my login to WhatsApp
+          </button>
+        </div>
         <div class="info-card" id="dash-next-appt">
           <h3>Next appointment</h3>
           <p id="next-appt-text">Loading...</p>
@@ -625,6 +632,40 @@ document.querySelectorAll('.nav-item').forEach(item => {
     document.getElementById('panel-' + item.dataset.panel).classList.add('active');
   });
 });
+
+// Lets a signed-in patient message themselves a fresh magic link on their own
+// WhatsApp, for their own reference on another device. Mirrors the exact
+// email/password derivation used by ensureAdminCreatedPatientAccount() in
+// admin-panel.html, so the credentials always match what the admin panel
+// would generate. Reads patients/{uid} fresh at click time rather than
+// caching, so it's always correct even if phone/email were ever corrected.
+window.sendCredentialsViaWhatsApp = async function() {
+  if (!currentUser) return;
+  try {
+    const snap = await get(ref(db, `patients/${currentUser.uid}`));
+    if (!snap.exists()) {
+      alert('Could not find your account details. Please contact the clinic.');
+      return;
+    }
+    const data = snap.val();
+    const email = data.email;
+    const rawDigits = (data.phone || '').replace(/[^0-9]/g, '');
+    const stripped = rawDigits.replace(/^0+/, '');
+    const cleanPhone = stripped.slice(-10);
+    if (!email || cleanPhone.length !== 10) {
+      alert('Your account is missing a phone number on file. Please contact the clinic.');
+      return;
+    }
+    const password = 'Pun@' + cleanPhone.slice(-6) + 'Cl!';
+    const token = btoa(email + ':' + password);
+    const portalUrl = 'https://punarvasu.clinic/patient-portal.html?token=' + encodeURIComponent(token) + '&uid=' + currentUser.uid;
+    const msg = `Here is your Punarvasu Clinic patient portal link:\n${portalUrl}\n\nKeep this safe — it signs you straight in.`;
+    const waUrl = `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank');
+  } catch (err) {
+    alert('Something went wrong preparing your login link. Please try again or contact the clinic.');
+  }
+};
 
 // DASHBOARD
 function loadDashboard() {
