@@ -573,7 +573,10 @@ function renderSection(section, snap) {
   const entries = Object.values(snap.val()).sort((a,b) => (b.date||'').localeCompare(a.date||''));
   entries.forEach(e => {
     if (section === 'prescriptions') {
-      html += `<div class="case-entry"><div class="case-entry-date">${e.date}</div><div class="case-entry-text"><strong>Medicine:</strong> ${e.medicine}<br/><strong>Dose:</strong> ${e.dose}${e.notes?'<br/><strong>Notes:</strong> '+e.notes:''}</div></div>`;
+      const pdfLink = e.pdfBase64
+        ? `<br/><a style="display:inline-block;margin-top:6px;color:#1a5c3a;font-weight:600" download="${(e.pdfFileName || 'Prescription.pdf').replace(/"/g,'')}" href="data:application/pdf;base64,${e.pdfBase64}">⬇ Download Prescription (PDF)</a>`
+        : '';
+      html += `<div class="case-entry"><div class="case-entry-date">${e.date}</div><div class="case-entry-text"><strong>Medicine:</strong> ${e.medicine}<br/><strong>Dose:</strong> ${e.dose}${e.notes?'<br/><strong>Notes:</strong> '+e.notes:''}${pdfLink}</div></div>`;
     } else if (section === 'appointments') {
       html += `<div class="case-entry"><div class="case-entry-date">${e.date}</div><div class="case-entry-text">${e.note||'Consultation'} — <strong>${e.status||'Completed'}</strong></div></div>`;
     } else {
