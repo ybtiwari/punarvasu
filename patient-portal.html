@@ -830,7 +830,10 @@ function loadCaseFile() {
     if (s.prescriptions) {
       html += '<div class="case-section"><h3>Prescriptions</h3>';
       Object.values(s.prescriptions).forEach(p => {
-        html += `<div class="case-entry"><div class="case-entry-date">${p.date}</div><div class="case-entry-text"><strong>Medicine:</strong> ${p.medicine}<br/><strong>Dose:</strong> ${p.dose}<br/>${p.notes ? '<strong>Notes:</strong> '+p.notes : ''}</div></div>`;
+        const pdfLink = p.pdfBase64
+          ? `<br/><a class="btn-download" style="display:inline-block;margin-top:6px" download="${(p.pdfFileName || 'Prescription.pdf').replace(/"/g,'')}" href="data:application/pdf;base64,${p.pdfBase64}">⬇ Download Prescription (PDF)</a>`
+          : '';
+        html += `<div class="case-entry"><div class="case-entry-date">${p.date}</div><div class="case-entry-text"><strong>Medicine:</strong> ${p.medicine}<br/><strong>Dose:</strong> ${p.dose}<br/>${p.notes ? '<strong>Notes:</strong> '+p.notes : ''}${pdfLink}</div></div>`;
       });
       html += '</div>';
     }
