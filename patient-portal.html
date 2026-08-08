@@ -255,7 +255,6 @@
         <div id="caseFileContent">
           <div class="empty"><div class="empty-icon">📋</div>Your case file will appear here as your treatment progresses.</div>
         </div>
-        <button class="btn-download" id="downloadCaseBtn" style="display:none;" onclick="downloadCaseFile()">⬇ Download my case file (summary)</button>
       </div>
 
       <!-- APPOINTMENTS -->
@@ -809,14 +808,11 @@ async function sendMessage() {
 // CASE FILE
 function loadCaseFile() {
   onValue(ref(db, `patients/${currentUser.uid}/casefile`), snap => {
-    const el    = document.getElementById('caseFileContent');
-    const dlBtn = document.getElementById('downloadCaseBtn');
+    const el = document.getElementById('caseFileContent');
     if (!snap.exists()) {
       el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div>Your case file will appear here as your treatment progresses.</div>';
-      dlBtn.style.display = 'none';
       return;
     }
-    dlBtn.style.display = 'block';
     window._caseData = snap.val();
     let html = '';
     const s = snap.val();
@@ -847,50 +843,6 @@ function loadCaseFile() {
     el.innerHTML = html || '<div class="empty">No records yet.</div>';
   });
 }
-
-window.downloadCaseFile = function() {
-  if (!window._caseData) return;
-  const s = window._caseData;
-  const lines = [];
-  lines.push('PUNARVASU CLINIC — Case File Summary');
-  lines.push('Patient: ' + (currentUser.email.split('@')[0] || ''));
-  lines.push('Generated: ' + new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }));
-  lines.push('='.repeat(60));
-
-  if (s.notes) {
-    lines.push('', 'CLINICAL NOTES', '-'.repeat(60));
-    Object.values(s.notes).sort((a,b) => (a.date||'').localeCompare(b.date||'')).forEach(n => {
-      lines.push('[' + n.date + ']');
-      lines.push(n.text || '');
-      lines.push('');
-    });
-  }
-  if (s.prescriptions) {
-    lines.push('', 'PRESCRIPTIONS', '-'.repeat(60));
-    Object.values(s.prescriptions).sort((a,b) => (a.date||'').localeCompare(b.date||'')).forEach(p => {
-      lines.push('[' + p.date + ']');
-      lines.push('Medicine: ' + (p.medicine || ''));
-      if (p.dose) lines.push('Dose: ' + p.dose);
-      if (p.notes) lines.push('Notes: ' + p.notes);
-      if (p.pdfBase64) lines.push('(Full formatted prescription PDF available for download separately in the portal.)');
-      lines.push('');
-    });
-  }
-  if (s.followups) {
-    lines.push('', 'FOLLOW-UP RECORDS', '-'.repeat(60));
-    Object.values(s.followups).sort((a,b) => (a.date||'').localeCompare(b.date||'')).forEach(f => {
-      lines.push('[' + f.date + ']');
-      lines.push(f.text || '');
-      lines.push('');
-    });
-  }
-
-  const blob = new Blob([lines.join('\n')], {type: 'text/plain'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `punarvasu-casefile-${currentUser.email.split('@')[0]}.txt`;
-  a.click();
-};
 
 // APPOINTMENTS
 function loadAppointments() {
