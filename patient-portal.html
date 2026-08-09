@@ -823,6 +823,16 @@ function loadCaseFile() {
       });
       html += '</div>';
     }
+    if (s.clinicalPicture) {
+      html += '<div class="case-section"><h3>Your Clinical Picture</h3>';
+      Object.values(s.clinicalPicture).forEach(c => {
+        html += `<div class="case-entry"><div class="case-entry-date">${c.date}</div><div class="case-entry-text">`;
+        if (c.differential) html += `<div style="white-space:pre-wrap;margin-bottom:14px">${c.differential}</div>`;
+        if (c.prognosis) html += `<div style="white-space:pre-wrap;padding-top:12px;border-top:1px solid #e8e4dc;color:#555"><strong>What to expect as treatment progresses:</strong><br/>${c.prognosis}</div>`;
+        html += `</div></div>`;
+      });
+      html += '</div>';
+    }
     if (s.prescriptions) {
       html += '<div class="case-section"><h3>Prescriptions</h3>';
       Object.values(s.prescriptions).forEach(p => {
