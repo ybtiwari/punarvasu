@@ -90,6 +90,25 @@
     .case-entry { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 16px 18px; margin-bottom: 10px; }
     .case-entry-date { font-size: 11px; color: var(--ink3); margin-bottom: 6px; letter-spacing: 0.04em; }
     .case-entry-text { font-size: 14.5px; color: var(--ink2); line-height: 1.7; }
+
+    /* Date-grouped, collapsible case file entries */
+    .date-group { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 14px; overflow: hidden; background: var(--white); }
+    .date-group-summary {
+      cursor: pointer; padding: 14px 18px; background: var(--navy); color: #fff;
+      font-family: var(--serif); font-size: 18px; font-weight: 700;
+      list-style: none; display: flex; align-items: center; justify-content: space-between;
+    }
+    .date-group-summary::-webkit-details-marker { display: none; }
+    .date-group-summary::after { content: '▾'; font-size: 14px; margin-left: 10px; transition: transform 0.2s; }
+    .date-group[open] > .date-group-summary::after { transform: rotate(180deg); }
+    .date-group-content { padding: 16px 18px; }
+    .cp-collapsible { border: 1px solid var(--border); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+    .cp-collapsible summary {
+      cursor: pointer; padding: 10px 14px; background: #f4f0fc; color: #5a3d9e;
+      font-weight: 600; font-size: 13.5px; list-style: none;
+    }
+    .cp-collapsible summary::-webkit-details-marker { display: none; }
+    .cp-collapsible-body { padding: 14px 16px; font-size: 14px; color: var(--ink2); line-height: 1.7; }
     .btn-download { background: var(--cream); border: 1px solid var(--border); color: var(--ink2); padding: 8px 18px; border-radius: 4px; font-size: 13.5px; cursor: pointer; font-family: var(--sans); transition: background 0.15s; margin-top: 12px; }
     .btn-download:hover { background: #e8e5dc; }
 
@@ -823,23 +842,44 @@ function loadCaseFile() {
       });
       html += '</div>';
     }
-    if (s.clinicalPicture) {
-      html += '<div class="case-section"><h3>Your Clinical Picture</h3>';
-      Object.values(s.clinicalPicture).forEach(c => {
-        html += `<div class="case-entry"><div class="case-entry-date">${c.date}</div><div class="case-entry-text">`;
-        if (c.differential) html += `<div style="white-space:pre-wrap;margin-bottom:14px">${c.differential}</div>`;
-        if (c.prognosis) html += `<div style="white-space:pre-wrap;padding-top:12px;border-top:1px solid #e8e4dc;color:#555"><strong>What to expect as treatment progresses:</strong><br/>${c.prognosis}</div>`;
-        html += `</div></div>`;
-      });
-      html += '</div>';
-    }
-    if (s.prescriptions) {
-      html += '<div class="case-section"><h3>Prescriptions</h3>';
-      Object.values(s.prescriptions).forEach(p => {
-        const pdfLink = p.pdfBase64
-          ? `<br/><a class="btn-download" style="display:inline-block;margin-top:6px" download="${(p.pdfFileName || 'Prescription.pdf').replace(/"/g,'')}" href="data:application/pdf;base64,${p.pdfBase64}">⬇ Download Prescription (PDF)</a>`
-          : '';
-        html += `<div class="case-entry"><div class="case-entry-date">${p.date}</div><div class="case-entry-text"><strong>Medicine:</strong> ${p.medicine}<br/><strong>Dose:</strong> ${p.dose}<br/>${p.notes ? '<strong>Notes:</strong> '+p.notes : ''}${pdfLink}</div></div>`;
+    if (s.clinicalPicture || s.prescriptions) {
+      // Group both clinical pictures and prescriptions by date, so each
+      // date shows as one collapsible block: Clinical Picture (itself
+      // collapsible) first, then that date's prescription(s) below it —
+      // rather than two separate lists that make it hard to see which
+      // clinical picture goes with which prescription.
+      const dateGroups = {};
+      const ensureGroup = d => { if (!dateGroups[d]) dateGroups[d] = { clinicalPictures: [], prescriptions: [] }; return dateGroups[d]; };
+      if (s.clinicalPicture) Object.values(s.clinicalPicture).forEach(c => ensureGroup(c.date).clinicalPictures.push(c));
+      if (s.prescriptions) Object.values(s.prescriptions).forEach(p => ensureGroup(p.date).prescriptions.push(p));
+
+      // Dates are stored as formatted strings (e.g. "10 August 2026") —
+      // reparse to actual dates for correct chronological sorting, since
+      // sorting the strings directly would not sort in real date order.
+      const sortedDates = Object.keys(dateGroups).sort((a, b) => new Date(b) - new Date(a));
+
+      html += '<div class="case-section"><h3>Prescriptions &amp; Clinical Pictures</h3>';
+      sortedDates.forEach((dateStr, idx) => {
+        const group = dateGroups[dateStr];
+        html += `<details class="date-group"${idx === 0 ? ' open' : ''}>`;
+        html += `<summary class="date-group-summary"><span>${dateStr}</span></summary>`;
+        html += '<div class="date-group-content">';
+
+        group.clinicalPictures.forEach(c => {
+          html += '<details class="cp-collapsible"><summary>🔬 Clinical Picture</summary><div class="cp-collapsible-body">';
+          if (c.differential) html += `<div style="white-space:pre-wrap;margin-bottom:14px">${c.differential}</div>`;
+          if (c.prognosis) html += `<div style="white-space:pre-wrap;padding-top:12px;border-top:1px solid var(--border);color:var(--ink3)"><strong>What to expect as treatment progresses:</strong><br/>${c.prognosis}</div>`;
+          html += '</div></details>';
+        });
+
+        group.prescriptions.forEach(p => {
+          const pdfLink = p.pdfBase64
+            ? `<br/><a class="btn-download" style="display:inline-block;margin-top:6px" download="${(p.pdfFileName || 'Prescription.pdf').replace(/"/g,'')}" href="data:application/pdf;base64,${p.pdfBase64}">⬇ Download Prescription (PDF)</a>`
+            : '';
+          html += `<div class="case-entry"><div class="case-entry-text"><strong>Medicine:</strong> ${p.medicine}<br/><strong>Dose:</strong> ${p.dose}<br/>${p.notes ? '<strong>Notes:</strong> '+p.notes : ''}${pdfLink}</div></div>`;
+        });
+
+        html += '</div></details>';
       });
       html += '</div>';
     }
