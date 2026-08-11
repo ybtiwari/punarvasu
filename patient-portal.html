@@ -872,6 +872,12 @@ function loadCaseFile() {
         ensureSession(ensureDate(p.date), sessionKey, p.sessionId, p.time).prescriptions.push(p);
       });
 
+      // Dates are already sorted newest-first below, and sessions within
+      // each date are also sorted newest-first — so the very first Clinical
+      // Picture rendered, across the whole list, is always the single most
+      // recent one. Track that with a flag so only it opens by default.
+      let isFirstClinicalPicture = true;
+
       // Dates are stored as formatted strings (e.g. "10 August 2026") —
       // reparse to actual dates for correct chronological sorting, since
       // sorting the strings directly would not sort in real date order.
@@ -897,7 +903,8 @@ function loadCaseFile() {
           if (sess.time) html += `<div class="time-box-label">🕐 ${sess.time}</div>`;
 
           sess.clinicalPictures.forEach(c => {
-            html += '<details class="cp-collapsible"><summary>🔬 Clinical Picture</summary><div class="cp-collapsible-body">';
+            html += `<details class="cp-collapsible"${isFirstClinicalPicture ? ' open' : ''}><summary>🔬 Clinical Picture</summary><div class="cp-collapsible-body">`;
+            isFirstClinicalPicture = false;
             if (c.differential) html += `<div style="white-space:pre-wrap;margin-bottom:14px">${c.differential}</div>`;
             if (c.prognosis) html += `<div style="white-space:pre-wrap;padding-top:12px;border-top:1px solid var(--border);color:var(--ink3)"><strong>What to expect as treatment progresses:</strong><br/>${c.prognosis}</div>`;
             html += '</div></details>';
