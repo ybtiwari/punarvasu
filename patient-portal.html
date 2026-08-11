@@ -93,14 +93,10 @@
 
     /* Date-grouped, collapsible case file entries */
     .date-group { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 14px; overflow: hidden; background: var(--white); }
-    .date-group-summary {
-      cursor: pointer; padding: 14px 18px; background: var(--navy); color: #fff;
+    .date-group-label {
+      padding: 14px 18px; background: var(--navy); color: #fff;
       font-family: var(--serif); font-size: 18px; font-weight: 700;
-      list-style: none; display: flex; align-items: center; justify-content: space-between;
     }
-    .date-group-summary::-webkit-details-marker { display: none; }
-    .date-group-summary::after { content: '▾'; font-size: 14px; margin-left: 10px; transition: transform 0.2s; }
-    .date-group[open] > .date-group-summary::after { transform: rotate(180deg); }
     .date-group-content { padding: 16px 18px; }
     .cp-collapsible { border: 1px solid var(--border); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
     .cp-collapsible summary {
@@ -861,8 +857,13 @@ function loadCaseFile() {
       html += '<div class="case-section"><h3>Prescriptions &amp; Clinical Pictures</h3>';
       sortedDates.forEach((dateStr, idx) => {
         const group = dateGroups[dateStr];
-        html += `<details class="date-group"${idx === 0 ? ' open' : ''}>`;
-        html += `<summary class="date-group-summary"><span>${dateStr}</span></summary>`;
+        // The date itself is just a prominent label, not a toggle — having
+        // two nested clickable toggles (date + Clinical Picture) right next
+        // to each other made it easy to collapse the wrong one and lose
+        // sight of the prescription underneath. Only Clinical Picture
+        // collapses now; the date section and prescription are always visible.
+        html += '<div class="date-group">';
+        html += `<div class="date-group-label"><span>${dateStr}</span></div>`;
         html += '<div class="date-group-content">';
 
         group.clinicalPictures.forEach(c => {
@@ -879,7 +880,7 @@ function loadCaseFile() {
           html += `<div class="case-entry"><div class="case-entry-text"><strong>Medicine:</strong> ${p.medicine}<br/><strong>Dose:</strong> ${p.dose}<br/>${p.notes ? '<strong>Notes:</strong> '+p.notes : ''}${pdfLink}</div></div>`;
         });
 
-        html += '</div></details>';
+        html += '</div></div>';
       });
       html += '</div>';
     }
