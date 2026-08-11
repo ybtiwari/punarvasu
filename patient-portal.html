@@ -98,6 +98,15 @@
       font-family: var(--serif); font-size: 18px; font-weight: 700;
     }
     .date-group-content { padding: 16px 18px; }
+    .time-box { padding: 2px 0; }
+    /* Prominent divider between multiple time-boxes under the same date —
+       skips the first one automatically via the adjacent-sibling selector,
+       so a date with only one time-box shows no divider at all. */
+    .time-box + .time-box { border-top: 3px solid var(--navy); margin-top: 18px; padding-top: 18px; }
+    .time-box-label {
+      font-size: 12px; font-weight: 700; color: var(--teal); letter-spacing: 0.04em;
+      text-transform: uppercase; margin-bottom: 10px;
+    }
     .cp-collapsible { border: 1px solid var(--border); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
     .cp-collapsible summary {
       cursor: pointer; padding: 10px 14px; background: #f4f0fc; color: #5a3d9e;
@@ -839,15 +848,29 @@ function loadCaseFile() {
       html += '</div>';
     }
     if (s.clinicalPicture || s.prescriptions) {
-      // Group both clinical pictures and prescriptions by date, so each
-      // date shows as one collapsible block: Clinical Picture (itself
-      // collapsible) first, then that date's prescription(s) below it —
-      // rather than two separate lists that make it hard to see which
-      // clinical picture goes with which prescription.
+      // Group by DATE, then within each date by SESSION (a precise shared
+      // timestamp set once when a prescription was generated) — so a
+      // Clinical Picture and the one specific prescription it was actually
+      // generated for land in the same time-box together, rather than just
+      // being grouped loosely by calendar date. Entries saved before this
+      // pairing existed (no sessionId) each get their own fallback
+      // time-box keyed by their Firebase record, so nothing from before
+      // this feature existed disappears — they just won't have a specific
+      // pairing or time label.
       const dateGroups = {};
-      const ensureGroup = d => { if (!dateGroups[d]) dateGroups[d] = { clinicalPictures: [], prescriptions: [] }; return dateGroups[d]; };
-      if (s.clinicalPicture) Object.values(s.clinicalPicture).forEach(c => ensureGroup(c.date).clinicalPictures.push(c));
-      if (s.prescriptions) Object.values(s.prescriptions).forEach(p => ensureGroup(p.date).prescriptions.push(p));
+      const ensureDate = d => { if (!dateGroups[d]) dateGroups[d] = {}; return dateGroups[d]; };
+      const ensureSession = (dateObj, sessionKey, sortKey, time) => {
+        if (!dateObj[sessionKey]) dateObj[sessionKey] = { sortKey: sortKey || 0, time: time || '', clinicalPictures: [], prescriptions: [] };
+        return dateObj[sessionKey];
+      };
+      if (s.clinicalPicture) Object.entries(s.clinicalPicture).forEach(([key, c]) => {
+        const sessionKey = c.sessionId != null ? String(c.sessionId) : 'legacy-cp-' + key;
+        ensureSession(ensureDate(c.date), sessionKey, c.sessionId, c.time).clinicalPictures.push(c);
+      });
+      if (s.prescriptions) Object.entries(s.prescriptions).forEach(([key, p]) => {
+        const sessionKey = p.sessionId != null ? String(p.sessionId) : 'legacy-rx-' + key;
+        ensureSession(ensureDate(p.date), sessionKey, p.sessionId, p.time).prescriptions.push(p);
+      });
 
       // Dates are stored as formatted strings (e.g. "10 August 2026") —
       // reparse to actual dates for correct chronological sorting, since
@@ -855,8 +878,10 @@ function loadCaseFile() {
       const sortedDates = Object.keys(dateGroups).sort((a, b) => new Date(b) - new Date(a));
 
       html += '<div class="case-section"><h3>Prescriptions &amp; Clinical Pictures</h3>';
-      sortedDates.forEach((dateStr, idx) => {
-        const group = dateGroups[dateStr];
+      sortedDates.forEach(dateStr => {
+        const sessions = dateGroups[dateStr];
+        const sortedSessionKeys = Object.keys(sessions).sort((a, b) => sessions[b].sortKey - sessions[a].sortKey);
+
         // The date itself is just a prominent label, not a toggle — having
         // two nested clickable toggles (date + Clinical Picture) right next
         // to each other made it easy to collapse the wrong one and lose
@@ -866,21 +891,29 @@ function loadCaseFile() {
         html += `<div class="date-group-label"><span>${dateStr}</span></div>`;
         html += '<div class="date-group-content">';
 
-        group.clinicalPictures.forEach(c => {
-          html += '<details class="cp-collapsible"><summary>🔬 Clinical Picture</summary><div class="cp-collapsible-body">';
-          if (c.differential) html += `<div style="white-space:pre-wrap;margin-bottom:14px">${c.differential}</div>`;
-          if (c.prognosis) html += `<div style="white-space:pre-wrap;padding-top:12px;border-top:1px solid var(--border);color:var(--ink3)"><strong>What to expect as treatment progresses:</strong><br/>${c.prognosis}</div>`;
-          html += '</div></details>';
+        sortedSessionKeys.forEach(sessKey => {
+          const sess = sessions[sessKey];
+          html += '<div class="time-box">';
+          if (sess.time) html += `<div class="time-box-label">🕐 ${sess.time}</div>`;
+
+          sess.clinicalPictures.forEach(c => {
+            html += '<details class="cp-collapsible"><summary>🔬 Clinical Picture</summary><div class="cp-collapsible-body">';
+            if (c.differential) html += `<div style="white-space:pre-wrap;margin-bottom:14px">${c.differential}</div>`;
+            if (c.prognosis) html += `<div style="white-space:pre-wrap;padding-top:12px;border-top:1px solid var(--border);color:var(--ink3)"><strong>What to expect as treatment progresses:</strong><br/>${c.prognosis}</div>`;
+            html += '</div></details>';
+          });
+
+          sess.prescriptions.forEach(p => {
+            const pdfLink = p.pdfBase64
+              ? `<br/><a class="btn-download" style="display:inline-block;margin-top:6px" download="${(p.pdfFileName || 'Prescription.pdf').replace(/"/g,'')}" href="data:application/pdf;base64,${p.pdfBase64}">⬇ Download Prescription (PDF)</a>`
+              : '';
+            html += `<div class="case-entry"><div class="case-entry-text"><strong>Medicine:</strong> ${p.medicine}<br/><strong>Dose:</strong> ${p.dose}<br/>${p.notes ? '<strong>Notes:</strong> '+p.notes : ''}${pdfLink}</div></div>`;
+          });
+
+          html += '</div>'; // .time-box
         });
 
-        group.prescriptions.forEach(p => {
-          const pdfLink = p.pdfBase64
-            ? `<br/><a class="btn-download" style="display:inline-block;margin-top:6px" download="${(p.pdfFileName || 'Prescription.pdf').replace(/"/g,'')}" href="data:application/pdf;base64,${p.pdfBase64}">⬇ Download Prescription (PDF)</a>`
-            : '';
-          html += `<div class="case-entry"><div class="case-entry-text"><strong>Medicine:</strong> ${p.medicine}<br/><strong>Dose:</strong> ${p.dose}<br/>${p.notes ? '<strong>Notes:</strong> '+p.notes : ''}${pdfLink}</div></div>`;
-        });
-
-        html += '</div></div>';
+        html += '</div></div>'; // .date-group-content, .date-group
       });
       html += '</div>';
     }
