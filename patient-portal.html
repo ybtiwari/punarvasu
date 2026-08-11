@@ -353,6 +353,14 @@ window.setLang = function(lang) {
   document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
   event.target.classList.add('active');
   applyTranslations();
+  // Re-render the case file from the already-loaded data (no new Firebase
+  // read) so Clinical Picture text switches language immediately too —
+  // everything else in the case file (prescriptions, dates) stays in
+  // whatever language it was actually written in, since only Clinical
+  // Picture is generated in all three languages.
+  if (typeof renderCaseFileContent === 'function' && document.getElementById('caseFileContent')) {
+    renderCaseFileContent();
+  }
 };
 
 function applyTranslations() {
@@ -830,24 +838,39 @@ async function sendMessage() {
 }
 
 // CASE FILE
+// Picks the right language out of a Clinical Picture field. Handles both
+// the new format (an object like {en:"...", hi:"...", gu:"..."}) and the
+// old format (a plain string, from before multi-language support existed —
+// those only ever have English, regardless of which language is toggled).
+function pickLang(field, lang) {
+  if (!field) return '';
+  if (typeof field === 'string') return field; // old single-language entries
+  return field[lang] || field.en || '';
+}
+
 function loadCaseFile() {
   onValue(ref(db, `patients/${currentUser.uid}/casefile`), snap => {
-    const el = document.getElementById('caseFileContent');
-    if (!snap.exists()) {
-      el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div>Your case file will appear here as your treatment progresses.</div>';
-      return;
-    }
-    window._caseData = snap.val();
-    let html = '';
-    const s = snap.val();
-    if (s.notes) {
-      html += '<div class="case-section"><h3>Clinical Notes</h3>';
-      Object.values(s.notes).forEach(n => {
-        html += `<div class="case-entry"><div class="case-entry-date">${n.date}</div><div class="case-entry-text">${n.text}</div></div>`;
-      });
-      html += '</div>';
-    }
-    if (s.clinicalPicture || s.prescriptions) {
+    window._caseData = snap.exists() ? snap.val() : null;
+    renderCaseFileContent();
+  });
+}
+
+function renderCaseFileContent() {
+  const el = document.getElementById('caseFileContent');
+  const s = window._caseData;
+  if (!s) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div>Your case file will appear here as your treatment progresses.</div>';
+    return;
+  }
+  let html = '';
+  if (s.notes) {
+    html += '<div class="case-section"><h3>Clinical Notes</h3>';
+    Object.values(s.notes).forEach(n => {
+      html += `<div class="case-entry"><div class="case-entry-date">${n.date}</div><div class="case-entry-text">${n.text}</div></div>`;
+    });
+    html += '</div>';
+  }
+  if (s.clinicalPicture || s.prescriptions) {
       // Group by DATE, then within each date by SESSION (a precise shared
       // timestamp set once when a prescription was generated) — so a
       // Clinical Picture and the one specific prescription it was actually
@@ -905,8 +928,10 @@ function loadCaseFile() {
           sess.clinicalPictures.forEach(c => {
             html += `<details class="cp-collapsible"${isFirstClinicalPicture ? ' open' : ''}><summary>🔬 Clinical Picture</summary><div class="cp-collapsible-body">`;
             isFirstClinicalPicture = false;
-            if (c.differential) html += `<div style="white-space:pre-wrap;margin-bottom:14px">${c.differential}</div>`;
-            if (c.prognosis) html += `<div style="white-space:pre-wrap;padding-top:12px;border-top:1px solid var(--border);color:var(--ink3)"><strong>What to expect as treatment progresses:</strong><br/>${c.prognosis}</div>`;
+            const diffText = pickLang(c.differential, currentLang);
+            const progText = pickLang(c.prognosis, currentLang);
+            if (diffText) html += `<div style="white-space:pre-wrap;margin-bottom:14px">${diffText}</div>`;
+            if (progText) html += `<div style="white-space:pre-wrap;padding-top:12px;border-top:1px solid var(--border);color:var(--ink3)"><strong>What to expect as treatment progresses:</strong><br/>${progText}</div>`;
             html += '</div></details>';
           });
 
@@ -923,16 +948,15 @@ function loadCaseFile() {
         html += '</div></div>'; // .date-group-content, .date-group
       });
       html += '</div>';
-    }
-    if (s.followups) {
-      html += '<div class="case-section"><h3>Follow-up Records</h3>';
-      Object.values(s.followups).forEach(f => {
-        html += `<div class="case-entry"><div class="case-entry-date">${f.date}</div><div class="case-entry-text">${f.text}</div></div>`;
-      });
-      html += '</div>';
-    }
-    el.innerHTML = html || '<div class="empty">No records yet.</div>';
-  });
+  }
+  if (s.followups) {
+    html += '<div class="case-section"><h3>Follow-up Records</h3>';
+    Object.values(s.followups).forEach(f => {
+      html += `<div class="case-entry"><div class="case-entry-date">${f.date}</div><div class="case-entry-text">${f.text}</div></div>`;
+    });
+    html += '</div>';
+  }
+  el.innerHTML = html || '<div class="empty">No records yet.</div>';
 }
 
 // APPOINTMENTS
