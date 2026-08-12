@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Patient Portal — Punarvasu Clinic</title>
   <link rel="manifest" href="/manifest.json"/>
+  <link rel="apple-touch-icon" href="/icon-192.png"/>
   <meta name="theme-color" content="#1C6B5A"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
@@ -238,10 +239,10 @@
         <div class="panel-title" id="dash-greeting">Good day</div>
         <div class="panel-sub">Welcome to your patient portal.</div>
         <div id="installPrompt" style="display:none;background:var(--teal);color:white;border-radius:8px;padding:14px 18px;margin-bottom:16px;align-items:center;justify-content:space-between;gap:12px;">
-          <span style="font-size:14px;">📱 Save this portal to your home screen for quick access</span>
+          <span id="installPromptText" style="font-size:14px;">📱 Save this portal to your home screen for quick access</span>
           <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
             <button id="installBtn" style="background:white;color:var(--teal);border:none;border-radius:4px;padding:7px 16px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;">Add to Home Screen</button>
-            <button onclick="document.getElementById('installPrompt').style.display='none'" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:4px;padding:7px 10px;font-size:16px;cursor:pointer;line-height:1;">✕</button>
+            <button onclick="document.getElementById('installPrompt').style.display='none';sessionStorage.setItem('installDismissed','1')" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:4px;padding:7px 10px;font-size:16px;cursor:pointer;line-height:1;">✕</button>
           </div>
         </div>
         <div class="info-card">
@@ -1070,28 +1071,59 @@ window.openThread = function(postId) {
   });
 };
 
-// PWA INSTALL PROMPT
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  const prompt = document.getElementById('installPrompt');
-  if (prompt) prompt.style.display = 'flex';
-});
-const installBtn = document.getElementById('installBtn');
-if (installBtn) {
-  installBtn.addEventListener('click', async () => {
-    if (deferredPrompt) { deferredPrompt.prompt(); const { outcome } = await deferredPrompt.userChoice; deferredPrompt = null; }
-    document.getElementById('installPrompt').style.display = 'none';
+// SERVICE WORKER — required by Chrome/Android before it will consider the
+// portal "installable" and fire beforeinstallprompt below. Registration
+// failure is non-fatal; the portal works fully without it, patients just
+// won't get the automatic install banner.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((e) => {
+      console.error('Service worker registration failed (non-fatal):', e);
+    });
   });
 }
-if (sessionStorage.getItem('installDismissed')) {
-  const prompt = document.getElementById('installPrompt');
-  if (prompt) prompt.style.display = 'none';
+
+// PWA INSTALL PROMPT
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+  || window.navigator.standalone === true; // iOS Safari's own flag
+
+let deferredPrompt;
+const installPromptEl = document.getElementById('installPrompt');
+const installPromptText = document.getElementById('installPromptText');
+const installBtn = document.getElementById('installBtn');
+
+function showInstallPrompt() {
+  if (isStandalone) return; // already installed — never show
+  if (sessionStorage.getItem('installDismissed')) return;
+  if (installPromptEl) installPromptEl.style.display = 'flex';
 }
+
+if (isIOS) {
+  // iOS Safari never fires beforeinstallprompt — there is no programmatic
+  // install API, so we show static instructions instead and repurpose the
+  // button as an explainer rather than a trigger.
+  if (installPromptText) {
+    installPromptText.textContent = '📱 To add this portal to your Home Screen: tap the Share icon below, then "Add to Home Screen"';
+  }
+  if (installBtn) installBtn.style.display = 'none';
+  showInstallPrompt();
+} else {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    showInstallPrompt();
+  });
+  if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+      if (deferredPrompt) { deferredPrompt.prompt(); const { outcome } = await deferredPrompt.userChoice; deferredPrompt = null; }
+      if (installPromptEl) installPromptEl.style.display = 'none';
+    });
+  }
+}
+
 window.addEventListener('appinstalled', () => {
-  const prompt = document.getElementById('installPrompt');
-  if (prompt) prompt.style.display = 'none';
+  if (installPromptEl) installPromptEl.style.display = 'none';
   sessionStorage.removeItem('installDismissed');
 });
 </script>
