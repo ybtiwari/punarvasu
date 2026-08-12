@@ -11,6 +11,15 @@
   <meta name="apple-mobile-web-app-title" content="Punarvasu"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <!-- EmailJS: sends the doctor an email notification when a patient messages via the portal. -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script>
+    (function() {
+      if (window.emailjs) {
+        emailjs.init({ publicKey: "m-U3B9EEI1TL8KuNs" });
+      }
+    })();
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -834,6 +843,23 @@ async function sendMessage() {
     });
   } catch(e) {
     console.error('notifications/admin write failed (non-fatal):', e.code, e.message);
+  }
+  // Best-effort email notification to the doctor's Gmail via EmailJS. Same
+  // non-fatal pattern as the in-app notification above — if EmailJS is
+  // unreachable, slow, or misconfigured, the patient's message has already
+  // been saved, so we just log it and move on.
+  try {
+    if (window.emailjs) {
+      await emailjs.send('service_17kgkcs', 'template_mlyreeh', {
+        patient_email: currentUser.email,
+        message_preview: text.substring(0, 60),
+        message_time: new Date().toLocaleString('en-IN', {
+          dateStyle: 'medium', timeStyle: 'short'
+        })
+      });
+    }
+  } catch(e) {
+    console.error('EmailJS notification failed (non-fatal):', e);
   }
 }
 
