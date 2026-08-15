@@ -1008,7 +1008,7 @@ async function sendMessage() {
 // =================================================================
 let fuState = { caseId: null, followUpKey: null, questions: [], answers: {} }; // answers: { rubricId: {answer:'yes'|'no'|'skip', detail:''} }
 
-async function openFollowUpScreen(compositeId) {
+window.openFollowUpScreen = async function(compositeId) {
   const sepIdx = compositeId.indexOf('_');
   if (sepIdx < 1) { console.error('[followup] malformed id:', compositeId); return; }
   const caseId = compositeId.substring(0, sepIdx);
@@ -1043,7 +1043,7 @@ async function openFollowUpScreen(compositeId) {
   renderFollowUpBody();
 }
 
-function renderFollowUpBody() {
+window.renderFollowUpBody = function() {
   const body = document.getElementById('followUpBody');
   const total = fuState.questions.length;
   const answeredCount = Object.keys(fuState.answers).filter(k => fuState.answers[k] && fuState.answers[k].answer).length;
@@ -1073,19 +1073,19 @@ function renderFollowUpBody() {
   `;
 }
 
-function onFuAnswer(rubricId, answer) {
+window.onFuAnswer = function(rubricId, answer) {
   if (!fuState.answers[rubricId]) fuState.answers[rubricId] = {};
   fuState.answers[rubricId].answer = answer;
   renderFollowUpBody();
 }
-function onFuDetailChange(rubricId, value) {
+window.onFuDetailChange = function(rubricId, value) {
   if (!fuState.answers[rubricId]) fuState.answers[rubricId] = {};
   fuState.answers[rubricId].detail = value;
 }
 function escFu(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escFuAttr(s) { return String(s || '').replace(/"/g, '&quot;'); }
 
-async function onSubmitFollowUp() {
+window.onSubmitFollowUp = async function() {
   const total = fuState.questions.length;
   const answeredCount = Object.keys(fuState.answers).filter(k => fuState.answers[k] && fuState.answers[k].answer).length;
   if (answeredCount < total) {
