@@ -766,17 +766,20 @@ window.sendCredentialsViaWhatsApp = async function() {
 };
 
 // FOLLOW-UP QUESTIONS — Firebase layer.
-// Reads a doctor-generated, doctor-approved question set. Returns null if
-// missing (bad/stale link) so the UI can show a clear message instead of
-// crashing on undefined data.
+// Reads a doctor-generated, doctor-approved question set. Returns
+// {ok:false, reason:'permission'} vs {ok:false, reason:'missing'} instead
+// of collapsing both into null — a Firebase security-rules gap (patient
+// accounts not permitted to read under cases/) looks identical to a
+// genuinely bad link unless the error code is checked specifically.
 window.loadFollowUp = async function(caseId, followUpKey) {
   try {
     const snap = await get(ref(db, `cases/${caseId}/followUps/${followUpKey}`));
-    if (!snap.exists()) return null;
-    return snap.val();
+    if (!snap.exists()) return { ok: false, reason: 'missing' };
+    return { ok: true, data: snap.val() };
   } catch (e) {
     console.error('[followup] load failed:', e);
-    return null;
+    const isPermission = e.code === 'PERMISSION_DENIED' || /permission/i.test(e.message || '');
+    return { ok: false, reason: isPermission ? 'permission' : 'error', errorMessage: e.message };
   }
 };
 
@@ -1015,11 +1018,22 @@ async function openFollowUpScreen(compositeId) {
   const body = document.getElementById('followUpBody');
   body.innerHTML = '<div class="fu-loading-msg">Loading your questions…</div>';
 
-  const data = await window.loadFollowUp(caseId, followUpKey);
-  if (!data) {
-    body.innerHTML = '<div class="fu-loading-msg">This link has already been answered, or could not be found. If you think this is a mistake, please message the clinic.</div>';
+  const result = await window.loadFollowUp(caseId, followUpKey);
+  if (!result.ok) {
+    if (result.reason === 'permission') {
+      // This is a Firebase security-rules gap, not a bad link — the
+      // patient's account isn't currently allowed to read this record. The
+      // patient can't fix this; only the doctor updating the database
+      // rules can. Say so plainly rather than implying the link is stale.
+      body.innerHTML = '<div class="fu-loading-msg">This link couldn\'t be opened due to an account permissions issue on our end — this isn\'t something wrong on your side. Please let the clinic know, and we\'ll get it fixed.</div>';
+    } else if (result.reason === 'missing') {
+      body.innerHTML = '<div class="fu-loading-msg">This link could not be found — it may be outdated. If you think this is a mistake, please message the clinic.</div>';
+    } else {
+      body.innerHTML = '<div class="fu-loading-msg">Something went wrong loading your questions. Please try again in a moment, or message the clinic if it persists.</div>';
+    }
     return;
   }
+  const data = result.data;
   if (data.status === 'answered') {
     body.innerHTML = '<div class="fu-thankyou"><div class="fu-thankyou-icon">✅</div><div>You already answered these questions — thank you! Dr. Tiwari has been notified.</div></div>';
     return;
