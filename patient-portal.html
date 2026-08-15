@@ -799,12 +799,18 @@ window.submitFollowUpAnswers = async function(caseId, followUpKey, questions, an
   try {
     const answeredAt = Date.now();
 
-    // 1) Record the raw answers against the follow-up itself.
+    // 1) Record the raw answers against the follow-up itself. answers is
+    // keyed by row INDEX (see fuState), not rubricId — the same rubric can
+    // legitimately appear more than once in a question set (e.g. if two
+    // follow-up rounds both touched a related complaint), and rubricId-keying
+    // would silently collapse those into one answer. Storage keeps the
+    // rubricId alongside each answer for readability in the raw data, but
+    // the object itself stays index-keyed.
     const answersPayload = {};
-    Object.keys(answers).forEach(rubricId => {
-      const a = answers[rubricId];
+    questions.forEach((q, i) => {
+      const a = answers[i];
       if (a && a.answer) {
-        answersPayload[rubricId] = { answer: a.answer, detail: a.detail || '', answeredAt };
+        answersPayload[i] = { rubricId: q.rubricId, answer: a.answer, detail: a.detail || '', answeredAt };
       }
     });
     await update(ref(db, `cases/${caseId}/followUps/${followUpKey}`), {
@@ -816,23 +822,33 @@ window.submitFollowUpAnswers = async function(caseId, followUpKey, questions, an
     // 2) Append newly-confirmed rubrics ("yes" answers) into the case's
     // main complaints list, so they appear automatically next time the
     // doctor opens this case in case_analyzer_local.html — no manual
-    // re-entry needed.
-    const newRubrics = questions
-      .filter(q => answers[q.rubricId] && answers[q.rubricId].answer === 'yes')
-      .map(q => ({
-        rubricId: q.rubricId,
-        path: q.path,
-        remedyCount: 0, // recomputed correctly from the real dataset when case_analyzer_local.html reopens this case
-        source: 'followup'
-      }));
+    // re-entry needed. Deduped against what's already there by rubricId —
+    // without this check, the same rubric could be appended again on a
+    // later follow-up round, which is exactly what caused duplicate rows
+    // (and a broken answered-count) in an earlier version of this feature.
+    const yesRubrics = questions.filter((q, i) => answers[i] && answers[i].answer === 'yes');
 
-    if (newRubrics.length > 0) {
+    if (yesRubrics.length > 0) {
       const caseSnap = await get(ref(db, `cases/${caseId}/complaints`));
       const existing = caseSnap.exists() ? (caseSnap.val() || []) : [];
       const existingArray = Array.isArray(existing) ? existing : Object.values(existing);
-      await update(ref(db, `cases/${caseId}`), {
-        complaints: existingArray.concat(newRubrics)
-      });
+      const existingIds = new Set(existingArray.map(e => Number(e.rubricId)));
+
+      const newRubrics = yesRubrics
+        .filter(q => !existingIds.has(Number(q.rubricId)))
+        .filter((q, i, arr) => arr.findIndex(x => Number(x.rubricId) === Number(q.rubricId)) === i) // also dedupe within this same batch, in case the question set itself had duplicates
+        .map(q => ({
+          rubricId: q.rubricId,
+          path: q.path,
+          remedyCount: 0, // recomputed correctly from the real dataset when case_analyzer_local.html reopens this case
+          source: 'followup'
+        }));
+
+      if (newRubrics.length > 0) {
+        await update(ref(db, `cases/${caseId}`), {
+          complaints: existingArray.concat(newRubrics)
+        });
+      }
     }
 
     return { ok: true };
@@ -1006,7 +1022,7 @@ async function sendMessage() {
 // intake. Reached only via a link the doctor sends after reviewing the
 // case in case_analyzer_local.html; never surfaced any other way.
 // =================================================================
-let fuState = { caseId: null, followUpKey: null, questions: [], answers: {} }; // answers: { rubricId: {answer:'yes'|'no'|'skip', detail:''} }
+let fuState = { caseId: null, followUpKey: null, questions: [], answers: {} }; // answers: { rowIndex: {answer:'yes'|'no'|'skip', detail:''} } — keyed by array index, NOT rubricId, since the same rubric can legitimately appear more than once across a follow-up set and rubricId-keying silently collapses those into one answer
 
 window.openFollowUpScreen = async function(compositeId) {
   const sepIdx = compositeId.indexOf('_');
@@ -1049,19 +1065,19 @@ window.renderFollowUpBody = function() {
   const answeredCount = Object.keys(fuState.answers).filter(k => fuState.answers[k] && fuState.answers[k].answer).length;
 
   const cards = fuState.questions.map((q, i) => {
-    const current = fuState.answers[q.rubricId] || {};
+    const current = fuState.answers[i] || {};
     return `
       <div class="fu-q-card">
         <div class="fu-q-text">${i + 1}. ${escFu(q.question)}</div>
         <div class="fu-ans-row">
-          <button class="fu-ans-btn ${current.answer === 'yes' ? 'selected-yes' : ''}" onclick="onFuAnswer('${q.rubricId}','yes')">Yes</button>
-          <button class="fu-ans-btn ${current.answer === 'no' ? 'selected-no' : ''}" onclick="onFuAnswer('${q.rubricId}','no')">No</button>
-          <button class="fu-ans-btn ${current.answer === 'skip' ? 'selected-skip' : ''}" onclick="onFuAnswer('${q.rubricId}','skip')">Not sure</button>
+          <button class="fu-ans-btn ${current.answer === 'yes' ? 'selected-yes' : ''}" onclick="onFuAnswer(${i},'yes')">Yes</button>
+          <button class="fu-ans-btn ${current.answer === 'no' ? 'selected-no' : ''}" onclick="onFuAnswer(${i},'no')">No</button>
+          <button class="fu-ans-btn ${current.answer === 'skip' ? 'selected-skip' : ''}" onclick="onFuAnswer(${i},'skip')">Not sure</button>
         </div>
-        <input type="text" class="fu-detail-input" id="fu-detail-${q.rubricId}" placeholder="Any extra detail? (optional)"
+        <input type="text" class="fu-detail-input" id="fu-detail-${i}" placeholder="Any extra detail? (optional)"
           style="display:${current.answer === 'yes' ? 'block' : 'none'}"
           value="${escFuAttr(current.detail || '')}"
-          onchange="onFuDetailChange('${q.rubricId}', this.value)"/>
+          onchange="onFuDetailChange(${i}, this.value)"/>
       </div>`;
   }).join('');
 
@@ -1073,14 +1089,14 @@ window.renderFollowUpBody = function() {
   `;
 }
 
-window.onFuAnswer = function(rubricId, answer) {
-  if (!fuState.answers[rubricId]) fuState.answers[rubricId] = {};
-  fuState.answers[rubricId].answer = answer;
+window.onFuAnswer = function(index, answer) {
+  if (!fuState.answers[index]) fuState.answers[index] = {};
+  fuState.answers[index].answer = answer;
   renderFollowUpBody();
 }
-window.onFuDetailChange = function(rubricId, value) {
-  if (!fuState.answers[rubricId]) fuState.answers[rubricId] = {};
-  fuState.answers[rubricId].detail = value;
+window.onFuDetailChange = function(index, value) {
+  if (!fuState.answers[index]) fuState.answers[index] = {};
+  fuState.answers[index].detail = value;
 }
 function escFu(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escFuAttr(s) { return String(s || '').replace(/"/g, '&quot;'); }
