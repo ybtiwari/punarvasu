@@ -238,6 +238,11 @@
     <div class="fu-overlay-head">
       <div class="fu-overlay-title">A few follow-up questions</div>
       <div class="fu-overlay-sub">From Dr. Tiwari, about your symptoms</div>
+      <div style="margin-top:10px;display:flex;gap:6px;">
+        <button class="lang-btn fu-lang-btn active" data-fulang="en" onclick="setFuLang('en')" style="padding:4px 10px;font-size:12px;border-radius:4px;border:1px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:#fff;cursor:pointer;">English</button>
+        <button class="lang-btn fu-lang-btn" data-fulang="hi" onclick="setFuLang('hi')" style="padding:4px 10px;font-size:12px;border-radius:4px;border:1px solid rgba(255,255,255,0.5);background:transparent;color:#fff;cursor:pointer;">हिन्दी</button>
+        <button class="lang-btn fu-lang-btn" data-fulang="gu" onclick="setFuLang('gu')" style="padding:4px 10px;font-size:12px;border-radius:4px;border:1px solid rgba(255,255,255,0.5);background:transparent;color:#fff;cursor:pointer;">ગુજરાતી</button>
+      </div>
     </div>
     <div id="followUpBody" class="fu-overlay-body">
       <div class="fu-loading-msg">Loading your questions…</div>
@@ -408,6 +413,16 @@ window.setLang = function(lang) {
   // Picture is generated in all three languages.
   if (typeof renderCaseFileContent === 'function' && document.getElementById('caseFileContent')) {
     renderCaseFileContent();
+  }
+  // Keep the follow-up overlay's own language buttons and content in sync,
+  // in the rare case both toggles are relevant in the same session.
+  document.querySelectorAll('.fu-lang-btn').forEach(b => {
+    const active = b.dataset.fulang === lang;
+    b.classList.toggle('active', active);
+    b.style.background = active ? 'rgba(255,255,255,0.15)' : 'transparent';
+  });
+  if (typeof fuState !== 'undefined' && fuState.questions.length && document.getElementById('followUpOverlay').style.display !== 'none') {
+    renderFollowUpBody();
   }
 };
 
@@ -1043,6 +1058,21 @@ async function sendMessage() {
 // =================================================================
 let fuState = { caseId: null, followUpKey: null, questions: [], answers: {} }; // answers: { rowIndex: {answer:'yes'|'no'|'skip', detail:''} } — keyed by array index, NOT rubricId, since the same rubric can legitimately appear more than once across a follow-up set and rubricId-keying silently collapses those into one answer
 
+// Separate from window.setLang (used by the dashboard's own language
+// toggle) because this overlay can appear immediately on login, before the
+// patient has seen or touched the dashboard underneath — it needs its own
+// self-contained language switch that only affects its own buttons and
+// re-renders only itself, not the whole portal.
+window.setFuLang = function(lang) {
+  currentLang = lang;
+  document.querySelectorAll('.fu-lang-btn').forEach(b => {
+    const active = b.dataset.fulang === lang;
+    b.classList.toggle('active', active);
+    b.style.background = active ? 'rgba(255,255,255,0.15)' : 'transparent';
+  });
+  if (fuState.questions.length) renderFollowUpBody();
+};
+
 window.openFollowUpScreen = async function(compositeId) {
   const sepIdx = compositeId.indexOf('_');
   if (sepIdx < 1) { console.error('[followup] malformed id:', compositeId); return; }
@@ -1087,7 +1117,7 @@ window.renderFollowUpBody = function() {
     const current = fuState.answers[i] || {};
     return `
       <div class="fu-q-card">
-        <div class="fu-q-text">${i + 1}. ${escFu(q.question)}</div>
+        <div class="fu-q-text">${i + 1}. ${escFu(pickLang(q.question, currentLang))}</div>
         <div class="fu-ans-row">
           <button class="fu-ans-btn ${current.answer === 'yes' ? 'selected-yes' : ''}" onclick="onFuAnswer(${i},'yes')">Yes</button>
           <button class="fu-ans-btn ${current.answer === 'no' ? 'selected-no' : ''}" onclick="onFuAnswer(${i},'no')">No</button>
