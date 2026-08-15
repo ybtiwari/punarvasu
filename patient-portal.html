@@ -851,6 +851,25 @@ window.submitFollowUpAnswers = async function(caseId, followUpKey, questions, an
       }
     }
 
+    // 3) Notify the doctor — same notifications/admin node the "new
+    // message" feature already uses, so it shows up in the existing Admin
+    // Panel notification list rather than a separate system. Carries
+    // caseId so Admin Panel can deep-link straight into this patient's
+    // case in case_analyzer_local.html.
+    try {
+      await push(ref(db, 'notifications/admin'), {
+        type: 'followup_answered',
+        patientName: currentUser.displayName || currentUser.email,
+        caseId,
+        answeredCount: yesRubrics.length,
+        totalCount: questions.length,
+        timestamp: Date.now(),
+        read: false
+      });
+    } catch (notifyErr) {
+      console.error('[followup] admin notification failed (non-fatal):', notifyErr);
+    }
+
     return { ok: true };
   } catch (e) {
     console.error('[followup] submit failed:', e);
