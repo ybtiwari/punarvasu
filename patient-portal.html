@@ -299,6 +299,10 @@
             💬 Send my login to WhatsApp
           </button>
         </div>
+        <div class="info-card" id="dash-followups" style="display:none;">
+          <h3>📋 Follow-up Questions</h3>
+          <div id="dash-followups-list"></div>
+        </div>
         <div class="info-card" id="dash-next-appt">
           <h3>Next appointment</h3>
           <p id="next-appt-text">Loading...</p>
@@ -374,7 +378,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, push, onValue, set, get, query, orderByChild, update }
+import { getDatabase, ref, push, onValue, set, get, query, orderByChild, update, remove }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
@@ -885,6 +889,14 @@ window.submitFollowUpAnswers = async function(caseId, followUpKey, questions, an
       console.error('[followup] admin notification failed (non-fatal):', notifyErr);
     }
 
+    // 4) Clear the dashboard mirror — this follow-up is answered now, so
+    // it should stop showing on the "Follow-up Questions" card.
+    try {
+      await remove(ref(db, `patients/${currentUser.uid}/pendingFollowUps/${followUpKey}`));
+    } catch (mirrorErr) {
+      console.error('[followup] could not clear dashboard mirror (non-fatal):', mirrorErr);
+    }
+
     return { ok: true };
   } catch (e) {
     console.error('[followup] submit failed:', e);
@@ -923,7 +935,52 @@ function loadDashboard() {
       document.getElementById('unread-text').textContent = 'No messages yet.';
     }
   });
+
+  // FOLLOW-UP QUESTIONS — mirrors patients/{uid}/pendingFollowUps, written
+  // by case_analyzer_local.html whenever a follow-up is sent. This is what
+  // makes pending questions discoverable just by logging in normally, not
+  // only via the specific WhatsApp link — closing the gap where a patient
+  // who lost that link, or simply opened their portal directly, would
+  // otherwise never know follow-up questions existed for them.
+  onValue(ref(db, `patients/${currentUser.uid}/pendingFollowUps`), snap => {
+    const card = document.getElementById('dash-followups');
+    const list = document.getElementById('dash-followups-list');
+    if (!snap.exists()) { card.style.display = 'none'; return; }
+
+    const entries = Object.entries(snap.val()); // [key, {caseId, sentAt, questionCount}]
+    if (!entries.length) { card.style.display = 'none'; return; }
+
+    entries.sort((a, b) => (b[1].sentAt || 0) - (a[1].sentAt || 0));
+    card.style.display = 'block';
+    list.innerHTML = entries.map(([key, info]) => {
+      const dateStr = info.sentAt ? new Date(info.sentAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '';
+      return `
+        <div style="border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+          <div>
+            <div style="font-size:13.5px;color:var(--ink);">${info.questionCount || '?'} question(s) from Dr. Tiwari</div>
+            <div style="font-size:11.5px;color:var(--ink3);">Sent ${dateStr}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            <button class="btn-primary" style="padding:6px 12px;font-size:12.5px;" onclick="openFollowUpScreen('${info.caseId}~${key}')">Answer</button>
+            <button class="btn-outline" style="padding:6px 10px;font-size:12.5px;" onclick="onSkipDashboardFollowUp('${info.caseId}','${key}')">Skip</button>
+          </div>
+        </div>`;
+    }).join('');
+  });
 }
+
+window.onSkipDashboardFollowUp = async function(caseId, followUpKey) {
+  if (!confirm('Skip this follow-up? Dr. Tiwari will see it was skipped, not answered.')) return;
+  try {
+    await update(ref(db, `cases/${caseId}/followUps/${followUpKey}`), {
+      status: 'skipped_by_patient',
+      skippedAt: Date.now()
+    });
+    await remove(ref(db, `patients/${currentUser.uid}/pendingFollowUps/${followUpKey}`));
+  } catch (e) {
+    alert('Could not skip — please try again. (' + e.message + ')');
+  }
+};
 
 // MESSAGES — 3-way rendering
 function loadMessages() {
