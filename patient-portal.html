@@ -1074,10 +1074,24 @@ window.setFuLang = function(lang) {
 };
 
 window.openFollowUpScreen = async function(compositeId) {
-  const sepIdx = compositeId.indexOf('_');
-  if (sepIdx < 1) { console.error('[followup] malformed id:', compositeId); return; }
-  const caseId = compositeId.substring(0, sepIdx);
-  const followUpKey = compositeId.substring(sepIdx + 1);
+  // '~' is the current delimiter — safe because it's outside Firebase's
+  // push-key character set, so it can never appear inside a caseId or
+  // followUpKey and be mistaken for the separator. Falls back to the old
+  // '_' split only for links generated before this fix; that old format
+  // is inherently ambiguous for any case ID containing an underscore, so
+  // it won't always work, but there's no way to do better for links
+  // already sent before this fix.
+  let caseId, followUpKey;
+  const tildeIdx = compositeId.indexOf('~');
+  if (tildeIdx >= 1) {
+    caseId = compositeId.substring(0, tildeIdx);
+    followUpKey = compositeId.substring(tildeIdx + 1);
+  } else {
+    const sepIdx = compositeId.indexOf('_');
+    if (sepIdx < 1) { console.error('[followup] malformed id:', compositeId); return; }
+    caseId = compositeId.substring(0, sepIdx);
+    followUpKey = compositeId.substring(sepIdx + 1);
+  }
 
   document.getElementById('followUpOverlay').style.display = 'flex';
   const body = document.getElementById('followUpBody');
