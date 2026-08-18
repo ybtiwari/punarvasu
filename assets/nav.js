@@ -87,6 +87,12 @@ const NAV = [
     highlight: true
   },
   {
+    label: 'Coordinator Login',
+    href: '/coordinator-panel.html',
+    single: true,
+    highlight: true
+  },
+  {
     label: 'Community Forum',
     href: '/community-forum.html',
     single: true
