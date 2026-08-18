@@ -152,6 +152,10 @@
         <span>💬 Messages</span>
         <span class="nav-badge" id="badge-messages">0</span>
       </div>
+      <div class="nav-item" data-panel="doctormsg">
+        <span>🩺 Message Dr. Tiwari</span>
+        <span class="nav-badge" id="badge-doctormsg">0</span>
+      </div>
       <div class="nav-item" data-panel="casefile">
         <span>📋 Case Files</span>
       </div>
@@ -185,6 +189,21 @@
           <div class="chat-input-row">
             <textarea class="chat-input" id="chatInput" placeholder="Type your message..."></textarea>
             <button class="chat-send" onclick="sendMessage()">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MESSAGE THE DOCTOR — general, non-patient-specific channel.
+           Separate from the per-patient Messages panel above; this is for
+           scheduling, policy questions, anything not tied to one case. -->
+      <div class="panel" id="panel-doctormsg">
+        <div class="panel-title">Message Dr. Tiwari</div>
+        <div class="panel-sub">For anything not specific to one patient — scheduling, questions, updates</div>
+        <div class="chat-panel open" id="doctorChatPanel" style="height:520px;">
+          <div class="chat-msgs" id="doctorChatMsgs"></div>
+          <div class="chat-input-row">
+            <textarea class="chat-input" id="doctorChatInput" placeholder="Type your message to Dr. Tiwari..."></textarea>
+            <button class="chat-send" onclick="sendDoctorMessage()">Send</button>
           </div>
         </div>
       </div>
@@ -231,9 +250,9 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged }
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, onValue, push, set, query, orderByChild, equalTo }
+import { getDatabase, ref, onValue, push, set, get, query, orderByChild, equalTo }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 // ── CONFIG ──
@@ -290,10 +309,30 @@ onAuthStateChanged(auth, user => {
   if (user) {
     coordUid  = user.uid;
     coordName = user.displayName || user.email;
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('shell').style.display = 'flex';
-    document.getElementById('coordNameDisplay').textContent = coordName;
-    loadMyPatients();
+    // Soft-disable check: the doctor can lock a coordinator out from Admin
+    // Panel without deleting their account. This doesn't revoke their
+    // actual Firebase Auth credentials (that needs server-side access this
+    // project doesn't have) — it's an application-level gate, same pattern
+    // already used for patient accounts. Checked once per sign-in, not
+    // live, so a coordinator already using the app won't be kicked out
+    // mid-session if disabled at that exact moment; they'll be blocked the
+    // next time they open the link.
+    get(ref(db, `coordinators/${coordUid}/status`)).then(snap => {
+      if (snap.exists() && snap.val() === 'disabled') {
+        signOut(auth);
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('shell').style.display = 'none';
+        document.getElementById('loginStatusText').textContent = 'Account disabled';
+        document.getElementById('loginErr').textContent =
+          'Your coordinator access has been disabled. Please contact Dr. Yogeshwar Tiwari.';
+        return;
+      }
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('shell').style.display = 'flex';
+      document.getElementById('coordNameDisplay').textContent = coordName;
+      loadMyPatients();
+      loadDoctorMessages();
+    });
   } else {
     document.getElementById('loginScreen').style.display = 'flex';
     document.getElementById('shell').style.display = 'none';
@@ -532,6 +571,68 @@ window.sendMessage = async function() {
 
 document.getElementById('chatInput').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.sendMessage(); }
+});
+
+// ── MESSAGE THE DOCTOR (general, non-patient-specific) ──
+// coordinatorMessages/{coordUid} — separate node from messages/{patientUid}
+// above. Mirrors the same read/mark-read/send pattern.
+function loadDoctorMessages() {
+  onValue(query(ref(db, `coordinatorMessages/${coordUid}`), orderByChild('timestamp')), snap => {
+    const list = document.getElementById('doctorChatMsgs');
+    list.innerHTML = '';
+    let unread = 0;
+    if (snap.exists()) {
+      snap.forEach(child => {
+        const m = child.val();
+        const fromClass = m.from === 'coordinator' ? 'from-coordinator' : 'from-doctor';
+        const time = m.timestamp ? new Date(m.timestamp).toLocaleString('en-IN', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+        const row = document.createElement('div');
+        row.className = `msg-row ${fromClass}`;
+        const bubble = document.createElement('div');
+        bubble.className = `msg-bubble ${fromClass}`;
+        const textDiv = document.createElement('div');
+        textDiv.textContent = m.text || '';
+        bubble.appendChild(textDiv);
+        const timeDiv = document.createElement('div');
+        timeDiv.style.cssText = 'font-size:10px;opacity:0.6;margin-top:4px;';
+        timeDiv.textContent = time;
+        bubble.appendChild(timeDiv);
+        row.appendChild(bubble);
+        list.appendChild(row);
+
+        if (m.from === 'doctor' && !m.read) {
+          unread++;
+          set(ref(db, `coordinatorMessages/${coordUid}/${child.key}/read`), true);
+        }
+      });
+    }
+    list.scrollTop = list.scrollHeight;
+    document.getElementById('badge-doctormsg').textContent = unread;
+  });
+}
+
+window.sendDoctorMessage = async function() {
+  const input = document.getElementById('doctorChatInput');
+  const text  = input.value.trim();
+  if (!text) return;
+  await push(ref(db, `coordinatorMessages/${coordUid}`), {
+    text, from: 'coordinator', timestamp: Date.now(), read: false
+  });
+  // Surfaces immediately in Admin Panel's notification list, same as
+  // patient messages and appointment inquiries.
+  await push(ref(db, 'notifications/admin'), {
+    type: 'coordinator_message',
+    coordinatorId: coordUid,
+    coordinatorName: coordName,
+    preview: text.slice(0, 80),
+    timestamp: Date.now(),
+    read: false
+  });
+  input.value = '';
+};
+
+document.getElementById('doctorChatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.sendDoctorMessage(); }
 });
 
 // ── CASE FILE (READ-ONLY) ──
