@@ -137,6 +137,7 @@
     </div>
     <div class="topbar-right">
       <span class="topbar-name" id="coordNameDisplay"></span>
+      <button onclick="coordSignOut()" style="margin-left:14px;background:none;border:1px solid rgba(0,0,0,0.15);color:var(--ink3);padding:5px 12px;border-radius:5px;font-size:12.5px;cursor:pointer;">Sign out</button>
     </div>
   </div>
 
@@ -309,16 +310,20 @@ onAuthStateChanged(auth, user => {
   if (user) {
     coordUid  = user.uid;
     coordName = user.displayName || user.email;
-    // Soft-disable check: the doctor can lock a coordinator out from Admin
-    // Panel without deleting their account. This doesn't revoke their
-    // actual Firebase Auth credentials (that needs server-side access this
-    // project doesn't have) — it's an application-level gate, same pattern
-    // already used for patient accounts. Checked once per sign-in, not
-    // live, so a coordinator already using the app won't be kicked out
-    // mid-session if disabled at that exact moment; they'll be blocked the
-    // next time they open the link.
-    get(ref(db, `coordinators/${coordUid}/status`)).then(snap => {
-      if (snap.exists() && snap.val() === 'disabled') {
+    // Blocks two situations, both meaning "this account should not have
+    // access anymore": (1) explicitly disabled via Admin Panel's toggle,
+    // and (2) the coordinators/{uid} record was deleted entirely via
+    // Admin Panel's "Delete" button. Deleting only removes the database
+    // record — it cannot revoke the underlying Firebase Auth login itself
+    // (that needs server-side access this project doesn't have) — so
+    // without this explicit "record missing" check, a deleted coordinator
+    // with an already-cached browser session could keep signing back in
+    // indefinitely. Checked once per sign-in, not live, so someone already
+    // using the app won't be kicked out mid-session at the exact moment
+    // they're disabled/deleted — they'll be blocked next time they open the link.
+    get(ref(db, `coordinators/${coordUid}`)).then(snap => {
+      const record = snap.exists() ? snap.val() : null;
+      if (!record || record.status === 'disabled') {
         signOut(auth);
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('shell').style.display = 'none';
@@ -338,6 +343,10 @@ onAuthStateChanged(auth, user => {
     document.getElementById('shell').style.display = 'none';
   }
 });
+
+window.coordSignOut = function() {
+  signOut(auth);
+};
 
 // ── NAV ──
 document.querySelectorAll('.nav-item').forEach(item => {
