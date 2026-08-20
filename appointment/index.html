@@ -30,8 +30,6 @@
   <div class="form-grid">
     <div class="fg"><label>Full name</label><input type="text" id="leadName" placeholder="Your name"/></div>
     <div class="fg"><label>Phone / WhatsApp</label><input type="tel" id="leadPhone" placeholder="+91 92747 91141"/></div>
-    <div class="fg"><label>Email</label><input type="email" id="leadEmail" placeholder="you@email.com"/></div>
-    <div class="fg"><label>Consultation type</label><select id="leadType"><option>In-clinic (Ahmedabad)</option><option>Online / video call</option></select></div>
     <div class="fg full"><label>Brief health history</label><textarea id="leadHistory" placeholder="Main complaint, how long it has been present, any past illnesses, treatments taken so far, and anything else you feel is relevant."></textarea></div>
   </div>
   <div id="leadFormError" style="color:#B23A2E;font-size:14px;margin-bottom:10px;display:none;"></div>
@@ -81,8 +79,6 @@
   window.submitLeadForm = async function() {
     const name    = document.getElementById('leadName').value.trim();
     const phone   = document.getElementById('leadPhone').value.trim();
-    const email   = document.getElementById('leadEmail').value.trim();
-    const type    = document.getElementById('leadType').value;
     const history = document.getElementById('leadHistory').value.trim();
     const errEl   = document.getElementById('leadFormError');
     const btn     = document.getElementById('leadSubmitBtn');
@@ -101,17 +97,18 @@
       // The lead itself — doctor-readable only, per the site's Firebase
       // rules. Unauthenticated visitors can write here (that's the whole
       // point of a public inquiry form) but cannot read other people's
-      // submissions.
+      // submissions. Email and consultation type were dropped from this
+      // form (Aug 2026) — matching admin-panel's own New Patient flow,
+      // which only ever asked for these same two fields.
       await push(ref(db, 'leads'), {
-        name, phone, email, consultationType: type,
+        name, phone,
         healthHistory: history, submittedAt: Date.now(), status: 'new'
       });
 
       // Surfaces immediately in Admin Panel's existing notification list —
       // same place patient messages and follow-up answers already show up.
       await push(ref(db, 'notifications/admin'), {
-        type: 'new_lead', name, phone, email,
-        consultationType: type,
+        type: 'new_lead', name, phone,
         timestamp: Date.now(), read: false
       });
 
