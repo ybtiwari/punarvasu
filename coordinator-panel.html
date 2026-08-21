@@ -167,7 +167,10 @@
 
     <!-- Sidebar -->
     <div class="sidebar">
-      <div class="nav-item active" data-panel="patients">
+      <div class="nav-item active" data-panel="dashboard">
+        <span>🏠 Dashboard</span>
+      </div>
+      <div class="nav-item" data-panel="patients">
         <span>👤 My Patients</span>
         <span class="nav-badge" id="badge-patients">0</span>
       </div>
@@ -187,8 +190,26 @@
     <!-- Content -->
     <div class="content">
 
+      <!-- DASHBOARD -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="panel-title" id="dashGreeting">Welcome</div>
+        <div class="panel-sub">Your coordinator dashboard.</div>
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:20px 22px;margin-bottom:16px;">
+          <h3 style="font-size:15px;margin-bottom:6px;">Save your login for later</h3>
+          <p style="font-size:13px;color:var(--ink3);margin-bottom:14px;">Message yourself a link to sign back in on any device — useful if you switch phones or clear your browser.</p>
+          <button onclick="sendCoordinatorLoginViaWhatsApp()" style="background:#25D366;color:white;border:none;border-radius:6px;padding:10px 18px;font-size:14px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px;">
+            💬 Send my login to WhatsApp
+          </button>
+        </div>
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:20px 22px;">
+          <h3 style="font-size:15px;margin-bottom:10px;">At a glance</h3>
+          <p style="font-size:14px;color:var(--ink2);margin-bottom:6px;">👤 <span id="dashPatientCount">0</span> patient(s) assigned to you</p>
+          <p style="font-size:14px;color:var(--ink2);">💬 <span id="dashUnreadCount">0</span> unread patient message(s)</p>
+        </div>
+      </div>
+
       <!-- MY PATIENTS -->
-      <div class="panel active" id="panel-patients">
+      <div class="panel" id="panel-patients">
         <div class="panel-title">My Patients</div>
         <div class="panel-sub">Patients assigned to you by Dr. Yogeshwar Tiwari</div>
         <div class="patient-list" id="patientList">
@@ -357,6 +378,7 @@ onAuthStateChanged(auth, user => {
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('shell').style.display = 'flex';
       document.getElementById('coordNameDisplay').textContent = coordName;
+      document.getElementById('dashGreeting').textContent = 'Welcome, ' + (record.name || coordName || '');
       loadMyPatients();
       loadDoctorMessages();
     });
@@ -465,6 +487,33 @@ window.coordSignOut = function() {
   signOut(auth);
 };
 
+// Mirrors patient-portal.html's "Send my login to WhatsApp" — re-fetches
+// coordinators/{uid} fresh rather than relying on any cached value, so this
+// always sends the current urlKey/phone even if either was changed after
+// this session started.
+window.sendCoordinatorLoginViaWhatsApp = async function() {
+  if (!coordUid) return;
+  try {
+    const snap = await get(ref(db, `coordinators/${coordUid}`));
+    if (!snap.exists()) {
+      alert('Could not find your account details. Please contact the clinic.');
+      return;
+    }
+    const data = snap.val();
+    const cleanPhone = (data.phone || '').replace(/[^0-9]/g, '');
+    if (!data.urlKey || cleanPhone.length !== 10) {
+      alert('Your account is missing a phone number or login link on file. Please contact the clinic.');
+      return;
+    }
+    const loginUrl = `https://punarvasu.clinic/coordinator-panel.html?c=${data.urlKey}`;
+    const msg = `Here is your Punarvasu Clinic Coordinator Dashboard link:\n${loginUrl}\n\nKeep this safe — it signs you straight in.`;
+    const waUrl = `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank');
+  } catch (err) {
+    alert('Something went wrong preparing your login link. Please try again or contact the clinic.');
+  }
+};
+
 // ── NAV ──
 document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', () => {
@@ -501,6 +550,7 @@ function loadMyPatients() {
 
     const count = Object.keys(myPatients).length;
     document.getElementById('badge-patients').textContent = count;
+    document.getElementById('dashPatientCount').textContent = count;
 
     // Render patient list
     const el = document.getElementById('patientList');
@@ -603,6 +653,7 @@ function renderConvList(convData) {
 
   el.innerHTML = html || '<div class="empty"><div class="empty-icon">💬</div>No messages yet.</div>';
   document.getElementById('badge-messages').textContent = unreadTotal || '0';
+  document.getElementById('dashUnreadCount').textContent = unreadTotal || '0';
 }
 
 // ── CHAT ──
