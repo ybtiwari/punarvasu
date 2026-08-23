@@ -15,6 +15,38 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh}
+
+/* FIRST-VISIT GUIDED TOUR — shown once ever per device (localStorage-gated,
+   see maybeShowIntakeTour) on the top-level chapter select screen. Two
+   steps: the Search button in the topbar, then the chapter chart. Built as
+   a spotlight (a bordered box whose box-shadow darkens everything else —
+   simpler than a separate scrim + cutout) plus a bold pulsing arrow and a
+   speech-bubble tooltip with Next/Skip. Positioned with getBoundingClientRect
+   against the real on-screen elements so it stays accurate on any phone size. */
+.tour-highlight{
+  position:absolute;border:3px solid var(--amber);border-radius:12px;
+  box-shadow:0 0 0 9999px rgba(0,0,0,0.72);
+  pointer-events:none;z-index:9998;
+  transition:top .25s ease,left .25s ease,width .25s ease,height .25s ease;
+}
+.tour-arrow{
+  position:absolute;font-size:34px;line-height:1;color:var(--amber);
+  z-index:9999;pointer-events:none;text-shadow:0 2px 6px rgba(0,0,0,0.5);
+  animation:tourBounce 1.1s ease-in-out infinite;
+}
+@keyframes tourBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.tour-tooltip{
+  position:absolute;background:var(--white);border-radius:12px;padding:16px 18px;
+  max-width:280px;box-shadow:0 8px 28px rgba(0,0,0,0.35);z-index:9999;
+}
+.tour-tooltip .tour-text-en{font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:4px;}
+.tour-tooltip .tour-text-hi{font-size:13px;color:var(--ink2);margin-bottom:14px;}
+.tour-btns{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.tour-skip{background:none;border:none;color:var(--ink3);font-size:13px;font-weight:600;cursor:pointer;padding:6px 4px;}
+.tour-next{background:var(--teal);color:white;border:none;border-radius:8px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer;}
+.tour-step-dots{display:flex;gap:5px;justify-content:center;margin-top:12px;}
+.tour-step-dots span{width:6px;height:6px;border-radius:50%;background:var(--border);}
+.tour-step-dots span.active{background:var(--amber);}
 .app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--white);display:flex;flex-direction:column}
 .topbar{background:var(--teal);color:white;padding:14px 16px;flex-shrink:0}
 .topbar h1{font-size:16px;font-weight:700}
@@ -423,12 +455,122 @@ function render() {
 
   if (state.screen === 'intake') wireIntakeScreen();
   if (state.screen === 'lock') wireLockScreen();
+
+  maybeShowIntakeTour();
 }
 
 function renderLoading() {
   return `<div class="loading"><p style="font-size:14px;color:var(--ink3)">Loading repertory data…</p>
     <div class="load-bar"><div class="load-anim"></div></div></div>`;
 }
+
+// ── FIRST-VISIT GUIDED TOUR ──
+// Runs once ever per device/browser (localStorage-gated) the first time a
+// patient reaches the top-level chapter select screen — the one with the
+// "Where is the main problem" heading, the Search button in the topbar, and
+// the chapter chart below it. Two steps: Search button first (since it's
+// the free-text alternative), then the chart. Deliberately built against
+// the REAL rendered elements via getBoundingClientRect rather than fixed
+// coordinates, so it lines up correctly across phone sizes.
+const TOUR_SEEN_KEY = 'pv_intake_tour_seen_v1';
+let tourStep = 0;
+let tourTriggeredThisLoad = false; // guards against re-triggering on every
+  // incidental render() call while still sitting on this same screen —
+  // localStorage alone isn't enough, since it gets set the instant the tour
+  // first shows (so it never reappears on a LATER visit even if this one is
+  // abandoned mid-tour), which would otherwise cause the very next render()
+  // to see the flag and instantly tear the overlay back down again.
+
+function maybeShowIntakeTour() {
+  const isOverviewChapters = state.screen === 'chapters' && chapterBlockView === null;
+  if (!isOverviewChapters) { removeIntakeTour(); return; }
+  if (tourTriggeredThisLoad || localStorage.getItem(TOUR_SEEN_KEY)) return;
+  tourTriggeredThisLoad = true;
+  localStorage.setItem(TOUR_SEEN_KEY, '1');
+  tourStep = 0;
+  requestAnimationFrame(renderIntakeTourStep);
+}
+
+function removeIntakeTour() {
+  const el = document.getElementById('tourOverlay');
+  if (el) el.remove();
+}
+
+function renderIntakeTourStep() {
+  removeIntakeTour();
+  const isFirstStep = tourStep === 0;
+  const target = document.querySelector(isFirstStep ? '.search-btn' : '.chapter-grid');
+  if (!target) return; // screen changed out from under us — nothing to anchor to, skip silently
+
+  const rect = target.getBoundingClientRect();
+  const pad = isFirstStep ? 6 : 4;
+  const overlay = document.createElement('div');
+  overlay.id = 'tourOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9997;';
+
+  const highlightTop = rect.top - pad + window.scrollY;
+  const highlightLeft = rect.left - pad + window.scrollX;
+  const highlightW = rect.width + pad * 2;
+  const highlightH = rect.height + pad * 2;
+
+  const highlight = document.createElement('div');
+  highlight.className = 'tour-highlight';
+  highlight.style.top = highlightTop + 'px';
+  highlight.style.left = highlightLeft + 'px';
+  highlight.style.width = highlightW + 'px';
+  highlight.style.height = highlightH + 'px';
+  overlay.appendChild(highlight);
+
+  // Tooltip goes below the target if there's room, otherwise above it —
+  // matters most for the chapter-grid step, which can run tall on longer
+  // chapter lists and push close to the bottom of the screen.
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const tooltipBelow = spaceBelow > 170 || rect.top < 170;
+
+  const arrow = document.createElement('div');
+  arrow.className = 'tour-arrow';
+  arrow.innerHTML = tooltipBelow ? '&uarr;' : '&darr;';
+  const arrowTop = tooltipBelow ? (highlightTop + highlightH + 4) : (highlightTop - 40);
+  arrow.style.top = arrowTop + 'px';
+  arrow.style.left = Math.max(12, highlightLeft + highlightW / 2 - 17) + 'px';
+  overlay.appendChild(arrow);
+
+  const tooltip = document.createElement('div');
+  tooltip.className = 'tour-tooltip';
+  const tooltipTop = tooltipBelow ? (arrowTop + 40) : (arrowTop - 108);
+  tooltip.style.top = Math.max(10, tooltipTop) + 'px';
+  let tooltipLeft = highlightLeft + highlightW / 2 - 140;
+  tooltipLeft = Math.min(Math.max(tooltipLeft, 10), window.innerWidth - 290);
+  tooltip.style.left = tooltipLeft + 'px';
+
+  tooltip.innerHTML = `
+    <div class="tour-text-en">${isFirstStep
+      ? 'You can type your complaint or symptom here'
+      : 'Or choose your exact system, organ, or location of complaint from the chart below'}</div>
+    <div class="tour-text-hi">${isFirstStep
+      ? 'आप यहाँ अपनी शिकायत या लक्षण टाइप कर सकते हैं'
+      : 'या नीचे दिए गए चार्ट से अपने शरीर के सही हिस्से/अंग को चुनें'}</div>
+    <div class="tour-btns">
+      <button class="tour-skip" onclick="onIntakeTourSkip()">Skip</button>
+      <button class="tour-next" onclick="onIntakeTourNext()">${isFirstStep ? 'Next' : 'Got it'}</button>
+    </div>
+    <div class="tour-step-dots"><span class="${isFirstStep?'active':''}"></span><span class="${!isFirstStep?'active':''}"></span></div>
+  `;
+  overlay.appendChild(tooltip);
+
+  document.body.appendChild(overlay);
+}
+
+window.onIntakeTourNext = function() {
+  if (tourStep === 0) { tourStep = 1; renderIntakeTourStep(); }
+  else { removeIntakeTour(); }
+};
+window.onIntakeTourSkip = function() {
+  removeIntakeTour();
+};
+window.addEventListener('resize', () => {
+  if (document.getElementById('tourOverlay')) renderIntakeTourStep();
+});
 
 function renderIntakeScreen() {
   const p = state.patient;
