@@ -179,7 +179,10 @@ const state = {
   reviewExpiredNotice: false,   // shows a one-time notice on the confirmation screen after a 30-min review session times out
   returnScreenAfterSearch: 'chapters', // where to go back to if search is cancelled without a pick
   patient: {
-    name: '', age: '', sex: '', location: '', reason: '', phone: '', uid: null, accountBusy: false
+    name: '', age: '', sex: '', location: '', reason: '', phone: '', uid: null, accountBusy: false,
+    priorGenerals: null // flat array of generals rubric paths from this patient's most recent
+                         // prior visit, carried on the access code for a Follow-up Visit link —
+                         // null for a genuinely new patient with no history to carry forward
   },
   lock: {
     codeInput: '', error: '', isUnlocked: false, accessCodeUsed: '', busy: false,
@@ -195,7 +198,7 @@ const state = {
   // as type-ahead search + browse). `expandedItem` is which question index
   // is currently open (null = all collapsed); `answers` remembers each
   // question's choice and any follow-up picks, keyed by 'topicIdx-itemIdx'.
-  generalsQueue: { active: false, index: -1, order: [], expandedItem: null, detailSearch: {}, answers: {} },
+  generalsQueue: { active: false, index: -1, order: [], expandedItem: null, detailSearch: {}, answers: {}, isWarmup: false },
   search: {
     query: '',
     activeTab: 'all',          // all | sensation | timing | modality | laterality | cause | sequence | content
@@ -280,6 +283,7 @@ async function initData() {
     if (peek) {
       state.patient.uid = peek.uid;
       if (peek.name) state.patient.name = peek.name;
+      if (peek.priorGenerals) state.patient.priorGenerals = peek.priorGenerals;
     }
   }
   state.screen = 'intake';
@@ -726,6 +730,13 @@ async function attemptAutoUnlock() {
         }
       } catch (e) { console.error('[patient-intake] draft load failed:', e); }
     }
+    // Only run the warm-up if it genuinely hasn't been started (or
+    // finished) yet within this same in-progress case — resuming mid-chart,
+    // or having already answered generals, shouldn't show it again.
+    if (!state.completeCase.some(e => e.source === 'generals')) {
+      startWarmupSequence();
+      return;
+    }
     state.screen = 'chapters';
     render();
     return;
@@ -737,8 +748,7 @@ async function attemptAutoUnlock() {
     if (result.ok) {
       state.lock.isUnlocked = true;
       state.lock.accessCodeUsed = code;
-      state.screen = 'chapters';
-      render();
+      startWarmupSequence();
       return;
     }
     state.lock.error = result.reason === 'used'
@@ -890,10 +900,7 @@ async function onLockSubmit() {
   if (result.ok) {
     state.lock.isUnlocked = true;
     state.lock.accessCodeUsed = code;
-    // If patient came via URL code, they haven't filled intake details yet
-    // (name will be empty). Send them to intake first, then chapters.
-    state.screen = 'chapters';
-    render();
+    startWarmupSequence();
   } else if (result.reason === 'used') {
     state.lock.error = 'This code has already been used. Please contact the clinic for a new one.';
     render();
@@ -1077,10 +1084,81 @@ function expandedGeneralsItem() {
   return gq.order[gq.index].items[gq.expandedItem];
 }
 
+// Rebuilds a gq.answers object from state.patient.priorGenerals — a flat
+// list of rubric paths that were "Yes" on this patient's most recent prior
+// visit (set via a Follow-up Visit link; null/absent for a genuinely new
+// patient). Matches purely by path against the given topic order, so it
+// works identically whether called for the 2-topic warm-up or the full
+// later pass — each just passes whichever slice of GENERALS_WALKS it's
+// running. Only "yes"-kind items are reconstructed here; select-kind
+// questions (weather, hobbies) use a different answer shape and aren't
+// part of this — a patient revisits those fresh each time.
+function buildPrefilledAnswers(order) {
+  const prior = state.patient.priorGenerals;
+  const answers = {};
+  if (!prior || !prior.length) return answers;
+  order.forEach((topic, topicIdx) => {
+    topic.items.forEach((item, itemIdx) => {
+      if (item.kind === 'select') return;
+      if (!prior.includes(item.path)) return;
+      const key = generalsAnswerKey(topicIdx, itemIdx);
+      const realChildren = getRealDetailChildren(topic.pathTokens[0], item.path, item.childFilter);
+      const detailPaths = realChildren.map(([tok]) => item.path + ', ' + tok).filter(p => prior.includes(p));
+      answers[key] = { choice: 'yes', detailPaths };
+    });
+  });
+  return answers;
+}
+
+// A pre-filled "yes" should count in the submitted case even if the patient
+// never touches that question at all (per the "keep it unchanged" design —
+// no action needed to preserve something that's still true). Normal
+// answering only syncs into completeCase on interaction (onGeneralsAnswer,
+// finalizeGeneralsItemDetail), so pre-filled ones need seeding up front,
+// right when the sequence starts, not left to wait for a tap that may
+// never come.
+function seedCompleteCaseFromPrefill(answers, order) {
+  Object.entries(answers).forEach(([key, ans]) => {
+    const [topicIdx, itemIdx] = key.split('-').map(Number);
+    const topic = order[topicIdx];
+    const item = topic.items[itemIdx];
+    const rubric = findRubricByExactPath(topic.pathTokens[0], item.path);
+    if (rubric && !state.completeCase.some(e => e.source === 'generals' && e.path === item.path)) {
+      state.completeCase.push({ rubricId: rubric.id, path: rubric.path, remedyCount: rubric.remedyCount, source: 'generals' });
+    }
+    (ans.detailPaths || []).forEach(p => {
+      if (!state.completeCase.some(e => e.source === 'generals' && e.path === p)) {
+        const r = findRubricByExactPath(topic.pathTokens[0], p);
+        if (r) state.completeCase.push({ rubricId: r.id, path: r.path, remedyCount: r.remedyCount, source: 'generals' });
+      }
+    });
+  });
+}
+
+// The warm-up — Sleep and Appetite specifically, run immediately after
+// unlock, before the patient ever sees the main chapter chart. Not
+// skippable: these are clinically essential, same as the rest of Generals,
+// just deliberately the gentlest, most universally-relatable pair to start
+// with. On a Follow-up Visit, previous answers show pre-selected — nothing
+// to redo unless something's actually changed.
+function startWarmupSequence() {
+  const isFemale = (state.patient.sex || '').toLowerCase() === 'female';
+  const order = GENERALS_WALKS.filter(w => ['Sleep', 'Appetite'].includes(w.label)).filter(w => !w.femaleOnly || isFemale);
+  const answers = buildPrefilledAnswers(order);
+  seedCompleteCaseFromPrefill(answers, order);
+  state.generalsQueue = { active: true, index: 0, order, expandedItem: null, detailSearch: {}, answers, isWarmup: true };
+  state.screen = 'generalsWalk';
+  render();
+}
+
 function startGeneralsSequence() {
   const isFemale = (state.patient.sex || '').toLowerCase() === 'female';
-  const order = GENERALS_WALKS.filter(w => !w.femaleOnly || isFemale);
-  state.generalsQueue = { active: true, index: 0, order, expandedItem: null, detailSearch: {}, answers: {} };
+  // Sleep and Appetite already ran in the warm-up right after unlock —
+  // excluded here so the patient is never asked either one twice.
+  const order = GENERALS_WALKS.filter(w => !w.femaleOnly || isFemale).filter(w => !['Sleep', 'Appetite'].includes(w.label));
+  const answers = buildPrefilledAnswers(order);
+  seedCompleteCaseFromPrefill(answers, order);
+  state.generalsQueue = { active: true, index: 0, order, expandedItem: null, detailSearch: {}, answers, isWarmup: false };
   state.screen = 'generalsWalk';
   render();
 }
@@ -1266,7 +1344,14 @@ function onGeneralsTopicContinue() {
   const nextTopic = gq.index + 1;
   if (nextTopic >= gq.order.length) {
     gq.active = false;
-    onSubmitCase();
+    if (gq.isWarmup) {
+      // Warm-up done — on to the patient's actual main complaint, not a
+      // submission yet.
+      state.screen = 'chapters';
+      render();
+    } else {
+      onSubmitCase();
+    }
   } else {
     gq.index = nextTopic;
     render();
@@ -2572,7 +2657,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const data = snap.val();
       if (data.used === true) return null; // don't reveal info about an already-used code
       if (!data.patientUid) return null;
-      return { uid: data.patientUid, name: data.patientName || null };
+      return { uid: data.patientUid, name: data.patientName || null, priorGenerals: data.priorGenerals || null };
     } catch (e) {
       console.error('[patient-intake] access code peek failed:', e);
       return null;
