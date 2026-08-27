@@ -182,7 +182,8 @@ const state = {
     name: '', age: '', sex: '', location: '', reason: '', phone: '', uid: null, accountBusy: false
   },
   lock: {
-    codeInput: '', error: '', isUnlocked: false, accessCodeUsed: '', busy: false
+    codeInput: '', error: '', isUnlocked: false, accessCodeUsed: '', busy: false,
+    recoveryMatches: null, recoveryPhone: ''
   },
   submit: { busy: false, error: '' },
   // Generals runs as a fixed sequence of topics. Each topic's questions all
@@ -695,9 +696,113 @@ async function onIntakeContinue() {
 
   state.patient.accountBusy = false;
 
+  await attemptAutoUnlock();
+}
+
+// Runs in place of always showing the lock screen. Two ways to skip it
+// entirely, checked in order:
+//  1. Already signed in as this patient — ensurePatientAccount() (called
+//     moments ago in onIntakeContinue) signs them in as a side effect, so
+//     by this point a matching session may already exist. This is the
+//     path that makes a 2nd/3rd/4th visit to the SAME link (or even a
+//     bookmarked/saved link with no code at all) skip straight through.
+//  2. Not yet signed in, but a valid, unused code is already sitting in
+//     the URL (silently pre-filled at boot) — validated the same way a
+//     manual submit would, just without making the patient look at a
+//     screen and tap a button for something that was never really in doubt.
+// Only when NEITHER applies does the actual lock screen (manual code
+// entry, or the phone-recovery fallback) get shown — genuinely new
+// device, expired/missing code, or a link that's already been submitted.
+async function attemptAutoUnlock() {
+  const authedUid = window.getSignedInPatientUid ? window.getSignedInPatientUid() : null;
+  if (authedUid && state.patient.uid && authedUid === state.patient.uid) {
+    state.lock.isUnlocked = true;
+    if (state.completeCase.length === 0) {
+      try {
+        const draft = await window.loadDraftCase(state.patient.uid);
+        if (draft && draft.length) {
+          state.completeCase = draft;
+          lastSavedDraftSnapshot = JSON.stringify(draft);
+        }
+      } catch (e) { console.error('[patient-intake] draft load failed:', e); }
+    }
+    state.screen = 'chapters';
+    render();
+    return;
+  }
+
+  const code = (state.lock.codeInput || '').trim().toUpperCase();
+  if (code) {
+    const result = await window.checkAndUseAccessCode(code);
+    if (result.ok) {
+      state.lock.isUnlocked = true;
+      state.lock.accessCodeUsed = code;
+      state.screen = 'chapters';
+      render();
+      return;
+    }
+    state.lock.error = result.reason === 'used'
+      ? 'This code has already been used. Please contact the clinic for a new one.'
+      : 'That code was not recognized. Please check and try again.';
+  }
+
   state.screen = 'lock';
   render();
 }
+
+// ── "Lost your code?" phone recovery ──
+// Deliberately thin: phoneIndex/{phone} (public, no auth needed — same
+// node the patient portal's own recovery already reads) gives back the
+// name(s) registered under that number. From there this reuses
+// ensurePatientAccount() — the exact same deterministic sign-in-or-create
+// logic already running everywhere else on this page — rather than
+// building a second, parallel account-matching mechanism. A phone shared
+// across a household can return more than one name; the patient just
+// picks which one is theirs.
+async function onIntakeRecoveryFind() {
+  const phoneField = document.getElementById('intakeRecoveryPhone');
+  const errEl = document.getElementById('intakeRecoveryErr');
+  const cleanPhone = (phoneField ? phoneField.value : '').replace(/[^0-9]/g, '').replace(/^0+/, '').slice(-10);
+  if (errEl) errEl.textContent = '';
+  if (!cleanPhone) {
+    if (errEl) errEl.textContent = 'Please enter a valid mobile number.';
+    return;
+  }
+  try {
+    const matches = await window.lookupPhoneIndexNames(cleanPhone);
+    if (!matches.length) {
+      if (errEl) errEl.textContent = 'No account found for this number. Please contact the clinic.';
+      return;
+    }
+    if (matches.length === 1) {
+      await intakeRecoverySignIn(matches[0].name, cleanPhone);
+    } else {
+      state.lock.recoveryMatches = matches;
+      state.lock.recoveryPhone = cleanPhone;
+      render();
+    }
+  } catch (e) {
+    if (errEl) errEl.textContent = 'Something went wrong. Please try again or contact the clinic.';
+  }
+}
+
+async function intakeRecoverySignIn(name, phone) {
+  const errEl = document.getElementById('intakeRecoveryErr');
+  try {
+    const uid = await window.ensurePatientAccount(name, phone);
+    state.patient.uid = uid;
+    state.patient.name = name;
+    state.patient.phone = phone;
+    await attemptAutoUnlock(); // now signed in — this will find the session and skip straight to chapters
+  } catch (e) {
+    if (errEl) errEl.textContent = 'Could not sign in — please contact the clinic for help.';
+  }
+}
+window.onIntakeRecoveryFind = onIntakeRecoveryFind;
+window.onIntakeRecoveryPick = function (idx) {
+  const m = state.lock.recoveryMatches[idx];
+  intakeRecoverySignIn(m.name, state.lock.recoveryPhone);
+};
 
 function renderLockScreen() {
   return `
@@ -715,6 +820,25 @@ function renderLockScreen() {
           <button class="btn-apply" id="lockSubmitBtn" ${state.lock.busy ? 'disabled' : ''}>${state.lock.busy ? 'Checking…' : 'Apply'}</button>
         </div>
         <div class="coupon-err">${esc(state.lock.error)}</div>
+      </div>
+
+      <div class="lock-or">OR</div>
+
+      <div class="lock-card">
+        <div class="lock-card-title">Lost your code?</div>
+        ${state.lock.recoveryMatches ? `
+          <p style="font-size:13px;color:var(--ink2);margin-bottom:10px;">Which account is yours?</p>
+          ${state.lock.recoveryMatches.map((m, i) => `
+            <button class="btn-stub" style="display:block;width:100%;margin-bottom:6px;" onclick="onIntakeRecoveryPick(${i})">${esc(m.name)}</button>
+          `).join('')}
+        ` : `
+          <p style="font-size:13px;color:var(--ink2);margin-bottom:10px;">Enter the mobile number your account is registered under.</p>
+          <div class="coupon-row">
+            <input id="intakeRecoveryPhone" type="tel" placeholder="10-digit mobile number" maxlength="15">
+            <button class="btn-apply" id="intakeRecoveryBtn">Find</button>
+          </div>
+        `}
+        <div class="coupon-err" id="intakeRecoveryErr"></div>
       </div>
 
       <div class="lock-or">OR</div>
@@ -737,6 +861,10 @@ function wireLockScreen() {
     codeF.addEventListener('keydown', (e) => { if (e.key === 'Enter') onLockSubmit(); });
   }
   if (btn) btn.addEventListener('click', onLockSubmit);
+  const recoveryBtn = document.getElementById('intakeRecoveryBtn');
+  if (recoveryBtn) recoveryBtn.addEventListener('click', onIntakeRecoveryFind);
+  const recoveryPhoneF = document.getElementById('intakeRecoveryPhone');
+  if (recoveryPhoneF) recoveryPhoneF.addEventListener('keydown', (e) => { if (e.key === 'Enter') onIntakeRecoveryFind(); });
   const tokenBtn = document.getElementById('buyTokenBtn');
   if (tokenBtn) {
     tokenBtn.addEventListener('click', () => {
@@ -2181,6 +2309,7 @@ async function onSubmitCase() {
     if (!isRevision) {
       state.submittedCaseId = result.caseId;
       state.submittedAtOriginal = payload.submittedAt;
+      window.markAccessCodeUsed(state.lock.accessCodeUsed); // first real submission — burn it now, not at unlock
     }
     if (reviewExpiryChecker) { clearInterval(reviewExpiryChecker); reviewExpiryChecker = null; }
     state.reviewMode = 'normal';
@@ -2239,6 +2368,25 @@ window.addEventListener('DOMContentLoaded', () => {
   const app = initializeApp(firebaseConfig, 'patientIntakeApp');
   const db = getDatabase(app);
   const auth = getAuth(app);
+
+  // Lets the main engine check for an already-signed-in patient without
+  // reaching into the raw auth object directly — matches the pattern of
+  // every other Firebase-dependent helper on this page being exposed as a
+  // small, purpose-built function.
+  window.getSignedInPatientUid = function () {
+    return auth.currentUser ? auth.currentUser.uid : null;
+  };
+
+  // Same phoneIndex/{phone} node the patient portal's own "Lost your link?"
+  // recovery already reads — public, no auth required. Returns every
+  // {uid, name} registered under that number, since a phone can be shared
+  // across a household.
+  window.lookupPhoneIndexNames = async function (phone) {
+    const snap = await get(ref(db, 'phoneIndex/' + phone));
+    if (!snap.exists()) return [];
+    const val = snap.val();
+    return Object.entries(val).map(([uid, name]) => ({ uid, name }));
+  };
 
   // Creates (or recovers) a patient portal account, using the same
   // synthetic-email/deterministic-password scheme admin-panel.html uses for
@@ -2361,8 +2509,18 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // Identical logic to questionnaire_prototype.html's access-code check —
-  // same rules, same behavior: burns the code the instant it's valid.
+  // Validates a code WITHOUT burning it — the code is now marked used only
+  // at actual case submission (see markAccessCodeUsed, called from
+  // onSubmitCase). Previously this burned the code the instant it was
+  // validated, which meant any interruption after unlocking but before
+  // submitting — closed browser, lost signal, app crash — permanently
+  // locked the patient out of their only working link, even though they'd
+  // completed nothing. Since draft progress already autosaves to
+  // patients/{uid}/draftCase and reloads on return, the only thing actually
+  // stopping a patient from resuming was this premature burn — not lost
+  // progress. Delaying the burn to submission fixes that directly: the same
+  // link now keeps working, with their in-progress selections intact,
+  // right up until they actually submit.
   window.checkAndUseAccessCode = async function (code) {
     try {
       const codeRef = ref(db, 'accessCodes/' + code);
@@ -2370,7 +2528,6 @@ window.addEventListener('DOMContentLoaded', () => {
       if (!snap.exists()) return { ok: false, reason: 'invalid' };
       const data = snap.val();
       if (data.used === true) return { ok: false, reason: 'used' };
-      await update(codeRef, { used: true });
       // Newer codes (generated per-patient from admin-panel.html) carry
       // patientUid + patientName directly on the code record itself — read
       // straight from here, not from patients/{uid}, since that path
@@ -2382,6 +2539,22 @@ window.addEventListener('DOMContentLoaded', () => {
     } catch (e) {
       console.error('[patient-intake] access code check failed:', e);
       return { ok: false, reason: 'error' };
+    }
+  };
+
+  // Burns the code — called once, from onSubmitCase(), only on the actual
+  // first successful submission (never on a revision resubmit, which reuses
+  // an already-submitted case and would otherwise try to burn an
+  // already-burned code). Failure here is logged but deliberately
+  // non-fatal: the case has already been saved successfully by this point,
+  // and a patient should never see their real submission fail over a
+  // bookkeeping write.
+  window.markAccessCodeUsed = async function (code) {
+    if (!code) return;
+    try {
+      await update(ref(db, 'accessCodes/' + code), { used: true });
+    } catch (e) {
+      console.error('[patient-intake] marking access code used failed (non-fatal):', e);
     }
   };
 
