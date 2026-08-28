@@ -167,7 +167,7 @@ input[type=text]{font-family:var(--font)}
 // STATE
 // =================================================================
 const state = {
-  screen: 'loading',           // loading | intake | lock | chapters | walk | generalsWalk | connectorPrompt | caseReview | search | submitted
+  screen: 'loading',           // loading | language | intake | lock | guide | chapters | walk | generalsWalk | connectorPrompt | caseReview | search | submitted
   currentWalk: { pathTokens: [] },
   completeCase: [],            // [{ rubricId, path, remedyCount, source? }] — source:'generals' tags entries added via the generals sequence
   connectorQueue: [],          // pending optional connector suggestions to show
@@ -179,7 +179,10 @@ const state = {
   reviewExpiredNotice: false,   // shows a one-time notice on the confirmation screen after a 30-min review session times out
   returnScreenAfterSearch: 'chapters', // where to go back to if search is cancelled without a pick
   patient: {
-    name: '', age: '', sex: '', location: '', reason: '', phone: '', uid: null, accountBusy: false,
+    name: '', age: '', sex: '', location: '', pinCode: '', reason: '', phone: '', uid: null, accountBusy: false,
+    preferredLang: null, // 'en' | 'hi' — chosen on the very first screen, carried forward on
+                          // follow-up visits so it's only ever asked once per patient
+    sblConsent: null, // true | false | null(not yet answered) — free courier/COD delivery from SBL
     priorGenerals: null // flat array of generals rubric paths from this patient's most recent
                          // prior visit, carried on the access code for a Follow-up Visit link —
                          // null for a genuinely new patient with no history to carry forward
@@ -284,9 +287,14 @@ async function initData() {
       state.patient.uid = peek.uid;
       if (peek.name) state.patient.name = peek.name;
       if (peek.priorGenerals) state.patient.priorGenerals = peek.priorGenerals;
+      if (peek.preferredLang) state.patient.preferredLang = peek.preferredLang;
     }
   }
-  state.screen = 'intake';
+  // A Follow-up Visit link already carries a known language preference
+  // forward — no need to ask again. A genuinely new patient (or an older
+  // code predating this) sees the language screen first, before anything
+  // else at all.
+  state.screen = state.patient.preferredLang ? 'intake' : 'language';
   render();
 }
 
@@ -448,8 +456,10 @@ function render() {
   scheduleDraftSaveIfChanged();
   const app = document.getElementById('app');
   if (state.screen === 'loading') app.innerHTML = renderLoading();
+  else if (state.screen === 'language') app.innerHTML = renderLanguageScreen();
   else if (state.screen === 'intake') app.innerHTML = renderIntakeScreen();
   else if (state.screen === 'lock') app.innerHTML = renderLockScreen();
+  else if (state.screen === 'guide') app.innerHTML = renderGuideScreen();
   else if (state.screen === 'chapters') app.innerHTML = renderChapterSelect();
   else if (state.screen === 'walk') app.innerHTML = renderWalkStep();
   else if (state.screen === 'generalsWalk') app.innerHTML = renderGeneralsQuestionStep();
@@ -577,6 +587,82 @@ window.addEventListener('resize', () => {
   if (document.getElementById('tourOverlay')) renderIntakeTourStep();
 });
 
+// The very first screen for a genuinely new patient — before basics, before
+// the code lock, before anything else. Carried forward on Follow-up Visit
+// links (see peekAccessCodePatient), so it's only ever asked once per
+// patient, not once per visit.
+function renderLanguageScreen() {
+  return `
+    <div class="screen-pad" style="max-width:420px;margin:0 auto;padding:32px 20px;text-align:center;">
+      <div style="font-size:15px;color:var(--ink3);margin-bottom:6px;">Punarvasu Clinic</div>
+      <h2 style="font-size:20px;margin-bottom:6px;">Choose your preferred language</h2>
+      <p style="font-size:15px;color:var(--ink2);margin-bottom:28px;">अपनी पसंदीदा भाषा चुनें</p>
+      <button onclick="onLanguagePick('en')" style="display:block;width:100%;padding:16px;margin-bottom:14px;border:1.5px solid var(--border,#ccc);border-radius:10px;background:#fff;font-size:17px;font-weight:600;cursor:pointer;">English</button>
+      <button onclick="onLanguagePick('hi')" style="display:block;width:100%;padding:16px;border:1.5px solid var(--border,#ccc);border-radius:10px;background:#fff;font-size:17px;font-weight:600;cursor:pointer;">हिंदी</button>
+    </div>
+  `;
+}
+window.onLanguagePick = function (lang) {
+  state.patient.preferredLang = lang;
+  state.screen = 'intake';
+  render();
+};
+
+// Shown once, right after unlock, before the Sleep/Appetite warm-up — never
+// repeated for a recognized returning patient (see proceedPastUnlock).
+function renderGuideScreen() {
+  const hi = state.patient.preferredLang === 'hi';
+  const title = hi ? 'शुरू करने से पहले' : 'Before You Begin';
+  const body = hi ? `
+    <p style="margin-bottom:14px;"><strong>शास्त्रीय होम्योपैथी में, आपके लक्षण ही सब कुछ हैं।</strong></p>
+    <p style="margin-bottom:14px;">जब दवा आपके पूरे, विस्तृत लक्षणों के आधार पर चुनी जाती है, तो वह स्वयं आपकी बीमारी की जड़ तक पहुंचकर उसका इलाज करती है — डॉक्टर को पहले बीमारी का नाम या निदान जानने की ज़रूरत नहीं होती। सही और विस्तृत लक्षणों पर आधारित सही ढंग से चुनी गई दवा, यह काम स्वयं कर लेती है।</p>
+    <p style="margin-bottom:18px;">इसीलिए आप अपनी शिकायतों का वर्णन कैसे करते हैं, यह बहुत मायने रखता है।</p>
+    <p style="font-weight:600;margin-bottom:10px;">अपने लक्षण कैसे चुनें:</p>
+    <p style="margin-bottom:10px;">1. <strong>स्थान से शुरू करें</strong> — शरीर के उस हिस्से या अंग को चुनें जहाँ वास्तव में आपकी समस्या है।</p>
+    <p style="margin-bottom:10px;">2. <strong>पूरी तरह से वर्णन करें</strong> — हर शिकायत का अपना अलग स्वभाव होता है। अपने लिए लागू होने वाले हर पहलू को खोजें: क्या इसे बेहतर बनाता है, क्या इसे बढ़ाता है, यह कब होता है, यह कैसा महसूस होता है।</p>
+    <p style="margin-bottom:18px;">3. <strong>पूरे शरीर को शामिल करें</strong> — कृपया अपने शरीर में कहीं भी हो रही अन्य किसी भी चीज़ को भी चुनें, चाहे वह छोटी या असंबंधित लगे।</p>
+    <p>अगर कुछ अधूरा रह जाए, तो चिंता न करें — जितना हो सके उतना अच्छा प्रयास करें। जो कुछ भी छूट जाएगा, डॉ. योगेश्वर तिवारी स्वयं आपका केस देखकर, दवा लिखने से पहले उसे आपके साथ पूरा करेंगे।</p>
+  ` : `
+    <p style="margin-bottom:14px;"><strong>In classical homeopathy, your symptoms are everything.</strong></p>
+    <p style="margin-bottom:14px;">When a medicine is selected based on your complete, detailed symptoms, it works by finding and treating the root cause of your illness on its own — your doctor does not need to first diagnose or name the disease. A well-chosen medicine, based on accurate and detailed symptoms, does that work itself.</p>
+    <p style="margin-bottom:18px;">This is why how you describe your complaints matters so much.</p>
+    <p style="font-weight:600;margin-bottom:10px;">How to select your symptoms:</p>
+    <p style="margin-bottom:10px;">1. <strong>Start with location</strong> — choose the part of the body, or the organ, where your problem is actually happening.</p>
+    <p style="margin-bottom:10px;">2. <strong>Describe it fully</strong> — every complaint has its own character. Explore every quality that applies to you: what makes it better, what makes it worse, when it happens, how it feels.</p>
+    <p style="margin-bottom:18px;">3. <strong>Cover your whole body</strong> — please also select anything else you're experiencing, anywhere in your body, even things that feel minor or unrelated.</p>
+    <p>If something feels incomplete, don't worry — do your best. Whatever's left, Dr. Tiwari will go through your case personally and complete it with you before your medicine is prescribed.</p>
+  `;
+  return `
+    <div class="screen-pad" style="max-width:480px;margin:0 auto;padding:28px 20px;">
+      <h2 style="font-size:19px;margin-bottom:18px;">${title}</h2>
+      <div style="font-size:14.5px;line-height:1.6;color:var(--ink2,#333);text-align:left;">${body}</div>
+      <button onclick="onGuideContinue()" style="display:block;width:100%;padding:15px;margin-top:24px;border:none;border-radius:10px;background:var(--teal,#1C6B5A);color:#fff;font-size:16px;font-weight:600;cursor:pointer;">${hi ? 'आगे बढ़ें' : 'Continue'}</button>
+    </div>
+  `;
+}
+window.onGuideContinue = function () {
+  startWarmupSequence();
+};
+
+// Decides what a just-unlocked patient sees next: a genuinely new patient
+// has nothing carried forward yet, so they see the guide once. A returning
+// patient (priorGenerals present — the same signal the warm-up itself uses
+// to know it's a follow-up) has clearly been through it before and skips
+// straight to the warm-up.
+function proceedPastUnlock() {
+  if (!state.patient.preferredLang) {
+    // Shouldn't normally happen (language screen runs before this point
+    // for anyone without one), but fall back safely rather than crash.
+    state.patient.preferredLang = 'en';
+  }
+  if (state.patient.priorGenerals && state.patient.priorGenerals.length) {
+    startWarmupSequence();
+  } else {
+    state.screen = 'guide';
+    render();
+  }
+}
+
 function renderIntakeScreen() {
   const p = state.patient;
   return `
@@ -612,6 +698,24 @@ function renderIntakeScreen() {
         <input id="intakeLocationField" class="search-box" type="text" placeholder="City / town" value="${escAttr(p.location)}">
       </div>
       <div class="option-group">
+        <div class="option-group-label">${p.preferredLang === 'hi' ? 'पिन कोड (वैकल्पिक)' : 'PIN code (optional)'}</div>
+        <input id="intakePinField" class="search-box" type="text" inputmode="numeric" maxlength="6" placeholder="${p.preferredLang === 'hi' ? '6 अंकों का पिन कोड' : '6-digit PIN code'}" value="${escAttr(p.pinCode)}">
+      </div>
+      <div class="option-group">
+        <div class="option-group-label">${p.preferredLang === 'hi' ? 'दवा की होम डिलीवरी' : 'Home delivery of medicine'}</div>
+        <p style="font-size:13px;color:var(--ink3);margin-bottom:10px;">${p.preferredLang === 'hi'
+          ? 'दवा लिखे जाने के बाद, क्या आप चाहेंगे कि हम इसे सीधे निर्माता, SBL Pvt. Ltd. से मंगवाएं? यह कोरियर द्वारा, कैश ऑन डिलीवरी के साथ, बिना किसी शिपिंग शुल्क के आपके पास भेजी जाएगी।'
+          : 'After your medicine is prescribed, would you like us to order it directly from the manufacturer, SBL Pvt. Ltd.? It will be sent to you by courier, Cash on Delivery, with free shipping.'}</p>
+        <div style="display:flex;gap:8px">
+          <div class="ch-card" style="flex:1;${p.sblConsent===true ? 'border-color:var(--teal);background:var(--amber-bg)' : ''}" onclick="onSblConsentPick(true)">
+            <div class="en">${p.preferredLang === 'hi' ? 'जी हाँ' : 'Yes, please'}</div>
+          </div>
+          <div class="ch-card" style="flex:1;${p.sblConsent===false ? 'border-color:var(--teal);background:var(--amber-bg)' : ''}" onclick="onSblConsentPick(false)">
+            <div class="en">${p.preferredLang === 'hi' ? 'जी नहीं' : 'No, thank you'}</div>
+          </div>
+        </div>
+      </div>
+      <div class="option-group">
         <div class="option-group-label">Reason for consultation</div>
         <textarea id="intakeReasonField" class="search-box" style="height:80px" placeholder="Briefly, what brings you in today?">${esc(p.reason)}</textarea>
       </div>
@@ -627,13 +731,20 @@ function wireIntakeScreen() {
   const phoneF = document.getElementById('intakePhoneField');
   const ageF = document.getElementById('intakeAgeField');
   const locF = document.getElementById('intakeLocationField');
+  const pinF = document.getElementById('intakePinField');
   const reasonF = document.getElementById('intakeReasonField');
   if (nameF) nameF.addEventListener('input', () => { state.patient.name = nameF.value; });
   if (phoneF) phoneF.addEventListener('input', () => { state.patient.phone = phoneF.value; });
   if (ageF) ageF.addEventListener('input', () => { state.patient.age = ageF.value; });
   if (locF) locF.addEventListener('input', () => { state.patient.location = locF.value; });
+  if (pinF) pinF.addEventListener('input', () => { state.patient.pinCode = pinF.value; });
   if (reasonF) reasonF.addEventListener('input', () => { state.patient.reason = reasonF.value; });
 }
+
+window.onSblConsentPick = function (consent) {
+  state.patient.sblConsent = consent;
+  render();
+};
 
 function onIntakeSexPick(sex) {
   state.patient.sex = sex;
@@ -748,7 +859,7 @@ async function attemptAutoUnlock() {
     if (result.ok) {
       state.lock.isUnlocked = true;
       state.lock.accessCodeUsed = code;
-      startWarmupSequence();
+      proceedPastUnlock();
       return;
     }
     state.lock.error = result.reason === 'used'
@@ -900,7 +1011,7 @@ async function onLockSubmit() {
   if (result.ok) {
     state.lock.isUnlocked = true;
     state.lock.accessCodeUsed = code;
-    startWarmupSequence();
+    proceedPastUnlock();
   } else if (result.reason === 'used') {
     state.lock.error = 'This code has already been used. Please contact the clinic for a new one.';
     render();
@@ -1492,8 +1603,7 @@ function renderGeneralsQuestionStep() {
     if (!isExpanded) {
       return `<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;" onclick="onGeneralsItemExpand(${idx})">
         <div style="flex:1;">
-          <div style="font-size:14px;font-weight:600;color:var(--ink);">${esc(item.en)}</div>
-          ${!answer ? `<div style="font-size:12px;color:var(--ink3);margin-top:2px;">${esc(item.hi)}</div>` : ''}
+          <div style="font-size:14px;font-weight:600;color:var(--ink);">${esc(state.patient.preferredLang === 'hi' ? item.hi : item.en)}</div>
         </div>
         ${renderGeneralsAnswerBadge(answer)}
         <span style="color:var(--ink3);font-size:11px;">&#9656;</span>
@@ -1519,8 +1629,7 @@ function renderGeneralsQuestionStep() {
         return card + optDetail;
       }).join('');
       return `<div style="border:1.5px solid var(--teal);border-radius:8px;padding:14px;margin-bottom:8px;">
-        <div style="font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;" onclick="onGeneralsItemExpand(${idx})">${esc(item.en)}</div>
-        <div class="hi" style="margin-bottom:14px;">${esc(item.hi)}</div>
+        <div style="font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;" onclick="onGeneralsItemExpand(${idx})">${esc(state.patient.preferredLang === 'hi' ? item.hi : item.en)}</div>
         ${optsHtml}
       </div>`;
     }
@@ -1532,8 +1641,7 @@ function renderGeneralsQuestionStep() {
     const showDetail = answer && answer.choice === 'yes' && hasDetail;
 
     return `<div style="border:1.5px solid var(--teal);border-radius:8px;padding:14px;margin-bottom:8px;">
-      <div style="font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;" onclick="onGeneralsItemExpand(${idx})">${esc(item.en)}</div>
-      <div class="hi" style="margin-bottom:14px;">${esc(item.hi)}</div>
+      <div style="font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;" onclick="onGeneralsItemExpand(${idx})">${esc(state.patient.preferredLang === 'hi' ? item.hi : item.en)}</div>
       <div style="display:flex;gap:8px;">
         <button class="btn-primary" style="flex:1;${yesStyle}" onclick="onGeneralsAnswer('yes')">Yes</button>
         <button class="btn-outline" style="flex:1;${noStyle}" onclick="onGeneralsAnswer('no')">No</button>
@@ -2378,7 +2486,7 @@ async function onSubmitCase() {
   render();
 
   const isRevision = !!state.submittedCaseId;
-  const { accountBusy, ...patientForSubmission } = state.patient; // accountBusy is transient UI state, not part of the saved record
+  const { accountBusy, priorGenerals, ...patientForSubmission } = state.patient; // accountBusy is transient UI state; priorGenerals is data carried IN from a past visit, not something a new case should save about itself — neither belongs in the saved record
   const payload = {
     patient: patientForSubmission,
     accessCodeUsed: state.lock.accessCodeUsed,
