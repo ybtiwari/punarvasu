@@ -2650,7 +2650,41 @@ window.addEventListener('DOMContentLoaded', () => {
       // not found under the canonical form — fall through
     }
 
-    // Safety net for accounts created before this fix (phone-only key, via
+    // Before falling back to the older phone-only legacy scheme, check
+    // whether this phone already has exactly one known account under a
+    // DIFFERENT name spelling — phoneIndex is public, keyed by uid, and
+    // reflects every real account regardless of how the name was typed at
+    // creation time (whether typed here, or by the doctor in Admin Panel).
+    // Using ITS stored name — not whatever was just typed — to recompute
+    // the canonical credentials is what lets this correctly find the
+    // ALREADY-EXISTING account, rather than minting a near-duplicate
+    // whenever a name gets typed slightly differently. Only when
+    // phoneIndex shows more than one distinct account on this phone — a
+    // genuinely shared household number — does this step back off and
+    // require an exact name match below, since guessing wrong there would
+    // risk merging two different real patients' cases together.
+    try {
+      const phoneIdxSnap = await get(ref(db, 'phoneIndex/' + cleanPhone));
+      if (phoneIdxSnap.exists()) {
+        const known = phoneIdxSnap.val();
+        const knownUids = Object.keys(known);
+        if (knownUids.length === 1) {
+          const knownNormalized = normalizeNameForEmail(known[knownUids[0]] || '');
+          if (knownNormalized) {
+            const knownEmail = cleanPhone + '.' + knownNormalized + '@punarvasu.clinic';
+            const knownPass = 'Pun@' + cleanPhone.slice(-6) + 'Cl!';
+            try {
+              const cred = await signInWithEmailAndPassword(auth, knownEmail, knownPass);
+              return cred.user.uid;
+            } catch (e2) { /* phoneIndex pointed at credentials that don't work — fall through */ }
+          }
+        }
+      }
+    } catch (idxErr) {
+      console.error('[patient-intake] phoneIndex lookup failed (non-fatal):', idxErr);
+    }
+
+    // Safety net for accounts created before either fix above (phone-only key, via
     // admin-panel.html or an earlier version of this form): only treat a
     // legacy match as the SAME person if the name stored on that account
     // also matches. If it doesn't, that phone belongs to someone else
