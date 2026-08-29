@@ -183,6 +183,9 @@ const state = {
     preferredLang: null, // 'en' | 'hi' — chosen on the very first screen, carried forward on
                           // follow-up visits so it's only ever asked once per patient
     sblConsent: null, // true | false | null(not yet answered) — free courier/COD delivery from SBL
+    deliveryPreference: null, // 'dispensed' | 'own' | null(not yet answered) — asked fresh each
+                              // visit, since where to send medicine can genuinely change visit to visit
+    fullAddress: '', // only collected/relevant when deliveryPreference === 'dispensed'
     priorGenerals: null // flat array of generals rubric paths from this patient's most recent
                          // prior visit, carried on the access code for a Follow-up Visit link —
                          // null for a genuinely new patient with no history to carry forward
@@ -460,6 +463,7 @@ function render() {
   else if (state.screen === 'intake') app.innerHTML = renderIntakeScreen();
   else if (state.screen === 'lock') app.innerHTML = renderLockScreen();
   else if (state.screen === 'guide') app.innerHTML = renderGuideScreen();
+  else if (state.screen === 'deliveryPref') app.innerHTML = renderDeliveryPrefScreen();
   else if (state.screen === 'chapters') app.innerHTML = renderChapterSelect();
   else if (state.screen === 'walk') app.innerHTML = renderWalkStep();
   else if (state.screen === 'generalsWalk') app.innerHTML = renderGeneralsQuestionStep();
@@ -483,12 +487,14 @@ function renderLoading() {
 // Runs once ever per device/browser (localStorage-gated) the first time a
 // patient reaches the top-level chapter select screen — the one with the
 // "Where is the main problem" heading, the Search button in the topbar, and
-// the chapter chart below it. Two steps: Search button first (since it's
-// the free-text alternative), then the chart. Deliberately built against
-// the REAL rendered elements via getBoundingClientRect rather than fixed
-// coordinates, so it lines up correctly across phone sizes.
+// the chapter chart below it. Three steps: a framing intro (no specific
+// element — orients the patient before anything is highlighted), then the
+// Search button (the free-text alternative), then the chart. Steps 1 and 2
+// are built against the REAL rendered elements via getBoundingClientRect
+// rather than fixed coordinates, so they line up correctly across phone
+// sizes.
 const TOUR_SEEN_KEY = 'pv_intake_tour_seen_v1';
-let tourStep = 0;
+let tourStep = 0; // 0 = intro (no target), 1 = search box, 2 = chapter chart
 let tourTriggeredThisLoad = false; // guards against re-triggering on every
   // incidental render() call while still sitting on this same screen —
   // localStorage alone isn't enough, since it gets set the instant the tour
@@ -511,14 +517,45 @@ function removeIntakeTour() {
   if (el) el.remove();
 }
 
+function tourStepDots() {
+  return `<div class="tour-step-dots">${[0,1,2].map(i => `<span class="${i===tourStep?'active':''}"></span>`).join('')}</div>`;
+}
+
 function renderIntakeTourStep() {
   removeIntakeTour();
-  const isFirstStep = tourStep === 0;
-  const target = document.querySelector(isFirstStep ? '.search-btn' : '.chapter-grid');
+  const hi = state.patient.preferredLang === 'hi';
+
+  if (tourStep === 0) {
+    // Intro framing step — no specific element to point at yet, just a
+    // centered card orienting the patient before the two spotlighted
+    // steps that follow.
+    const overlay = document.createElement('div');
+    overlay.id = 'tourOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9997;background:rgba(0,0,0,0.72);display:flex;align-items:center;justify-content:center;padding:20px;';
+    const card = document.createElement('div');
+    card.className = 'tour-tooltip';
+    card.style.cssText = 'position:static;max-width:320px;';
+    card.innerHTML = `
+      <div class="tour-text-en">${hi
+        ? 'अब, कृपया अपने मुख्य लक्षण / शिकायतें खोजने और चुनने की कोशिश करें — जो आप वास्तव में महसूस कर रहे हैं'
+        : 'Now, please try to find and select the rubrics/symptoms you are actually feeling — your main complaints'}</div>
+      <div class="tour-btns" style="margin-top:14px;">
+        <button class="tour-skip" onclick="onIntakeTourSkip()">${hi ? 'छोड़ें' : 'Skip'}</button>
+        <button class="tour-next" onclick="onIntakeTourNext()">${hi ? 'आगे' : 'Next'}</button>
+      </div>
+      ${tourStepDots()}
+    `;
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+    return;
+  }
+
+  const isSearchStep = tourStep === 1;
+  const target = document.querySelector(isSearchStep ? '.search-btn' : '.chapter-grid');
   if (!target) return; // screen changed out from under us — nothing to anchor to, skip silently
 
   const rect = target.getBoundingClientRect();
-  const pad = isFirstStep ? 6 : 4;
+  const pad = isSearchStep ? 6 : 4;
   const overlay = document.createElement('div');
   overlay.id = 'tourOverlay';
   overlay.style.cssText = 'position:fixed;inset:0;z-index:9997;';
@@ -559,17 +596,14 @@ function renderIntakeTourStep() {
   tooltip.style.left = tooltipLeft + 'px';
 
   tooltip.innerHTML = `
-    <div class="tour-text-en">${isFirstStep
-      ? 'You can type your complaint or symptom here'
-      : 'Or choose your exact system, organ, or location of complaint from the chart below'}</div>
-    <div class="tour-text-hi">${isFirstStep
-      ? 'आप यहाँ अपनी शिकायत या लक्षण टाइप कर सकते हैं'
-      : 'या नीचे दिए गए चार्ट से अपने शरीर के सही हिस्से/अंग को चुनें'}</div>
+    <div class="tour-text-en">${isSearchStep
+      ? (hi ? 'आप यहाँ अपनी शिकायत या लक्षण टाइप कर सकते हैं' : 'You can type your complaint or symptom here')
+      : (hi ? 'या नीचे दिए गए चार्ट से अपने शरीर के सही हिस्से/अंग को चुनें' : 'Or choose your exact system, organ, or location of complaint from the chart below')}</div>
     <div class="tour-btns">
-      <button class="tour-skip" onclick="onIntakeTourSkip()">Skip</button>
-      <button class="tour-next" onclick="onIntakeTourNext()">${isFirstStep ? 'Next' : 'Got it'}</button>
+      <button class="tour-skip" onclick="onIntakeTourSkip()">${hi ? 'छोड़ें' : 'Skip'}</button>
+      <button class="tour-next" onclick="onIntakeTourNext()">${isSearchStep ? (hi ? 'आगे' : 'Next') : (hi ? 'समझ गया' : 'Got it')}</button>
     </div>
-    <div class="tour-step-dots"><span class="${isFirstStep?'active':''}"></span><span class="${!isFirstStep?'active':''}"></span></div>
+    ${tourStepDots()}
   `;
   overlay.appendChild(tooltip);
 
@@ -577,7 +611,7 @@ function renderIntakeTourStep() {
 }
 
 window.onIntakeTourNext = function() {
-  if (tourStep === 0) { tourStep = 1; renderIntakeTourStep(); }
+  if (tourStep < 2) { tourStep++; renderIntakeTourStep(); }
   else { removeIntakeTour(); }
 };
 window.onIntakeTourSkip = function() {
@@ -641,6 +675,58 @@ function renderGuideScreen() {
   `;
 }
 window.onGuideContinue = function () {
+  startDeliveryPrefScreen();
+};
+
+function startDeliveryPrefScreen() {
+  state.screen = 'deliveryPref';
+  render();
+}
+
+function renderDeliveryPrefScreen() {
+  const p = state.patient;
+  const hi = p.preferredLang === 'hi';
+  const dispensedSelected = p.deliveryPreference === 'dispensed';
+  const ownSelected = p.deliveryPreference === 'own';
+  return `
+    <div class="screen-pad" style="max-width:480px;margin:0 auto;padding:28px 20px;">
+      <h2 style="font-size:19px;margin-bottom:18px;">${hi ? 'आप अपनी दवा कैसे प्राप्त करना चाहेंगे?' : 'How would you like to receive your medicine?'}</h2>
+      <div class="ch-card" style="margin-bottom:10px;${dispensedSelected ? 'border-color:var(--teal);background:var(--amber-bg)' : ''}" onclick="onDeliveryPrefPick('dispensed')">
+        <div class="en">${hi ? 'मेरे पते पर भेजें' : 'Dispense at my address'}</div>
+      </div>
+      <div class="ch-card" style="margin-bottom:18px;${ownSelected ? 'border-color:var(--teal);background:var(--amber-bg)' : ''}" onclick="onDeliveryPrefPick('own')">
+        <div class="en">${hi ? 'मैं स्वयं खरीद लूंगा/लूंगी' : "I'll purchase it myself"}</div>
+      </div>
+      ${dispensedSelected ? `
+        <label class="form-label" style="display:block;margin-bottom:6px;">${hi ? 'पूरा पता' : 'Complete address'}</label>
+        <textarea id="deliveryAddressField" class="search-box" style="height:90px;width:100%;margin-bottom:6px;" placeholder="${hi ? 'मकान/फ्लैट, गली, इलाका, शहर, राज्य' : 'House/flat, street, area, city, state'}">${esc(p.fullAddress)}</textarea>
+      ` : ''}
+      <div id="deliveryPrefErr" style="color:#c0392b;font-size:13px;margin-bottom:10px;"></div>
+      <button onclick="onDeliveryPrefContinue()" style="display:block;width:100%;padding:15px;margin-top:8px;border:none;border-radius:10px;background:var(--teal,#1C6B5A);color:#fff;font-size:16px;font-weight:600;cursor:pointer;">${hi ? 'आगे बढ़ें' : 'Continue'}</button>
+    </div>
+  `;
+}
+window.onDeliveryPrefPick = function (choice) {
+  state.patient.deliveryPreference = choice;
+  render();
+  if (choice === 'dispensed') {
+    setTimeout(() => {
+      const f = document.getElementById('deliveryAddressField');
+      if (f) f.addEventListener('input', () => { state.patient.fullAddress = f.value; });
+    }, 0);
+  }
+};
+window.onDeliveryPrefContinue = function () {
+  const errEl = document.getElementById('deliveryPrefErr');
+  if (errEl) errEl.textContent = '';
+  if (!state.patient.deliveryPreference) {
+    if (errEl) errEl.textContent = state.patient.preferredLang === 'hi' ? 'कृपया एक विकल्प चुनें।' : 'Please choose an option.';
+    return;
+  }
+  if (state.patient.deliveryPreference === 'dispensed' && !state.patient.fullAddress.trim()) {
+    if (errEl) errEl.textContent = state.patient.preferredLang === 'hi' ? 'कृपया अपना पूरा पता दर्ज करें।' : 'Please enter your complete address.';
+    return;
+  }
   startWarmupSequence();
 };
 
@@ -656,7 +742,7 @@ function proceedPastUnlock() {
     state.patient.preferredLang = 'en';
   }
   if (state.patient.priorGenerals && state.patient.priorGenerals.length) {
-    startWarmupSequence();
+    startDeliveryPrefScreen();
   } else {
     state.screen = 'guide';
     render();
@@ -845,7 +931,7 @@ async function attemptAutoUnlock() {
     // finished) yet within this same in-progress case — resuming mid-chart,
     // or having already answered generals, shouldn't show it again.
     if (!state.completeCase.some(e => e.source === 'generals')) {
-      startWarmupSequence();
+      startDeliveryPrefScreen();
       return;
     }
     state.screen = 'chapters';
@@ -1476,6 +1562,14 @@ function onGeneralsItemBack() {
   gq.detailSearch = {};
   if (gq.index > 0) {
     gq.index--;
+    render();
+  } else if (gq.isWarmup) {
+    // Backing out of the very first warm-up item happens before there's
+    // ever a real case to review — caseReview would be empty/nonsensical
+    // here. Basics (intake) is the nearest screen with anything genuinely
+    // worth revisiting (a typo in name/age/reason).
+    gq.active = false;
+    state.screen = 'intake';
     render();
   } else {
     gq.active = false;
