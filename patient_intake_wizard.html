@@ -646,8 +646,19 @@ window.onLanguagePick = function (lang) {
 // repeated for a recognized returning patient (see proceedPastUnlock).
 function renderGuideScreen() {
   const hi = state.patient.preferredLang === 'hi';
-  const title = hi ? 'शुरू करने से पहले' : 'Before You Begin';
-  const body = hi ? `
+  const isFollowUp = state.patient.priorGenerals && state.patient.priorGenerals.length > 0;
+  const title = isFollowUp
+    ? (hi ? 'आपका पुनः स्वागत है' : 'Welcome Back')
+    : (hi ? 'शुरू करने से पहले' : 'Before You Begin');
+  const body = isFollowUp ? (hi ? `
+    <p style="margin-bottom:14px;">समय बचाने के लिए, आपके पहले दर्ज किए गए लक्षण पहले से चुने हुए हैं।</p>
+    <p style="margin-bottom:14px;"><strong>कृपया हर एक को ध्यान से देखें।</strong> यदि कोई लक्षण ठीक हो गया है, चला गया है, या बदल गया है, तो उसे अपडेट करें या हटा दें। यदि पिछली बार के बाद कुछ नया हुआ है, तो उसे जोड़ें।</p>
+    <p>अपने लक्षणों की सही समीक्षा करना — पहली बार की तरह ही — डॉ. योगेश्वर तिवारी को आपकी प्रगति को समझने और हर बार सही दवा चुनने में मदद करता है।</p>
+  ` : `
+    <p style="margin-bottom:14px;">To save you time, your previously recorded symptoms are already selected below.</p>
+    <p style="margin-bottom:14px;"><strong>Please go through each one carefully.</strong> If a symptom has improved, gone away, or changed, please update or remove it. If something new has come up since your last visit, please add it.</p>
+    <p>Reviewing your symptoms accurately — the same as your first visit — helps Dr. Tiwari track your progress and choose the right medicine each time.</p>
+  `) : (hi ? `
     <p style="margin-bottom:14px;"><strong>शास्त्रीय होम्योपैथी में, आपके लक्षण ही सब कुछ हैं।</strong></p>
     <p style="margin-bottom:14px;">जब दवा आपके पूरे, विस्तृत लक्षणों के आधार पर चुनी जाती है, तो वह स्वयं आपकी बीमारी की जड़ तक पहुंचकर उसका इलाज करती है — डॉक्टर को पहले बीमारी का नाम या निदान जानने की ज़रूरत नहीं होती। सही और विस्तृत लक्षणों पर आधारित सही ढंग से चुनी गई दवा, यह काम स्वयं कर लेती है।</p>
     <p style="margin-bottom:18px;">इसीलिए आप अपनी शिकायतों का वर्णन कैसे करते हैं, यह बहुत मायने रखता है।</p>
@@ -665,7 +676,7 @@ function renderGuideScreen() {
     <p style="margin-bottom:10px;">2. <strong>Describe it fully</strong> — every complaint has its own character. Explore every quality that applies to you: what makes it better, what makes it worse, when it happens, how it feels.</p>
     <p style="margin-bottom:18px;">3. <strong>Cover your whole body</strong> — please also select anything else you're experiencing, anywhere in your body, even things that feel minor or unrelated.</p>
     <p>If something feels incomplete, don't worry — do your best. Whatever's left, Dr. Tiwari will go through your case personally and complete it with you before your medicine is prescribed.</p>
-  `;
+  `);
   return `
     <div class="screen-pad" style="max-width:480px;margin:0 auto;padding:28px 20px;">
       <h2 style="font-size:19px;margin-bottom:18px;">${title}</h2>
@@ -730,23 +741,19 @@ window.onDeliveryPrefContinue = function () {
   startWarmupSequence();
 };
 
-// Decides what a just-unlocked patient sees next: a genuinely new patient
-// has nothing carried forward yet, so they see the guide once. A returning
-// patient (priorGenerals present — the same signal the warm-up itself uses
-// to know it's a follow-up) has clearly been through it before and skips
-// straight to the warm-up.
+// Decides what a just-unlocked patient sees next. Always the guide screen
+// — it isn't just onboarding for a first-timer anymore; for a returning
+// patient (priorGenerals present) it shows a short, relevant "review and
+// update your previous answers" prompt instead of the full first-visit
+// instructions, so it's never simply skipped.
 function proceedPastUnlock() {
   if (!state.patient.preferredLang) {
     // Shouldn't normally happen (language screen runs before this point
     // for anyone without one), but fall back safely rather than crash.
     state.patient.preferredLang = 'en';
   }
-  if (state.patient.priorGenerals && state.patient.priorGenerals.length) {
-    startDeliveryPrefScreen();
-  } else {
-    state.screen = 'guide';
-    render();
-  }
+  state.screen = 'guide';
+  render();
 }
 
 function renderIntakeScreen() {
