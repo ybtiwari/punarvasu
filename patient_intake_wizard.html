@@ -175,6 +175,7 @@ const state = {
   submittedCaseId: null,       // Firebase key returned after the first successful submission — reused to UPDATE the same case on any post-submission revision, rather than creating a duplicate
   submittedAtOriginal: null,   // the true original submission timestamp, preserved across any later revisions
   reviewMode: 'normal',        // 'normal' (pre-submission case review) | 'postSubmission' (revising an already-submitted case — resubmits on any change, subject to the 30-min session window)
+  isFollowUpReview: false,     // true when arrived via a Follow-up Visit link with a full prior case pre-loaded — shows the "these are last visit's rubrics, review and update" banner on the review screen
   reviewSessionExpiresAt: null, // timestamp; post-submission review access is only live until this, resetting on every interaction
   reviewExpiredNotice: false,   // shows a one-time notice on the confirmation screen after a 30-min review session times out
   returnScreenAfterSearch: 'chapters', // where to go back to if search is cancelled without a pick
@@ -186,9 +187,13 @@ const state = {
     deliveryPreference: null, // 'dispensed' | 'own' | null(not yet answered) — asked fresh each
                               // visit, since where to send medicine can genuinely change visit to visit
     fullAddress: '', // only collected/relevant when deliveryPreference === 'dispensed'
-    priorGenerals: null // flat array of generals rubric paths from this patient's most recent
+    priorGenerals: null, // flat array of generals rubric paths from this patient's most recent
                          // prior visit, carried on the access code for a Follow-up Visit link —
                          // null for a genuinely new patient with no history to carry forward
+    priorComplaints: null // FULL complaint objects (chief-complaint AND generals alike) from the
+                          // most recent prior case — when present, a Follow-up Visit skips
+                          // straight to the review screen with these pre-loaded, instead of
+                          // re-running the whole selection flow
   },
   lock: {
     codeInput: '', error: '', isUnlocked: false, accessCodeUsed: '', busy: false,
@@ -290,6 +295,7 @@ async function initData() {
       state.patient.uid = peek.uid;
       if (peek.name) state.patient.name = peek.name;
       if (peek.priorGenerals) state.patient.priorGenerals = peek.priorGenerals;
+      if (peek.priorComplaints) state.patient.priorComplaints = peek.priorComplaints;
       if (peek.preferredLang) state.patient.preferredLang = peek.preferredLang;
     }
   }
@@ -741,16 +747,28 @@ window.onDeliveryPrefContinue = function () {
   startWarmupSequence();
 };
 
-// Decides what a just-unlocked patient sees next. Always the guide screen
-// — it isn't just onboarding for a first-timer anymore; for a returning
-// patient (priorGenerals present) it shows a short, relevant "review and
-// update your previous answers" prompt instead of the full first-visit
-// instructions, so it's never simply skipped.
+// Decides what a just-unlocked patient sees next. A Follow-up Visit link
+// carries the FULL previous case forward (priorComplaints) — when present,
+// this skips the entire selection flow (guide, delivery preference,
+// warm-up, chart) entirely and drops the patient straight onto the review
+// screen with everything already loaded, plus a banner explaining what
+// they're looking at. Reviewing and adjusting an already-complete case is
+// a fundamentally lighter task than building one from scratch, and
+// deserves a fundamentally different flow — not just pre-filled answers
+// buried partway through the same first-visit sequence.
+// A genuinely new patient (nothing carried forward yet) goes through the
+// guide screen as before.
 function proceedPastUnlock() {
   if (!state.patient.preferredLang) {
     // Shouldn't normally happen (language screen runs before this point
     // for anyone without one), but fall back safely rather than crash.
     state.patient.preferredLang = 'en';
+  }
+  if (state.patient.priorComplaints && state.patient.priorComplaints.length) {
+    state.completeCase = state.patient.priorComplaints.map(c => ({ ...c })); // copy, not the original reference
+    state.isFollowUpReview = true;
+    goToCaseReview();
+    return;
   }
   state.screen = 'guide';
   render();
@@ -2207,6 +2225,9 @@ function renderCaseReview() {
   }).join('');
 
   const postSubmissionNotice = isPostSubmission ? `<div class="editing-banner">Reviewing your already-submitted case — you have 30 minutes of activity to make changes before this window closes. आपके पास बदलाव करने के लिए 30 मिनट हैं।</div>` : '';
+  const followUpNotice = state.isFollowUpReview ? `<div class="editing-banner">${state.patient.preferredLang === 'hi'
+    ? '📋 ये वे लक्षण/रुब्रिक्स हैं जिन्हें आपने अपनी पिछली विजिट के दौरान चुना था। कृपया इनकी समीक्षा करें, यदि आवश्यक हो तो बदलाव करें, और अपना केस फॉलो-अप के रूप में सबमिट करें।'
+    : '📋 These are the rubrics you selected during your last visit. Please review them, make any changes if needed, and submit your case as a follow-up.'}</div>` : '';
   const submitErrorHtml = state.submit.error ? `<div class="no-match-msg" style="margin:0 0 10px;">${esc(state.submit.error)}</div>` : '';
 
   const footerHtml = isPostSubmission ? `
@@ -2228,6 +2249,7 @@ function renderCaseReview() {
     <div class="body">
       <h2 class="step-title">Complaints added so far</h2>
       ${postSubmissionNotice}
+      ${followUpNotice}
       ${state.completeCase.length ? items : '<div class="empty-state">No complaints added yet.</div>'}
     </div>
     ${footerHtml}
@@ -2566,7 +2588,7 @@ async function onSubmitCase() {
   };
   if (isRevision) payload.revisedAt = new Date().toISOString();
 
-  const result = await window.submitCaseToFirebase(payload, state.submittedCaseId);
+  const result = await window.submitCaseToFirebase(payload, state.submittedCaseId, state.isFollowUpReview);
   state.submit.busy = false;
 
   if (result.ok) {
@@ -2870,7 +2892,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const data = snap.val();
       if (data.used === true) return null; // don't reveal info about an already-used code
       if (!data.patientUid) return null;
-      return { uid: data.patientUid, name: data.patientName || null, priorGenerals: data.priorGenerals || null };
+      return { uid: data.patientUid, name: data.patientName || null, priorGenerals: data.priorGenerals || null, priorComplaints: data.priorComplaints || null };
     } catch (e) {
       console.error('[patient-intake] access code peek failed:', e);
       return null;
@@ -2886,7 +2908,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // allow overwriting cases/{caseId} when the access code matches, and to
   // allow a brand-new entry under revisions/ under the same condition —
   // or this will fail at the Firebase layer even though this code is correct.
-  window.submitCaseToFirebase = async function (payload, existingCaseId) {
+  window.submitCaseToFirebase = async function (payload, existingCaseId, isFollowUp) {
     try {
       if (existingCaseId) {
         const caseRef = ref(db, 'cases/' + existingCaseId);
@@ -2901,6 +2923,20 @@ window.addEventListener('DOMContentLoaded', () => {
       } else {
         const newCaseRef = push(ref(db, 'cases'));
         await set(newCaseRef, payload);
+        if (isFollowUp) {
+          // Lets the doctor know a follow-up came in without needing to
+          // notice it in the case list — tagged with the exact patient uid
+          // so the notification's own action button opens the right one
+          // directly, not just a generic "someone submitted" ping.
+          try {
+            await push(ref(db, 'notifications/admin'), {
+              type: 'followup_submitted',
+              patientUid: payload.patient.uid,
+              name: payload.patient.name,
+              timestamp: Date.now()
+            });
+          } catch (e) { console.error('[patient-intake] followup notification failed (non-fatal):', e); }
+        }
         return { ok: true, caseId: newCaseRef.key };
       }
     } catch (e) {
