@@ -787,20 +787,6 @@ function renderIntakeScreen() {
         </div>
       </div>
       <div class="option-group">
-        <div class="option-group-label">${p.preferredLang === 'hi' ? 'दवा की होम डिलीवरी' : 'Home delivery of medicine'}</div>
-        <p style="font-size:13px;color:var(--ink3);margin-bottom:10px;">${p.preferredLang === 'hi'
-          ? 'दवा लिखे जाने के बाद, क्या आप चाहेंगे कि हम इसे सीधे निर्माता, SBL Pvt. Ltd. से मंगवाएं? यह कोरियर द्वारा, कैश ऑन डिलीवरी के साथ, बिना किसी शिपिंग शुल्क के आपके पास भेजी जाएगी।'
-          : 'After your medicine is prescribed, would you like us to order it directly from the manufacturer, SBL Pvt. Ltd.? It will be sent to you by courier, Cash on Delivery, with free shipping.'}</p>
-        <div style="display:flex;gap:8px">
-          <div class="ch-card" style="flex:1;${p.sblConsent===true ? 'border-color:var(--teal);background:var(--amber-bg)' : ''}" onclick="onSblConsentPick(true)">
-            <div class="en">${p.preferredLang === 'hi' ? 'जी हाँ' : 'Yes, please'}</div>
-          </div>
-          <div class="ch-card" style="flex:1;${p.sblConsent===false ? 'border-color:var(--teal);background:var(--amber-bg)' : ''}" onclick="onSblConsentPick(false)">
-            <div class="en">${p.preferredLang === 'hi' ? 'जी नहीं' : 'No, thank you'}</div>
-          </div>
-        </div>
-      </div>
-      <div class="option-group">
         <div class="option-group-label">Reason for consultation</div>
         <textarea id="intakeReasonField" class="search-box" style="height:80px" placeholder="Briefly, what brings you in today?">${esc(p.reason)}</textarea>
       </div>
@@ -821,11 +807,6 @@ function wireIntakeScreen() {
   if (ageF) ageF.addEventListener('input', () => { state.patient.age = ageF.value; });
   if (reasonF) reasonF.addEventListener('input', () => { state.patient.reason = reasonF.value; });
 }
-
-window.onSblConsentPick = function (consent) {
-  state.patient.sblConsent = consent;
-  render();
-};
 
 function onIntakeSexPick(sex) {
   state.patient.sex = sex;
