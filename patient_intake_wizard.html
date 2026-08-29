@@ -787,14 +787,6 @@ function renderIntakeScreen() {
         </div>
       </div>
       <div class="option-group">
-        <div class="option-group-label">Location (optional)</div>
-        <input id="intakeLocationField" class="search-box" type="text" placeholder="City / town" value="${escAttr(p.location)}">
-      </div>
-      <div class="option-group">
-        <div class="option-group-label">${p.preferredLang === 'hi' ? 'पिन कोड (वैकल्पिक)' : 'PIN code (optional)'}</div>
-        <input id="intakePinField" class="search-box" type="text" inputmode="numeric" maxlength="6" placeholder="${p.preferredLang === 'hi' ? '6 अंकों का पिन कोड' : '6-digit PIN code'}" value="${escAttr(p.pinCode)}">
-      </div>
-      <div class="option-group">
         <div class="option-group-label">${p.preferredLang === 'hi' ? 'दवा की होम डिलीवरी' : 'Home delivery of medicine'}</div>
         <p style="font-size:13px;color:var(--ink3);margin-bottom:10px;">${p.preferredLang === 'hi'
           ? 'दवा लिखे जाने के बाद, क्या आप चाहेंगे कि हम इसे सीधे निर्माता, SBL Pvt. Ltd. से मंगवाएं? यह कोरियर द्वारा, कैश ऑन डिलीवरी के साथ, बिना किसी शिपिंग शुल्क के आपके पास भेजी जाएगी।'
@@ -823,14 +815,10 @@ function wireIntakeScreen() {
   const nameF = document.getElementById('intakeNameField');
   const phoneF = document.getElementById('intakePhoneField');
   const ageF = document.getElementById('intakeAgeField');
-  const locF = document.getElementById('intakeLocationField');
-  const pinF = document.getElementById('intakePinField');
   const reasonF = document.getElementById('intakeReasonField');
   if (nameF) nameF.addEventListener('input', () => { state.patient.name = nameF.value; });
   if (phoneF) phoneF.addEventListener('input', () => { state.patient.phone = phoneF.value; });
   if (ageF) ageF.addEventListener('input', () => { state.patient.age = ageF.value; });
-  if (locF) locF.addEventListener('input', () => { state.patient.location = locF.value; });
-  if (pinF) pinF.addEventListener('input', () => { state.patient.pinCode = pinF.value; });
   if (reasonF) reasonF.addEventListener('input', () => { state.patient.reason = reasonF.value; });
 }
 
@@ -1964,6 +1952,7 @@ function renderChapterSelect() {
   return `
     ${renderTopbar('Guided Case Wizard', 'Select what is troubling the patient')}
     <div class="body">
+      <button class="back-btn" onclick="startWarmupSequence()">&larr; Back</button>
       <h2 class="step-title">Where is the main problem, or what kind of problem is it?</h2>
       <p class="step-sub">Pick the one that best matches — you can add more complaints after this one. जो सबसे सही लगे उसे चुनें — इसके बाद आप और शिकायतें भी जोड़ सकते हैं।</p>
       <div class="chapter-grid">${blockTilesHtml}${cards}</div>
