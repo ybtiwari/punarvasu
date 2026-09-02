@@ -34,6 +34,7 @@ const NAV = [
       { title: 'Constitutional Remedy', href: '/treatment/remedy.html' },
       { title: 'Follow-up & Unfolding', href: '/treatment/follow-up.html' },
       { title: 'What to Expect',        href: '/treatment/what-to-expect.html' },
+      { title: 'Fees',                  href: '/treatment/fees.html' },
     ]
   },
   {
