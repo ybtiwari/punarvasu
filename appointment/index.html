@@ -123,5 +123,139 @@
     }
   };
 </script>
+<!-- Fee-context popup — a short, honest sequence explaining why fees here
+     aren't fixed, shown once per visitor before they reach the booking
+     form. Fully dismissible at any point; never blocks booking. -->
+<div id="feeConvoOverlay" class="fc-overlay" style="display:none;">
+  <div class="fc-card">
+    <button class="fc-close" onclick="window.fcDismiss()" aria-label="Close">×</button>
+    <div id="fcContent"></div>
+  </div>
+</div>
+<style>
+  .fc-overlay{position:fixed;inset:0;z-index:9999;background:rgba(15,32,53,0.55);display:flex;align-items:center;justify-content:center;padding:20px;}
+  .fc-card{background:var(--white);border-radius:12px;padding:30px 28px;max-width:480px;width:100%;max-height:85vh;overflow-y:auto;position:relative;box-shadow:0 12px 40px rgba(0,0,0,0.3);font-family:var(--sans);}
+  .fc-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:24px;line-height:1;color:var(--ink3);cursor:pointer;padding:4px;}
+  .fc-close:hover{color:var(--ink);}
+  .fc-lang-btn{display:block;width:100%;padding:14px 18px;margin-bottom:10px;border:1px solid var(--border);border-radius:8px;background:var(--cream);font-family:var(--sans);font-size:16px;color:var(--ink);cursor:pointer;text-align:left;transition:border-color .15s;}
+  .fc-lang-btn:hover{border-color:var(--teal);}
+  .fc-eyebrow{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);font-weight:600;margin-bottom:8px;}
+  .fc-progress{font-size:12px;color:var(--ink3);margin-bottom:14px;}
+  .fc-statement{font-family:var(--serif);font-size:20px;line-height:1.5;color:var(--ink);margin-bottom:22px;}
+  .fc-btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+  .fc-btn{flex:1;min-width:120px;padding:12px 16px;border-radius:8px;font-family:var(--sans);font-size:15px;cursor:pointer;border:none;}
+  .fc-btn-agree{background:var(--teal);color:var(--white);}
+  .fc-btn-agree:hover{background:var(--teal2);}
+  .fc-btn-soft{background:var(--cream2);color:var(--ink2);}
+  .fc-btn-soft:hover{background:var(--border);}
+  .fc-aside{font-size:14px;color:var(--ink3);margin-top:14px;font-style:italic;}
+  .fc-payoff-title{font-family:var(--serif);font-size:22px;color:var(--ink);margin-bottom:12px;line-height:1.4;}
+  .fc-payoff-body{font-size:15px;color:var(--ink2);line-height:1.6;margin-bottom:20px;}
+  .fc-btn-primary{display:inline-block;width:100%;box-sizing:border-box;padding:13px 16px;border-radius:8px;background:var(--teal);color:var(--white);text-align:center;text-decoration:none;font-size:15px;margin-bottom:10px;cursor:pointer;border:none;font-family:var(--sans);}
+  .fc-btn-primary:hover{background:var(--teal2);}
+  .fc-btn-secondary{display:block;width:100%;box-sizing:border-box;padding:13px 16px;border-radius:8px;background:none;color:var(--ink3);text-align:center;text-decoration:none;font-size:14px;cursor:pointer;border:1px solid var(--border);font-family:var(--sans);}
+</style>
+<script>
+(function(){
+  var STORAGE_KEY = 'pv_fee_convo_seen_v1';
+
+  var SLIDES = [
+    { en:"Most people try modern medicine first, before ever considering homeopathy.",
+      hi:"ज़्यादातर लोग होम्योपैथी के बारे में सोचने से पहले, पहले आधुनिक चिकित्सा (एलोपैथी) आज़माते हैं।",
+      gu:"મોટાભાગના લોકો હોમિયોપેથી વિશે વિચારતા પહેલા આધુનિક ચિકિત્સા (એલોપેથી) અજમાવે છે." },
+    { en:"So if someone reaches a homeopath, it's often because modern medicine hasn't fully resolved their case yet.",
+      hi:"इसलिए अगर कोई होम्योपैथिक डॉक्टर तक पहुँचता है, तो अक्सर इसलिए क्योंकि आधुनिक चिकित्सा उनके केस को पूरी तरह हल नहीं कर पाई।",
+      gu:"તેથી જો કોઈ હોમિયોપેથિક ડૉક્ટર સુધી પહોંચે છે, તો ઘણી વાર એટલા માટે કારણ કે આધુનિક ચિકિત્સા તેમનો કેસ સંપૂર્ણપણે ઉકેલી શકી નથી." },
+    { en:"That means the cases a homeopath actually sees are, by default, already the harder ones — not the easy ones.",
+      hi:"इसका मतलब है कि होम्योपैथिक डॉक्टर के पास जो केस आते हैं, वे स्वाभाविक रूप से पहले से ही मुश्किल होते हैं — आसान नहीं।",
+      gu:"એનો અર્થ એ કે હોમિયોપેથિક ડૉક્ટર પાસે જે કેસ આવે છે તે સ્વાભાવિક રીતે પહેલેથી જ મુશ્કેલ હોય છે — સરળ નહીં." },
+    { en:"A case that's already complex naturally needs more time and more follow-ups to resolve properly — not a single quick fix.",
+      hi:"जो केस पहले से ही जटिल है, उसे ठीक से हल करने के लिए स्वाभाविक रूप से ज़्यादा समय और ज़्यादा फॉलो-अप चाहिए — एक झटके में समाधान नहीं।",
+      gu:"જે કેસ પહેલેથી જ જટિલ છે તેને યોગ્ય રીતે ઉકેલવા માટે સ્વાભાવિક રીતે વધુ સમય અને વધુ ફોલો-અપની જરૂર પડે છે — એક ઝટકે ઉકેલ નહીં." },
+    { en:"So it's fair to say: a 5-day cough and a 10-year chronic condition shouldn't take the same time, or cost the same fee.",
+      hi:"तो यह कहना उचित है: 5 दिन की खांसी और 10 साल की पुरानी बीमारी को न तो बराबर समय लगना चाहिए, न बराबर फीस।",
+      gu:"તો એમ કહેવું વ્યાજબી છે: 5 દિવસની ખાંસી અને 10 વર્ષની જૂની બીમારીને ન તો સરખો સમય લાગવો જોઈએ, ન સરખી ફી." }
+  ];
+
+  var STRINGS = {
+    eyebrow:  { en:"Before you book", hi:"बुक करने से पहले", gu:"બુક કરતા પહેલા" },
+    agree:    { en:"Agree", hi:"सहमत हूं", gu:"સહમત છું" },
+    notReally:{ en:"Not really", hi:"पूरी तरह नहीं", gu:"બરાબર નહીં" },
+    aside:    { en:"Fair enough — not everyone's experience matches this exactly, and that's okay.",
+                hi:"ठीक है — यह सबके अनुभव से बिल्कुल मेल नहीं खा सकता, और यह कोई बात नहीं।",
+                gu:"ઠીક છે — આ દરેકના અનુભવ સાથે બરાબર મેળ ન પણ ખાય, અને એ કંઈ વાંધો નથી." },
+    continue: { en:"Continue", hi:"आगे बढ़ें", gu:"આગળ વધો" },
+    payoffTitle: { en:"That's exactly why fees here aren't fixed.",
+                   hi:"इसीलिए यहाँ फीस तय (फिक्स्ड) नहीं है।",
+                   gu:"એટલે જ અહીં ફી નિશ્ચિત (ફિક્સ્ડ) નથી." },
+    payoffBody:  { en:"They're matched honestly to what your specific case actually needs — decided once Dr. Tiwari has reviewed it, not guessed in advance.",
+                   hi:"यह आपके केस की वास्तविक ज़रूरत के अनुसार, डॉ. तिवारी द्वारा समीक्षा करने के बाद ईमानदारी से तय की जाती है — पहले से अंदाज़ा नहीं लगाया जाता।",
+                   gu:"તે તમારા કેસની ખરેખરી જરૂરિયાત મુજબ, ડૉ. તિવારી દ્વારા સમીક્ષા કર્યા પછી પ્રામાણિકપણે નક્કી કરવામાં આવે છે — અગાઉથી અંદાજ લગાવવામાં આવતો નથી." },
+    seeFees:  { en:"See the fees & what's included →", hi:"फीस और शामिल सेवाएं देखें →", gu:"ફી અને સામેલ સેવાઓ જુઓ →" },
+    toBooking:{ en:"Continue to booking", hi:"बुकिंग जारी रखें", gu:"બુકિંગ ચાલુ રાખો" }
+  };
+
+  var lang = null, step = 0;
+
+  function t(key) { return STRINGS[key][lang]; }
+
+  window.fcDismiss = function() {
+    document.getElementById('feeConvoOverlay').style.display = 'none';
+    try { localStorage.setItem(STORAGE_KEY, '1'); } catch(e) {}
+  };
+
+  function renderLangSelect() {
+    document.getElementById('fcContent').innerHTML =
+      '<div class="fc-eyebrow">Before you book · बुक करने से पहले · બુક કરતા પહેલા</div>' +
+      '<div class="fc-statement" style="font-size:17px;">Choose your language to continue</div>' +
+      '<button class="fc-lang-btn" onclick="window.fcSetLang(\'en\')">English</button>' +
+      '<button class="fc-lang-btn" onclick="window.fcSetLang(\'hi\')">हिंदी</button>' +
+      '<button class="fc-lang-btn" onclick="window.fcSetLang(\'gu\')">ગુજરાતી</button>';
+  }
+
+  window.fcSetLang = function(l) { lang = l; step = 0; renderSlide(); };
+
+  function renderSlide() {
+    var el = document.getElementById('fcContent');
+    if (step < SLIDES.length) {
+      var s = SLIDES[step];
+      el.innerHTML =
+        '<div class="fc-eyebrow">' + t('eyebrow') + '</div>' +
+        '<div class="fc-progress">' + (step+1) + ' / ' + (SLIDES.length+1) + '</div>' +
+        '<div class="fc-statement">' + s[lang] + '</div>' +
+        '<div class="fc-btn-row">' +
+          '<button class="fc-btn fc-btn-agree" onclick="window.fcNext()">' + t('agree') + '</button>' +
+          '<button class="fc-btn fc-btn-soft" onclick="window.fcSoftNo()">' + t('notReally') + '</button>' +
+        '</div>' +
+        '<div id="fcAside"></div>';
+    } else {
+      el.innerHTML =
+        '<div class="fc-eyebrow">' + t('eyebrow') + '</div>' +
+        '<div class="fc-progress">' + (SLIDES.length+1) + ' / ' + (SLIDES.length+1) + '</div>' +
+        '<div class="fc-payoff-title">' + t('payoffTitle') + '</div>' +
+        '<div class="fc-payoff-body">' + t('payoffBody') + '</div>' +
+        '<a class="fc-btn-primary" href="/treatment/fees.html">' + t('seeFees') + '</a>' +
+        '<button class="fc-btn-secondary" onclick="window.fcDismiss()">' + t('toBooking') + '</button>';
+    }
+  }
+
+  window.fcNext = function() { step++; renderSlide(); };
+
+  window.fcSoftNo = function() {
+    var aside = document.getElementById('fcAside');
+    if (aside) aside.innerHTML = '<div class="fc-aside">' + t('aside') + '</div>';
+    setTimeout(function(){ window.fcNext(); }, 1400);
+  };
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var seen = false;
+    try { seen = !!localStorage.getItem(STORAGE_KEY); } catch(e) {}
+    if (!seen) {
+      document.getElementById('feeConvoOverlay').style.display = 'flex';
+      renderLangSelect();
+    }
+  });
+})();
+</script>
 </body>
 </html>
