@@ -299,6 +299,15 @@
             💬 Send my login to WhatsApp
           </button>
         </div>
+        <div class="info-card">
+          <h3>Need a New Consultation?</h3>
+          <p style="margin-bottom:10px;">If you have a different, unrelated health concern, let us know and we'll set up a fresh consultation for you.</p>
+          <textarea id="newConsultInput" placeholder="Briefly describe the new concern (optional)..." rows="2" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:var(--sans);font-size:14px;resize:vertical;margin-bottom:10px;"></textarea>
+          <button id="newConsultBtn" onclick="requestNewConsultation()" style="background:var(--teal);color:white;border:none;border-radius:6px;padding:10px 18px;font-size:14px;font-weight:500;cursor:pointer;">
+            Send Request
+          </button>
+          <p id="newConsultStatus" style="margin-top:8px;font-size:13px;color:var(--teal);display:none;"></p>
+        </div>
         <div class="info-card" id="dash-followups" style="display:none;">
           <h3>📋 Follow-up Questions</h3>
           <div id="dash-followups-list"></div>
@@ -1106,6 +1115,69 @@ async function sendMessage() {
     console.error('EmailJS notification failed (non-fatal):', e);
   }
 }
+
+// Lets a patient who already has a case flag that they want a SEPARATE,
+// unrelated consultation — mirrors admin-panel.html's own "New
+// Consultation" button, but from the patient's side there is no direct
+// self-serve path (access codes are deliberately doctor-generated), so
+// this just sends a clearly-flagged request through the exact same
+// messages/notifications/EmailJS pipeline as sendMessage() above. The
+// doctor sees it appear as a message (with the existing chime/notification
+// already relied on) and actions it with the New Consultation button
+// already in use — no admin-panel.html changes needed for this to work.
+window.requestNewConsultation = async function() {
+  const input  = document.getElementById('newConsultInput');
+  const btn    = document.getElementById('newConsultBtn');
+  const status = document.getElementById('newConsultStatus');
+  const detail = input.value.trim();
+
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  const messageText = detail
+    ? `New consultation requested for a different concern: ${detail}`
+    : `New consultation requested for a different, unrelated health concern.`;
+
+  try {
+    await push(ref(db, `messages/${currentUser.uid}`), {
+      text: messageText, from: 'patient', timestamp: Date.now(), read: false,
+      type: 'newConsultationRequest'
+    });
+  } catch (e) {
+    alert('Your request could not be sent. Please check your connection and try again.');
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+    return;
+  }
+  try {
+    await push(ref(db, 'notifications/admin'), {
+      type: 'newConsultationRequest', from: currentUser.uid, email: currentUser.email,
+      preview: messageText.substring(0, 60), timestamp: Date.now(), read: false
+    });
+  } catch (e) {
+    console.error('notifications/admin write failed (non-fatal):', e.code, e.message);
+  }
+  try {
+    if (window.emailjs) {
+      await emailjs.send('service_17kgkcs', 'template_mlyreeh', {
+        patient_email: currentUser.email,
+        message_preview: messageText.substring(0, 60),
+        message_time: new Date().toLocaleString('en-IN', {
+          dateStyle: 'medium', timeStyle: 'short'
+        })
+      });
+    }
+  } catch (e) {
+    console.error('EmailJS notification failed (non-fatal):', e);
+  }
+
+  input.value = '';
+  btn.disabled = false;
+  btn.textContent = originalLabel;
+  status.textContent = "Request sent - we'll be in touch shortly.";
+  status.style.display = 'block';
+};
 
 // =================================================================
 // FOLLOW-UP QUESTIONS — doctor-generated, doctor-approved questions about
