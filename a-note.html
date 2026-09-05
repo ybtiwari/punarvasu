@@ -29,6 +29,8 @@
     .fp-brand-sub { font-size: 11px; color: var(--ink3); letter-spacing: 0.04em; text-transform: uppercase; margin-top: 3px; }
 
     .fc-card{background:var(--white);border-radius:12px;padding:32px 28px;box-shadow:0 8px 30px rgba(15,32,53,0.12);border:1px solid var(--border);}
+    .fc-lang-btn{display:block;width:100%;padding:14px 18px;margin-bottom:10px;border:1px solid var(--border);border-radius:8px;background:var(--cream);font-family:var(--sans);font-size:16px;color:var(--ink);cursor:pointer;text-align:left;transition:border-color .15s;}
+    .fc-lang-btn:hover{border-color:var(--teal);}
     .fc-eyebrow{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);font-weight:600;margin-bottom:8px;}
     .fc-back-btn{display:inline-block;background:none;border:none;color:var(--ink3);font-family:var(--sans);font-size:13px;cursor:pointer;padding:0;margin-bottom:14px;}
     .fc-back-btn:hover{color:var(--teal);}
@@ -64,59 +66,94 @@
 <script>
 (function(){
   var SLIDES = [
-    "Being a doctor means being available to people who are struggling — that's genuinely the job, and I take it seriously.",
-    "But being available for real medical care is different from being available for free, off-the-record opinions, whenever it happens to be convenient.",
-    "When someone I know becomes my patient, I try to treat them exactly as carefully as I would anyone else — which means I ask the same of them too: follow the process, take it seriously, see it through.",
-    "What's genuinely difficult isn't a disappointing outcome — outcomes aren't always in anyone's control. What's difficult is being consulted, having the instructions not actually followed, and then being blamed for a result the treatment never really had a fair chance to produce.",
-    "If a treatment truly isn't working, I want to know. That's honest, useful information, and it changes what I do next — that has never been, and will never be, the problem.",
-    "The actual problem is being asked for help, and then not being given a real chance to give it.",
-    "So here's my honest ask, especially of the people closest to me: if you come to me as a patient, come ready to actually follow through. If that's not where you are right now, it's completely fine to just say so."
+    { en:'Being a doctor means being available to people who are struggling — that\'s genuinely the job, and I take it seriously.',
+      hi:'डॉक्टर होने का मतलब है परेशान लोगों के लिए उपलब्ध रहना — यही वास्तव में यह काम है, और मैं इसे गंभीरता से लेता हूं।',
+      gu:'ડૉક્ટર હોવાનો અર્થ છે મુશ્કેલીમાં રહેલા લોકો માટે ઉપલબ્ધ રહેવું — આ ખરેખર આ કામ છે, અને હું તેને ગંભીરતાથી લઉં છું.' },
+    { en:'But being available for real medical care is different from being available for free, off-the-record opinions, whenever it happens to be convenient.',
+      hi:'लेकिन वास्तविक चिकित्सा देखभाल के लिए उपलब्ध रहना, मुफ्त, अनौपचारिक राय देने के लिए हमेशा उपलब्ध रहने से अलग बात है, जब भी किसी को सुविधाजनक लगे।',
+      gu:'પણ ખરેખરી તબીબી સંભાળ માટે ઉપલબ્ધ રહેવું, મફત, બિનસત્તાવાર અભિપ્રાય આપવા માટે જ્યારે પણ કોઈને અનુકૂળ લાગે ત્યારે ઉપલબ્ધ રહેવા કરતાં અલગ બાબત છે.' },
+    { en:'When someone I know becomes my patient, I try to treat them exactly as carefully as I would anyone else — which means I ask the same of them too: follow the process, take it seriously, see it through.',
+      hi:'जब मेरा कोई परिचित मेरा मरीज़ बनता है, तो मैं उन्हें ठीक उतनी ही सावधानी से देखने की कोशिश करता हूं जितनी किसी और को — जिसका मतलब है कि मैं उनसे भी वही अपेक्षा रखता हूं: प्रक्रिया का पालन करें, इसे गंभीरता से लें, और इसे पूरा करें।',
+      gu:'જ્યારે મારો કોઈ ઓળખીતો મારો દર્દી બને છે, ત્યારે હું તેમને બરાબર એટલી જ કાળજીથી જોવાનો પ્રયત્ન કરું છું જેટલી બીજા કોઈને — જેનો અર્થ એ કે હું તેમની પાસેથી પણ એ જ અપેક્ષા રાખું છું: પ્રક્રિયાનું પાલન કરો, તેને ગંભીરતાથી લો, અને તેને પૂરી કરો.' },
+    { en:'What\'s genuinely difficult isn\'t a disappointing outcome — outcomes aren\'t always in anyone\'s control. What\'s difficult is being consulted, having the instructions not actually followed, and then being blamed for a result the treatment never really had a fair chance to produce.',
+      hi:'जो वास्तव में मुश्किल है वह निराशाजनक परिणाम नहीं है — परिणाम हमेशा किसी के नियंत्रण में नहीं होते। जो मुश्किल है वह यह है कि सलाह ली जाए, निर्देशों का वास्तव में पालन न किया जाए, और फिर एक ऐसे नतीजे के लिए दोष दिया जाए जिसे इलाज को कभी उचित मौका ही नहीं मिला।',
+      gu:'જે ખરેખર મુશ્કેલ છે તે નિરાશાજનક પરિણામ નથી — પરિણામો હંમેશા કોઈના નિયંત્રણમાં નથી હોતા. જે મુશ્કેલ છે તે એ છે કે સલાહ લેવામાં આવે, સૂચનોનું ખરેખર પાલન ન કરવામાં આવે, અને પછી એવા પરિણામ માટે દોષ આપવામાં આવે જેને સારવારને ક્યારેય યોગ્ય તક જ મળી ન હોય.' },
+    { en:'If a treatment truly isn\'t working, I want to know. That\'s honest, useful information, and it changes what I do next — that has never been, and will never be, the problem.',
+      hi:'अगर कोई इलाज वाकई काम नहीं कर रहा है, तो मैं यह जानना चाहता हूं। यह ईमानदार, उपयोगी जानकारी है, और इससे मैं आगे क्या करूं यह तय होता है — यह कभी समस्या नहीं रही, और कभी नहीं होगी।',
+      gu:'જો કોઈ સારવાર ખરેખર કામ ન કરી રહી હોય, તો હું એ જાણવા માંગુ છું. આ પ્રામાણિક, ઉપયોગી માહિતી છે, અને તેનાથી હું આગળ શું કરું એ નક્કી થાય છે — આ ક્યારેય સમસ્યા રહી નથી, અને ક્યારેય નહીં હોય.' },
+    { en:'The actual problem is being asked for help, and then not being given a real chance to give it.',
+      hi:'असली समस्या यह है कि मदद मांगी जाए, और फिर उसे देने का वास्तविक मौका ही न दिया जाए।',
+      gu:'ખરી સમસ્યા એ છે કે મદદ માંગવામાં આવે, અને પછી તે આપવાની ખરી તક જ ન આપવામાં આવે.' },
+    { en:'Being asked by someone who knows me personally puts me in a real dilemma — treat, and risk it not being taken as seriously as it would be from any other doctor; decline, and risk being called arrogant for it. All I ask is the respect you\'d give any doctor you sought out yourself — because I never came looking for you; you came looking for me. My dignity and my knowledge shouldn\'t be treated differently just because we happen to know each other.',
+      hi:'जिसे मैं निजी तौर पर जानता हूं, उसके अनुरोध पर इलाज करना मुझे एक वास्तविक दुविधा में डाल देता है — इलाज करूं, तो जोखिम है कि इसे उतनी गंभीरता से नहीं लिया जाएगा जितनी किसी और डॉक्टर के इलाज को लिया जाता; मना करूं, तो अहंकारी कहलाने का जोखिम है। मैं बस वही सम्मान मांगता हूं जो आप खुद खोजकर गए किसी भी डॉक्टर को देते — क्योंकि मैं आपकी तलाश में नहीं आया, आप मेरी तलाश में आए। सिर्फ इसलिए कि हम एक-दूसरे को जानते हैं, मेरी गरिमा और मेरे ज्ञान के साथ अलग व्यवहार नहीं होना चाहिए।',
+      gu:'જેને હું અંગત રીતે ઓળખું છું તેની વિનંતી પર સારવાર કરવી મને એક ખરેખરી દ્વિધામાં મૂકે છે — સારવાર કરું, તો જોખમ છે કે તેને બીજા કોઈ ડૉક્ટરની સારવાર જેટલી ગંભીરતાથી નહીં લેવાય; ના પાડું, તો અહંકારી કહેવાવાનું જોખમ છે. હું ફક્ત એટલું જ માંગું છું કે તમે જાતે શોધીને ગયેલા કોઈ પણ ડૉક્ટરને જે માન આપો છો, એ જ મને આપો — કારણ કે હું તમારી શોધમાં નહોતો આવ્યો, તમે મારી શોધમાં આવ્યા છો. ફક્ત એટલા માટે કે અમે એકબીજાને ઓળખીએ છીએ, મારી ગરિમા અને મારા જ્ઞાન સાથે અલગ વ્યવહાર ન થવો જોઈએ.' },
+    { en:'So here\'s my honest ask, especially of the people closest to me: if you come to me as a patient, come ready to actually follow through. If that\'s not where you are right now, it\'s completely fine to just say so.',
+      hi:'तो यह है मेरा ईमानदार अनुरोध, खासकर उन लोगों से जो मेरे सबसे करीब हैं: अगर आप मेरे पास एक मरीज़ के रूप में आते हैं, तो पूरी तरह से निभाने के लिए तैयार होकर आएं। अगर अभी आप इसके लिए तैयार नहीं हैं, तो बस यह कह देना पूरी तरह ठीक है।',
+      gu:'તો આ છે મારી પ્રામાણિક વિનંતી, ખાસ કરીને એ લોકોને જેઓ મારી સૌથી નજીક છે: જો તમે મારી પાસે એક દર્દી તરીકે આવો છો, તો સંપૂર્ણપણે નિભાવવા માટે તૈયાર થઈને આવો. જો અત્યારે તમે એ માટે તૈયાર ન હો, તો ફક્ત એટલું કહી દેવું સંપૂર્ણપણે બરાબર છે.' },
   ];
 
-  var EYEBROW = "A Personal Note";
-  var ASIDE = "That's alright — I just wanted this on the table, however it lands.";
-  var PAYOFF_TITLE = "That's really the whole ask.";
-  var PAYOFF_BODY = "Not agreement, not blind trust — just a fair, honest chance to do the job properly, the same way I'd want to do it for anyone. When that's there, I'm always glad to help.";
+  var STRINGS = {
+    eyebrow: { en:'A Personal Note', hi:'एक निजी संदेश', gu:'એક અંગત સંદેશ' },
+    agree: { en:'Agree', hi:'सहमत हूं', gu:'સહમત છું' },
+    notReally: { en:'Not really', hi:'पूरी तरह नहीं', gu:'બરાબર નહીં' },
+    aside: { en:'That\'s alright — I just wanted this on the table, however it lands.', hi:'कोई बात नहीं — मैं बस यह बात आपके सामने रखना चाहता था, चाहे आप इसे जैसे भी लें।', gu:'કંઈ વાંધો નહીં — હું ફક્ત આ વાત તમારી સામે મૂકવા માંગતો હતો, તમે તેને ભલે જે રીતે લો.' },
+    payoffTitle: { en:'That\'s really the whole ask.', hi:'बस यही मेरी पूरी गुज़ारिश है।', gu:'બસ આટલી જ મારી પૂરી વિનંતી છે.' },
+    payoffBody: { en:'Not agreement, not blind trust — just a fair, honest chance to do the job properly, the same way I\'d want to do it for anyone. When that\'s there, I\'m always glad to help.', hi:'सहमति नहीं, अंधा भरोसा नहीं — बस काम को ठीक से करने का एक निष्पक्ष, ईमानदार मौका, ठीक वैसे ही जैसे मैं किसी और के लिए भी चाहूंगा। जब यह होता है, तो मैं हमेशा मदद करने में खुश होता हूं।', gu:'સંમતિ નહીં, આંધળો વિશ્વાસ નહીં — ફક્ત કામ યોગ્ય રીતે કરવાની એક ન્યાયી, પ્રામાણિક તક, બરાબર એ જ રીતે જેમ હું બીજા કોઈ માટે પણ ઇચ્છીશ. જ્યારે આ હોય, ત્યારે હું હંમેશા મદદ કરવા ખુશ છું.' },
+  };
 
-  var step = 0;
+  var lang = null, step = 0;
+  function t(key) { return STRINGS[key][lang]; }
+
+  function renderLangSelect() {
+    document.getElementById('fcContent').innerHTML =
+      '<div class="fc-eyebrow">A Personal Note &middot; एक निजी संदेश &middot; એક અંગત સંદેશ</div>' +
+      '<div class="fc-statement" style="font-size:18px;">Choose your language to continue</div>' +
+      '<button class="fc-lang-btn" onclick="window.fcSetLang(\'en\')">English</button>' +
+      '<button class="fc-lang-btn" onclick="window.fcSetLang(\'hi\')">हिंदी</button>' +
+      '<button class="fc-lang-btn" onclick="window.fcSetLang(\'gu\')">ગુજરાતી</button>';
+  }
+
+  window.fcSetLang = function(l) { lang = l; step = 0; renderSlide(); };
 
   function renderSlide() {
     var el = document.getElementById('fcContent');
-    var backBtn = step > 0
-      ? '<button class="fc-back-btn" onclick="window.fcBack()">&larr; Back</button><br/>'
-      : '';
+    var backBtn = '<button class="fc-back-btn" onclick="window.fcBack()">&larr; Back</button><br/>';
     if (step < SLIDES.length) {
+      var s = SLIDES[step];
       el.innerHTML =
         backBtn +
-        '<div class="fc-eyebrow">' + EYEBROW + '</div>' +
+        '<div class="fc-eyebrow">' + t('eyebrow') + '</div>' +
         '<div class="fc-progress">' + (step+1) + ' / ' + (SLIDES.length+1) + '</div>' +
-        '<div class="fc-statement">' + SLIDES[step] + '</div>' +
+        '<div class="fc-statement">' + s[lang] + '</div>' +
         '<div class="fc-btn-row">' +
-          '<button class="fc-btn fc-btn-agree" onclick="window.fcNext()">Agree</button>' +
-          '<button class="fc-btn fc-btn-soft" onclick="window.fcSoftNo()">Not really</button>' +
+          '<button class="fc-btn fc-btn-agree" onclick="window.fcNext()">' + t('agree') + '</button>' +
+          '<button class="fc-btn fc-btn-soft" onclick="window.fcSoftNo()">' + t('notReally') + '</button>' +
         '</div>' +
         '<div id="fcAside"></div>';
     } else {
       el.innerHTML =
         backBtn +
-        '<div class="fc-eyebrow">' + EYEBROW + '</div>' +
+        '<div class="fc-eyebrow">' + t('eyebrow') + '</div>' +
         '<div class="fc-progress">' + (SLIDES.length+1) + ' / ' + (SLIDES.length+1) + '</div>' +
-        '<div class="fc-payoff-title">' + PAYOFF_TITLE + '</div>' +
-        '<div class="fc-payoff-body">' + PAYOFF_BODY + '</div>';
+        '<div class="fc-payoff-title">' + t('payoffTitle') + '</div>' +
+        '<div class="fc-payoff-body">' + t('payoffBody') + '</div>';
     }
   }
 
   window.fcNext = function() { step++; renderSlide(); };
 
-  window.fcBack = function() { step--; renderSlide(); };
+  window.fcBack = function() {
+    if (step === 0) { renderLangSelect(); }
+    else { step--; renderSlide(); }
+  };
 
   window.fcSoftNo = function() {
     var aside = document.getElementById('fcAside');
-    if (aside) aside.innerHTML = '<div class="fc-aside">' + ASIDE + '</div>';
+    if (aside) aside.innerHTML = '<div class="fc-aside">' + t('aside') + '</div>';
     setTimeout(function(){ window.fcNext(); }, 1400);
   };
 
-  renderSlide();
+  renderLangSelect();
 })();
 </script>
 </body>
