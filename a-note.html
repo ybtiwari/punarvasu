@@ -1,0 +1,123 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>A Personal Note</title>
+  <meta property="og:title" content="A Personal Note"/>
+  <meta property="og:description" content="A few honest words, before we speak again."/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://punarvasu.clinic/a-note.html"/>
+  <meta property="og:image" content="https://punarvasu.clinic/og-note.jpg"/>
+  <meta property="og:image:width" content="1200"/>
+  <meta property="og:image:height" content="630"/>
+  <meta property="og:image:alt" content="A Personal Note — Dr. Yogeshwar Tiwari"/>
+  <meta name="robots" content="noindex, nofollow"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="assets/style.css"/>
+  <style>
+    /* Deliberately not linked from anywhere on the site — reachable only
+       by whoever is sent this exact link directly. No site header, no
+       sidebar, no nav. Just a small personal signature up top. */
+    body { background: var(--cream); font-family: var(--sans); min-height: 100vh; }
+    .fp-wrap { max-width: 520px; margin: 0 auto; padding: 36px 20px 50px; }
+    .fp-brand { text-align: center; margin-bottom: 26px; }
+    .fp-brand-name { font-family: var(--serif); font-size: 22px; color: var(--navy); font-weight: 600; }
+    .fp-brand-sub { font-size: 11px; color: var(--ink3); letter-spacing: 0.04em; text-transform: uppercase; margin-top: 3px; }
+
+    .fc-card{background:var(--white);border-radius:12px;padding:32px 28px;box-shadow:0 8px 30px rgba(15,32,53,0.12);border:1px solid var(--border);}
+    .fc-eyebrow{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);font-weight:600;margin-bottom:8px;}
+    .fc-back-btn{display:inline-block;background:none;border:none;color:var(--ink3);font-family:var(--sans);font-size:13px;cursor:pointer;padding:0;margin-bottom:14px;}
+    .fc-back-btn:hover{color:var(--teal);}
+    .fc-progress{font-size:12px;color:var(--ink3);margin-bottom:14px;}
+    .fc-statement{font-family:var(--serif);font-size:21px;line-height:1.5;color:var(--ink);margin-bottom:24px;}
+    .fc-btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+    .fc-btn{flex:1;min-width:120px;padding:13px 16px;border-radius:8px;font-family:var(--sans);font-size:15px;cursor:pointer;border:none;}
+    .fc-btn-agree{background:var(--teal);color:var(--white);}
+    .fc-btn-agree:hover{background:var(--teal2);}
+    .fc-btn-soft{background:var(--cream2);color:var(--ink2);}
+    .fc-btn-soft:hover{background:var(--border);}
+    .fc-aside{font-size:14px;color:var(--ink3);margin-top:14px;font-style:italic;}
+    .fc-payoff-title{font-family:var(--serif);font-size:23px;color:var(--ink);margin-bottom:12px;line-height:1.4;}
+    .fc-payoff-body{font-size:15px;color:var(--ink2);line-height:1.6;}
+
+    @media (max-width:480px){
+      .fc-card{padding:26px 20px;}
+      .fc-statement{font-size:19px;}
+    }
+  </style>
+</head>
+<body>
+  <div class="fp-wrap">
+    <div class="fp-brand">
+      <div class="fp-brand-name">Dr. Yogeshwar Tiwari</div>
+      <div class="fp-brand-sub">BHMS &middot; Punarvasu Clinic, Ahmedabad</div>
+    </div>
+    <div class="fc-card">
+      <div id="fcContent"></div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  var SLIDES = [
+    "Being a doctor means being available to people who are struggling — that's genuinely the job, and I take it seriously.",
+    "But being available for real medical care is different from being available for free, off-the-record opinions, whenever it happens to be convenient.",
+    "When someone I know becomes my patient, I try to treat them exactly as carefully as I would anyone else — which means I ask the same of them too: follow the process, take it seriously, see it through.",
+    "What's genuinely difficult isn't a disappointing outcome — outcomes aren't always in anyone's control. What's difficult is being consulted, having the instructions not actually followed, and then being blamed for a result the treatment never really had a fair chance to produce.",
+    "If a treatment truly isn't working, I want to know. That's honest, useful information, and it changes what I do next — that has never been, and will never be, the problem.",
+    "The actual problem is being asked for help, and then not being given a real chance to give it.",
+    "So here's my honest ask, especially of the people closest to me: if you come to me as a patient, come ready to actually follow through. If that's not where you are right now, it's completely fine to just say so."
+  ];
+
+  var EYEBROW = "A Personal Note";
+  var ASIDE = "That's alright — I just wanted this on the table, however it lands.";
+  var PAYOFF_TITLE = "That's really the whole ask.";
+  var PAYOFF_BODY = "Not agreement, not blind trust — just a fair, honest chance to do the job properly, the same way I'd want to do it for anyone. When that's there, I'm always glad to help.";
+
+  var step = 0;
+
+  function renderSlide() {
+    var el = document.getElementById('fcContent');
+    var backBtn = step > 0
+      ? '<button class="fc-back-btn" onclick="window.fcBack()">&larr; Back</button><br/>'
+      : '';
+    if (step < SLIDES.length) {
+      el.innerHTML =
+        backBtn +
+        '<div class="fc-eyebrow">' + EYEBROW + '</div>' +
+        '<div class="fc-progress">' + (step+1) + ' / ' + (SLIDES.length+1) + '</div>' +
+        '<div class="fc-statement">' + SLIDES[step] + '</div>' +
+        '<div class="fc-btn-row">' +
+          '<button class="fc-btn fc-btn-agree" onclick="window.fcNext()">Agree</button>' +
+          '<button class="fc-btn fc-btn-soft" onclick="window.fcSoftNo()">Not really</button>' +
+        '</div>' +
+        '<div id="fcAside"></div>';
+    } else {
+      el.innerHTML =
+        backBtn +
+        '<div class="fc-eyebrow">' + EYEBROW + '</div>' +
+        '<div class="fc-progress">' + (SLIDES.length+1) + ' / ' + (SLIDES.length+1) + '</div>' +
+        '<div class="fc-payoff-title">' + PAYOFF_TITLE + '</div>' +
+        '<div class="fc-payoff-body">' + PAYOFF_BODY + '</div>';
+    }
+  }
+
+  window.fcNext = function() { step++; renderSlide(); };
+
+  window.fcBack = function() { step--; renderSlide(); };
+
+  window.fcSoftNo = function() {
+    var aside = document.getElementById('fcAside');
+    if (aside) aside.innerHTML = '<div class="fc-aside">' + ASIDE + '</div>';
+    setTimeout(function(){ window.fcNext(); }, 1400);
+  };
+
+  renderSlide();
+})();
+</script>
+</body>
+</html>
