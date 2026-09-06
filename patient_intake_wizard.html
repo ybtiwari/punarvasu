@@ -2688,7 +2688,7 @@ window.addEventListener('DOMContentLoaded', () => {
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getDatabase, ref, get, update, push, set }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword }
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, setPersistence, browserSessionPersistence }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
   const firebaseConfig = {
@@ -2704,6 +2704,12 @@ window.addEventListener('DOMContentLoaded', () => {
   const app = initializeApp(firebaseConfig, 'patientIntakeApp');
   const db = getDatabase(app);
   const auth = getAuth(app);
+  // Same fix as patient-portal.html: default persistence is shared across
+  // every tab of this origin, so two people filling intake in separate tabs
+  // on one device — a patient and the family member the same-link feature
+  // now explicitly invites — could otherwise sign in over one another mid-
+  // flow. Session-only persistence keeps each tab's sign-in independent.
+  try { await setPersistence(auth, browserSessionPersistence); } catch (e) { console.error('[patient-intake] setPersistence failed (non-fatal):', e); }
 
   // Lets the main engine check for an already-signed-in patient without
   // reaching into the raw auth object directly — matches the pattern of

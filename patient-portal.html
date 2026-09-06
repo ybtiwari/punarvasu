@@ -385,7 +385,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserSessionPersistence }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getDatabase, ref, push, onValue, set, get, query, orderByChild, update, remove }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -556,6 +556,20 @@ async function attemptTokenSignIn(token, uid) {
 }
 
 (async function() {
+  // Firebase Auth's default persistence (IndexedDB/localStorage) is shared
+  // across every tab of this same origin — so a second patient signing in
+  // via their own link in another tab silently becomes the "current user"
+  // for THIS tab too, and the leftover-session check below (rightly, from
+  // its own narrower point of view) signs this tab back out from under
+  // whoever was already using it. Session-only persistence scopes each tab
+  // to its own auth state instead, so two patients (or the same patient's
+  // portal and a family member's intake) can be open side by side on one
+  // device without one knocking the other out. This doesn't affect "Save
+  // your login for later" — that already re-authenticates explicitly via
+  // the token in the saved link each time, rather than relying on this
+  // ambient persistence to begin with.
+  try { await setPersistence(auth, browserSessionPersistence); } catch (e) { console.error('[patient-portal] setPersistence failed (non-fatal):', e); }
+
   const params   = new URLSearchParams(window.location.search);
   const urlToken = params.get('token');
   const urlUid   = params.get('uid');
