@@ -458,11 +458,60 @@ function scheduleDraftSaveIfChanged() {
   }, 2000);
 }
 
+// ---------------------------------------------------------------------
+// Phone/browser back-button guard.
+//
+// This app has never pushed any history entries of its own — screen
+// transitions are pure in-memory state, not URL changes. That means the
+// phone's physical back button was never actually "going back a step"
+// within the wizard at all: with nothing in history to return to inside
+// the page, it falls through to the browser's default behaviour and
+// navigates AWAY from the page entirely (back to the WhatsApp chat, or
+// wherever came before). Draft autosave/restore is real and does work —
+// but it only fires again once the patient reopens the same link and
+// retypes their name and phone at Continue. On a phone, especially inside
+// an in-app browser like WhatsApp's own, that round trip is exactly where
+// this has been going wrong for patients — which is what's been reported
+// as the whole case simply vanishing.
+//
+// Fix: once there's real progress worth protecting (the same point
+// autosave itself considers worth saving — see the screen check above),
+// claim one history entry and start intercepting back. Each press force-
+// saves the current draft immediately, bypassing the normal 2s debounce,
+// and is routed to the same in-app "step back" handler its screen's own
+// visible ← Back button already uses — so the physical button now does
+// the same safe thing the on-screen one does, instead of leaving the page.
+let backGuardArmed = false;
+function armBackGuard() {
+  if (backGuardArmed) return;
+  backGuardArmed = true;
+  history.pushState({ intakeGuard: true }, '');
+}
+
+window.addEventListener('popstate', function () {
+  if (!backGuardArmed) return;
+  history.pushState({ intakeGuard: true }, ''); // swallow it — stay on this page, don't actually navigate away
+  if (state.patient.uid) {
+    window.saveDraftCase(state.patient.uid, state.completeCase); // immediate; don't wait on the debounce
+  }
+  if (state.screen === 'walk') onWalkBack();
+  else if (state.screen === 'generalsWalk') onGeneralsItemBack();
+  else if (state.screen === 'search') onCloseSearch();
+  else if (state.screen === 'chapters' && typeof chapterBlockView !== 'undefined' && chapterBlockView !== null) onChapterBlockBack();
+  else if (state.editingCaseIndex !== null && typeof onCancelEdit === 'function') onCancelEdit();
+  else render(); // no specific handler for this screen — at minimum, stay put rather than leaving
+});
+
 function render() {
   if (state.reviewMode === 'postSubmission' && state.screen !== 'submitted') {
     state.reviewSessionExpiresAt = Date.now() + REVIEW_SESSION_MINUTES * 60 * 1000; // any interaction resets the 30-min window
   }
   scheduleDraftSaveIfChanged();
+  // Same boundary as the autosave check above — arm the guard exactly
+  // where there's something worth guarding, no earlier.
+  if (state.patient.uid && state.screen !== 'intake' && state.screen !== 'lock' && state.screen !== 'loading' && state.screen !== 'submitted') {
+    armBackGuard();
+  }
   const app = document.getElementById('app');
   if (state.screen === 'loading') app.innerHTML = renderLoading();
   else if (state.screen === 'language') app.innerHTML = renderLanguageScreen();
