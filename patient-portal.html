@@ -308,6 +308,15 @@
           </button>
           <p id="newConsultStatus" style="margin-top:8px;font-size:13px;color:var(--teal);display:none;"></p>
         </div>
+        <div class="info-card">
+          <h3>Need a Follow-up Visit?</h3>
+          <p style="margin-bottom:10px;">If you still have some symptoms left over from your last visit, let us know and we'll set up a follow-up for you.</p>
+          <textarea id="followUpInput" placeholder="Briefly describe what's still bothering you (optional)..." rows="2" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:var(--sans);font-size:14px;resize:vertical;margin-bottom:10px;"></textarea>
+          <button id="followUpBtn" onclick="requestFollowUpVisit()" style="background:var(--teal);color:white;border:none;border-radius:6px;padding:10px 18px;font-size:14px;font-weight:500;cursor:pointer;">
+            Send Request
+          </button>
+          <p id="followUpStatus" style="margin-top:8px;font-size:13px;color:var(--teal);display:none;"></p>
+        </div>
         <div class="info-card" id="dash-followups" style="display:none;">
           <h3>📋 Follow-up Questions</h3>
           <div id="dash-followups-list"></div>
@@ -1139,6 +1148,60 @@ async function sendMessage() {
 // doctor sees it appear as a message (with the existing chime/notification
 // already relied on) and actions it with the New Consultation button
 // already in use — no admin-panel.html changes needed for this to work.
+window.requestFollowUpVisit = async function() {
+  const input  = document.getElementById('followUpInput');
+  const btn    = document.getElementById('followUpBtn');
+  const status = document.getElementById('followUpStatus');
+  const detail = input.value.trim();
+
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  const messageText = detail
+    ? `Follow-up visit requested for the same case: ${detail}`
+    : `Follow-up visit requested for residual/ongoing symptoms from the same case.`;
+
+  try {
+    await push(ref(db, `messages/${currentUser.uid}`), {
+      text: messageText, from: 'patient', timestamp: Date.now(), read: false,
+      type: 'followUpVisitRequest'
+    });
+  } catch (e) {
+    alert('Your request could not be sent. Please check your connection and try again.');
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+    return;
+  }
+  try {
+    await push(ref(db, 'notifications/admin'), {
+      type: 'followUpVisitRequest', from: currentUser.uid, email: currentUser.email,
+      preview: messageText.substring(0, 60), timestamp: Date.now(), read: false
+    });
+  } catch (e) {
+    console.error('notifications/admin write failed (non-fatal):', e.code, e.message);
+  }
+  try {
+    if (window.emailjs) {
+      await emailjs.send('service_17kgkcs', 'template_mlyreeh', {
+        patient_email: currentUser.email,
+        message_preview: messageText.substring(0, 60),
+        message_time: new Date().toLocaleString('en-IN', {
+          dateStyle: 'medium', timeStyle: 'short'
+        })
+      });
+    }
+  } catch (e) {
+    console.error('EmailJS notification failed (non-fatal):', e);
+  }
+
+  input.value = '';
+  btn.disabled = false;
+  btn.textContent = originalLabel;
+  status.textContent = "Request sent - we'll be in touch shortly.";
+  status.style.display = 'block';
+};
+
 window.requestNewConsultation = async function() {
   const input  = document.getElementById('newConsultInput');
   const btn    = document.getElementById('newConsultBtn');
