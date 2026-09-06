@@ -2860,6 +2860,15 @@ window.addEventListener('DOMContentLoaded', () => {
       await set(ref(db, 'patients/' + cred.user.uid), {
         name, phone, email: canonicalEmail, status: 'active', createdAt: Date.now()
       });
+      // Bug fix: this branch fires whenever a patient's account gets
+      // created for the first time by their OWN intake — i.e. any time
+      // admin-panel.html's New Patient step didn't already create the
+      // account first — and it was never writing phoneIndex, unlike the
+      // equivalent function there. That's exactly what patient-portal.html's
+      // "Find my account" recovery reads, so any patient whose account
+      // originated here had no way to recover their login by phone number,
+      // even though their account and case were both completely real.
+      await set(ref(db, `phoneIndex/${cleanPhone}/${cred.user.uid}`), name);
       return cred.user.uid;
     } catch (e) {
       if (e.code === 'auth/email-already-in-use') {
