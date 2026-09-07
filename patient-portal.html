@@ -299,23 +299,28 @@
             💬 Send my login to WhatsApp
           </button>
         </div>
+        <div class="info-card" id="dash-ongoing-case" style="display:none;">
+          <h3>Your Ongoing Case</h3>
+          <p id="dash-ongoing-case-summary" style="margin-bottom:10px;"></p>
+          <a href="javascript:void(0)" onclick="document.querySelector('[data-panel=&quot;casefile&quot;]').click()" style="display:inline-block;margin-bottom:16px;color:var(--teal);font-size:14px;font-weight:500;">View full case file →</a>
+          <div style="border-top:1px solid var(--border);padding-top:14px;">
+            <h3 style="font-size:15px;margin-bottom:6px;">Need a Follow-up Visit?</h3>
+            <p style="margin-bottom:10px;font-size:13.5px;">If you still have some symptoms left over from this case, let us know and we'll set up a follow-up for you.</p>
+            <textarea id="followUpInput" placeholder="Briefly describe what's still bothering you (optional)..." rows="2" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:var(--sans);font-size:14px;resize:vertical;margin-bottom:10px;"></textarea>
+            <button id="followUpBtn" onclick="requestFollowUpVisit('')" style="background:var(--teal);color:white;border:none;border-radius:6px;padding:10px 18px;font-size:14px;font-weight:500;cursor:pointer;">
+              Send Request
+            </button>
+            <p id="followUpStatus" style="margin-top:8px;font-size:13px;color:var(--teal);display:none;"></p>
+          </div>
+        </div>
         <div class="info-card">
           <h3>Need a New Consultation?</h3>
-          <p style="margin-bottom:10px;">If you have a different, unrelated health concern, let us know and we'll set up a fresh consultation for you.</p>
+          <p style="margin-bottom:10px;">A different, unrelated health concern — separate from any case already on file. Let us know and we'll set up a fresh consultation for you.</p>
           <textarea id="newConsultInput" placeholder="Briefly describe the new concern (optional)..." rows="2" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:var(--sans);font-size:14px;resize:vertical;margin-bottom:10px;"></textarea>
           <button id="newConsultBtn" onclick="requestNewConsultation()" style="background:var(--teal);color:white;border:none;border-radius:6px;padding:10px 18px;font-size:14px;font-weight:500;cursor:pointer;">
             Send Request
           </button>
           <p id="newConsultStatus" style="margin-top:8px;font-size:13px;color:var(--teal);display:none;"></p>
-        </div>
-        <div class="info-card">
-          <h3>Need a Follow-up Visit?</h3>
-          <p style="margin-bottom:10px;">If you still have some symptoms left over from your last visit, let us know and we'll set up a follow-up for you.</p>
-          <textarea id="followUpInput" placeholder="Briefly describe what's still bothering you (optional)..." rows="2" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:var(--sans);font-size:14px;resize:vertical;margin-bottom:10px;"></textarea>
-          <button id="followUpBtn" onclick="requestFollowUpVisit()" style="background:var(--teal);color:white;border:none;border-radius:6px;padding:10px 18px;font-size:14px;font-weight:500;cursor:pointer;">
-            Send Request
-          </button>
-          <p id="followUpStatus" style="margin-top:8px;font-size:13px;color:var(--teal);display:none;"></p>
         </div>
         <div class="info-card" id="dash-followups" style="display:none;">
           <h3>📋 Follow-up Questions</h3>
@@ -353,6 +358,15 @@
         <div class="panel-sub">Notes, prescriptions and follow-up records from Dr. Tiwari</div>
         <div id="caseFileContent">
           <div class="empty"><div class="empty-icon">📋</div>Your case file will appear here as your treatment progresses.</div>
+        </div>
+        <div class="info-card" id="casefile-followup-card" style="display:none;">
+          <h3>Need a Follow-up Visit?</h3>
+          <p style="margin-bottom:10px;">If you still have some symptoms left over from this case, let us know and we'll set up a follow-up for you.</p>
+          <textarea id="followUpInputCF" placeholder="Briefly describe what's still bothering you (optional)..." rows="2" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:var(--sans);font-size:14px;resize:vertical;margin-bottom:10px;"></textarea>
+          <button id="followUpBtnCF" onclick="requestFollowUpVisit('CF')" style="background:var(--teal);color:white;border:none;border-radius:6px;padding:10px 18px;font-size:14px;font-weight:500;cursor:pointer;">
+            Send Request
+          </button>
+          <p id="followUpStatusCF" style="margin-top:8px;font-size:13px;color:var(--teal);display:none;"></p>
         </div>
       </div>
 
@@ -1148,10 +1162,11 @@ async function sendMessage() {
 // doctor sees it appear as a message (with the existing chime/notification
 // already relied on) and actions it with the New Consultation button
 // already in use — no admin-panel.html changes needed for this to work.
-window.requestFollowUpVisit = async function() {
-  const input  = document.getElementById('followUpInput');
-  const btn    = document.getElementById('followUpBtn');
-  const status = document.getElementById('followUpStatus');
+window.requestFollowUpVisit = async function(suffix) {
+  suffix = suffix || '';
+  const input  = document.getElementById('followUpInput' + suffix);
+  const btn    = document.getElementById('followUpBtn' + suffix);
+  const status = document.getElementById('followUpStatus' + suffix);
   const detail = input.value.trim();
 
   const originalLabel = btn.textContent;
@@ -1424,9 +1439,32 @@ function loadCaseFile() {
   });
 }
 
+// Both the dashboard's "Your Ongoing Case" card and the Case File page's
+// own Follow-up form are conditioned on the same thing: a follow-up only
+// makes sense if there's an actual case on file to follow up on. Driven
+// from here, right alongside the case data itself, rather than as a
+// separate check that could drift out of sync with it.
+function updateOngoingCaseVisibility(s) {
+  const hasCase = !!(s && (s.prescriptions || s.notes || s.clinicalPicture));
+  const dashCard = document.getElementById('dash-ongoing-case');
+  const cfCard = document.getElementById('casefile-followup-card');
+  if (dashCard) dashCard.style.display = hasCase ? 'block' : 'none';
+  if (cfCard) cfCard.style.display = hasCase ? 'block' : 'none';
+  if (hasCase) {
+    const summaryEl = document.getElementById('dash-ongoing-case-summary');
+    if (summaryEl) {
+      const rxCount = s.prescriptions ? Object.keys(s.prescriptions).length : 0;
+      summaryEl.textContent = rxCount > 0
+        ? `You have an active case on file with Dr. Tiwari \u2014 ${rxCount} prescription${rxCount === 1 ? '' : 's'} recorded so far.`
+        : `You have an active case on file with Dr. Tiwari.`;
+    }
+  }
+}
+
 function renderCaseFileContent() {
   const el = document.getElementById('caseFileContent');
   const s = window._caseData;
+  updateOngoingCaseVisibility(s);
   if (!s) {
     el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div>Your case file will appear here as your treatment progresses.</div>';
     return;
