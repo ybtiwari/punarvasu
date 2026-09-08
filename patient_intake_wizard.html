@@ -988,16 +988,20 @@ async function attemptAutoUnlock() {
     if (result.ok) {
       state.lock.isUnlocked = true;
       state.lock.accessCodeUsed = code;
-      proceedPastUnlock();
-      return;
     }
-    state.lock.error = result.reason === 'used'
-      ? 'This code has already been used. Please contact the clinic for a new one.'
-      : 'That code was not recognized. Please check and try again.';
+    // A missing, invalid, or unrecognized code no longer blocks anything
+    // below — it only ever mattered here for pulling in a known patient's
+    // prior context. Its absence simply means proceedPastUnlock() below
+    // runs without that extra context, not that entry gets refused.
   }
 
-  state.screen = 'lock';
-  render();
+  // The wizard no longer requires a code to reach the case-taking flow —
+  // this used to fall through to the lock screen (manual entry / phone
+  // recovery) here instead. Removed deliberately, discussed and confirmed
+  // directly: any code that IS present and recognized above still pulls in
+  // prior context, but nothing here stops someone who arrives without one.
+  state.lock.isUnlocked = true;
+  proceedPastUnlock();
 }
 
 // ── "Lost your code?" phone recovery ──
@@ -2645,7 +2649,14 @@ async function onSubmitCase() {
     if (!isRevision) {
       state.submittedCaseId = result.caseId;
       state.submittedAtOriginal = payload.submittedAt;
-      window.markAccessCodeUsed(state.lock.accessCodeUsed); // first real submission — burn it now, not at unlock
+      // Guarded: accessCodeUsed defaults to '' and now genuinely can stay
+      // that way, since entry no longer requires a code at all. Calling
+      // this with an empty string would target accessCodes/ itself rather
+      // than one specific code — only call it when there's an actual code
+      // to mark.
+      if (state.lock.accessCodeUsed) {
+        window.markAccessCodeUsed(state.lock.accessCodeUsed); // kept as a historical record only — nothing gates on it anymore
+      }
     }
     if (reviewExpiryChecker) { clearInterval(reviewExpiryChecker); reviewExpiryChecker = null; }
     state.reviewMode = 'normal';
@@ -2912,14 +2923,13 @@ window.addEventListener('DOMContentLoaded', () => {
       const snap = await get(codeRef);
       if (!snap.exists()) return { ok: false, reason: 'invalid' };
       const data = snap.val();
-      if (data.used === true) return { ok: false, reason: 'used' };
-      // Newer codes (generated per-patient from admin-panel.html) carry
-      // patientUid + patientName directly on the code record itself — read
-      // straight from here, not from patients/{uid}, since that path
-      // requires authentication and the patient hasn't signed into
-      // anything yet at this point. Older, unlinked codes simply won't
-      // have these fields, and the existing ensurePatientAccount flow at
-      // submission time covers that case exactly as it did before this change.
+      // Deliberately no longer checking data.used here. A code now stays
+      // valid indefinitely once issued, rather than dying after the first
+      // person submits with it — confirmed directly, alongside removing
+      // the code requirement from entry entirely (see attemptAutoUnlock).
+      // markAccessCodeUsed() below is still called at submission and still
+      // sets the field, purely as a historical "was this ever used" record
+      // — nothing reads it as a gate anymore.
       return { ok: true, patientUid: data.patientUid || null, patientName: data.patientName || null };
     } catch (e) {
       console.error('[patient-intake] access code check failed:', e);
