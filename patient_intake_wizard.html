@@ -245,6 +245,24 @@ const state = {
 // their own details — by the time they'd actually reach the chapters screen,
 // it's normally already done.
 
+// Waits for a window-scoped function defined in the Firebase module script
+// (below) to actually exist before calling it. Needed because bootFirstScreen
+// now runs as soon as the four (now-deferred) data scripts finish, rather
+// than after the old, much longer initData() — and on a fast/cached repeat
+// load that finishes sooner, it can occasionally run before the module
+// script's own async import of the Firebase SDK has finished resolving.
+// Polls briefly rather than assuming a fixed delay is always enough.
+function waitForWindowFn(name, maxWaitMs = 3000) {
+  return new Promise(resolve => {
+    const start = Date.now();
+    (function check() {
+      if (typeof window[name] === 'function') return resolve(true);
+      if (Date.now() - start >= maxWaitMs) return resolve(false); // give up — caller handles gracefully
+      setTimeout(check, 20);
+    })();
+  });
+}
+
 async function bootFirstScreen() {
   try {
     const res = await fetch('connector_map.json');
@@ -266,7 +284,8 @@ async function bootFirstScreen() {
   const urlCode = new URLSearchParams(window.location.search).get('code');
   if (urlCode) {
     state.lock.codeInput = urlCode.trim().toUpperCase();
-    const peek = await window.peekAccessCodePatient(state.lock.codeInput);
+    const fnReady = await waitForWindowFn('peekAccessCodePatient');
+    const peek = fnReady ? await window.peekAccessCodePatient(state.lock.codeInput) : null;
     if (peek) {
       state.patient.uid = peek.uid;
       if (peek.name) state.patient.name = peek.name;
