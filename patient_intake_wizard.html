@@ -155,10 +155,15 @@ input[type=text]{font-family:var(--font)}
   </div>
 </div>
 
-<script src="repertory_data.js"></script>
-<script src="repertory_translations_english.js"></script>
-<script src="repertory_translations_hindi.js"></script>
-<script src="repertory_translations_hindi_romanized.js"></script>
+<!-- defer: these four files total 50+MB. Without defer, each one blocks the
+     HTML parser in turn before the browser can even show the loading/language
+     screen — the page sits fully blank the whole time. defer lets the browser
+     fetch all four in parallel while it parses and prepares the rest of the
+     page, instead of one at a time, serially, before anything else can happen. -->
+<script src="repertory_data.js" defer></script>
+<script src="repertory_translations_english.js" defer></script>
+<script src="repertory_translations_hindi.js" defer></script>
+<script src="repertory_translations_hindi_romanized.js" defer></script>
 
 <script>
 'use strict';
@@ -219,14 +224,72 @@ const state = {
     chaptersBucketed: null,    // { chapterName: [[id,path,remedies], ...] }
     connectorMap: null,        // { rubricId: [{connectedChapter, connectorType}] }
     chapterList: [],
-    searchIndex: null
+    searchIndex: null,
+    ready: false               // true once loadRepertoryData() finishes bucketing + indexing
   }
 };
 
 // =================================================================
 // DATA LOADING & INDEXING
 // =================================================================
-async function initData() {
+// Split deliberately into two stages. Previously this was one function:
+// bucket all 74,000+ rubrics, build a full search index over them (another
+// 74,000-iteration pass with six regex tests each), THEN check the access
+// code and show the very first screen — meaning a patient saw a completely
+// blank page (not even the language screen) until all of that had finished,
+// on top of over 50MB of script-tag data already needing to download first.
+// None of the repertory-tree walking is needed for the language/basic-details
+// screens the patient sees first — only the code peek and connector map are.
+// So that fast part now runs and renders immediately; the expensive bucketing
+// and indexing runs after, in the background, while the patient is filling in
+// their own details — by the time they'd actually reach the chapters screen,
+// it's normally already done.
+
+async function bootFirstScreen() {
+  try {
+    const res = await fetch('connector_map.json');
+    state.data.connectorMap = await res.json();
+  } catch (e) {
+    console.warn('connector_map.json not found — connector suggestions disabled.');
+    state.data.connectorMap = {};
+  }
+
+  // If a ?code=XXXXXXXX parameter is present in the URL (sent via the
+  // WhatsApp welcome message), pre-fill it into the lock screen's field so
+  // the patient just taps Unlock later — no typing needed. The flow stays
+  // basic details first, then the lock screen, then the tree-walker.
+  // If this code is one of the newer, patient-linked ones (generated per
+  // patient from admin-panel.html), do a read-only peek at it now — NOT a
+  // full validate-and-mark-used, just a check — so their name can already
+  // be sitting in the name field by the time they see the very first
+  // screen, instead of asking them to type something the clinic already knows.
+  const urlCode = new URLSearchParams(window.location.search).get('code');
+  if (urlCode) {
+    state.lock.codeInput = urlCode.trim().toUpperCase();
+    const peek = await window.peekAccessCodePatient(state.lock.codeInput);
+    if (peek) {
+      state.patient.uid = peek.uid;
+      if (peek.name) state.patient.name = peek.name;
+      if (peek.priorGenerals) state.patient.priorGenerals = peek.priorGenerals;
+      if (peek.priorComplaints) state.patient.priorComplaints = peek.priorComplaints;
+      if (peek.preferredLang) state.patient.preferredLang = peek.preferredLang;
+    }
+  }
+  // A Follow-up Visit link already carries a known language preference
+  // forward — no need to ask again. A genuinely new patient (or an older
+  // code predating this) sees the language screen first, before anything
+  // else at all.
+  state.screen = state.patient.preferredLang ? 'intake' : 'language';
+  render();
+
+  // Yield back to the browser before starting the heavy loop below, so the
+  // screen just rendered above actually paints first — otherwise a long
+  // synchronous CPU-bound loop starting immediately after render() would
+  // still hold the page blank until it finishes, defeating the point.
+  setTimeout(loadRepertoryData, 0);
+}
+
+function loadRepertoryData() {
   // EMBEDDED_DATA comes from repertory_data.js (script tag, top-level const —
   // accessed here by bare reference since that's visible across classic scripts
   // on the same page regardless of var/let/const, as established earlier)
@@ -269,42 +332,13 @@ async function initData() {
     });
   }
   state.data.searchIndex = searchIndex;
+  state.data.ready = true;
 
-  try {
-    const res = await fetch('connector_map.json');
-    state.data.connectorMap = await res.json();
-  } catch (e) {
-    console.warn('connector_map.json not found — connector suggestions disabled.');
-    state.data.connectorMap = {};
-  }
-
-  // If a ?code=XXXXXXXX parameter is present in the URL (sent via the
-  // WhatsApp welcome message), pre-fill it into the lock screen's field so
-  // the patient just taps Unlock later — no typing needed. The flow stays
-  // basic details first, then the lock screen, then the tree-walker.
-  // If this code is one of the newer, patient-linked ones (generated per
-  // patient from admin-panel.html), do a read-only peek at it now — NOT a
-  // full validate-and-mark-used, just a check — so their name can already
-  // be sitting in the name field by the time they see the very first
-  // screen, instead of asking them to type something the clinic already knows.
-  const urlCode = new URLSearchParams(window.location.search).get('code');
-  if (urlCode) {
-    state.lock.codeInput = urlCode.trim().toUpperCase();
-    const peek = await window.peekAccessCodePatient(state.lock.codeInput);
-    if (peek) {
-      state.patient.uid = peek.uid;
-      if (peek.name) state.patient.name = peek.name;
-      if (peek.priorGenerals) state.patient.priorGenerals = peek.priorGenerals;
-      if (peek.priorComplaints) state.patient.priorComplaints = peek.priorComplaints;
-      if (peek.preferredLang) state.patient.preferredLang = peek.preferredLang;
-    }
-  }
-  // A Follow-up Visit link already carries a known language preference
-  // forward — no need to ask again. A genuinely new patient (or an older
-  // code predating this) sees the language screen first, before anything
-  // else at all.
-  state.screen = state.patient.preferredLang ? 'intake' : 'language';
-  render();
+  // If the patient has already reached the chapters screen and it rendered
+  // its "still preparing" placeholder (see getNextOptions/renderChaptersScreen
+  // guards below) while this was still running, refresh now so it shows the
+  // real content instead of waiting for their next click.
+  if (state.screen === 'chapters') render();
 }
 
 // =================================================================
@@ -370,7 +404,7 @@ function getDisplayText(chapter, path, kentToken) {
 //   nextOptions      — { token: { rubricCount, totalRemedies, sampleId, samplePath } }
 function getNextOptions(pathTokens) {
   const chapter = pathTokens[0];
-  const bucket = state.data.chaptersBucketed[chapter] || [];
+  const bucket = (state.data.chaptersBucketed || {})[chapter] || []; // guarded: may not be ready yet if background loading hasn't finished
   const prefixLower = pathTokens.map(t => t.toLowerCase());
 
   let exactMatchRubric = null;
@@ -1289,7 +1323,7 @@ const GENERALS_WALKS = [
 ];
 
 function findRubricByExactPath(chapter, fullPath) {
-  const bucket = state.data.chaptersBucketed[chapter] || [];
+  const bucket = (state.data.chaptersBucketed || {})[chapter] || []; // guarded: may not be ready yet if background loading hasn't finished
   for (const [id, path, remedies] of bucket) {
     if (path.trim() === fullPath.trim()) return { id, path, remedyCount: remedies.length };
   }
@@ -1952,6 +1986,12 @@ function renderChapterCard(ch, iconOverride) {
 }
 
 function renderChapterSelect() {
+  // Guard for the rare case a patient moves through the earlier screens fast
+  // enough to arrive here before loadRepertoryData() (running in the
+  // background since bootFirstScreen()) has finished bucketing and indexing.
+  // loadRepertoryData() re-renders on its own completion if it finds the
+  // patient already sitting on this screen — see its last few lines.
+  if (!state.data.ready) return renderLoading();
   const sex = state.patient.sex;
   const visibleChapters = state.data.chapterList.filter(ch => {
     if (sex === 'male' && ch === 'Genitalia female') return false;
@@ -2688,7 +2728,7 @@ function escAttr(s) {
 // =================================================================
 window.addEventListener('DOMContentLoaded', () => {
   // slight delay to let the script-tag data finish evaluating
-  setTimeout(initData, 50);
+  setTimeout(bootFirstScreen, 50);
 });
 </script>
 
