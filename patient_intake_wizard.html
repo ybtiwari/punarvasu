@@ -155,16 +155,6 @@ input[type=text]{font-family:var(--font)}
   </div>
 </div>
 
-<!-- defer: these four files total 50+MB. Without defer, each one blocks the
-     HTML parser in turn before the browser can even show the loading/language
-     screen — the page sits fully blank the whole time. defer lets the browser
-     fetch all four in parallel while it parses and prepares the rest of the
-     page, instead of one at a time, serially, before anything else can happen. -->
-<script src="repertory_data.js" defer></script>
-<script src="repertory_translations_english.js" defer></script>
-<script src="repertory_translations_hindi.js" defer></script>
-<script src="repertory_translations_hindi_romanized.js" defer></script>
-
 <script>
 'use strict';
 
@@ -308,10 +298,22 @@ async function bootFirstScreen() {
   setTimeout(loadRepertoryData, 0);
 }
 
-function loadRepertoryData() {
-  // EMBEDDED_DATA comes from repertory_data.js (script tag, top-level const —
+async function loadRepertoryData() {
+  // EMBEDDED_DATA comes from repertory_data.js, now loaded from a <script
+  // defer> tag placed at the very end of the document (see bottom of page)
+  // so it no longer holds up bootFirstScreen(). That means, unlike before,
+  // this can genuinely start running before that file has finished — wait
+  // for it here rather than assuming it's already there.
+  const dataStart = Date.now();
+  while (typeof EMBEDDED_DATA === 'undefined') {
+    if (Date.now() - dataStart >= 20000) {
+      console.error('[patient-intake] repertory_data.js did not load within 20s — giving up.');
+      return;
+    }
+    await new Promise(r => setTimeout(r, 30));
+  }
   // accessed here by bare reference since that's visible across classic scripts
-  // on the same page regardless of var/let/const, as established earlier)
+  // on the same page regardless of var/let/const, as established earlier
   const rubrics = EMBEDDED_DATA.rubrics;
 
   const buckets = {};
@@ -2745,10 +2747,11 @@ function escAttr(s) {
 // =================================================================
 // BOOT
 // =================================================================
-window.addEventListener('DOMContentLoaded', () => {
-  // slight delay to let the script-tag data finish evaluating
-  setTimeout(bootFirstScreen, 50);
-});
+// bootFirstScreen() itself is no longer called from here — see the end of
+// the module script below, which now calls it directly once Firebase is
+// actually ready, rather than via DOMContentLoaded (which wound up waiting
+// on the 50MB data files regardless of defer, since they shared the same
+// load queue as this and the module script below).
 </script>
 
 <script type="module">
@@ -3081,6 +3084,32 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Generals walk functions are defined in the main script above and are
 // already globally accessible — no window assignment needed here.
+
+// Called directly here, not via a DOMContentLoaded listener — this line
+// runs as soon as this module's own top-level code finishes, which is
+// exactly the point at which everything bootFirstScreen() needs (Firebase,
+// peekAccessCodePatient, etc., all defined above in this same module) is
+// guaranteed ready, without waiting on anything else on the page.
+// window.bootFirstScreen — explicit, not a bare reference — since
+// bootFirstScreen is declared in the earlier classic script, not this
+// module, and this module has its own separate top-level scope.
+window.bootFirstScreen();
 </script>
+
+<!-- Deliberately placed last, after every script that defines app logic and
+     Firebase functions, not near the top. These four files total 50+MB —
+     positioned first, the browser's shared load queue for defer/module
+     content makes everything above wait for them before it can even run,
+     which is what kept the app's own first screen gated behind a 50MB
+     download despite being deferred. Placed last, the module script above
+     calls bootFirstScreen() directly once IT is ready, without needing to
+     wait for these at all — they finish independently, in the background,
+     and loadRepertoryData() waits for EMBEDDED_DATA to exist (see its own
+     opening lines) before touching it, since it can now genuinely start
+     before these have finished. -->
+<script src="repertory_data.js" defer></script>
+<script src="repertory_translations_english.js" defer></script>
+<script src="repertory_translations_hindi.js" defer></script>
+<script src="repertory_translations_hindi_romanized.js" defer></script>
 </body>
 </html>
