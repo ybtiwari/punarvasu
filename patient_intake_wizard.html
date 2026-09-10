@@ -3060,6 +3060,21 @@ function escAttr(s) {
       } else {
         const newCaseRef = push(ref(db, 'cases'));
         await set(newCaseRef, payload);
+        // Mirrored into casefile alongside the actual case record — not a
+        // duplicate for its own sake. patient-portal.html reads only
+        // patients/{uid}/casefile (its own data, plainly allowed) and
+        // shouldn't need to query the shared cases/ node just to compute
+        // its own stage the same way admin-panel.html and dashboard.html
+        // do. Overwriting this on every new submission is exactly the
+        // point — the latest case's own submission time is what stage
+        // comparisons (prescription vs. this, sessionClosedAt vs. the
+        // prescription) are anchored against everywhere else too.
+        if (payload.submittedAt && payload.patient && payload.patient.uid) {
+          try {
+            await set(ref(db, 'patients/' + payload.patient.uid + '/casefile/lastCaseSubmittedAt'),
+              new Date(payload.submittedAt).getTime());
+          } catch (e) { console.error('[patient-intake] casefile submittedAt mirror failed (non-fatal):', e); }
+        }
         if (isFollowUp) {
           // Lets the doctor know a follow-up came in without needing to
           // notice it in the case list — tagged with the exact patient uid
