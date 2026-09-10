@@ -303,7 +303,7 @@
           <h3>Your Ongoing Case</h3>
           <p id="dash-ongoing-case-summary" style="margin-bottom:10px;"></p>
           <a href="javascript:void(0)" onclick="document.querySelector('[data-panel=&quot;casefile&quot;]').click()" style="display:inline-block;margin-bottom:16px;color:var(--teal);font-size:14px;font-weight:500;">View full case file →</a>
-          <div style="border-top:1px solid var(--border);padding-top:14px;">
+          <div style="border-top:1px solid var(--border);padding-top:14px;" id="dash-followup-section">
             <h3 style="font-size:15px;margin-bottom:6px;">Need a Follow-up Visit?</h3>
             <p style="margin-bottom:10px;font-size:13.5px;">If you still have some symptoms left over from this case, let us know and we'll set up a follow-up for you.</p>
             <textarea id="followUpInput" placeholder="Briefly describe what's still bothering you (optional)..." rows="2" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:var(--sans);font-size:14px;resize:vertical;margin-bottom:10px;"></textarea>
@@ -311,15 +311,25 @@
               Send Request
             </button>
             <p id="followUpStatus" style="margin-top:8px;font-size:13px;color:var(--teal);display:none;"></p>
+            <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+              <p style="margin-bottom:10px;font-size:13.5px;">Feeling better and don't need anything further for this case right now?</p>
+              <button id="closeSessionBtn" onclick="closeMyConsultationSession()" style="background:#fff;color:var(--teal);border:1.5px solid var(--teal);border-radius:6px;padding:10px 18px;font-size:14px;font-weight:500;cursor:pointer;">
+                ✔ This consultation is complete
+              </button>
+            </div>
           </div>
+          <div id="dash-stage-inactive-note" style="display:none;padding-top:14px;border-top:1px solid var(--border);font-size:13.5px;color:var(--ink3, #888);"></div>
         </div>
         <div class="info-card">
           <h3>Need a New Consultation?</h3>
           <p style="margin-bottom:10px;">A different, unrelated health concern — separate from any case already on file. Let us know and we'll set up a fresh consultation for you.</p>
-          <textarea id="newConsultInput" placeholder="Briefly describe the new concern (optional)..." rows="2" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:var(--sans);font-size:14px;resize:vertical;margin-bottom:10px;"></textarea>
-          <button id="newConsultBtn" onclick="requestNewConsultation()" style="background:var(--teal);color:white;border:none;border-radius:6px;padding:10px 18px;font-size:14px;font-weight:500;cursor:pointer;">
-            Send Request
-          </button>
+          <div id="dash-newconsult-active">
+            <textarea id="newConsultInput" placeholder="Briefly describe the new concern (optional)..." rows="2" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:var(--sans);font-size:14px;resize:vertical;margin-bottom:10px;"></textarea>
+            <button id="newConsultBtn" onclick="requestNewConsultation()" style="background:var(--teal);color:white;border:none;border-radius:6px;padding:10px 18px;font-size:14px;font-weight:500;cursor:pointer;">
+              Send Request
+            </button>
+          </div>
+          <p id="dash-newconsult-inactive" style="display:none;font-size:13.5px;color:var(--ink3, #888);background:var(--cream, #F5F2EC);border-radius:6px;padding:10px 12px;">Inactive till the current consultation is closed.</p>
           <p id="newConsultStatus" style="margin-top:8px;font-size:13px;color:var(--teal);display:none;"></p>
         </div>
         <div class="info-card" id="dash-followups" style="display:none;">
@@ -1444,12 +1454,33 @@ function loadCaseFile() {
 // makes sense if there's an actual case on file to follow up on. Driven
 // from here, right alongside the case data itself, rather than as a
 // separate check that could drift out of sync with it.
+//
+// Also computes the same 4-stage model admin-panel.html and dashboard.html
+// use (1 invited, 2 submitted, 3 prescribed, 4 closed) — see their own
+// loadPatientsWithCases()/loadAll() comments for the full reasoning. This
+// version reads only patients/{uid}/casefile, which this page already has
+// (currentUser's own data) — including lastCaseSubmittedAt, mirrored in by
+// the intake wizard at submission specifically so this page never needs to
+// query the shared cases/ node just to compute its own stage.
+function computeMyStage(s) {
+  if (!s) return 1;
+  const caseAt = s.lastCaseSubmittedAt || 0;
+  let latestRxAt = 0;
+  if (s.prescriptions) {
+    Object.values(s.prescriptions).forEach(e => { if (e.sessionId && e.sessionId > latestRxAt) latestRxAt = e.sessionId; });
+  }
+  if (!(latestRxAt > caseAt)) return 2;
+  const closedAt = s.sessionClosedAt || 0;
+  return (closedAt > latestRxAt) ? 4 : 3;
+}
+
 function updateOngoingCaseVisibility(s) {
   const hasCase = !!(s && (s.prescriptions || s.notes || s.clinicalPicture));
   const dashCard = document.getElementById('dash-ongoing-case');
   const cfCard = document.getElementById('casefile-followup-card');
   if (dashCard) dashCard.style.display = hasCase ? 'block' : 'none';
-  if (cfCard) cfCard.style.display = hasCase ? 'block' : 'none';
+  const stage = computeMyStage(s);
+  if (cfCard) cfCard.style.display = (hasCase && stage === 3) ? 'block' : 'none';
   if (hasCase) {
     const summaryEl = document.getElementById('dash-ongoing-case-summary');
     if (summaryEl) {
@@ -1459,7 +1490,44 @@ function updateOngoingCaseVisibility(s) {
         : `You have an active case on file with Dr. Tiwari.`;
     }
   }
+
+  const followupSection = document.getElementById('dash-followup-section');
+  const inactiveNote = document.getElementById('dash-stage-inactive-note');
+  if (followupSection && inactiveNote) {
+    const showFollowup = hasCase && stage === 3;
+    followupSection.style.display = showFollowup ? 'block' : 'none';
+    inactiveNote.style.display = (hasCase && !showFollowup) ? 'block' : 'none';
+    if (hasCase && !showFollowup) {
+      inactiveNote.textContent = stage === 2
+        ? 'Follow-up options will appear here once your case has been reviewed and a prescription is on file.'
+        : 'This consultation is already marked complete — see "Need a New Consultation?" below for anything further.';
+    }
+  }
+  const newConsultActive = document.getElementById('dash-newconsult-active');
+  const newConsultInactive = document.getElementById('dash-newconsult-inactive');
+  if (newConsultActive && newConsultInactive) {
+    const showNewConsult = !hasCase || stage === 4;
+    newConsultActive.style.display = showNewConsult ? 'block' : 'none';
+    newConsultInactive.style.display = showNewConsult ? 'none' : 'block';
+  }
 }
+
+// Patient-facing equivalent of admin-panel.html's closeConsultationSession —
+// same underlying write (patients/{uid}/casefile/sessionClosedAt), so
+// either the doctor or the patient can mark a round complete, whichever
+// happens first.
+window.closeMyConsultationSession = async function () {
+  if (!confirm("Mark this consultation as complete?\n\nYou won't be able to request a follow-up for this round afterward — but you'll be able to start a new consultation for anything else.")) return;
+  const btn = document.getElementById('closeSessionBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Closing…'; }
+  try {
+    await set(ref(db, 'patients/' + currentUser.uid + '/casefile/sessionClosedAt'), Date.now());
+  } catch (e) {
+    console.error('[patient-portal] closeMyConsultationSession failed:', e);
+    alert('Could not close this session — please try again.');
+    if (btn) { btn.disabled = false; btn.textContent = '✔ This consultation is complete'; }
+  }
+};
 
 function renderCaseFileContent() {
   const el = document.getElementById('caseFileContent');
