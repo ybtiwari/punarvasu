@@ -61,27 +61,6 @@
     .nav-icon { font-size: 16px; }
     .portal-content { flex: 1; padding: 32px; max-width: 800px; }
     .panel { display: none; }
-
-    /* FOLLOW-UP QUESTIONS OVERLAY */
-    .fu-overlay { position: fixed; inset: 0; background: rgba(15,32,53,0.55); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 16px; }
-    .fu-overlay-inner { background: var(--white); border-radius: 8px; max-width: 560px; width: 100%; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; }
-    .fu-overlay-head { background: var(--teal); color: var(--white); padding: 18px 20px; flex-shrink: 0; }
-    .fu-overlay-title { font-family: var(--serif); font-size: 19px; font-weight: 600; }
-    .fu-overlay-sub { font-size: 13px; opacity: 0.9; margin-top: 3px; }
-    .fu-overlay-body { padding: 18px 20px; overflow-y: auto; flex: 1; }
-    .fu-loading-msg { text-align: center; color: var(--ink3); font-size: 14px; padding: 30px 0; }
-    .fu-q-card { border: 1px solid var(--border); border-radius: 6px; padding: 14px; margin-bottom: 12px; }
-    .fu-q-text { font-size: 14.5px; color: var(--ink); margin-bottom: 10px; line-height: 1.4; }
-    .fu-ans-row { display: flex; gap: 8px; margin-bottom: 8px; }
-    .fu-ans-btn { flex: 1; padding: 9px; border: 1.5px solid var(--border); border-radius: 5px; background: var(--white); font-family: var(--sans); font-size: 13.5px; font-weight: 500; color: var(--ink2); cursor: pointer; transition: all 0.12s; }
-    .fu-ans-btn:hover { border-color: var(--teal); }
-    .fu-ans-btn.selected-yes { background: var(--teal); border-color: var(--teal); color: var(--white); }
-    .fu-ans-btn.selected-no { background: var(--ink3); border-color: var(--ink3); color: var(--white); }
-    .fu-ans-btn.selected-skip { background: #B7791F; border-color: #B7791F; color: var(--white); }
-    .fu-detail-input { width: 100%; border: 1px solid var(--border); border-radius: 5px; padding: 8px 10px; font-family: var(--sans); font-size: 13px; margin-top: 4px; display: none; }
-    .fu-progress { font-size: 12.5px; color: var(--ink3); margin-bottom: 14px; }
-    .fu-thankyou { text-align: center; padding: 30px 10px; }
-    .fu-thankyou-icon { font-size: 40px; margin-bottom: 10px; }
     .panel.active { display: block; }
     .panel-title { font-family: var(--serif); font-size: 24px; color: var(--navy); margin-bottom: 6px; }
     .panel-sub { font-size: 14px; color: var(--ink3); margin-bottom: 28px; }
@@ -229,28 +208,6 @@
 <!-- PORTAL -->
 <div class="portal" id="portalScreen">
 
-<!-- FOLLOW-UP QUESTIONS — full-screen overlay, shown on top of the portal
-     when the patient arrives via a doctor-sent follow-up link. Hidden by
-     default; portalScreen underneath is already fully loaded so "Skip for
-     now" / after-submit just needs to hide this div. -->
-<div class="fu-overlay" id="followUpOverlay" style="display:none;">
-  <div class="fu-overlay-inner">
-    <div class="fu-overlay-head">
-      <div class="fu-overlay-title">A few follow-up questions</div>
-      <div class="fu-overlay-sub">From Dr. Tiwari, about your symptoms</div>
-      <div style="margin-top:10px;display:flex;gap:6px;">
-        <button class="lang-btn fu-lang-btn active" data-fulang="en" onclick="setFuLang('en')" style="padding:4px 10px;font-size:12px;border-radius:4px;border:1px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:#fff;cursor:pointer;">English</button>
-        <button class="lang-btn fu-lang-btn" data-fulang="hi" onclick="setFuLang('hi')" style="padding:4px 10px;font-size:12px;border-radius:4px;border:1px solid rgba(255,255,255,0.5);background:transparent;color:#fff;cursor:pointer;">हिन्दी</button>
-        <button class="lang-btn fu-lang-btn" data-fulang="gu" onclick="setFuLang('gu')" style="padding:4px 10px;font-size:12px;border-radius:4px;border:1px solid rgba(255,255,255,0.5);background:transparent;color:#fff;cursor:pointer;">ગુજરાતી</button>
-      </div>
-    </div>
-    <div id="followUpBody" class="fu-overlay-body">
-      <div class="fu-loading-msg">Loading your questions…</div>
-    </div>
-  </div>
-</div>
-
-
   <div class="topbar">
     <div class="topbar-logo">Punarvasu Clinic</div>
     <div class="topbar-right">
@@ -331,10 +288,6 @@
           </div>
           <p id="dash-newconsult-inactive" style="display:none;font-size:13.5px;color:var(--ink3, #888);background:var(--cream, #F5F2EC);border-radius:6px;padding:10px 12px;">Inactive till the current consultation is closed.</p>
           <p id="newConsultStatus" style="margin-top:8px;font-size:13px;color:var(--teal);display:none;"></p>
-        </div>
-        <div class="info-card" id="dash-followups" style="display:none;">
-          <h3>📋 Follow-up Questions</h3>
-          <div id="dash-followups-list"></div>
         </div>
         <div class="info-card" id="dash-next-appt">
           <h3>Next appointment</h3>
@@ -460,16 +413,6 @@ window.setLang = function(lang) {
   if (typeof renderCaseFileContent === 'function' && document.getElementById('caseFileContent')) {
     renderCaseFileContent();
   }
-  // Keep the follow-up overlay's own language buttons and content in sync,
-  // in the rare case both toggles are relevant in the same session.
-  document.querySelectorAll('.fu-lang-btn').forEach(b => {
-    const active = b.dataset.fulang === lang;
-    b.classList.toggle('active', active);
-    b.style.background = active ? 'rgba(255,255,255,0.15)' : 'transparent';
-  });
-  if (typeof fuState !== 'undefined' && fuState.questions.length && document.getElementById('followUpOverlay').style.display !== 'none') {
-    renderFollowUpBody();
-  }
 };
 
 function applyTranslations() {
@@ -505,12 +448,6 @@ function applyTranslations() {
 const LS_TOKEN_KEY = 'punarvasu_patient_token';
 const LS_UID_KEY   = 'punarvasu_patient_uid';
 
-// Set once, at the top of the login IIFE below, if this page load's URL
-// carries a ?followup= param (a doctor-sent follow-up-question link). Read
-// by showPortalForUser() after a successful login to route straight to the
-// follow-up screen instead of the normal dashboard.
-let pendingFollowupId = null;
-
 let validatedThisPageLoad = false;
 let loginAttemptInProgress = false;
 
@@ -532,17 +469,6 @@ async function showPortalForUser(user) {
   loadAppointments();
   loadForum();
   applyTranslations();
-
-  // A doctor-sent follow-up-question link takes priority over the normal
-  // dashboard on this page load — the patient tapped that link specifically
-  // to answer these questions, so we show that screen immediately on top of
-  // (not instead of) the normal portal, which is still fully loaded
-  // underneath for when they're done.
-  if (pendingFollowupId) {
-    const idToLoad = pendingFollowupId;
-    pendingFollowupId = null; // only ever auto-open once per page load
-    openFollowUpScreen(idToLoad);
-  }
 }
 
 async function attemptTokenSignIn(token, uid) {
@@ -606,8 +532,6 @@ async function attemptTokenSignIn(token, uid) {
   const params   = new URLSearchParams(window.location.search);
   const urlToken = params.get('token');
   const urlUid   = params.get('uid');
-  const urlFollowup = params.get('followup'); // e.g. "-NxAbC123_-NxDeF456" (caseId_followUpKey)
-  if (urlFollowup) pendingFollowupId = urlFollowup;
 
   if (urlToken && urlUid) {
     window.history.replaceState({}, document.title, '/patient-portal.html');
@@ -840,125 +764,6 @@ window.sendCredentialsViaWhatsApp = async function() {
   }
 };
 
-// FOLLOW-UP QUESTIONS — Firebase layer.
-// Reads a doctor-generated, doctor-approved question set. Returns
-// {ok:false, reason:'permission'} vs {ok:false, reason:'missing'} instead
-// of collapsing both into null — a Firebase security-rules gap (patient
-// accounts not permitted to read under cases/) looks identical to a
-// genuinely bad link unless the error code is checked specifically.
-window.loadFollowUp = async function(caseId, followUpKey) {
-  try {
-    const snap = await get(ref(db, `cases/${caseId}/followUps/${followUpKey}`));
-    if (!snap.exists()) return { ok: false, reason: 'missing' };
-    return { ok: true, data: snap.val() };
-  } catch (e) {
-    console.error('[followup] load failed:', e);
-    const isPermission = e.code === 'PERMISSION_DENIED' || /permission/i.test(e.message || '');
-    return { ok: false, reason: isPermission ? 'permission' : 'error', errorMessage: e.message };
-  }
-};
-
-// Writes the patient's answers, marks the follow-up answered, and — this is
-// the part that closes the loop with case_analyzer_local.html — appends a
-// new rubric entry to cases/{caseId}/complaints for every question answered
-// "yes", using the exact rubricId/path the doctor's generated question was
-// built from. "No" and "skip" answers are recorded (so the doctor can see
-// what was asked and how it was answered) but never turn into a rubric,
-// since a "no" means that specific symptom does NOT apply.
-//
-// Read-modify-write on complaints rather than a Firebase transaction: a
-// single patient answering their own follow-up is never contended by a
-// second concurrent writer in practice, and this mirrors the same
-// read-then-update pattern already used for case revisions elsewhere.
-window.submitFollowUpAnswers = async function(caseId, followUpKey, questions, answers) {
-  try {
-    const answeredAt = Date.now();
-
-    // 1) Record the raw answers against the follow-up itself. answers is
-    // keyed by row INDEX (see fuState), not rubricId — the same rubric can
-    // legitimately appear more than once in a question set (e.g. if two
-    // follow-up rounds both touched a related complaint), and rubricId-keying
-    // would silently collapse those into one answer. Storage keeps the
-    // rubricId alongside each answer for readability in the raw data, but
-    // the object itself stays index-keyed.
-    const answersPayload = {};
-    questions.forEach((q, i) => {
-      const a = answers[i];
-      if (a && a.answer) {
-        answersPayload[i] = { rubricId: q.rubricId, answer: a.answer, detail: a.detail || '', answeredAt };
-      }
-    });
-    await update(ref(db, `cases/${caseId}/followUps/${followUpKey}`), {
-      status: 'answered',
-      answeredAt,
-      answers: answersPayload
-    });
-
-    // 2) Append newly-confirmed rubrics ("yes" answers) into the case's
-    // main complaints list, so they appear automatically next time the
-    // doctor opens this case in case_analyzer_local.html — no manual
-    // re-entry needed. Deduped against what's already there by rubricId —
-    // without this check, the same rubric could be appended again on a
-    // later follow-up round, which is exactly what caused duplicate rows
-    // (and a broken answered-count) in an earlier version of this feature.
-    const yesRubrics = questions.filter((q, i) => answers[i] && answers[i].answer === 'yes');
-
-    if (yesRubrics.length > 0) {
-      const caseSnap = await get(ref(db, `cases/${caseId}/complaints`));
-      const existing = caseSnap.exists() ? (caseSnap.val() || []) : [];
-      const existingArray = Array.isArray(existing) ? existing : Object.values(existing);
-      const existingIds = new Set(existingArray.map(e => Number(e.rubricId)));
-
-      const newRubrics = yesRubrics
-        .filter(q => !existingIds.has(Number(q.rubricId)))
-        .filter((q, i, arr) => arr.findIndex(x => Number(x.rubricId) === Number(q.rubricId)) === i) // also dedupe within this same batch, in case the question set itself had duplicates
-        .map(q => ({
-          rubricId: q.rubricId,
-          path: q.path,
-          remedyCount: 0, // recomputed correctly from the real dataset when case_analyzer_local.html reopens this case
-          source: 'followup'
-        }));
-
-      if (newRubrics.length > 0) {
-        await update(ref(db, `cases/${caseId}`), {
-          complaints: existingArray.concat(newRubrics)
-        });
-      }
-    }
-
-    // 3) Notify the doctor — same notifications/admin node the "new
-    // message" feature already uses, so it shows up in the existing Admin
-    // Panel notification list rather than a separate system. Carries
-    // caseId so Admin Panel can deep-link straight into this patient's
-    // case in case_analyzer_local.html.
-    try {
-      await push(ref(db, 'notifications/admin'), {
-        type: 'followup_answered',
-        patientName: currentUser.displayName || currentUser.email,
-        caseId,
-        answeredCount: yesRubrics.length,
-        totalCount: questions.length,
-        timestamp: Date.now(),
-        read: false
-      });
-    } catch (notifyErr) {
-      console.error('[followup] admin notification failed (non-fatal):', notifyErr);
-    }
-
-    // 4) Clear the dashboard mirror — this follow-up is answered now, so
-    // it should stop showing on the "Follow-up Questions" card.
-    try {
-      await remove(ref(db, `patients/${currentUser.uid}/pendingFollowUps/${followUpKey}`));
-    } catch (mirrorErr) {
-      console.error('[followup] could not clear dashboard mirror (non-fatal):', mirrorErr);
-    }
-
-    return { ok: true };
-  } catch (e) {
-    console.error('[followup] submit failed:', e);
-    return { ok: false, error: e.message };
-  }
-};
 
 
 
@@ -992,51 +797,7 @@ function loadDashboard() {
     }
   });
 
-  // FOLLOW-UP QUESTIONS — mirrors patients/{uid}/pendingFollowUps, written
-  // by case_analyzer_local.html whenever a follow-up is sent. This is what
-  // makes pending questions discoverable just by logging in normally, not
-  // only via the specific WhatsApp link — closing the gap where a patient
-  // who lost that link, or simply opened their portal directly, would
-  // otherwise never know follow-up questions existed for them.
-  onValue(ref(db, `patients/${currentUser.uid}/pendingFollowUps`), snap => {
-    const card = document.getElementById('dash-followups');
-    const list = document.getElementById('dash-followups-list');
-    if (!snap.exists()) { card.style.display = 'none'; return; }
-
-    const entries = Object.entries(snap.val()); // [key, {caseId, sentAt, questionCount}]
-    if (!entries.length) { card.style.display = 'none'; return; }
-
-    entries.sort((a, b) => (b[1].sentAt || 0) - (a[1].sentAt || 0));
-    card.style.display = 'block';
-    list.innerHTML = entries.map(([key, info]) => {
-      const dateStr = info.sentAt ? new Date(info.sentAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '';
-      return `
-        <div style="border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
-          <div>
-            <div style="font-size:13.5px;color:var(--ink);">${info.questionCount || '?'} question(s) from Dr. Tiwari</div>
-            <div style="font-size:11.5px;color:var(--ink3);">Sent ${dateStr}</div>
-          </div>
-          <div style="display:flex;gap:6px;flex-shrink:0;">
-            <button class="btn-primary" style="padding:6px 12px;font-size:12.5px;" onclick="openFollowUpScreen('${info.caseId}~${key}')">Answer</button>
-            <button class="btn-outline" style="padding:6px 10px;font-size:12.5px;" onclick="onSkipDashboardFollowUp('${info.caseId}','${key}')">Skip</button>
-          </div>
-        </div>`;
-    }).join('');
-  });
 }
-
-window.onSkipDashboardFollowUp = async function(caseId, followUpKey) {
-  if (!confirm('Skip this follow-up? Dr. Tiwari will see it was skipped, not answered.')) return;
-  try {
-    await update(ref(db, `cases/${caseId}/followUps/${followUpKey}`), {
-      status: 'skipped_by_patient',
-      skippedAt: Date.now()
-    });
-    await remove(ref(db, `patients/${currentUser.uid}/pendingFollowUps/${followUpKey}`));
-  } catch (e) {
-    alert('Could not skip — please try again. (' + e.message + ')');
-  }
-};
 
 // MESSAGES — 3-way rendering
 function loadMessages() {
@@ -1281,155 +1042,7 @@ window.requestNewConsultation = async function() {
   status.style.display = 'block';
 };
 
-// =================================================================
-// FOLLOW-UP QUESTIONS — doctor-generated, doctor-approved questions about
-// specific sub-rubrics of complaints the patient already selected during
-// intake. Reached only via a link the doctor sends after reviewing the
-// case in case_analyzer_local.html; never surfaced any other way.
-// =================================================================
-let fuState = { caseId: null, followUpKey: null, questions: [], answers: {} }; // answers: { rowIndex: {answer:'yes'|'no'|'skip', detail:''} } — keyed by array index, NOT rubricId, since the same rubric can legitimately appear more than once across a follow-up set and rubricId-keying silently collapses those into one answer
 
-// Separate from window.setLang (used by the dashboard's own language
-// toggle) because this overlay can appear immediately on login, before the
-// patient has seen or touched the dashboard underneath — it needs its own
-// self-contained language switch that only affects its own buttons and
-// re-renders only itself, not the whole portal.
-window.setFuLang = function(lang) {
-  currentLang = lang;
-  document.querySelectorAll('.fu-lang-btn').forEach(b => {
-    const active = b.dataset.fulang === lang;
-    b.classList.toggle('active', active);
-    b.style.background = active ? 'rgba(255,255,255,0.15)' : 'transparent';
-  });
-  if (fuState.questions.length) renderFollowUpBody();
-};
-
-window.openFollowUpScreen = async function(compositeId) {
-  // '~' is the current delimiter — safe because it's outside Firebase's
-  // push-key character set, so it can never appear inside a caseId or
-  // followUpKey and be mistaken for the separator. Falls back to the old
-  // '_' split only for links generated before this fix; that old format
-  // is inherently ambiguous for any case ID containing an underscore, so
-  // it won't always work, but there's no way to do better for links
-  // already sent before this fix.
-  let caseId, followUpKey;
-  const tildeIdx = compositeId.indexOf('~');
-  if (tildeIdx >= 1) {
-    caseId = compositeId.substring(0, tildeIdx);
-    followUpKey = compositeId.substring(tildeIdx + 1);
-  } else {
-    const sepIdx = compositeId.indexOf('_');
-    if (sepIdx < 1) { console.error('[followup] malformed id:', compositeId); return; }
-    caseId = compositeId.substring(0, sepIdx);
-    followUpKey = compositeId.substring(sepIdx + 1);
-  }
-
-  document.getElementById('followUpOverlay').style.display = 'flex';
-  const body = document.getElementById('followUpBody');
-  body.innerHTML = '<div class="fu-loading-msg">Loading your questions…</div>';
-
-  const result = await window.loadFollowUp(caseId, followUpKey);
-  if (!result.ok) {
-    if (result.reason === 'permission') {
-      // This is a Firebase security-rules gap, not a bad link — the
-      // patient's account isn't currently allowed to read this record. The
-      // patient can't fix this; only the doctor updating the database
-      // rules can. Say so plainly rather than implying the link is stale.
-      body.innerHTML = '<div class="fu-loading-msg">This link couldn\'t be opened due to an account permissions issue on our end — this isn\'t something wrong on your side. Please let the clinic know, and we\'ll get it fixed.</div>';
-    } else if (result.reason === 'missing') {
-      body.innerHTML = '<div class="fu-loading-msg">This link could not be found — it may be outdated. If you think this is a mistake, please message the clinic.</div>';
-    } else {
-      body.innerHTML = '<div class="fu-loading-msg">Something went wrong loading your questions. Please try again in a moment, or message the clinic if it persists.</div>';
-    }
-    return;
-  }
-  const data = result.data;
-  if (data.status === 'answered') {
-    body.innerHTML = '<div class="fu-thankyou"><div class="fu-thankyou-icon">✅</div><div>You already answered these questions — thank you! Dr. Tiwari has been notified.</div></div>';
-    return;
-  }
-
-  fuState = { caseId, followUpKey, questions: data.questions || [], answers: {} };
-  renderFollowUpBody();
-}
-
-window.renderFollowUpBody = function() {
-  const body = document.getElementById('followUpBody');
-  const total = fuState.questions.length;
-  const answeredCount = Object.keys(fuState.answers).filter(k => fuState.answers[k] && fuState.answers[k].answer).length;
-
-  const cards = fuState.questions.map((q, i) => {
-    const current = fuState.answers[i] || {};
-    return `
-      <div class="fu-q-card">
-        <div class="fu-q-text">${i + 1}. ${escFu(pickLang(q.question, currentLang))}</div>
-        <div class="fu-ans-row">
-          <button class="fu-ans-btn ${current.answer === 'yes' ? 'selected-yes' : ''}" onclick="onFuAnswer(${i},'yes')">Yes</button>
-          <button class="fu-ans-btn ${current.answer === 'no' ? 'selected-no' : ''}" onclick="onFuAnswer(${i},'no')">No</button>
-          <button class="fu-ans-btn ${current.answer === 'skip' ? 'selected-skip' : ''}" onclick="onFuAnswer(${i},'skip')">Not sure</button>
-        </div>
-        <input type="text" class="fu-detail-input" id="fu-detail-${i}" placeholder="Any extra detail? (optional)"
-          style="display:${current.answer === 'yes' ? 'block' : 'none'}"
-          value="${escFuAttr(current.detail || '')}"
-          onchange="onFuDetailChange(${i}, this.value)"/>
-      </div>`;
-  }).join('');
-
-  body.innerHTML = `
-    <div class="fu-progress">${answeredCount} of ${total} answered</div>
-    ${cards}
-    <button class="btn-primary" onclick="onSubmitFollowUp()">Submit my answers</button>
-    <button class="btn-outline" style="margin-top:8px;" onclick="document.getElementById('followUpOverlay').style.display='none';">I'll do this later</button>
-  `;
-}
-
-window.onFuAnswer = function(index, answer) {
-  if (!fuState.answers[index]) fuState.answers[index] = {};
-  fuState.answers[index].answer = answer;
-  renderFollowUpBody();
-}
-window.onFuDetailChange = function(index, value) {
-  if (!fuState.answers[index]) fuState.answers[index] = {};
-  fuState.answers[index].detail = value;
-}
-function escFu(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function escFuAttr(s) { return String(s || '').replace(/"/g, '&quot;'); }
-
-window.onSubmitFollowUp = async function() {
-  const total = fuState.questions.length;
-  const answeredCount = Object.keys(fuState.answers).filter(k => fuState.answers[k] && fuState.answers[k].answer).length;
-  if (answeredCount < total) {
-    if (!confirm(`You've answered ${answeredCount} of ${total}. Submit anyway?`)) return;
-  }
-
-  const body = document.getElementById('followUpBody');
-  body.innerHTML = '<div class="fu-loading-msg">Submitting…</div>';
-
-  const result = await window.submitFollowUpAnswers(fuState.caseId, fuState.followUpKey, fuState.questions, fuState.answers);
-  if (!result.ok) {
-    body.innerHTML = `<div class="fu-loading-msg">Something went wrong submitting your answers (${escFu(result.error || '')}). Please try again, or message the clinic directly.</div>
-      <button class="btn-primary" onclick="renderFollowUpBody()">← Back to questions</button>`;
-    return;
-  }
-
-  body.innerHTML = `<div class="fu-thankyou"><div class="fu-thankyou-icon">✅</div><div>Thank you — your answers have been sent to Dr. Tiwari.</div></div>
-    <button class="btn-primary" style="margin-top:16px;" onclick="document.getElementById('followUpOverlay').style.display='none';">Go to my portal</button>`;
-
-  // Best-effort email notification — same non-fatal pattern used for new
-  // patient messages. A failure here never blocks the (already-saved)
-  // submission from counting.
-  try {
-    if (window.emailjs) {
-      await emailjs.send('service_17kgkcs', 'template_mlyreeh', {
-        patient_email: currentUser.email,
-        message_preview: `Follow-up answers submitted (${answeredCount}/${total} questions)`,
-        message_time: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
-      });
-    }
-  } catch(e) {
-    console.error('EmailJS follow-up notification failed (non-fatal):', e);
-  }
-}
 
 
 // Picks the right language out of a Clinical Picture field. Handles both
