@@ -191,8 +191,7 @@ const state = {
                           // re-running the whole selection flow
   },
   lock: {
-    codeInput: '', error: '', isUnlocked: false, accessCodeUsed: '', busy: false,
-    recoveryMatches: null, recoveryPhone: ''
+    error: '', isUnlocked: false, busy: false
   },
   submit: { busy: false, error: '' },
   // Generals runs as a fixed sequence of topics. Each topic's questions all
@@ -262,22 +261,18 @@ async function bootFirstScreen() {
     state.data.connectorMap = {};
   }
 
-  // If a ?code=XXXXXXXX parameter is present in the URL (sent via the
-  // WhatsApp welcome message), pre-fill it into the lock screen's field so
-  // the patient just taps Unlock later — no typing needed. The flow stays
-  // basic details first, then the lock screen, then the tree-walker.
-  // If this code is one of the newer, patient-linked ones (generated per
-  // patient from admin-panel.html), do a read-only peek at it now — NOT a
-  // full validate-and-mark-used, just a check — so their name can already
-  // be sitting in the name field by the time they see the very first
-  // screen, instead of asking them to type something the clinic already knows.
-  const urlCode = new URLSearchParams(window.location.search).get('code');
-  if (urlCode) {
-    state.lock.codeInput = urlCode.trim().toUpperCase();
-    const fnReady = await waitForWindowFn('peekAccessCodePatient');
-    const peek = fnReady ? await window.peekAccessCodePatient(state.lock.codeInput) : null;
+  // If a ?uid=XXXX parameter is present in the URL (every invite link now
+  // carries the patient's own account id, not a code — no code exists
+  // anywhere in the system anymore), look up their name and any prior
+  // context now, before the first screen renders, so their name is already
+  // sitting in the name field instead of asking them to type something the
+  // clinic already knows.
+  const urlUid = new URLSearchParams(window.location.search).get('uid');
+  if (urlUid) {
+    const fnReady = await waitForWindowFn('peekPatientContext');
+    const peek = fnReady ? await window.peekPatientContext(urlUid) : null;
     if (peek) {
-      state.patient.uid = peek.uid;
+      state.patient.uid = urlUid;
       if (peek.name) state.patient.name = peek.name;
       if (peek.priorGenerals) state.patient.priorGenerals = peek.priorGenerals;
       if (peek.priorComplaints) state.patient.priorComplaints = peek.priorComplaints;
@@ -285,9 +280,8 @@ async function bootFirstScreen() {
     }
   }
   // A Follow-up Visit link already carries a known language preference
-  // forward — no need to ask again. A genuinely new patient (or an older
-  // code predating this) sees the language screen first, before anything
-  // else at all.
+  // forward — no need to ask again. A genuinely new patient sees the
+  // language screen first, before anything else at all.
   state.screen = state.patient.preferredLang ? 'intake' : 'language';
   render();
 
@@ -499,7 +493,7 @@ let draftSaveTimer = null;
 // anything meaningful to save yet.
 function scheduleDraftSaveIfChanged() {
   if (!state.patient.uid) return;
-  if (state.screen === 'intake' || state.screen === 'lock' || state.screen === 'loading' || state.screen === 'submitted') return;
+  if (state.screen === 'intake' || state.screen === 'loading' || state.screen === 'submitted') return;
   const snapshot = JSON.stringify(state.completeCase);
   if (snapshot === lastSavedDraftSnapshot) return; // nothing changed since the last save
   clearTimeout(draftSaveTimer);
@@ -571,7 +565,6 @@ function render() {
   if (state.screen === 'loading') app.innerHTML = renderLoading();
   else if (state.screen === 'language') app.innerHTML = renderLanguageScreen();
   else if (state.screen === 'intake') app.innerHTML = renderIntakeScreen();
-  else if (state.screen === 'lock') app.innerHTML = renderLockScreen();
   else if (state.screen === 'guide') app.innerHTML = renderGuideScreen();
   else if (state.screen === 'deliveryPref') app.innerHTML = renderDeliveryPrefScreen();
   else if (state.screen === 'chapters') app.innerHTML = renderChapterSelect();
@@ -583,7 +576,6 @@ function render() {
   else if (state.screen === 'submitted') app.innerHTML = renderSubmittedScreen();
 
   if (state.screen === 'intake') wireIntakeScreen();
-  if (state.screen === 'lock') wireLockScreen();
 
   maybeShowIntakeTour();
 }
@@ -732,9 +724,9 @@ window.addEventListener('resize', () => {
 });
 
 // The very first screen for a genuinely new patient — before basics, before
-// the code lock, before anything else. Carried forward on Follow-up Visit
-// links (see peekAccessCodePatient), so it's only ever asked once per
-// patient, not once per visit.
+// anything else. Carried forward on Follow-up Visit links (see
+// peekPatientContext), so it's only ever asked once per patient, not once
+// per visit.
 function renderLanguageScreen() {
   return `
     <div class="screen-pad" style="max-width:420px;margin:0 auto;padding:32px 20px;text-align:center;">
@@ -951,8 +943,8 @@ async function onIntakeContinue() {
   state.patient.accountBusy = true;
   render();
 
-  // If the access code already resolved to a known patient account (via
-  // peekAccessCodePatient() at boot), that uid is authoritative — it was
+  // If the ?uid= link already resolved to a known patient account (via
+  // peekPatientContext() at boot), that uid is authoritative — it was
   // generated by the doctor for this specific patient in admin-panel.html.
   // Do NOT re-derive it from whatever the patient just typed here: even a
   // small difference from the name/phone on file (nickname, extra space,
@@ -1024,7 +1016,7 @@ async function attemptAutoUnlock() {
           lastSavedDraftSnapshot = JSON.stringify(draft);
         }
       } catch (e) { console.error('[patient-intake] draft load failed:', e); }
-    }
+      }
     // Only run the warm-up if it genuinely hasn't been started (or
     // finished) yet within this same in-progress case — resuming mid-chart,
     // or having already answered generals, shouldn't show it again.
@@ -1037,176 +1029,11 @@ async function attemptAutoUnlock() {
     return;
   }
 
-  const code = (state.lock.codeInput || '').trim().toUpperCase();
-  if (code) {
-    const result = await window.checkAndUseAccessCode(code);
-    if (result.ok) {
-      state.lock.isUnlocked = true;
-      state.lock.accessCodeUsed = code;
-    }
-    // A missing, invalid, or unrecognized code no longer blocks anything
-    // below — it only ever mattered here for pulling in a known patient's
-    // prior context. Its absence simply means proceedPastUnlock() below
-    // runs without that extra context, not that entry gets refused.
-  }
-
-  // The wizard no longer requires a code to reach the case-taking flow —
-  // this used to fall through to the lock screen (manual entry / phone
-  // recovery) here instead. Removed deliberately, discussed and confirmed
-  // directly: any code that IS present and recognized above still pulls in
-  // prior context, but nothing here stops someone who arrives without one.
+  // No code involved at all anymore — prior context (if any) was already
+  // pulled in during bootFirstScreen()'s own peek, using the uid in the
+  // URL. Nothing here to check; just proceed.
   state.lock.isUnlocked = true;
   proceedPastUnlock();
-}
-
-// ── "Lost your code?" phone recovery ──
-// Deliberately thin: phoneIndex/{phone} (public, no auth needed — same
-// node the patient portal's own recovery already reads) gives back the
-// name(s) registered under that number. From there this reuses
-// ensurePatientAccount() — the exact same deterministic sign-in-or-create
-// logic already running everywhere else on this page — rather than
-// building a second, parallel account-matching mechanism. A phone shared
-// across a household can return more than one name; the patient just
-// picks which one is theirs.
-async function onIntakeRecoveryFind() {
-  const phoneField = document.getElementById('intakeRecoveryPhone');
-  const errEl = document.getElementById('intakeRecoveryErr');
-  const cleanPhone = (phoneField ? phoneField.value : '').replace(/[^0-9]/g, '').replace(/^0+/, '').slice(-10);
-  if (errEl) errEl.textContent = '';
-  if (!cleanPhone) {
-    if (errEl) errEl.textContent = 'Please enter a valid mobile number.';
-    return;
-  }
-  try {
-    const matches = await window.lookupPhoneIndexNames(cleanPhone);
-    if (!matches.length) {
-      if (errEl) errEl.textContent = 'No account found for this number. Please contact the clinic.';
-      return;
-    }
-    if (matches.length === 1) {
-      await intakeRecoverySignIn(matches[0].name, cleanPhone);
-    } else {
-      state.lock.recoveryMatches = matches;
-      state.lock.recoveryPhone = cleanPhone;
-      render();
-    }
-  } catch (e) {
-    if (errEl) errEl.textContent = 'Something went wrong. Please try again or contact the clinic.';
-  }
-}
-
-async function intakeRecoverySignIn(name, phone) {
-  const errEl = document.getElementById('intakeRecoveryErr');
-  try {
-    const uid = await window.ensurePatientAccount(name, phone);
-    state.patient.uid = uid;
-    state.patient.name = name;
-    state.patient.phone = phone;
-    await attemptAutoUnlock(); // now signed in — this will find the session and skip straight to chapters
-  } catch (e) {
-    if (errEl) errEl.textContent = 'Could not sign in — please contact the clinic for help.';
-  }
-}
-window.onIntakeRecoveryFind = onIntakeRecoveryFind;
-window.onIntakeRecoveryPick = function (idx) {
-  const m = state.lock.recoveryMatches[idx];
-  intakeRecoverySignIn(m.name, state.lock.recoveryPhone);
-};
-
-function renderLockScreen() {
-  return `
-    ${renderTopbar('Punarvasu Clinic', 'Unlock your symptom intake')}
-    <div class="body">
-      <button class="back-btn" onclick="state.screen='intake'; render();">&larr; Back</button>
-      <div class="lock-icon-wrap"><div class="lock-icon">🔒</div></div>
-      <h2 class="step-title" style="text-align:center">Unlock your symptom intake</h2>
-      <p class="step-sub" style="text-align:center">This session requires a coupon code or a one-time token.</p>
-
-      <div class="lock-card">
-        <div class="lock-card-title">Have a coupon code?</div>
-        <div class="coupon-row">
-          <input id="lockCodeField" type="text" placeholder="Enter coupon code" value="${escAttr(state.lock.codeInput)}" maxlength="20">
-          <button class="btn-apply" id="lockSubmitBtn" ${state.lock.busy ? 'disabled' : ''}>${state.lock.busy ? 'Checking…' : 'Apply'}</button>
-        </div>
-        <div class="coupon-err">${esc(state.lock.error)}</div>
-      </div>
-
-      <div class="lock-or">OR</div>
-
-      <div class="lock-card">
-        <div class="lock-card-title">Lost your code?</div>
-        ${state.lock.recoveryMatches ? `
-          <p style="font-size:13px;color:var(--ink2);margin-bottom:10px;">Which account is yours?</p>
-          ${state.lock.recoveryMatches.map((m, i) => `
-            <button class="btn-stub" style="display:block;width:100%;margin-bottom:6px;" onclick="onIntakeRecoveryPick(${i})">${esc(m.name)}</button>
-          `).join('')}
-        ` : `
-          <p style="font-size:13px;color:var(--ink2);margin-bottom:10px;">Enter the mobile number your account is registered under.</p>
-          <div class="coupon-row">
-            <input id="intakeRecoveryPhone" type="tel" placeholder="10-digit mobile number" maxlength="15">
-            <button class="btn-apply" id="intakeRecoveryBtn">Find</button>
-          </div>
-        `}
-        <div class="coupon-err" id="intakeRecoveryErr"></div>
-      </div>
-
-      <div class="lock-or">OR</div>
-
-      <div class="lock-card" style="text-align:center">
-        <div class="lock-card-title">Buy a one-time token</div>
-        <div class="token-price">₹—</div>
-        <div class="token-note">Online payment is coming soon.</div>
-        <button class="btn-stub" id="buyTokenBtn">Please contact the clinic for a code</button>
-      </div>
-    </div>
-  `;
-}
-
-function wireLockScreen() {
-  const codeF = document.getElementById('lockCodeField');
-  const btn = document.getElementById('lockSubmitBtn');
-  if (codeF) {
-    codeF.addEventListener('input', () => { state.lock.codeInput = codeF.value; });
-    codeF.addEventListener('keydown', (e) => { if (e.key === 'Enter') onLockSubmit(); });
-  }
-  if (btn) btn.addEventListener('click', onLockSubmit);
-  const recoveryBtn = document.getElementById('intakeRecoveryBtn');
-  if (recoveryBtn) recoveryBtn.addEventListener('click', onIntakeRecoveryFind);
-  const recoveryPhoneF = document.getElementById('intakeRecoveryPhone');
-  if (recoveryPhoneF) recoveryPhoneF.addEventListener('keydown', (e) => { if (e.key === 'Enter') onIntakeRecoveryFind(); });
-  const tokenBtn = document.getElementById('buyTokenBtn');
-  if (tokenBtn) {
-    tokenBtn.addEventListener('click', () => {
-      alert('Online payment is not yet available. Please contact the clinic directly for a coupon code.');
-    });
-  }
-}
-
-async function onLockSubmit() {
-  const code = (state.lock.codeInput || '').trim().toUpperCase();
-  if (!code) {
-    state.lock.error = 'Please enter a code.';
-    render();
-    return;
-  }
-  state.lock.busy = true;
-  state.lock.error = '';
-  render();
-
-  const result = await window.checkAndUseAccessCode(code);
-  state.lock.busy = false;
-
-  if (result.ok) {
-    state.lock.isUnlocked = true;
-    state.lock.accessCodeUsed = code;
-    proceedPastUnlock();
-  } else if (result.reason === 'used') {
-    state.lock.error = 'This code has already been used. Please contact the clinic for a new one.';
-    render();
-  } else {
-    state.lock.error = 'That code was not recognized. Please check and try again.';
-    render();
-  }
 }
 
 // ── GENERALS SEQUENCE — curated yes/no/skip questions, grounded in real rubrics ──
@@ -2697,7 +2524,6 @@ async function onSubmitCase() {
   const { accountBusy, priorGenerals, ...patientForSubmission } = state.patient; // accountBusy is transient UI state; priorGenerals is data carried IN from a past visit, not something a new case should save about itself — neither belongs in the saved record
   const payload = {
     patient: patientForSubmission,
-    accessCodeUsed: state.lock.accessCodeUsed,
     complaints: state.completeCase, // includes both complaint- and generals-sourced entries; generals ones carry source:'generals'
     submittedAt: state.submittedAtOriginal || new Date().toISOString(),
   };
@@ -2710,14 +2536,6 @@ async function onSubmitCase() {
     if (!isRevision) {
       state.submittedCaseId = result.caseId;
       state.submittedAtOriginal = payload.submittedAt;
-      // Guarded: accessCodeUsed defaults to '' and now genuinely can stay
-      // that way, since entry no longer requires a code at all. Calling
-      // this with an empty string would target accessCodes/ itself rather
-      // than one specific code — only call it when there's an actual code
-      // to mark.
-      if (state.lock.accessCodeUsed) {
-        window.markAccessCodeUsed(state.lock.accessCodeUsed); // kept as a historical record only — nothing gates on it anymore
-      }
     }
     if (reviewExpiryChecker) { clearInterval(reviewExpiryChecker); reviewExpiryChecker = null; }
     state.reviewMode = 'normal';
@@ -2967,71 +2785,29 @@ function escAttr(s) {
     }
   };
 
-  // Validates a code WITHOUT burning it — the code is now marked used only
-  // at actual case submission (see markAccessCodeUsed, called from
-  // onSubmitCase). Previously this burned the code the instant it was
-  // validated, which meant any interruption after unlocking but before
-  // submitting — closed browser, lost signal, app crash — permanently
-  // locked the patient out of their only working link, even though they'd
-  // completed nothing. Since draft progress already autosaves to
-  // patients/{uid}/draftCase and reloads on return, the only thing actually
-  // stopping a patient from resuming was this premature burn — not lost
-  // progress. Delaying the burn to submission fixes that directly: the same
-  // link now keeps working, with their in-progress selections intact,
-  // right up until they actually submit.
-  window.checkAndUseAccessCode = async function (code) {
+  // Reads a patient's name, language preference, and any staged follow-up
+  // context directly by uid — no code involved anywhere in this lookup.
+  // One read: pendingIntakeContext/{uid}, written by admin-panel.html
+  // (both npGenerate and startFollowUpVisit) specifically so this can be
+  // read here — before the patient has signed into anything, which rules
+  // out patients/{uid} itself, since that path requires authentication to
+  // read. A brand-new patient with no prior complaints just gets a name and
+  // nothing else; a patient this uid doesn't match yet (e.g. this link
+  // hasn't been generated, or is stale) gets null — the wizard runs exactly
+  // as it does for a first-ever visit either way.
+  window.peekPatientContext = async function (uid) {
     try {
-      const codeRef = ref(db, 'accessCodes/' + code);
-      const snap = await get(codeRef);
-      if (!snap.exists()) return { ok: false, reason: 'invalid' };
-      const data = snap.val();
-      // Deliberately no longer checking data.used here. A code now stays
-      // valid indefinitely once issued, rather than dying after the first
-      // person submits with it — confirmed directly, alongside removing
-      // the code requirement from entry entirely (see attemptAutoUnlock).
-      // markAccessCodeUsed() below is still called at submission and still
-      // sets the field, purely as a historical "was this ever used" record
-      // — nothing reads it as a gate anymore.
-      return { ok: true, patientUid: data.patientUid || null, patientName: data.patientName || null };
-    } catch (e) {
-      console.error('[patient-intake] access code check failed:', e);
-      return { ok: false, reason: 'error' };
-    }
-  };
-
-  // Burns the code — called once, from onSubmitCase(), only on the actual
-  // first successful submission (never on a revision resubmit, which reuses
-  // an already-submitted case and would otherwise try to burn an
-  // already-burned code). Failure here is logged but deliberately
-  // non-fatal: the case has already been saved successfully by this point,
-  // and a patient should never see their real submission fail over a
-  // bookkeeping write.
-  window.markAccessCodeUsed = async function (code) {
-    if (!code) return;
-    try {
-      await update(ref(db, 'accessCodes/' + code), { used: true });
-    } catch (e) {
-      console.error('[patient-intake] marking access code used failed (non-fatal):', e);
-    }
-  };
-
-  // Read-only "peek" at an access code — checks whether it's linked to a
-  // patient WITHOUT marking it used. Called at boot, before the intake
-  // screen even renders, so the name can be pre-filled on that very first
-  // screen. Deliberately does NOT call update()/mark used — burning the
-  // code just from the page loading (e.g. if WhatsApp's own link-preview
-  // crawler fetches the URL before the patient ever taps it) would lock
-  // them out before they've done anything.
-  window.peekAccessCodePatient = async function (code) {
-    try {
-      const snap = await get(ref(db, 'accessCodes/' + code));
+      const snap = await get(ref(db, 'pendingIntakeContext/' + uid));
       if (!snap.exists()) return null;
-      const data = snap.val();
-      if (data.used === true) return null; // don't reveal info about an already-used code
-      if (!data.patientUid) return null;
-      return { uid: data.patientUid, name: data.patientName || null, priorGenerals: data.priorGenerals || null, priorComplaints: data.priorComplaints || null };
+      const ctx = snap.val();
+      return {
+        name: ctx.name || null,
+        preferredLang: ctx.preferredLang || null,
+        priorGenerals: ctx.priorGenerals || null,
+        priorComplaints: ctx.priorComplaints || null
+      };
     } catch (e) {
-      console.error('[patient-intake] access code peek failed:', e);
+      console.error('[patient-intake] patient context peek failed:', e);
       return null;
     }
   };
@@ -3103,7 +2879,7 @@ function escAttr(s) {
 // Called directly here, not via a DOMContentLoaded listener — this line
 // runs as soon as this module's own top-level code finishes, which is
 // exactly the point at which everything bootFirstScreen() needs (Firebase,
-// peekAccessCodePatient, etc., all defined above in this same module) is
+// peekPatientContext, etc., all defined above in this same module) is
 // guaranteed ready, without waiting on anything else on the page.
 // window.bootFirstScreen — explicit, not a bare reference — since
 // bootFirstScreen is declared in the earlier classic script, not this
