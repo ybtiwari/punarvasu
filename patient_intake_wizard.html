@@ -472,7 +472,16 @@ function getDisplayText(chapter, path, kentToken) {
 // Core primitive — validated against live data before this build began.
 // Given a partial path (array of tokens starting with the chapter), returns:
 //   exactMatchRubric — the rubric AT exactly this path, if one exists
-//   nextOptions      — { token: { rubricCount, totalRemedies, sampleId, samplePath } }
+//   nextOptions      — { token: { rubricCount, totalRemedies, sampleId, samplePath, ownRubricId?, ownRubricPath?, ownRemedyCount? } }
+// ownRubricId/ownRubricPath/ownRemedyCount are set on a sibling whenever
+// that sibling, taken exactly as-is (nothing appended beyond it), is ITSELF
+// a real rubric in the data — completely independent of whether it ALSO has
+// further children of its own. In Kent's Repertory a parent term is very
+// often also a valid rubric in its own right ("Head, pain" carries its own
+// remedies even though "Head, pain, morning" etc. exist too) — this is what
+// lets a sibling that still branches further get its own quick-add, not
+// just the narrower case below where a branch happens to resolve to
+// exactly one descendant several levels down.
 function getNextOptions(pathTokens) {
   const chapter = pathTokens[0];
   const bucket = (state.data.chaptersBucketed || {})[chapter] || []; // guarded: may not be ready yet if background loading hasn't finished
@@ -500,6 +509,11 @@ function getNextOptions(pathTokens) {
     }
     nextOptions[nextToken].rubricCount++;
     nextOptions[nextToken].totalRemedies += remedies.length;
+    if (rParts.length === prefixLower.length + 1) {
+      nextOptions[nextToken].ownRubricId = id;
+      nextOptions[nextToken].ownRubricPath = path;
+      nextOptions[nextToken].ownRemedyCount = remedies.length;
+    }
   }
 
   return { exactMatchRubric, nextOptions };
@@ -2159,20 +2173,27 @@ function renderWalkStep() {
     const inner = opts.map(([token, info]) => {
       const optPath = pathTokens.concat([token]).join(', ');
       const disp = getDisplayText(chapter, optPath, token);
-      // A sibling with exactly one rubric beneath it (rubricCount === 1) can be
-      // added directly — info.sampleId/samplePath is that one rubric, already
-      // resolved by getNextOptions itself, since it's the only rubric that
-      // ever set those fields for this token. This is what lets more than one
-      // sibling under the same parent be added without leaving this screen —
-      // previously the only way to add a second one was to drill in, confirm,
-      // back out, and drill into a different sibling from scratch. Tapping the
-      // card elsewhere still drills in exactly as before, unchanged, for anyone
-      // who prefers to see the full confirmation screen first. A sibling that
-      // still branches further (rubricCount > 1) has no single answer yet, so
-      // it keeps the existing drill-in-only behavior.
-      const alreadyAdded = info.rubricCount === 1 && state.completeCase.some(c => c.rubricId === info.sampleId);
-      const quickAddHtml = info.rubricCount === 1
-        ? `<button class="quick-add-btn ${alreadyAdded ? 'added' : ''}" onclick="event.stopPropagation(); onQuickAddOption('${escAttr(info.sampleId)}', '${escAttr(info.samplePath)}', ${info.totalRemedies})">${alreadyAdded ? '✓ Added · जोड़ा गया' : '+ Add · जोड़ें'}</button>`
+      // Two independent ways a sibling can be quick-added without leaving
+      // this screen — see getNextOptions() for the full reasoning:
+      //   1. It's itself a real rubric (ownRubricId), whether or not it
+      //      ALSO has further children of its own — by far the common case,
+      //      since a parent term is usually also a valid rubric in Kent's.
+      //   2. It isn't itself a rubric, but everything beneath it resolves
+      //      to exactly one specific descendant several levels down
+      //      (rubricCount === 1, via sampleId) — the original, narrower
+      //      case this button started with, kept as a fallback for when
+      //      case 1 doesn't apply.
+      // Anything else (still branches into more than one distinct rubric,
+      // and isn't a rubric on its own) has no single answer yet, so it
+      // keeps the plain drill-in-only behavior, unchanged.
+      const quickAdd = info.ownRubricId
+        ? { id: info.ownRubricId, path: info.ownRubricPath, remedyCount: info.ownRemedyCount }
+        : info.rubricCount === 1
+        ? { id: info.sampleId, path: info.samplePath, remedyCount: info.totalRemedies }
+        : null;
+      const alreadyAdded = !!quickAdd && state.completeCase.some(c => String(c.rubricId) === String(quickAdd.id));
+      const quickAddHtml = quickAdd
+        ? `<button class="quick-add-btn ${alreadyAdded ? 'added' : ''}" onclick="event.stopPropagation(); onQuickAddOption('${escAttr(quickAdd.id)}', '${escAttr(quickAdd.path)}', ${quickAdd.remedyCount})">${alreadyAdded ? '✓ Added · जोड़ा गया' : '+ Add · जोड़ें'}</button>`
         : '';
       return `<div class="opt-card" onclick="onOptionPick('${escAttr(token)}')">
         ${renderTrilingualBlock(disp, info.rubricCount)}
@@ -2459,8 +2480,14 @@ function onOptionPick(token) {
 // see the comment where quickAddHtml is built for the full reasoning. A
 // second tap on an already-added one removes it again, same as unchecking
 // a box, rather than needing to go find it later on the review screen.
+// String(...) on both sides of the comparison: rubricId arrives here as a
+// string (everything passed through an onclick="..." attribute becomes
+// one, regardless of the original type), but a rubric added some other
+// way — the Generals flow pushes its id straight from the data, unconverted
+// — may still be a number. Comparing loosely here is what makes toggling
+// correct regardless of which path first added it.
 function onQuickAddOption(rubricId, path, remedyCount) {
-  const idx = state.completeCase.findIndex(c => c.rubricId === rubricId);
+  const idx = state.completeCase.findIndex(c => String(c.rubricId) === String(rubricId));
   if (idx !== -1) {
     state.completeCase.splice(idx, 1);
   } else {
