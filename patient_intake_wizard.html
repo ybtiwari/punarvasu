@@ -282,17 +282,43 @@ async function bootFirstScreen() {
   // sitting in the name field instead of asking them to type something the
   // clinic already knows.
   const urlUid = new URLSearchParams(window.location.search).get('uid');
+  let skipDetailsConfirm = false;
   if (urlUid) {
     const fnReady = await waitForWindowFn('peekPatientContext');
     const peek = fnReady ? await window.peekPatientContext(urlUid) : null;
     if (peek) {
       state.patient.uid = urlUid;
       if (peek.name) state.patient.name = peek.name;
+      if (peek.phone) state.patient.phone = peek.phone;
+      if (peek.age) state.patient.age = peek.age;
+      if (peek.sex) state.patient.sex = peek.sex;
       if (peek.priorGenerals) state.patient.priorGenerals = peek.priorGenerals;
       if (peek.priorComplaints) state.patient.priorComplaints = peek.priorComplaints;
       if (peek.preferredLang) state.patient.preferredLang = peek.preferredLang;
+      // Set only by case_analyzer_local.html's own Follow-up Visit / New
+      // Consultation (the doctor filling this in directly, on this
+      // computer) — never by an ordinary WhatsApp invite link a patient
+      // opens on their own phone. Those still land on the screen below
+      // normally, pre-filled but visible, so the patient always gets a
+      // chance to notice and correct anything that's changed.
+      skipDetailsConfirm = !!peek.skipDetailsConfirm;
     }
   }
+
+  // If the doctor has already supplied everything this screen would ask for
+  // — the same four fields onIntakeContinue() itself requires below — skip
+  // straight past both the language screen and "Tell us about yourself"
+  // rather than asking them to retype what this patient's own record
+  // already has. onIntakeContinue() reads purely from state.patient (never
+  // the DOM), so calling it here, before that screen has ever rendered,
+  // runs exactly the same account-linking, draft-resume and follow-up-vs-
+  // new-consultation branching a manual Continue click would have.
+  if (skipDetailsConfirm && state.patient.name.trim() && state.patient.phone.trim() && state.patient.age && state.patient.sex) {
+    setTimeout(loadRepertoryData, 0);
+    await onIntakeContinue();
+    return;
+  }
+
   // A Follow-up Visit link already carries a known language preference
   // forward — no need to ask again. A genuinely new patient sees the
   // language screen first, before anything else at all.
