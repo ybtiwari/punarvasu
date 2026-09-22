@@ -152,9 +152,15 @@ p.step-sub{font-size:13px;color:var(--ink3);margin-bottom:14px}
 .connector-box .label{font-size:11px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px}
 .connector-box p{font-size:13.5px;color:var(--ink2);line-height:1.4}
 input[type=text]{font-family:var(--font)}
+#caseAnalyzerBackBtn{position:fixed;top:10px;left:10px;z-index:500;display:none;
+  background:var(--white);color:var(--ink2);border:1px solid var(--border);border-radius:20px;
+  padding:7px 14px 7px 12px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;
+  box-shadow:0 1px 4px rgba(0,0,0,0.08);}
+#caseAnalyzerBackBtn:hover{background:var(--cream);}
 </style>
 </head>
 <body>
+<button type="button" id="caseAnalyzerBackBtn" onclick="onBackToCaseAnalyzer()">&larr; Back to Case Analyzer</button>
 <div class="app" id="app">
   <div class="loading">
     <p style="font-size:14px;color:var(--ink3)">Loading repertory data…</p>
@@ -302,6 +308,16 @@ async function bootFirstScreen() {
       // normally, pre-filled but visible, so the patient always gets a
       // chance to notice and correct anything that's changed.
       skipDetailsConfirm = !!peek.skipDetailsConfirm;
+      // openedFromCaseAnalyzer + returnUrl: the doctor's own case-analyzer
+      // tab this session came from, on this machine — never present for a
+      // patient's own WhatsApp-opened session, which has no "back" to
+      // offer. See onBackToCaseAnalyzer() for why this can't just be a
+      // normal history.back().
+      if (peek.openedFromCaseAnalyzer && peek.returnUrl) {
+        caseAnalyzerReturnUrl = peek.returnUrl;
+        const backBtn = document.getElementById('caseAnalyzerBackBtn');
+        if (backBtn) backBtn.style.display = 'block';
+      }
     }
   }
 
@@ -571,6 +587,7 @@ function scheduleDraftSaveIfChanged() {
 // visible ← Back button already uses — so the physical button now does
 // the same safe thing the on-screen one does, instead of leaving the page.
 let backGuardArmed = false;
+let caseAnalyzerReturnUrl = null; // set at boot from pendingIntakeContext's returnUrl — see bootFirstScreen()
 function armBackGuard() {
   if (backGuardArmed) return;
   backGuardArmed = true;
@@ -590,6 +607,22 @@ window.addEventListener('popstate', function () {
   else if (state.editingCaseIndex !== null && typeof onCancelEdit === 'function') onCancelEdit();
   else render(); // no specific handler for this screen — at minimum, stay put rather than leaving
 });
+
+// The visible ← Back to Case Analyzer button (see bootFirstScreen()) is a
+// DELIBERATE exit, not an accidental one — the opposite of what the guard
+// above exists to catch — so it deliberately does NOT go through
+// history.back()/history.go(): that would just trigger the same popstate
+// listener and get swallowed like any other back-press once the guard is
+// armed, going nowhere. Assigning location.href directly is a normal,
+// active navigation, which popstate has no power over, and it force-saves
+// first for the same reason the guard itself does: don't lose progress on
+// the way out.
+window.onBackToCaseAnalyzer = function () {
+  if (state.patient.uid && window.saveDraftCase) {
+    window.saveDraftCase(state.patient.uid, state.completeCase);
+  }
+  if (caseAnalyzerReturnUrl) window.location.href = caseAnalyzerReturnUrl;
+};
 
 function render() {
   if (state.reviewMode === 'postSubmission' && state.screen !== 'submitted') {
