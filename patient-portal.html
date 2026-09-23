@@ -749,7 +749,7 @@ window.sendCredentialsViaWhatsApp = async function() {
     const portalUrl = 'https://punarvasu.clinic/patient-portal.html?token=' + encodeURIComponent(token) + '&uid=' + currentUser.uid;
     const msg = `Here is your Punarvasu Clinic patient portal link:\n${portalUrl}\n\nKeep this safe — it signs you straight in.`;
     const waUrl = `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(msg)}`;
-    window.open(waUrl, '_blank');
+    window.open(waUrl, 'punarvasuWhatsApp'); // FIXED-TABS: reuse one WhatsApp tab
   } catch (err) {
     alert('Something went wrong preparing your login link. Please try again or contact the clinic.');
   }
