@@ -142,6 +142,7 @@ p.step-sub{font-size:13px;color:var(--ink3);margin-bottom:14px}
 .rating-buttons{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
 .rating-btn{flex:1;min-width:52px;padding:10px 4px;border-radius:8px;border:1.5px solid var(--border);background:var(--white);font-size:13px;font-weight:600;cursor:pointer;color:var(--ink2)}
 .rating-btn.active{background:var(--teal);border-color:var(--teal);color:var(--white)}
+.rating-btn.worse.active{background:#C8600A;border-color:#C8600A} /* WIZARD-PROGRESS */
 .empty-state{text-align:center;padding:40px 16px;color:var(--ink3)}
 .loading{text-align:center;padding:60px 16px}
 .load-bar{width:220px;height:4px;background:var(--border);border-radius:2px;margin:16px auto 0;overflow:hidden}
@@ -187,8 +188,8 @@ const state = {
   // Follow-up specific — all reset per visit, none of this persists into a
   // brand-new patient's flow at all (see proceedPastUnlock, which only ever
   // sets these when priorComplaints exist in the first place).
-  followUpRatings: {},         // { rubricId: 0|25|50|75|100 } — one entry per chief complaint being rated this visit
-  followUpOverallRating: null, // 0|25|50|75|100 — separate from the per-complaint ratings above
+  followUpRatings: {},         // WIZARD-PROGRESS: { rubricId: -1|0|25|50|75|100 } vs the START of the consultation (-1 = worse, 100 = resolved)
+  followUpOverallRating: null, // same scale — separate from the per-complaint ratings above
   originalPriorComplaints: [], // untouched snapshot of what the patient started this visit with, kept separate from
                                 // completeCase (which gets edited) specifically so the changes-summary screen can diff against it
   reviewSessionExpiresAt: null, // timestamp; post-submission review access is only live until this, resetting on every interaction
@@ -2259,28 +2260,37 @@ function renderConnectorPrompt() {
 // established for extracting them from a submitted case in the first
 // place: source:'generals' tags a generals-sequence entry, its absence
 // means it came from the main chapter-walking flow.
+// WIZARD-PROGRESS: rated against the START of the consultation ("when you
+// first came for this problem"), not the previous visit, on the same scale
+// as the doctor's in-clinic follow-up screen in case_analyzer_local.html —
+// so both feed that tool's consultation completion %:
+//   -1 Worse · 0 Same · 25 · 50 · 75 · 100 Resolved
+// English or Hindi, following the language the patient chose.
+const FOLLOWUP_SCALE = [
+  { v: -1, en: 'Worse', hi: 'बढ़ गई' },
+  { v: 0, en: 'Same', hi: 'वैसी ही' },
+  { v: 25, en: '25%', hi: '25%' },
+  { v: 50, en: '50%', hi: '50%' },
+  { v: 75, en: '75%', hi: '75%' },
+  { v: 100, en: 'Resolved', hi: 'पूरी ठीक' }
+];
 function renderFollowUpRatingScreen() {
+  const hi = state.patient.preferredLang === 'hi';
   const chiefComplaints = state.completeCase.filter(c => c.source !== 'generals');
-  const RATING_OPTIONS = [0, 25, 50, 75, 100];
+  const scaleButtons = (current, handler) => FOLLOWUP_SCALE.map(o => `
+      <button class="rating-btn ${current === o.v ? 'active' : ''}${o.v === -1 ? ' worse' : ''}" onclick="${handler(o.v)}">${hi ? o.hi : o.en}</button>
+    `).join('');
 
   const complaintRows = chiefComplaints.map(c => {
     const chapter = c.path.split(',')[0].trim();
     const disp = getDisplayText(chapter, c.path, c.path.split(',').map(s => s.trim()).pop());
-    const current = state.followUpRatings[c.rubricId];
-    const buttons = RATING_OPTIONS.map(pct => `
-      <button class="rating-btn ${current === pct ? 'active' : ''}" onclick="onSetComplaintRating('${c.rubricId}', ${pct})">${pct}%</button>
-    `).join('');
     return `
       <div class="rating-row">
         ${renderTrilingualBlock(disp)}
-        <div class="rating-buttons">${buttons}</div>
+        <div class="rating-buttons">${scaleButtons(state.followUpRatings[c.rubricId], v => `onSetComplaintRating('${c.rubricId}', ${v})`)}</div>
       </div>
     `;
   }).join('');
-
-  const overallButtons = RATING_OPTIONS.map(pct => `
-    <button class="rating-btn ${state.followUpOverallRating === pct ? 'active' : ''}" onclick="onSetOverallRating(${pct})">${pct}%</button>
-  `).join('');
 
   // Continue stays disabled until every complaint AND the overall question
   // both have an answer — not just some of them, so a rushed tap-through
@@ -2289,18 +2299,21 @@ function renderFollowUpRatingScreen() {
     && state.followUpOverallRating !== null;
 
   return `
-    ${renderTopbar('How are you feeling?', 'Rate your improvement since last visit')}
+    ${renderTopbar(hi ? 'आप कैसा महसूस कर रहे हैं?' : 'How are you feeling?',
+                   hi ? 'पहली बार आने के समय की तुलना में' : 'Compared to when you first came to us')}
     <div class="body">
-      <h2 class="step-title">Your main complaints from last visit</h2>
-      <p class="step-sub">For each one, how much relief or improvement have you felt since then?</p>
-      ${complaintRows || '<div class="empty-state">No chief complaints found from last visit.</div>'}
+      <h2 class="step-title">${hi ? 'आपकी मुख्य तकलीफ़ें' : 'Your main complaints'}</h2>
+      <p class="step-sub">${hi
+        ? 'हर एक के लिए: जब आप पहली बार इस तकलीफ़ के लिए आए थे, उसकी तुलना में अब यह कैसी है? (% = कितना आराम मिला)'
+        : 'For each one: compared to when you first came to us for this problem, how is it now? (% = how much better)'}</p>
+      ${complaintRows || `<div class="empty-state">${hi ? 'पिछली बार की कोई मुख्य तकलीफ़ नहीं मिली।' : 'No chief complaints found from last visit.'}</div>`}
       <div class="rating-row rating-row-overall">
-        <div class="kent" style="font-weight:600;">Overall, how much better do you feel compared to before?</div>
-        <div class="rating-buttons">${overallButtons}</div>
+        <div class="kent" style="font-weight:600;">${hi ? 'कुल मिलाकर, पहली बार आने के समय की तुलना में अब आप कैसा महसूस कर रहे हैं?' : 'Overall, how do you feel now compared to when you first came?'}</div>
+        <div class="rating-buttons">${scaleButtons(state.followUpOverallRating, v => `onSetOverallRating(${v})`)}</div>
       </div>
     </div>
     <div class="footer-bar">
-      <button class="btn-primary" onclick="onContinueFromRating()" ${allRated ? '' : 'disabled'}>Continue →</button>
+      <button class="btn-primary" onclick="onContinueFromRating()" ${allRated ? '' : 'disabled'}>${hi ? 'आगे बढ़ें →' : 'Continue →'}</button>
     </div>
   `;
 }
@@ -2801,8 +2814,12 @@ async function onSubmitCase() {
       const sessionRecord = {
         date: payload.submittedAt,
         caseId: state.submittedCaseId,
-        chiefComplaintRatings: state.followUpRatings,
-        overallRating: state.followUpOverallRating,
+        // WIZARD-PROGRESS: new-basis fields, same as case_analyzer_local.html's
+        // in-clinic follow-up. The old chiefComplaintRatings/overallRating
+        // meant "vs previous visit" and are no longer written.
+        ratingBasis: 'consultationStart',
+        progress: state.followUpRatings,
+        overallProgress: state.followUpOverallRating,
         addedRubrics: state.completeCase.filter(c => !originalIds.has(c.rubricId)),
         removedRubrics: state.originalPriorComplaints.filter(c => !currentIds.has(c.rubricId))
       };
