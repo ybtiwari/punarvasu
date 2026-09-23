@@ -944,6 +944,34 @@ window.onDeliveryPrefContinue = function () {
 // buried partway through the same first-visit sequence.
 // A genuinely new patient (nothing carried forward yet) goes through the
 // guide screen as before.
+// NO-DUPLICATES: one entry per rubric. dedupeCaseEntries() cleans a list
+// read from an earlier visit or a saved draft (first position kept, as a
+// chief complaint if either copy was one); caseHasRubric() guards every add.
+function caseHasRubric(rubricId) {
+  return state.completeCase.some(c => String(c.rubricId) === String(rubricId));
+}
+function dedupeCaseEntries(list) {
+  const out = [], at = new Map();
+  (list || []).forEach(c => {
+    if (!c) return;
+    const k = String(c.rubricId);
+    if (!at.has(k)) { at.set(k, out.length); out.push(c); return; }
+    const i = at.get(k);
+    if (out[i].source === 'generals' && c.source !== 'generals') { out[i] = { ...out[i] }; delete out[i].source; }
+  });
+  return out;
+}
+// A generals answer whose rubric is already in the list (usually chosen as a
+// complaint) is simply not added again — silently: the patient only answered
+// a yes/no question, and the symptom is already recorded.
+function pushGeneralIfNew(rubric) {
+  if (!rubric || caseHasRubric(rubric.id)) return;
+  state.completeCase.push({ rubricId: rubric.id, path: rubric.path, remedyCount: rubric.remedyCount, source: 'generals' });
+}
+function alertAlreadyInList() {
+  alert(state.patient.preferredLang === 'hi' ? 'यह लक्षण पहले से आपकी सूची में है।' : 'This symptom is already in your list.');
+}
+
 function proceedPastUnlock() {
   if (!state.patient.preferredLang) {
     // Shouldn't normally happen (language screen runs before this point
@@ -951,8 +979,9 @@ function proceedPastUnlock() {
     state.patient.preferredLang = 'en';
   }
   if (state.patient.priorComplaints && state.patient.priorComplaints.length) {
-    state.completeCase = state.patient.priorComplaints.map(c => ({ ...c })); // copy, not the original reference
-    state.originalPriorComplaints = state.patient.priorComplaints.map(c => ({ ...c })); // separate, untouched copy — completeCase gets edited, this doesn't
+    const prior = dedupeCaseEntries(state.patient.priorComplaints); // NO-DUPLICATES: an earlier visit's repeats aren't carried forward
+    state.completeCase = prior.map(c => ({ ...c })); // copy, not the original reference
+    state.originalPriorComplaints = prior.map(c => ({ ...c })); // separate, untouched copy — completeCase gets edited, this doesn't
     state.isFollowUpReview = true;
     state.screen = 'followUpRating';
     render();
@@ -1069,7 +1098,7 @@ async function onIntakeContinue() {
     try {
       const draft = await window.loadDraftCase(state.patient.uid);
       if (draft && draft.length) {
-        state.completeCase = draft;
+        state.completeCase = dedupeCaseEntries(draft); // NO-DUPLICATES
         lastSavedDraftSnapshot = JSON.stringify(draft); // so the very next render doesn't immediately re-save what we just loaded
       }
     } catch (e) {
@@ -1104,7 +1133,7 @@ async function attemptAutoUnlock() {
       try {
         const draft = await window.loadDraftCase(state.patient.uid);
         if (draft && draft.length) {
-          state.completeCase = draft;
+          state.completeCase = dedupeCaseEntries(draft); // NO-DUPLICATES
           lastSavedDraftSnapshot = JSON.stringify(draft);
         }
       } catch (e) { console.error('[patient-intake] draft load failed:', e); }
@@ -1342,12 +1371,12 @@ function seedCompleteCaseFromPrefill(answers, order) {
     const item = topic.items[itemIdx];
     const rubric = findRubricByExactPath(topic.pathTokens[0], item.path);
     if (rubric && !state.completeCase.some(e => e.source === 'generals' && e.path === item.path)) {
-      state.completeCase.push({ rubricId: rubric.id, path: rubric.path, remedyCount: rubric.remedyCount, source: 'generals' });
+      pushGeneralIfNew(rubric); // NO-DUPLICATES
     }
     (ans.detailPaths || []).forEach(p => {
       if (!state.completeCase.some(e => e.source === 'generals' && e.path === p)) {
         const r = findRubricByExactPath(topic.pathTokens[0], p);
-        if (r) state.completeCase.push({ rubricId: r.id, path: r.path, remedyCount: r.remedyCount, source: 'generals' });
+        pushGeneralIfNew(r); // NO-DUPLICATES
       }
     });
   });
@@ -1406,7 +1435,7 @@ function finalizeGeneralsItemDetail() {
     const already = state.completeCase.some(e => e.source === 'generals' && e.path === p);
     if (!already) {
       const rubric = findRubricByExactPath(topic.pathTokens[0], p);
-      if (rubric) state.completeCase.push({ rubricId: rubric.id, path: rubric.path, remedyCount: rubric.remedyCount, source: 'generals' });
+      pushGeneralIfNew(rubric); // NO-DUPLICATES
     }
   }
 }
@@ -1444,7 +1473,7 @@ function onGeneralsAnswer(choice) {
   if (choice === 'yes') {
     const rubric = findRubricByExactPath(topic.pathTokens[0], item.path);
     if (rubric) {
-      state.completeCase.push({ rubricId: rubric.id, path: rubric.path, remedyCount: rubric.remedyCount, source: 'generals' });
+      pushGeneralIfNew(rubric); // NO-DUPLICATES
     }
     hasDetail = getRealDetailChildren(topic.pathTokens[0], item.path, item.childFilter).length > 0;
   }
@@ -1479,7 +1508,7 @@ function onGeneralsSelectToggle(optionIndex) {
     selected.push(optionIndex);
     if (option.path) {
       const rubric = findRubricByExactPath(topic.pathTokens[0], option.path);
-      if (rubric) state.completeCase.push({ rubricId: rubric.id, path: rubric.path, remedyCount: rubric.remedyCount, source: 'generals' });
+      pushGeneralIfNew(rubric); // NO-DUPLICATES
     }
   } else {
     selected.splice(idx, 1);
@@ -1520,7 +1549,7 @@ function onGeneralsDetailToggle(path, keyOverride) {
       if (!already) {
         const chapter = path.split(',')[0].trim();
         const rubric = findRubricByExactPath(chapter, path);
-        if (rubric) state.completeCase.push({ rubricId: rubric.id, path: rubric.path, remedyCount: rubric.remedyCount, source: 'generals' });
+        pushGeneralIfNew(rubric); // NO-DUPLICATES
       }
     } else {
       state.completeCase = state.completeCase.filter(e => !(e.source === 'generals' && e.path === path));
@@ -2572,6 +2601,13 @@ function onShowAllOptions() {
 function onStopHereTap(rubricId, path, remedyCount) {
   if (stopHereLockState === 'unlocked') {
     const entry = { rubricId, path, remedyCount };
+    // NO-DUPLICATES: already in the list (anywhere other than the very item
+    // being reconsidered) → say so, add nothing, leave the card unlocked.
+    const dupAt = state.completeCase.findIndex(c => String(c.rubricId) === String(rubricId));
+    if (dupAt !== -1 && dupAt !== state.editingCaseIndex) {
+      alertAlreadyInList();
+      return;
+    }
     if (state.editingCaseIndex !== null) {
       state.completeCase[state.editingCaseIndex] = entry;
     } else {
