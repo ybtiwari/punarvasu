@@ -3080,6 +3080,15 @@ function escAttr(s) {
       const ctx = snap.val();
       return {
         name: ctx.name || null,
+        // FOLLOWUP-DETAILS: phone/age/sex were being dropped right here, so
+        // bootFirstScreen() never received them — a Follow-up Visit or New
+        // Consultation opened from the case analyzer re-asked for details the
+        // clinic already has, and its skipDetailsConfirm never took effect.
+        // Phone as text: bootFirstScreen() and onIntakeContinue() call .trim().
+        phone: (ctx.phone !== undefined && ctx.phone !== null && ctx.phone !== '') ? String(ctx.phone) : null,
+        age: ctx.age || null,
+        sex: ctx.sex || null,
+        skipDetailsConfirm: ctx.skipDetailsConfirm === true,
         preferredLang: ctx.preferredLang || null,
         priorGenerals: ctx.priorGenerals || null,
         priorComplaints: ctx.priorComplaints || null
