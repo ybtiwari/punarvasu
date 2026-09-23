@@ -294,7 +294,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+import { initializeAuth, browserSessionPersistence, signInWithEmailAndPassword, onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getDatabase, ref, onValue, push, set, get, query, orderByChild, equalTo }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -310,7 +310,16 @@ const firebaseConfig = {
 
 // ── FIREBASE INIT ──
 const app  = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+// FIXED-TABS: sign-in is kept to THIS tab only (sessionStorage), set up
+// that way from the start with initializeAuth rather than getAuth(). With
+// getAuth()'s default, sign-in is shared by every tab on the same address:
+// a coordinator link opened here would switch the doctor's admin/dashboard
+// tabs to that coordinator (all local file:// pages share one store), and
+// the admin session would show up here — where the "Account disabled"
+// check below would then call signOut() and sign the ADMIN tabs out too.
+// initializeAuth never reads or touches that shared store. Every load
+// signs in again from the ?c= link anyway, so nothing is lost.
+const auth = initializeAuth(app, { persistence: browserSessionPersistence });
 const db   = getDatabase(app);
 
 // ── STATE ──
@@ -319,6 +328,10 @@ let coordName = '';
 let myPatients = {};
 let currentChatUid = null;
 let currentCaseUid = null;
+// FIXED-TABS: the account this tab is meant to be signed in as — set from
+// coord_keys just before signing in, by the ?c= link or by phone recovery.
+// The panel is shown only for a session matching it (see applyAuthState).
+let expectedCoordEmail = null;
 
 // ── AUTO-LOGIN FROM URL PARAM ──
 // Credentials are stored in a public Firebase node: coord_keys/{urlKey}
@@ -340,7 +353,12 @@ if (!urlKey) {
       return;
     }
     const entry = snap.val();
+    expectedCoordEmail = String(entry.email || '').toLowerCase();
     signInWithEmailAndPassword(auth, entry.email, entry.pass)
+      // FIXED-TABS: applied directly, not only via onAuthStateChanged —
+      // Firebase stays silent when the same account signs in again (e.g. a
+      // reload of this tab), so the listener alone could leave it hidden.
+      .then(cred => applyAuthState(cred.user))
       .catch(e => {
         document.getElementById('loginStatusText').textContent = 'Sign-in failed';
         document.getElementById('loginErr').textContent = e.message;
@@ -349,8 +367,29 @@ if (!urlKey) {
 }
 
 // ── AUTH STATE ──
-onAuthStateChanged(auth, user => {
+onAuthStateChanged(auth, user => applyAuthState(user));
+
+// FIXED-TABS: the one place that decides what this tab shows. Only a
+// session belonging to the account this tab is signing in as counts.
+let shownForUid = null; // loadMyPatients()/loadDoctorMessages() attach live listeners — only once per account
+let checkedForUid = null; // the disabled/deleted check below runs once per sign-in, even though this is told twice
+function applyAuthState(user) {
+  const isExpectedAccount = !!(user && expectedCoordEmail &&
+    String(user.email || '').toLowerCase() === expectedCoordEmail);
+  if (user && !isExpectedAccount) {
+    // Not ours, or not confirmed yet. If no sign-in is under way (no ?c=
+    // link, no recovery started), drop it — tab-only, so no other tab is
+    // affected. Otherwise that sign-in will replace it; keep the panel
+    // hidden until it confirms. Never run the "Account disabled" check
+    // below against someone else's session.
+    if (!urlKey && !expectedCoordEmail) signOut(auth).catch(() => {});
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('shell').style.display = 'none';
+    return;
+  }
   if (user) {
+    if (checkedForUid === user.uid) return;
+    checkedForUid = user.uid;
     coordUid  = user.uid;
     coordName = user.displayName || user.email;
     // Blocks two situations, both meaning "this account should not have
@@ -367,7 +406,7 @@ onAuthStateChanged(auth, user => {
     get(ref(db, `coordinators/${coordUid}`)).then(snap => {
       const record = snap.exists() ? snap.val() : null;
       if (!record || record.status === 'disabled') {
-        signOut(auth);
+        signOut(auth); // FIXED-TABS: tab-only now — cannot sign out other tabs
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('shell').style.display = 'none';
         document.getElementById('loginStatusText').textContent = 'Account disabled';
@@ -379,14 +418,19 @@ onAuthStateChanged(auth, user => {
       document.getElementById('shell').style.display = 'flex';
       document.getElementById('coordNameDisplay').textContent = coordName;
       document.getElementById('dashGreeting').textContent = 'Welcome, ' + (record.name || coordName || '');
-      loadMyPatients();
-      loadDoctorMessages();
+      if (shownForUid !== user.uid) {
+        shownForUid = user.uid;
+        loadMyPatients();
+        loadDoctorMessages();
+      }
     });
   } else {
+    shownForUid = null;
+    checkedForUid = null;
     document.getElementById('loginScreen').style.display = 'flex';
     document.getElementById('shell').style.display = 'none';
   }
-});
+}
 
 // ── RECOVERY FLOW — "Lost your link?" ──
 // Coordinators (unlike patients) don't have a deterministic email/password
@@ -465,7 +509,9 @@ async function coordRecoverySignIn(foundUrlKey) {
       return;
     }
     const entry = keySnap.val();
-    await signInWithEmailAndPassword(auth, entry.email, entry.pass);
+    expectedCoordEmail = String(entry.email || '').toLowerCase(); // FIXED-TABS: see applyAuthState
+    const cred = await signInWithEmailAndPassword(auth, entry.email, entry.pass);
+    applyAuthState(cred.user); // FIXED-TABS: same-account sign-in is silent in onAuthStateChanged
     // Re-point this browser tab at the real link going forward, and hand
     // them a copy so they have it saved outside this one device too.
     const newUrl = window.location.origin + window.location.pathname + '?c=' + encodeURIComponent(foundUrlKey);
@@ -508,7 +554,7 @@ window.sendCoordinatorLoginViaWhatsApp = async function() {
     const loginUrl = `https://punarvasu.clinic/coordinator-panel.html?c=${data.urlKey}`;
     const msg = `Here is your Punarvasu Clinic Coordinator Dashboard link:\n${loginUrl}\n\nKeep this safe — it signs you straight in.`;
     const waUrl = `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(msg)}`;
-    window.open(waUrl, '_blank');
+    window.open(waUrl, 'punarvasuWhatsApp'); // FIXED-TABS: reuse one WhatsApp tab
   } catch (err) {
     alert('Something went wrong preparing your login link. Please try again or contact the clinic.');
   }
