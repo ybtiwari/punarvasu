@@ -1030,9 +1030,14 @@ function computeMyStage(s) {
   if (s.prescriptions) {
     Object.values(s.prescriptions).forEach(e => { if (e.sessionId && e.sessionId > latestRxAt) latestRxAt = e.sessionId; });
   }
-  if (!(latestRxAt > caseAt)) return 2;
+  // STAGE-RULE: "closed" = closed after BOTH the latest visit and the latest
+  // prescription — so a consultation closed right after a final follow-up
+  // (everything resolved, no new prescription) counts as closed. Same rule in
+  // case_analyzer_local.html, admin-panel.html, dashboard.html and
+  // patient-portal.html — change all four together.
   const closedAt = s.sessionClosedAt || 0;
-  return (closedAt > latestRxAt) ? 4 : 3;
+  if (closedAt > caseAt && closedAt > latestRxAt) return 4;
+  return (latestRxAt > caseAt) ? 3 : 2;
 }
 
 function updateOngoingCaseVisibility(s) {
