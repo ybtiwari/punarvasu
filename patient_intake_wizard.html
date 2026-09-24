@@ -972,6 +972,26 @@ function alertAlreadyInList() {
   alert(state.patient.preferredLang === 'hi' ? 'यह लक्षण पहले से आपकी सूची में है।' : 'This symptom is already in your list.');
 }
 
+// MY-PROGRESS: plain-language names of the rated complaints, stored WITH
+// the rating record so the patient portal can show "Your progress" by name
+// without downloading the (large) translation files on a phone.
+// { rubricId: { en, hi, kent } }. Never blocks a save: on any problem the
+// record simply goes without names.
+function buildProgressLabels(entries) {
+  const out = {};
+  try {
+    (entries || []).forEach(c => {
+      if (!c || !c.path || c.rubricId === undefined || c.rubricId === null) return;
+      const chapter = c.path.split(',')[0].trim();
+      const d = getDisplayText(chapter, c.path, c.path.split(',').map(x => x.trim()).pop());
+      out[c.rubricId] = { en: (d && d.en) || '', hi: (d && d.hi) || '', kent: c.path };
+    });
+  } catch (e) {
+    console.warn('[progress labels] skipped:', e);
+  }
+  return out;
+}
+
 function proceedPastUnlock() {
   if (!state.patient.preferredLang) {
     // Shouldn't normally happen (language screen runs before this point
@@ -2857,7 +2877,11 @@ async function onSubmitCase() {
         progress: state.followUpRatings,
         overallProgress: state.followUpOverallRating,
         addedRubrics: state.completeCase.filter(c => !originalIds.has(c.rubricId)),
-        removedRubrics: state.originalPriorComplaints.filter(c => !currentIds.has(c.rubricId))
+        removedRubrics: state.originalPriorComplaints.filter(c => !currentIds.has(c.rubricId)),
+        // MY-PROGRESS: names of what was rated, plus new complaints (rated next time)
+        labels: buildProgressLabels(
+          state.originalPriorComplaints.filter(c => state.followUpRatings[c.rubricId] !== undefined)
+            .concat(state.completeCase.filter(c => !originalIds.has(c.rubricId) && c.source !== 'generals')))
       };
       try {
         await window.saveFollowUpSession(state.patient.uid, sessionRecord);

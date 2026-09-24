@@ -56,6 +56,27 @@
     .panel-title { font-family: var(--serif); font-size: 24px; color: var(--navy); margin-bottom: 6px; }
     .panel-sub { font-size: 14px; color: var(--ink3); margin-bottom: 28px; }
     .info-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 20px 22px; margin-bottom: 16px; }
+    /* MY-PROGRESS */
+    .my-progress { border-color: var(--teal); }
+    .myp-sub { font-size: 13px; color: var(--ink2); margin: 2px 0 10px; line-height: 1.5; }
+    .myp-pct-row { display: flex; align-items: baseline; gap: 10px; }
+    .myp-pct { font-size: 40px; font-weight: 700; color: var(--teal); line-height: 1; }
+    .myp-pct-label { font-size: 14px; color: var(--ink2); }
+    .myp-bar { height: 10px; background: #E8E4DC; border-radius: 6px; overflow: hidden; margin: 10px 0 6px; }
+    .myp-fill { height: 100%; background: var(--teal); border-radius: 6px; }
+    .myp-meta { font-size: 13px; color: var(--ink2); }
+    .myp-done { margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: rgba(28,107,90,0.08); color: var(--teal2); font-size: 14px; font-weight: 600; }
+    .myp-rows { margin-top: 12px; }
+    .myp-row { padding: 10px 0; border-top: 1px solid var(--border); }
+    .myp-name { font-size: 15px; font-weight: 600; color: var(--ink); }
+    .myp-main { color: #B4570A; }
+    .myp-hi { font-size: 14px; color: var(--ink2); margin-top: 2px; }
+    .myp-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .myp-chip { font-size: 12.5px; background: #F2EFE8; color: var(--ink2); border-radius: 8px; padding: 3px 9px; }
+    .myp-chip.last { background: var(--teal); color: #fff; font-weight: 600; }
+    .myp-chip.worse { background: #FDF3E8; color: #B4570A; border: 1px solid #F0C9A0; }
+    .myp-chip.last.worse { background: #B4570A; color: #fff; border-color: #B4570A; }
+    .myp-note { font-size: 12.5px; color: var(--ink2); margin-top: 8px; }
     .info-card h3 { font-family: var(--serif); font-size: 16px; color: var(--navy); margin-bottom: 6px; }
     .info-card p  { font-size: 14px; color: var(--ink2); line-height: 1.6; }
     .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
@@ -236,6 +257,7 @@
             <button onclick="document.getElementById('installPrompt').style.display='none';sessionStorage.setItem('installDismissed','1')" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:4px;padding:7px 10px;font-size:16px;cursor:pointer;line-height:1;">✕</button>
           </div>
         </div>
+        <div class="info-card my-progress" id="dash-progress" style="display:none;"></div><!-- MY-PROGRESS -->
         <div class="info-card">
           <h3>Account status</h3>
           <p>Your account is active. <span class="badge badge-active">Active</span></p>
@@ -1007,7 +1029,148 @@ function loadCaseFile() {
   onValue(ref(db, `patients/${currentUser.uid}/casefile`), snap => {
     window._caseData = snap.exists() ? snap.val() : null;
     renderCaseFileContent();
+    renderMyProgress(); // MY-PROGRESS: a close changes which course is "current"
   });
+  loadMyProgress(); // MY-PROGRESS
+}
+
+// =================================================================
+// MY-PROGRESS — "Your progress" card on the patient's dashboard.
+// Reads only the patient's own record: follow-up ratings (rated against
+// the START of the consultation, by the patient via the intake wizard or
+// by the doctor in clinic), the doctor's main-complaint marks, and the
+// casefile's close date. Same formula as the doctor's case analyzer:
+//   % = Σ weight × max(0, rating) ÷ Σ weight   (main complaints weight 2;
+//   worse = 0; a complaint added since the last rating = 0)
+// The portal can't see visits, so "this course of treatment" = follow-ups
+// since the last close; when the latest course is closed, its final
+// ratings are shown as complete.
+// =================================================================
+let _myProgressSessions = null, _myProgressConsults = {};
+function loadMyProgress() {
+  onValue(ref(db, `patients/${currentUser.uid}/followUpSessions`), snap => {
+    _myProgressSessions = snap.exists() ? snap.val() : {};
+    renderMyProgress();
+  }, () => { _myProgressSessions = {}; renderMyProgress(); });
+  onValue(ref(db, `patients/${currentUser.uid}/consultations`), snap => {
+    _myProgressConsults = snap.exists() ? snap.val() : {};
+    renderMyProgress();
+  }, () => { _myProgressConsults = {}; renderMyProgress(); });
+}
+
+// Firebase push keys start with the creation time (48 bits, 8 chars).
+const MYP_PUSH_CHARS = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz';
+function pushKeyTime(key) {
+  if (typeof key !== 'string' || key.length < 8) return 0;
+  let t = 0;
+  for (let i = 0; i < 8; i++) { const v = MYP_PUSH_CHARS.indexOf(key.charAt(i)); if (v < 0) return 0; t = t * 64 + v; }
+  return t;
+}
+
+function computeMyProgress(sessions, consultations, casefile) {
+  // one record per visit (a revised follow-up keeps its newest record)
+  const byCase = new Map();
+  Object.entries(sessions || {}).forEach(([k, r]) => {
+    if (!r || r.ratingBasis !== 'consultationStart' || !r.progress) return;
+    const id = r.caseId || k;
+    const cur = byCase.get(id);
+    if (!cur || k > cur.k) byCase.set(id, { k, r });
+  });
+  const recs = Array.from(byCase.values()).sort((a, b) => (a.k < b.k ? -1 : 1))
+    .map(x => Object.assign({ t: new Date(x.r.date || 0).getTime() || pushKeyTime(x.k) }, x.r));
+  if (!recs.length) return null;
+  const closedAt = (casefile && casefile.sessionClosedAt) || 0;
+  const stage = computeMyStage(casefile);
+  const closed = stage === 4;
+  const course = closed ? recs.filter(r => r.t <= closedAt) : recs.filter(r => r.t > closedAt);
+  if (!course.length) return { waiting: true };
+  const latest = course[course.length - 1];
+  // main-complaint marks: the consultation whose first visit is the latest
+  // one at or before this course's latest visit (keys sort by time)
+  let main = {};
+  const latestCaseTime = pushKeyTime(latest.caseId) || latest.t;
+  Object.keys(consultations || {}).map(cid => ({ cid, t: pushKeyTime(cid) }))
+    .filter(x => x.t && x.t <= latestCaseTime && (closed || x.t > closedAt || !closedAt))
+    .sort((a, b) => a.t - b.t)
+    .forEach(x => { main = ((consultations[x.cid] || {}).main) || {}; });
+  const ids = Object.keys(latest.progress);
+  (latest.addedRubrics || []).forEach(a => {
+    const id = String(a && a.rubricId);
+    if (a && a.source !== 'generals' && !ids.includes(id)) ids.push(id);
+  });
+  const nameOf = id => {
+    for (let i = course.length - 1; i >= 0; i--) { const l = (course[i].labels || {})[id]; if (l) return l; }
+    for (let i = course.length - 1; i >= 0; i--) {
+      const a = (course[i].addedRubrics || []).find(x => String(x && x.rubricId) === id);
+      if (a && a.path) return { en: '', hi: '', kent: a.path };
+    }
+    return { en: '', hi: '', kent: '' };
+  };
+  const rows = ids.map(id => {
+    const history = course.filter(r => r.progress && r.progress[id] !== undefined && r.progress[id] !== null)
+      .map(r => ({ t: r.t, v: r.progress[id] }));
+    const lv = latest.progress[id];
+    return { id, name: nameOf(id), main: !!main[id], history, latest: (lv === undefined || lv === null) ? null : lv };
+  });
+  let num = 0, den = 0;
+  rows.forEach(r => { const w = r.main ? 2 : 1; num += w * Math.max(0, r.latest === null ? 0 : r.latest); den += w; });
+  return {
+    pct: den ? Math.round(num / den) : 0, rows, closed, closedAt,
+    overall: latest.overallProgress, lastAt: latest.t, visits: course.length,
+    allResolved: rows.length > 0 && rows.every(r => r.latest === 100)
+  };
+}
+
+function mypLabel(v) {
+  if (v === -1) return 'Worse';
+  if (v === 0) return 'Same';
+  if (v === 100) return 'Resolved';
+  return v + '% better';
+}
+function mypDate(t) {
+  try { return new Date(t).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }); } catch (e) { return ''; }
+}
+function mypEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function renderMyProgress() {
+  const el = document.getElementById('dash-progress');
+  if (!el) return;
+  if (_myProgressSessions === null) return; // not loaded yet
+  const P = computeMyProgress(_myProgressSessions, _myProgressConsults, window._caseData);
+  if (!P) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  if (P.waiting) {
+    el.innerHTML = `<h3>Your progress</h3>
+      <p>Your progress for this course of treatment will appear here after your first follow-up.</p>`;
+    return;
+  }
+  const rows = P.rows.map(r => {
+    const title = r.name.en || r.name.kent || 'Complaint';
+    const chips = r.history.length
+      ? r.history.map((h, i) => `<span class="myp-chip${i === r.history.length - 1 ? ' last' : ''}${h.v === -1 ? ' worse' : ''}">${mypDate(h.t)}: ${mypLabel(h.v)}</span>`).join('')
+      : '<span class="myp-chip">New — you\'ll rate it at your next follow-up</span>';
+    return `<div class="myp-row">
+      <div class="myp-name">${r.main ? '<span class="myp-main" title="Main complaint">&#9733;</span> ' : ''}${mypEsc(title)}</div>
+      ${r.name.hi ? `<div class="myp-hi">${mypEsc(r.name.hi)}</div>` : ''}
+      <div class="myp-chips">${chips}</div>
+    </div>`;
+  }).join('');
+  const status = P.closed
+    ? `<div class="myp-done">This course of treatment is complete${P.closedAt ? ' (' + mypDate(P.closedAt) + ')' : ''}. Well done!</div>`
+    : P.allResolved
+      ? `<div class="myp-done">All your complaints are resolved. Dr. Tiwari will review and close this course of treatment.</div>`
+      : '';
+  el.innerHTML = `
+    <h3>Your progress</h3>
+    <p class="myp-sub">Compared to when you first came for this problem<br><span lang="hi">पहली बार आने के समय की तुलना में</span></p>
+    <div class="myp-pct-row"><div class="myp-pct">${P.pct}%</div><div class="myp-pct-label">better overall on your complaints</div></div>
+    <div class="myp-bar"><div class="myp-fill" style="width:${Math.max(0, Math.min(100, P.pct))}%"></div></div>
+    <div class="myp-meta">Last follow-up ${mypDate(P.lastAt)}${P.overall !== undefined && P.overall !== null ? ' · you felt ' + mypLabel(P.overall).toLowerCase() + ' overall' : ''}</div>
+    ${status}
+    <div class="myp-rows">${rows}</div>
+    ${P.rows.some(r => r.main) ? '<div class="myp-note">&#9733; Main complaints count more in your progress.</div>' : ''}`;
 }
 
 // Both the dashboard's "Your Ongoing Case" card and the Case File page's
