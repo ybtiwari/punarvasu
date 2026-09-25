@@ -3221,7 +3221,19 @@ function escAttr(s) {
         skipDetailsConfirm: ctx.skipDetailsConfirm === true,
         preferredLang: ctx.preferredLang || null,
         priorGenerals: ctx.priorGenerals || null,
-        priorComplaints: ctx.priorComplaints || null
+        priorComplaints: ctx.priorComplaints || null,
+        // CASE-ANALYZER-RETURN: these two were being dropped right here,
+        // same bug as FOLLOWUP-DETAILS above — case_analyzer_local.html's
+        // onStartManualCase()/runPatientIntakeAction() have always written
+        // them, but bootFirstScreen()'s own check for peek.openedFromCase
+        // Analyzer never saw them, so caseAnalyzerReturnUrl was never set:
+        // no "← Back to Case Analyzer" button during the wizard, and
+        // submission always fell through to the generic patient "Your case
+        // has been submitted" screen instead of "Case saved" with
+        // "→ Continue to Repertorize" — even when it was the doctor
+        // themselves filling this in, in-clinic, from the case analyzer.
+        openedFromCaseAnalyzer: ctx.openedFromCaseAnalyzer === true,
+        returnUrl: ctx.returnUrl || null
       };
     } catch (e) {
       console.error('[patient-intake] patient context peek failed:', e);
