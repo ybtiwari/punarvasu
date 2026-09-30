@@ -3293,6 +3293,23 @@ function escAttr(s) {
               timestamp: Date.now()
             });
           } catch (e) { console.error('[patient-intake] followup notification failed (non-fatal):', e); }
+        } else {
+          // FIRST-CASE-NOTIFICATION: a brand-new patient's very first case
+          // used to raise no active notification anywhere — the doctor only
+          // found out by noticing the row appear in the Patient Journey Hub
+          // table. That's arguably the single highest-stakes "it's your
+          // turn now" moment in the whole system, so it gets the same
+          // treatment as a follow-up submission. Kept as its own type
+          // (rather than reusing followup_submitted) so every place that
+          // already branches on that exact string keeps working unchanged.
+          try {
+            await push(ref(db, 'notifications/admin'), {
+              type: 'case_submitted',
+              patientUid: payload.patient.uid,
+              name: payload.patient.name,
+              timestamp: Date.now()
+            });
+          } catch (e) { console.error('[patient-intake] new-case notification failed (non-fatal):', e); }
         }
         return { ok: true, caseId: newCaseRef.key };
       }
