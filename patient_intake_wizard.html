@@ -2870,6 +2870,13 @@ function renderFollowUpChangesSummary() {
   const addedHtml = added.map(c => itemRow(c, 'added')).join('');
   const removedHtml = removed.map(c => itemRow(c, 'removed')).join('');
   const noChanges = !added.length && !removed.length;
+  // FOLLOWUP-FIRST: this screen's own Submit button can fail now too (the
+  // stale-link guard, or the same submitCaseToFirebase error every other
+  // review screen already shows this way) — it never rendered
+  // state.submit.error at all before, so a failure here used to be
+  // silent: the button would just stop saying "Submitting..." with no
+  // explanation. Same markup/pattern as renderCaseReview's submitErrorHtml.
+  const submitErrorHtml = state.submit.error ? ('<div class="no-match-msg" style="margin:0 0 10px;">' + esc(state.submit.error) + '</div>') : '';
 
   return `
     ${renderTopbar('Review your changes', 'What\u2019s different since last visit')}
@@ -2881,6 +2888,7 @@ function renderFollowUpChangesSummary() {
       ${removedHtml}
     </div>
     <div class="footer-bar" style="flex-direction:column">
+      ${submitErrorHtml}
       <button class="btn-outline" onclick="goToCaseReview()">← Back to full list</button>
       <button class="btn-primary" onclick="onAddAnotherComplaint()">+ Add something else</button>
       <button class="btn-primary" onclick="onSubmitCase()" ${state.submit.busy ? 'disabled' : ''}>${state.submit.busy ? 'Submitting…' : 'Submit follow-up →'}</button>
@@ -2893,6 +2901,26 @@ async function onSubmitCase() {
   render();
 
   const isRevision = !!state.submittedCaseId;
+
+  // FOLLOWUP-FIRST: one live check, right before the write, that this
+  // follow-up link is still current — see checkFollowUpConsultationStillOpen.
+  // Only on the first submission of a follow-up review; a revision of what
+  // this same session already submitted skips it (that submission is
+  // itself what last moved the stage, so re-checking would just block the
+  // patient's own in-progress edit).
+  if (state.isFollowUpReview && !isRevision) {
+    const stillOpen = await window.checkFollowUpConsultationStillOpen(state.patient.uid);
+    if (!stillOpen) {
+      // Matches the plain-English convention of the result.error branch
+      // further down in this same function — this function's errors aren't
+      // localized elsewhere either.
+      state.submit.busy = false;
+      state.submit.error = 'This follow-up link is no longer current — your consultation has moved on since it was sent. Please contact the clinic for a fresh follow-up link.';
+      render();
+      return;
+    }
+  }
+
   const { accountBusy, priorGenerals, ...patientForSubmission } = state.patient; // accountBusy is transient UI state; priorGenerals is data carried IN from a past visit, not something a new case should save about itself — neither belongs in the saved record
   const payload = {
     patient: patientForSubmission,
@@ -3238,6 +3266,52 @@ function escAttr(s) {
     } catch (e) {
       console.error('[patient-intake] patient context peek failed:', e);
       return null;
+    }
+  };
+
+  // FOLLOWUP-FIRST: live counterpart of computeStage (also in
+  // case_analyzer_local.html, admin-panel.html, dashboard.html and
+  // patient-portal.html — change all five together). peekPatientContext
+  // above only reflects the doctor's intent at the moment this link was
+  // sent, not whether the consultation is STILL open now — a patient who
+  // sits on this screen a while, or returns to a stale link later, could
+  // otherwise write a follow-up rating into a consultation that already
+  // closed, or already moved on to its own next round, in the meantime.
+  // Called from onSubmitCase right before the very first submission of a
+  // follow-up review (never on a revision of what this same session
+  // already submitted — that case itself is what last moved the stage).
+  // NOTE: ensurePatientAccount() — the only Firebase Auth sign-in this file
+  // ever does — is SKIPPED whenever state.patient.uid is already known from
+  // the URL's own ?uid= param, which is exactly true both times this screen
+  // is reachable (the doctor's own link from the case analyzer, and the
+  // patient's WhatsApp follow-up link). So unlike patient-portal.html's
+  // dashboard — which does sign the patient in first before reading the
+  // same path — this read usually runs with no Firebase Auth session at
+  // all, and whether it's still allowed depends on security rules this
+  // file has no way to inspect. That uncertainty doesn't matter here: a
+  // denied or failed read just falls through to the catch below and fails
+  // OPEN, so the worst case is today's pre-existing unguarded behavior —
+  // never a new way to block a legitimate submission.
+  window.checkFollowUpConsultationStillOpen = async function (uid) {
+    if (!uid) return false;
+    try {
+      const snap = await get(ref(db, 'patients/' + uid + '/casefile'));
+      const cf = snap.exists() ? snap.val() : {};
+      const latestCaseAt = cf.lastCaseSubmittedAt || 0;
+      let latestRxAt = 0;
+      if (cf.prescriptions) {
+        Object.values(cf.prescriptions).forEach(e => { if (e && e.sessionId && e.sessionId > latestRxAt) latestRxAt = e.sessionId; });
+      }
+      const closedAt = cf.sessionClosedAt || 0;
+      if (closedAt > latestCaseAt && closedAt > latestRxAt) return false; // stage 4 — already closed
+      return latestRxAt > latestCaseAt; // true only at stage 3; stage 2 (another follow-up already pending) also refuses
+    } catch (e) {
+      // Can't confirm live state (offline, a permission hiccup, etc.) — fail
+      // OPEN rather than blocking a legitimate follow-up on a transient
+      // error here; submitCaseToFirebase below still has its own error
+      // handling if the actual write itself fails.
+      console.error('[patient-intake] live follow-up stage check failed (non-fatal):', e);
+      return true;
     }
   };
 
