@@ -82,6 +82,19 @@
     .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
     .badge-active { background: rgba(28,107,90,0.1); color: var(--teal); }
     .badge-pending { background: rgba(200,96,10,0.1); color: #c8600a; }
+    /* STAGE-INDICATOR: a patient-friendly, read-only 3-step readout of where
+       this course of treatment stands — Under Review, Prescription Active,
+       Treatment Complete — nothing here is ever tappable; see
+       renderStageStepper()/computeMyStage() below. */
+    .stage-stepper { display: flex; align-items: flex-start; margin: 2px 0 16px; }
+    .stage-step { display: flex; flex-direction: column; align-items: center; width: 76px; flex-shrink: 0; }
+    .stage-dot { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; background: var(--border); color: var(--ink3); margin-bottom: 6px; }
+    .stage-step.done .stage-dot { background: var(--teal); color: #fff; }
+    .stage-step.active .stage-dot { background: var(--teal); color: #fff; box-shadow: 0 0 0 4px rgba(28,107,90,0.15); }
+    .stage-step-label { font-size: 11px; color: var(--ink3); font-weight: 500; line-height: 1.25; }
+    .stage-step.done .stage-step-label, .stage-step.active .stage-step-label { color: var(--ink2); font-weight: 600; }
+    .stage-step-line { flex: 1; height: 2px; background: var(--border); margin-top: 13px; }
+    .stage-step-line.done { background: var(--teal); }
 
     /* MESSENGER */
     .msg-wrap { background: var(--white); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; height: 500px; }
@@ -271,6 +284,7 @@
         </div>
         <div class="info-card" id="dash-ongoing-case" style="display:none;">
           <h3>Your Ongoing Case</h3>
+          <div id="dash-stage-stepper"></div>
           <p id="dash-ongoing-case-summary" style="margin-bottom:10px;"></p>
           <a href="javascript:void(0)" onclick="document.querySelector('[data-panel=&quot;casefile&quot;]').click()" style="display:inline-block;margin-bottom:16px;color:var(--teal);font-size:14px;font-weight:500;">View full case file →</a>
           <div style="border-top:1px solid var(--border);padding-top:14px;" id="dash-followup-section">
@@ -334,6 +348,7 @@
       <div class="panel" id="panel-casefile">
         <div class="panel-title">My Case File</div>
         <div class="panel-sub">Notes, prescriptions and follow-up records from Dr. Tiwari</div>
+        <div id="casefile-stage-stepper"></div>
         <div id="caseFileContent">
           <div class="empty"><div class="empty-icon">📋</div>Your case file will appear here as your treatment progresses.</div>
         </div>
@@ -1155,11 +1170,33 @@ function computeMyStage(s) {
   // STAGE-RULE: "closed" = closed after BOTH the latest visit and the latest
   // prescription — so a consultation closed right after a final follow-up
   // (everything resolved, no new prescription) counts as closed. Same rule in
-  // case_analyzer_local.html, admin-panel.html, dashboard.html and
-  // patient-portal.html — change all four together.
+  // case_analyzer_local.html, admin-panel.html, dashboard.html,
+  // patient-portal.html, coordinator-panel.html and the repertory tool —
+  // change all six together.
   const closedAt = s.sessionClosedAt || 0;
   if (closedAt > caseAt && closedAt > latestRxAt) return 4;
   return (latestRxAt > caseAt) ? 3 : 2;
+}
+
+// STAGE-INDICATOR: the patient-facing version of the same stage model —
+// plain, reassuring words instead of the internal "Awaiting
+// Prescription"/"Prescribed"/"Closed" labels admin-panel.html/dashboard.html/
+// coordinator-panel.html show the clinic staff. Stage 1 (no case on file at
+// all yet) has no stepper to show — nothing has started. Read-only, same as
+// every other copy of this feature: there is nothing here for the patient to
+// tap or set, it only ever reflects computeMyStage's own result.
+function renderStageStepper(stage) {
+  if (stage < 2) return '';
+  const labels = ['Under Review', 'Prescription Active', 'Treatment Complete'];
+  const activeIdx = stage - 2; // stage 2 -> 0, stage 3 -> 1; stage 4 treats every step as done
+  return '<div class="stage-stepper">' + labels.map((label, i) => {
+    const done = stage === 4 || i < activeIdx;
+    const active = stage !== 4 && i === activeIdx;
+    const cls = done ? 'done' : (active ? 'active' : '');
+    const dot = done ? '&#10004;' : String(i + 1);
+    const line = i < labels.length - 1 ? `<div class="stage-step-line ${done ? 'done' : ''}"></div>` : '';
+    return `<div class="stage-step ${cls}"><div class="stage-dot">${dot}</div><div class="stage-step-label">${label}</div></div>${line}`;
+  }).join('') + '</div>';
 }
 
 function updateOngoingCaseVisibility(s) {
@@ -1168,6 +1205,13 @@ function updateOngoingCaseVisibility(s) {
   const cfCard = document.getElementById('casefile-followup-card');
   if (dashCard) dashCard.style.display = hasCase ? 'block' : 'none';
   const stage = computeMyStage(s);
+  // STAGE-INDICATOR: same stepper, shown in both places a patient can see
+  // their own case — the dashboard card and the Case File page itself.
+  const stepperHtml = hasCase ? renderStageStepper(stage) : '';
+  const dashStepper = document.getElementById('dash-stage-stepper');
+  if (dashStepper) dashStepper.innerHTML = stepperHtml;
+  const cfStepper = document.getElementById('casefile-stage-stepper');
+  if (cfStepper) cfStepper.innerHTML = stepperHtml;
   if (cfCard) cfCard.style.display = (hasCase && stage === 3) ? 'block' : 'none';
   if (hasCase) {
     const summaryEl = document.getElementById('dash-ongoing-case-summary');

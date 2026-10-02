@@ -63,6 +63,11 @@
     .badge { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11.5px; font-weight:500; }
     .badge-active   { background:rgba(28,107,90,0.1); color:var(--teal); }
     .badge-disabled { background:rgba(192,57,43,0.1); color:var(--red); }
+    /* STAGE-INDICATOR: same three labels/colors as admin-panel.html's own
+       stageBadge() — change together, same as computeStage's own six-file rule. */
+    .stage-badge { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11.5px; font-weight:700; border:1px solid var(--border); background:var(--cream); color:var(--ink2); }
+    .stage-badge.stage-3 { background:rgba(28,107,90,0.1); border-color:rgba(28,107,90,0.25); color:var(--teal); }
+    .stage-badge.stage-4 { background:rgba(74,100,120,0.1); border-color:var(--border); color:var(--ink3); }
     .empty { text-align:center; padding:40px 20px; color:var(--ink3); }
     .empty-icon { font-size:32px; margin-bottom:10px; }
 
@@ -265,7 +270,10 @@
         <div id="caseWrap" style="display:none;">
           <div class="read-only-note">📋 Case files are maintained by Dr. Yogeshwar Tiwari. You have read-only access.</div>
           <div class="case-editor">
-            <h3 id="caseTitle">Case File</h3>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+              <h3 id="caseTitle" style="margin-bottom:0;">Case File</h3>
+              <span id="caseStageBadge"></span>
+            </div>
             <div class="case-tabs">
               <div class="case-tab active" onclick="switchTab('notes', this)">Clinical Notes</div>
               <div class="case-tab" onclick="switchTab('prescriptions', this)">Prescriptions</div>
@@ -570,6 +578,48 @@ document.querySelectorAll('.nav-item').forEach(item => {
   });
 });
 
+// ── STAGE INDICATOR ──
+// Same 4-stage model case_analyzer_local.html, admin-panel.html and
+// dashboard.html use (1 no case yet, 2 submitted/awaiting prescription,
+// 3 prescribed/awaiting follow-up, 4 closed). Those three compute it from
+// the shared cases/ collection, which this page cannot read — the per-record
+// Firebase rule below only opens up patients/{uid} for a patient assigned to
+// this coordinator, not the top-level cases/ node. So this reads only
+// patients/{uid}/casefile instead — which loadMyPatients() already has for
+// every assigned patient below — including lastCaseSubmittedAt, mirrored in
+// by the intake wizard at submission specifically so a page like this one
+// never needs the shared cases/ node just to compute a stage. Same approach
+// patient-portal.html uses for its own computeMyStage.
+// STAGE-RULE: "closed" = closed after BOTH the latest visit and the latest
+// prescription — so a consultation closed right after a final follow-up
+// (everything resolved, no new prescription) counts as closed. Same rule in
+// case_analyzer_local.html, admin-panel.html, dashboard.html,
+// patient-portal.html, coordinator-panel.html and the repertory tool —
+// change all six together.
+function computeStage(s) {
+  if (!s) return 1;
+  const caseAt = s.lastCaseSubmittedAt || 0;
+  let latestRxAt = 0;
+  if (s.prescriptions) {
+    Object.values(s.prescriptions).forEach(e => { if (e.sessionId && e.sessionId > latestRxAt) latestRxAt = e.sessionId; });
+  }
+  const closedAt = s.sessionClosedAt || 0;
+  if (closedAt > caseAt && closedAt > latestRxAt) return 4;
+  return (latestRxAt > caseAt) ? 3 : 2;
+}
+// STAGE-INDICATOR: a small read-only label for where a consultation sits —
+// never a control, same as every other copy of this function (stage stays
+// purely derived, nothing here is ever settable off a list). Same wording
+// and colors as admin-panel.html's own stageBadge() — change together.
+// Stage 1 (no case at all yet) has nothing worth showing, so it renders
+// nothing.
+function stageBadge(stage) {
+  if (stage === 2) return '<span class="stage-badge stage-2">Awaiting Prescription</span>';
+  if (stage === 3) return '<span class="stage-badge stage-3">Prescribed</span>';
+  if (stage === 4) return '<span class="stage-badge stage-4">Closed</span>';
+  return '';
+}
+
 // ── LOAD MY PATIENTS ──
 // Coordinators only see patients where coordinatorId === their uid
 // Firebase rules enforce this at the data layer too
@@ -606,6 +656,7 @@ function loadMyPatients() {
       let html = '';
       Object.entries(myPatients).forEach(([uid, p]) => {
         const status = p.status || 'active';
+        const stage = computeStage(p.casefile);
         html += `<div class="patient-item">
           <div class="patient-info">
             <h4>${p.name || 'Unknown'}</h4>
@@ -613,8 +664,11 @@ function loadMyPatients() {
           </div>
           <div class="patient-actions">
             <span class="badge ${status==='active'?'badge-active':'badge-disabled'}">${status}</span>
+            ${stageBadge(stage)}
             <button class="btn-sm btn-teal" onclick="openChat('${uid}','${p.name||p.phone}')">Message</button>
-            <button class="btn-sm btn-gray" onclick="viewCase('${uid}')">Case file</button>
+            <!-- STAGE-INDICATOR: hide, don't grey — nothing to view yet when
+            no case has been submitted at all. -->
+            ${stage>=2 ? `<button class="btn-sm btn-gray" onclick="viewCase('${uid}')">Case file</button>` : ''}
           </div>
         </div>`;
       });
@@ -876,6 +930,9 @@ window.loadCaseFile = function() {
   currentCaseUid = uid;
   const pat = myPatients[uid];
   document.getElementById('caseTitle').textContent = (pat?.name || 'Patient') + ' — Case File';
+  // STAGE-INDICATOR: same badge as the patient-list row, repeated here on
+  // the record view itself — see computeStage/stageBadge above.
+  document.getElementById('caseStageBadge').innerHTML = stageBadge(computeStage(pat?.casefile));
   document.getElementById('caseWrap').style.display = 'block';
 
   ['notes','prescriptions','followups','appointments'].forEach(section => {
