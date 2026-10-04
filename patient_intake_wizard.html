@@ -16,37 +16,6 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh}
 
-/* FIRST-VISIT GUIDED TOUR — shown once ever per device (localStorage-gated,
-   see maybeShowIntakeTour) on the top-level chapter select screen. Two
-   steps: the Search button in the topbar, then the chapter chart. Built as
-   a spotlight (a bordered box whose box-shadow darkens everything else —
-   simpler than a separate scrim + cutout) plus a bold pulsing arrow and a
-   speech-bubble tooltip with Next/Skip. Positioned with getBoundingClientRect
-   against the real on-screen elements so it stays accurate on any phone size. */
-.tour-highlight{
-  position:absolute;border:3px solid var(--amber);border-radius:12px;
-  box-shadow:0 0 0 9999px rgba(0,0,0,0.72);
-  pointer-events:none;z-index:9998;
-  transition:top .25s ease,left .25s ease,width .25s ease,height .25s ease;
-}
-.tour-arrow{
-  position:absolute;font-size:34px;line-height:1;color:var(--amber);
-  z-index:9999;pointer-events:none;text-shadow:0 2px 6px rgba(0,0,0,0.5);
-  animation:tourBounce 1.1s ease-in-out infinite;
-}
-@keyframes tourBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-.tour-tooltip{
-  position:absolute;background:var(--white);border-radius:12px;padding:16px 18px;
-  max-width:280px;box-shadow:0 8px 28px rgba(0,0,0,0.35);z-index:9999;
-}
-.tour-tooltip .tour-text-en{font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:4px;}
-.tour-tooltip .tour-text-hi{font-size:13px;color:var(--ink2);margin-bottom:14px;}
-.tour-btns{display:flex;justify-content:space-between;align-items:center;gap:10px;}
-.tour-skip{background:none;border:none;color:var(--ink3);font-size:13px;font-weight:600;cursor:pointer;padding:6px 4px;}
-.tour-next{background:var(--teal);color:white;border:none;border-radius:8px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer;}
-.tour-step-dots{display:flex;gap:5px;justify-content:center;margin-top:12px;}
-.tour-step-dots span{width:6px;height:6px;border-radius:50%;background:var(--border);}
-.tour-step-dots span.active{background:var(--amber);}
 .app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--white);display:flex;flex-direction:column}
 .topbar{background:var(--teal);color:white;padding:14px 16px;flex-shrink:0}
 .topbar h1{font-size:16px;font-weight:700}
@@ -84,6 +53,18 @@ p.step-sub{font-size:13px;color:var(--ink3);margin-bottom:14px}
 .search-box{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;margin-bottom:12px;font-family:var(--font)}
 .search-box.no-match{border-color:var(--danger);color:var(--danger)}
 .no-match-msg{font-size:12.5px;color:var(--danger);margin:-6px 0 12px;padding:0 2px}
+/* CHANGE (2026-10): Search is now the one entry point for the whole wizard
+   (see renderWizardScreen) — this box is always on screen, so it needs to
+   read as THE place to act, not just another input. Amber (the file's
+   existing "pay attention" accent, used elsewhere for nudges/banners) is
+   used here deliberately instead of teal, which already means "added/
+   confirmed" elsewhere on this same screen — keeping those two meanings
+   visually separate. */
+.wizard-search-highlight{background:var(--amber-bg);border:2px solid var(--amber);border-radius:12px;padding:12px 14px;margin-bottom:12px;box-shadow:0 2px 10px rgba(200,96,10,.12)}
+.wizard-search-label{font-size:13.5px;font-weight:700;color:var(--amber);margin-bottom:8px;line-height:1.3}
+.search-box.wizard-search-input{border:2px solid var(--amber);font-size:15.5px;padding:13px 38px 13px 14px;margin-bottom:0;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.search-box.wizard-search-input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(28,107,90,0.15)}
+.search-clear-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--ink3);cursor:pointer;font-size:15px;padding:4px;line-height:1}
 .option-group{margin-bottom:16px}
 .option-group-label{font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px}
 .collapsible-section{margin-bottom:10px;border:1.5px solid var(--border);border-radius:10px;overflow:hidden}
@@ -97,6 +78,18 @@ p.step-sub{font-size:13px;color:var(--ink3);margin-bottom:14px}
 .selected-node{margin-bottom:2px}
 .selected-node-header{display:flex;align-items:center;gap:8px;padding:9px 10px;cursor:pointer;background:#F0F7F4;border:1.5px solid var(--teal);border-radius:8px}
 .selected-node-header:hover{background:#E4F1EC}
+/* CHANGE (2026-10): a search-result "Drill" tree (renderResultTreeNode) is
+   built from the same nested/indented look as .selected-node-header (the
+   already-walked history rows this file's own walk screen uses — picture 2
+   in the user's own comparison) so the qualifier hierarchy reads the same
+   way in both places. The difference is state: a tree node that isn't yet
+   in the case is plain/neutral (.tree-node-row) so it still reads as a
+   browsable candidate, not something already decided; the moment it's
+   added (by auto-add or a tap) it switches to .selected-node-header's own
+   green/teal "confirmed" look, same as everywhere else "added" is shown. */
+.tree-node-row{display:flex;align-items:center;gap:8px;padding:9px 10px;cursor:pointer;background:var(--white);border:1.5px solid var(--border);border-radius:8px}
+.tree-node-row:hover{border-color:var(--amber);background:var(--amber-bg)}
+.selected-node-text{flex:1;min-width:0}
 .selected-node-text .kent{font-size:13.5px;font-weight:700;color:var(--teal)}
 .selected-node-text .en{font-size:12px;color:var(--lang-en);margin-top:1px}
 .selected-node-text .hi{font-size:11.5px;color:var(--lang-hi);margin-top:1px}
@@ -109,7 +102,7 @@ p.step-sub{font-size:13px;color:var(--ink3);margin-bottom:14px}
 .opt-card .meta{font-size:10.5px;color:var(--ink3);margin-top:3px}
 .quick-add-btn{margin-top:8px;padding:6px 12px;border-radius:7px;border:1.5px solid var(--teal);background:var(--white);color:var(--teal);font-size:12px;font-weight:600;cursor:pointer}
 .quick-add-btn.added{background:var(--teal);color:var(--white)}
-.chapter-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.quick-add-btn.inline{margin-top:0;flex-shrink:0;white-space:nowrap}
 .ch-card{border:1.5px solid var(--border);border-radius:10px;padding:11px 6px;cursor:pointer;background:var(--white);text-align:center;transition:all .12s}
 .ch-card:hover{border-color:var(--amber);background:var(--amber-bg)}
 .ch-card .en{font-size:12px;font-weight:600}
@@ -158,6 +151,22 @@ input[type=text]{font-family:var(--font)}
   padding:7px 14px 7px 12px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;
   box-shadow:0 1px 4px rgba(0,0,0,0.08);}
 #caseAnalyzerBackBtn:hover{background:var(--cream);}
+
+/* ---- Structured symptom-detail boxes (2026-10 redesign) — replaces the
+   old category tabs under the main search box. Each box below is already
+   scoped to one kind of detail (where/what/when/...), so its results reuse
+   the existing .selected-node-text + .quick-add-btn look rather than a new
+   visual language. */
+.dim-section{margin-top:18px;padding-top:16px;border-top:1.5px dashed var(--border)}
+.dim-section-title{font-size:12.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:12px}
+.dim-row{margin-bottom:16px}
+.dim-label{display:block;font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:6px}
+.dim-suggest-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--white);margin-bottom:6px}
+.dim-suggest-item.added{border-color:var(--teal);background:#F0F7F4}
+.dim-suggest-empty{font-size:12px;color:var(--ink3);font-style:italic;padding:0 2px 8px}
+.dim-ambient-count{font-size:11.5px;color:var(--ink3);padding:0 2px 2px}
+.dim-combined{margin-top:18px;padding-top:16px;border-top:1.5px solid var(--border)}
+.dim-combined-label{font-size:12px;font-weight:600;color:var(--teal);margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -194,15 +203,16 @@ const state = {
                                 // completeCase (which gets edited) specifically so the changes-summary screen can diff against it
   reviewSessionExpiresAt: null, // timestamp; post-submission review access is only live until this, resetting on every interaction
   reviewExpiredNotice: false,   // shows a one-time notice on the confirmation screen after a 30-min review session times out
-  returnScreenAfterSearch: 'chapters', // where to go back to if search is cancelled without a pick
+  returnScreenAfterSearch: 'search', // where to go back to if search is cancelled without a pick
   patient: {
     name: '', age: '', sex: '', location: '', pinCode: '', reason: '', phone: '', uid: null, accountBusy: false,
     preferredLang: null, // 'en' | 'hi' — chosen on the very first screen, carried forward on
                           // follow-up visits so it's only ever asked once per patient
     sblConsent: null, // true | false | null(not yet answered) — free courier/COD delivery from SBL
-    deliveryPreference: null, // 'dispensed' | 'own' | null(not yet answered) — asked fresh each
-                              // visit, since where to send medicine can genuinely change visit to visit
-    fullAddress: '', // only collected/relevant when deliveryPreference === 'dispensed'
+    deliveryPreference: null, // CHANGE (2026-10): no longer asked — the screen that set this
+                              // was removed from the patient flow. Left here, always null, only
+                              // because nothing else in the system reads it.
+    fullAddress: '', // CHANGE (2026-10): no longer collected, same reason as deliveryPreference above.
     priorGenerals: null, // flat array of generals rubric paths from this patient's most recent
                          // prior visit, carried on the access code for a Follow-up Visit link —
                          // null for a genuinely new patient with no history to carry forward
@@ -227,8 +237,11 @@ const state = {
   generalsQueue: { active: false, index: -1, order: [], expandedItem: null, detailSearch: {}, answers: {}, isWarmup: false },
   search: {
     query: '',
-    activeTab: 'all',          // all | sensation | timing | modality | laterality | cause | sequence | content
-    displayLimit: 30
+    displayLimit: 30,
+    // The 8 structured detail boxes below the main search box (2026-10
+    // redesign) — replaces the old category tabs entirely; each box is
+    // already scoped to one kind of detail, so there's no tab to pick.
+    dims: { location: '', sensation: '', timing: '', modality: '', laterality: '', cause: '', sequence: '', content: '' }
   },
   data: {
     chaptersBucketed: null,    // { chapterName: [[id,path,remedies], ...] }
@@ -406,11 +419,11 @@ async function loadRepertoryData() {
   state.data.searchIndex = searchIndex;
   state.data.ready = true;
 
-  // If the patient has already reached the chapters screen and it rendered
-  // its "still preparing" placeholder (see getNextOptions/renderChaptersScreen
-  // guards below) while this was still running, refresh now so it shows the
-  // real content instead of waiting for their next click.
-  if (state.screen === 'chapters') render();
+  // If the patient has already reached the search screen while this was
+  // still running (searchIndex not built yet, so nothing could match),
+  // refresh now so it shows real results instead of waiting for their next
+  // click or keystroke.
+  if (state.screen === 'search') render();
 }
 
 // =================================================================
@@ -615,10 +628,9 @@ window.addEventListener('popstate', function () {
   if (state.patient.uid) {
     window.saveDraftCase(state.patient.uid, state.completeCase); // immediate; don't wait on the debounce
   }
-  if (state.screen === 'walk') onWalkBack();
+  if (state.screen === 'search' && state.currentWalk.pathTokens.length > 0) onWalkBack();
   else if (state.screen === 'generalsWalk') onGeneralsItemBack();
   else if (state.screen === 'search') onCloseSearch();
-  else if (state.screen === 'chapters' && typeof chapterBlockView !== 'undefined' && chapterBlockView !== null) onChapterBlockBack();
   else if (state.editingCaseIndex !== null && typeof onCancelEdit === 'function') onCancelEdit();
   else render(); // no specific handler for this screen — at minimum, stay put rather than leaving
 });
@@ -654,20 +666,15 @@ function render() {
   else if (state.screen === 'language') app.innerHTML = renderLanguageScreen();
   else if (state.screen === 'intake') app.innerHTML = renderIntakeScreen();
   else if (state.screen === 'guide') app.innerHTML = renderGuideScreen();
-  else if (state.screen === 'deliveryPref') app.innerHTML = renderDeliveryPrefScreen();
-  else if (state.screen === 'chapters') app.innerHTML = renderChapterSelect();
-  else if (state.screen === 'walk') app.innerHTML = renderWalkStep();
   else if (state.screen === 'generalsWalk') app.innerHTML = renderGeneralsQuestionStep();
   else if (state.screen === 'connectorPrompt') app.innerHTML = renderConnectorPrompt();
   else if (state.screen === 'followUpRating') app.innerHTML = renderFollowUpRatingScreen();
   else if (state.screen === 'caseReview') app.innerHTML = renderCaseReview();
   else if (state.screen === 'followUpChangesSummary') app.innerHTML = renderFollowUpChangesSummary();
-  else if (state.screen === 'search') app.innerHTML = renderSearchScreen();
+  else if (state.screen === 'search') app.innerHTML = renderWizardScreen();
   else if (state.screen === 'submitted') app.innerHTML = renderSubmittedScreen();
 
   if (state.screen === 'intake') wireIntakeScreen();
-
-  maybeShowIntakeTour();
 }
 
 function renderLoading() {
@@ -675,143 +682,13 @@ function renderLoading() {
     <div class="load-bar"><div class="load-anim"></div></div></div>`;
 }
 
-// ── FIRST-VISIT GUIDED TOUR ──
-// Runs once ever per device/browser (localStorage-gated) the first time a
-// patient reaches the top-level chapter select screen — the one with the
-// "Where is the main problem" heading, the Search button in the topbar, and
-// the chapter chart below it. Three steps: a framing intro (no specific
-// element — orients the patient before anything is highlighted), then the
-// Search button (the free-text alternative), then the chart. Steps 1 and 2
-// are built against the REAL rendered elements via getBoundingClientRect
-// rather than fixed coordinates, so they line up correctly across phone
-// sizes.
-const TOUR_SEEN_KEY = 'pv_intake_tour_seen_v1';
-let tourStep = 0; // 0 = intro (no target), 1 = search box, 2 = chapter chart
-let tourTriggeredThisLoad = false; // guards against re-triggering on every
-  // incidental render() call while still sitting on this same screen —
-  // localStorage alone isn't enough, since it gets set the instant the tour
-  // first shows (so it never reappears on a LATER visit even if this one is
-  // abandoned mid-tour), which would otherwise cause the very next render()
-  // to see the flag and instantly tear the overlay back down again.
-
-function maybeShowIntakeTour() {
-  const isOverviewChapters = state.screen === 'chapters' && chapterBlockView === null;
-  if (!isOverviewChapters) { removeIntakeTour(); return; }
-  if (tourTriggeredThisLoad || localStorage.getItem(TOUR_SEEN_KEY)) return;
-  tourTriggeredThisLoad = true;
-  localStorage.setItem(TOUR_SEEN_KEY, '1');
-  tourStep = 0;
-  requestAnimationFrame(renderIntakeTourStep);
-}
-
-function removeIntakeTour() {
-  const el = document.getElementById('tourOverlay');
-  if (el) el.remove();
-}
-
-function tourStepDots() {
-  return `<div class="tour-step-dots">${[0,1,2].map(i => `<span class="${i===tourStep?'active':''}"></span>`).join('')}</div>`;
-}
-
-function renderIntakeTourStep() {
-  removeIntakeTour();
-  const hi = state.patient.preferredLang === 'hi';
-
-  if (tourStep === 0) {
-    // Intro framing step — no specific element to point at yet, just a
-    // centered card orienting the patient before the two spotlighted
-    // steps that follow.
-    const overlay = document.createElement('div');
-    overlay.id = 'tourOverlay';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9997;background:rgba(0,0,0,0.72);display:flex;align-items:center;justify-content:center;padding:20px;';
-    const card = document.createElement('div');
-    card.className = 'tour-tooltip';
-    card.style.cssText = 'position:static;max-width:320px;';
-    card.innerHTML = `
-      <div class="tour-text-en">${hi
-        ? 'अब, कृपया अपने मुख्य लक्षण / शिकायतें खोजने और चुनने की कोशिश करें — जो आप वास्तव में महसूस कर रहे हैं'
-        : 'Now, please try to find and select the rubrics/symptoms you are actually feeling — your main complaints'}</div>
-      <div class="tour-btns" style="margin-top:14px;">
-        <button class="tour-skip" onclick="onIntakeTourSkip()">${hi ? 'छोड़ें' : 'Skip'}</button>
-        <button class="tour-next" onclick="onIntakeTourNext()">${hi ? 'आगे' : 'Next'}</button>
-      </div>
-      ${tourStepDots()}
-    `;
-    overlay.appendChild(card);
-    document.body.appendChild(overlay);
-    return;
-  }
-
-  const isSearchStep = tourStep === 1;
-  const target = document.querySelector(isSearchStep ? '.search-btn' : '.chapter-grid');
-  if (!target) return; // screen changed out from under us — nothing to anchor to, skip silently
-
-  const rect = target.getBoundingClientRect();
-  const pad = isSearchStep ? 6 : 4;
-  const overlay = document.createElement('div');
-  overlay.id = 'tourOverlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:9997;';
-
-  const highlightTop = rect.top - pad + window.scrollY;
-  const highlightLeft = rect.left - pad + window.scrollX;
-  const highlightW = rect.width + pad * 2;
-  const highlightH = rect.height + pad * 2;
-
-  const highlight = document.createElement('div');
-  highlight.className = 'tour-highlight';
-  highlight.style.top = highlightTop + 'px';
-  highlight.style.left = highlightLeft + 'px';
-  highlight.style.width = highlightW + 'px';
-  highlight.style.height = highlightH + 'px';
-  overlay.appendChild(highlight);
-
-  // Tooltip goes below the target if there's room, otherwise above it —
-  // matters most for the chapter-grid step, which can run tall on longer
-  // chapter lists and push close to the bottom of the screen.
-  const spaceBelow = window.innerHeight - rect.bottom;
-  const tooltipBelow = spaceBelow > 170 || rect.top < 170;
-
-  const arrow = document.createElement('div');
-  arrow.className = 'tour-arrow';
-  arrow.innerHTML = tooltipBelow ? '&uarr;' : '&darr;';
-  const arrowTop = tooltipBelow ? (highlightTop + highlightH + 4) : (highlightTop - 40);
-  arrow.style.top = arrowTop + 'px';
-  arrow.style.left = Math.max(12, highlightLeft + highlightW / 2 - 17) + 'px';
-  overlay.appendChild(arrow);
-
-  const tooltip = document.createElement('div');
-  tooltip.className = 'tour-tooltip';
-  const tooltipTop = tooltipBelow ? (arrowTop + 40) : (arrowTop - 108);
-  tooltip.style.top = Math.max(10, tooltipTop) + 'px';
-  let tooltipLeft = highlightLeft + highlightW / 2 - 140;
-  tooltipLeft = Math.min(Math.max(tooltipLeft, 10), window.innerWidth - 290);
-  tooltip.style.left = tooltipLeft + 'px';
-
-  tooltip.innerHTML = `
-    <div class="tour-text-en">${isSearchStep
-      ? (hi ? 'आप यहाँ अपनी शिकायत या लक्षण टाइप कर सकते हैं' : 'You can type your complaint or symptom here')
-      : (hi ? 'या नीचे दिए गए चार्ट से अपने शरीर के सही हिस्से/अंग को चुनें' : 'Or choose your exact system, organ, or location of complaint from the chart below')}</div>
-    <div class="tour-btns">
-      <button class="tour-skip" onclick="onIntakeTourSkip()">${hi ? 'छोड़ें' : 'Skip'}</button>
-      <button class="tour-next" onclick="onIntakeTourNext()">${isSearchStep ? (hi ? 'आगे' : 'Next') : (hi ? 'समझ गया' : 'Got it')}</button>
-    </div>
-    ${tourStepDots()}
-  `;
-  overlay.appendChild(tooltip);
-
-  document.body.appendChild(overlay);
-}
-
-window.onIntakeTourNext = function() {
-  if (tourStep < 2) { tourStep++; renderIntakeTourStep(); }
-  else { removeIntakeTour(); }
-};
-window.onIntakeTourSkip = function() {
-  removeIntakeTour();
-};
-window.addEventListener('resize', () => {
-  if (document.getElementById('tourOverlay')) renderIntakeTourStep();
-});
+// CHANGE (2026-10): the first-visit guided tour (FIRST-VISIT GUIDED TOUR)
+// that used to run here — maybeShowIntakeTour/renderIntakeTourStep and
+// friends — pointed at the top-level chapter-select screen's Search button
+// and its .chapter-grid chart. Both anchors are gone now that the organ/
+// chapter picker has been removed and Search is the one entry point, so the
+// whole tour was removed rather than left dark. A new one (if wanted) would
+// need to be designed fresh against the unified search+drill screen.
 
 // The very first screen for a genuinely new patient — before basics, before
 // anything else. Carried forward on Follow-up Visit links (see
@@ -834,7 +711,7 @@ window.onLanguagePick = function (lang) {
   render();
 };
 
-// Shown once, right after unlock, before the Sleep/Appetite warm-up — never
+// Shown once, right after unlock, before the main complaint chart — never
 // repeated for a recognized returning patient (see proceedPastUnlock).
 function renderGuideScreen() {
   const hi = state.patient.preferredLang === 'hi';
@@ -877,60 +754,16 @@ function renderGuideScreen() {
     </div>
   `;
 }
+// CHANGE (2026-10): the delivery-preference question ("How would you like
+// to receive your medicine?") has been removed from the patient flow
+// entirely, per instruction — it added a decision for the patient before
+// they'd even described their complaint, and the choice was never read by
+// any other screen in the system (dashboard/admin/case analyzer all leave
+// deliveryPreference/fullAddress alone). Guide now leads straight into the
+// search screen (the organ/chapter chart it used to lead into is gone).
 window.onGuideContinue = function () {
-  startDeliveryPrefScreen();
-};
-
-function startDeliveryPrefScreen() {
-  state.screen = 'deliveryPref';
+  state.screen = 'search';
   render();
-}
-
-function renderDeliveryPrefScreen() {
-  const p = state.patient;
-  const hi = p.preferredLang === 'hi';
-  const dispensedSelected = p.deliveryPreference === 'dispensed';
-  const ownSelected = p.deliveryPreference === 'own';
-  return `
-    <div class="screen-pad" style="max-width:480px;margin:0 auto;padding:28px 20px;">
-      <h2 style="font-size:19px;margin-bottom:18px;">${hi ? 'आप अपनी दवा कैसे प्राप्त करना चाहेंगे?' : 'How would you like to receive your medicine?'}</h2>
-      <div class="ch-card" style="margin-bottom:10px;${dispensedSelected ? 'border-color:var(--teal);background:var(--amber-bg)' : ''}" onclick="onDeliveryPrefPick('dispensed')">
-        <div class="en">${hi ? 'मेरे पते पर भेजें' : 'Dispense at my address'}</div>
-      </div>
-      <div class="ch-card" style="margin-bottom:18px;${ownSelected ? 'border-color:var(--teal);background:var(--amber-bg)' : ''}" onclick="onDeliveryPrefPick('own')">
-        <div class="en">${hi ? 'मैं स्वयं खरीद लूंगा/लूंगी' : "I'll purchase it myself"}</div>
-      </div>
-      ${dispensedSelected ? `
-        <label class="form-label" style="display:block;margin-bottom:6px;">${hi ? 'पूरा पता' : 'Complete address'}</label>
-        <textarea id="deliveryAddressField" class="search-box" style="height:90px;width:100%;margin-bottom:6px;" placeholder="${hi ? 'मकान/फ्लैट, गली, इलाका, शहर, राज्य' : 'House/flat, street, area, city, state'}">${esc(p.fullAddress)}</textarea>
-      ` : ''}
-      <div id="deliveryPrefErr" style="color:#c0392b;font-size:13px;margin-bottom:10px;"></div>
-      <button onclick="onDeliveryPrefContinue()" style="display:block;width:100%;padding:15px;margin-top:8px;border:none;border-radius:10px;background:var(--teal,#1C6B5A);color:#fff;font-size:16px;font-weight:600;cursor:pointer;">${hi ? 'आगे बढ़ें' : 'Continue'}</button>
-    </div>
-  `;
-}
-window.onDeliveryPrefPick = function (choice) {
-  state.patient.deliveryPreference = choice;
-  render();
-  if (choice === 'dispensed') {
-    setTimeout(() => {
-      const f = document.getElementById('deliveryAddressField');
-      if (f) f.addEventListener('input', () => { state.patient.fullAddress = f.value; });
-    }, 0);
-  }
-};
-window.onDeliveryPrefContinue = function () {
-  const errEl = document.getElementById('deliveryPrefErr');
-  if (errEl) errEl.textContent = '';
-  if (!state.patient.deliveryPreference) {
-    if (errEl) errEl.textContent = state.patient.preferredLang === 'hi' ? 'कृपया एक विकल्प चुनें।' : 'Please choose an option.';
-    return;
-  }
-  if (state.patient.deliveryPreference === 'dispensed' && !state.patient.fullAddress.trim()) {
-    if (errEl) errEl.textContent = state.patient.preferredLang === 'hi' ? 'कृपया अपना पूरा पता दर्ज करें।' : 'Please enter your complete address.';
-    return;
-  }
-  startWarmupSequence();
 };
 
 // Decides what a just-unlocked patient sees next. A Follow-up Visit link
@@ -968,10 +801,6 @@ function pushGeneralIfNew(rubric) {
   if (!rubric || caseHasRubric(rubric.id)) return;
   state.completeCase.push({ rubricId: rubric.id, path: rubric.path, remedyCount: rubric.remedyCount, source: 'generals' });
 }
-function alertAlreadyInList() {
-  alert(state.patient.preferredLang === 'hi' ? 'यह लक्षण पहले से आपकी सूची में है।' : 'This symptom is already in your list.');
-}
-
 // MY-PROGRESS: plain-language names of the rated complaints, stored WITH
 // the rating record so the patient portal can show "Your progress" by name
 // without downloading the (large) translation files on a phone.
@@ -1158,14 +987,11 @@ async function attemptAutoUnlock() {
         }
       } catch (e) { console.error('[patient-intake] draft load failed:', e); }
       }
-    // Only run the warm-up if it genuinely hasn't been started (or
-    // finished) yet within this same in-progress case — resuming mid-chart,
-    // or having already answered generals, shouldn't show it again.
-    if (!state.completeCase.some(e => e.source === 'generals')) {
-      startDeliveryPrefScreen();
-      return;
-    }
-    state.screen = 'chapters';
+    // CHANGE (2026-10): there's no separate early stage to gate behind
+    // generals-answered any more (delivery preference removed, and Generals
+    // now only ever runs as one sequence at the end) — a resuming patient
+    // just goes straight back to the search screen either way.
+    state.screen = 'search';
     render();
     return;
   }
@@ -1402,27 +1228,20 @@ function seedCompleteCaseFromPrefill(answers, order) {
   });
 }
 
-// The warm-up — Sleep and Appetite specifically, run immediately after
-// unlock, before the patient ever sees the main chapter chart. Not
-// skippable: these are clinically essential, same as the rest of Generals,
-// just deliberately the gentlest, most universally-relatable pair to start
-// with. On a Follow-up Visit, previous answers show pre-selected — nothing
-// to redo unless something's actually changed.
-function startWarmupSequence() {
-  const isFemale = (state.patient.sex || '').toLowerCase() === 'female';
-  const order = GENERALS_WALKS.filter(w => ['Sleep', 'Appetite'].includes(w.label)).filter(w => !w.femaleOnly || isFemale);
-  const answers = buildPrefilledAnswers(order);
-  seedCompleteCaseFromPrefill(answers, order);
-  state.generalsQueue = { active: true, index: 0, order, expandedItem: null, detailSearch: {}, answers, isWarmup: true };
-  state.screen = 'generalsWalk';
-  render();
-}
-
+// CHANGE (2026-10): Sleep and Appetite used to run as a separate early
+// "warm-up" immediately after unlock, before the patient ever saw the main
+// chapter chart (startWarmupSequence, now removed). Per instruction, they
+// no longer jump the queue — they're just two more topics in the one
+// Generals sequence below, alongside Thirst/Perspiration/Constipation/
+// Stool/Urine/Menses/Physical & Mental Generals, all asked together at the
+// end, after the main complaint(s). isWarmup stays in generalsQueue's
+// shape (still checked in onGeneralsTopicContinue/onGeneralsItemBack) but
+// is never set true any more — Generals, every time, behaves like the old
+// non-warmup path: finishing submits the case, backing out of the first
+// topic returns to Case Review.
 function startGeneralsSequence() {
   const isFemale = (state.patient.sex || '').toLowerCase() === 'female';
-  // Sleep and Appetite already ran in the warm-up right after unlock —
-  // excluded here so the patient is never asked either one twice.
-  const order = GENERALS_WALKS.filter(w => !w.femaleOnly || isFemale).filter(w => !['Sleep', 'Appetite'].includes(w.label));
+  const order = GENERALS_WALKS.filter(w => !w.femaleOnly || isFemale);
   const answers = buildPrefilledAnswers(order);
   seedCompleteCaseFromPrefill(answers, order);
   state.generalsQueue = { active: true, index: 0, order, expandedItem: null, detailSearch: {}, answers, isWarmup: false };
@@ -1614,7 +1433,7 @@ function onGeneralsTopicContinue() {
     if (gq.isWarmup) {
       // Warm-up done — on to the patient's actual main complaint, not a
       // submission yet.
-      state.screen = 'chapters';
+      state.screen = 'search';
       render();
     } else {
       onSubmitCase();
@@ -1906,11 +1725,18 @@ function onContinueToRepertorizeFromSubmitted() {
   if (url) window.location.href = url;
 }
 
-function renderTopbar(title, sub) {
+// showSearchBtn defaults to true for every other screen (Generals, the
+// connector prompt, follow-up rating, case review…) that still needs a way
+// to jump INTO the wizard screen. renderWizardScreen itself passes false —
+// its own big highlighted search box (see .wizard-search-highlight) IS the
+// search entry point, so a second "Search" button in its topbar would just
+// point at the screen it's already on.
+function renderTopbar(title, sub, showSearchBtn) {
+  if (showSearchBtn === undefined) showSearchBtn = true;
   return `<div class="topbar">
     <div style="display:flex;align-items:center;justify-content:space-between">
       <div><h1>${title}</h1><div class="sub">${sub}</div></div>
-      <button class="search-btn" onclick="onOpenSearch()">&#128269; Search</button>
+      ${showSearchBtn ? `<button class="search-btn" onclick="onOpenSearch()">&#128269; Search</button>` : ''}
     </div>
   </div>`;
 }
@@ -1920,37 +1746,6 @@ function renderBreadcrumb() {
   const segs = state.currentWalk.pathTokens.map(t => `<span class="seg">${esc(t)}</span>`).join('');
   return `<div class="breadcrumb">${segs}</div>`;
 }
-
-// Chapters a patient might not know how to categorize on their own — grouped
-// so related complaint areas sit together instead of being scattered through
-// a single alphabetical list. Every other chapter stays exactly as before,
-// in its normal alphabetical spot in the flat grid below the groups.
-const CHAPTER_GROUPS = [
-  { label: 'Ear & Hearing', hindi: 'कान और सुनना', icon: 'ear', chapters: ['Ear', 'Hearing'] },
-  { label: 'Eye & Vision', hindi: 'आँख और दृष्टि', icon: 'eye', chapters: ['Eye', 'Vision'] },
-  { label: 'Rectum & Stool', hindi: 'मलाशय और मल', icon: 'toilet', chapters: ['Rectum', 'Stool'] },
-  { label: 'Stomach, Appetite & Abdomen', hindi: 'आमाशय, भूख और पेट', icon: 'plate', chapters: ['Stomach', 'Appetite', 'Abdomen'] },
-  { label: 'Urine, Urethra, Bladder & Kidneys', hindi: 'मूत्र, मूत्रमार्ग, मूत्राशय और गुर्दे', icon: 'kidneys', chapters: ['Urine', 'Urethra', 'Bladder', 'Kidneys'] },
-  { label: 'Nose, Throat & Larynx', hindi: 'नाक, गला और स्वरयंत्र', icon: 'nose', chapters: ['Nose', 'Throat', 'External throat', 'Larynx and trachea'] },
-  { label: 'Cough, Expectoration & Respiration', hindi: 'खांसी, कफ और श्वास', icon: 'lungs', chapters: ['Cough', 'Expectoration', 'Respiration'] },
-  { label: 'Chill, Fever & Perspiration', hindi: 'ठंड, बुखार और पसीना', icon: 'thermometer', chapters: ['Chill', 'Fever', 'Perspiration'] },
-  { label: 'Face, Mouth & Teeth', hindi: 'चेहरा, मुँह और दांत', icon: ['mouth', 'tooth'], chapters: ['Face', 'Mouth', 'Teeth'] },
-  { label: 'Chest & Heart / Circulation', hindi: 'छाती और हृदय', icon: 'heart', chapters: ['Chest', 'Heart & Circulation'] },
-  { label: 'Mind, Head & Vertigo', hindi: 'मन, सिर और चक्कर', icon: 'brain', chapters: ['Mind', 'Head', 'Vertigo'] },
-  { label: 'Back & Extremities', hindi: 'पीठ और हाथ-पैर', icon: 'leg', chapters: ['Back', 'Extremities'] },
-  { label: 'Male Genitalia & Prostate', hindi: 'पुरुष जननांग और प्रोस्टेट', icon: 'male', chapters: ['Genitalia male', 'Prostate gland'] },
-];
-// Left standalone deliberately, same as everything else not listed above:
-// Blood, Clinical, Generalities, Genitalia female, Skin, Sleep — none of
-// these has an equally obvious partner among the remaining chapters.
-const STANDALONE_CHAPTER_ICONS = {
-  'Blood': 'blood',
-  'Clinical': 'clipboard',
-  'Generalities': 'person',
-  'Genitalia female': 'female',
-  'Skin': 'hand',
-  'Sleep': 'moon',
-};
 
 // Short, complete Hindi name for every chapter — used instead of the long
 // "general problem with X" sentence the translation data returns for a bare
@@ -1970,155 +1765,35 @@ const CHAPTER_HINDI_NAMES = {
   'Urethra': 'मूत्रमार्ग', 'Urine': 'पेशाब', 'Vertigo': 'चक्कर', 'Vision': 'दृष्टि',
 };
 
-// Simple line-icons drawn directly as SVG paths rather than emoji — emoji
-// glyph support varies a lot by device/OS/browser (several showed up as
-// broken boxes on Android), while inline SVG renders identically everywhere
-// and keeps the file fully self-contained and offline.
+// Just the two lock glyphs now — used only by the Case Review screen's
+// "tap to reconsider / tap again to edit" badge (renderCaseReview). Every
+// other icon that used to live here (ear, eye, plate, the chapter-group
+// icons, etc.) was dropped when the icon-based organ picker was removed
+// (2026-10) and nothing else ever read them — renderIcon() went with them,
+// being its only caller.
 const ICON_PATHS = {
-  ear: '<path d="M9 13a4 4 0 1 0 4-6.7A5.5 5.5 0 0 1 17.5 12c0 2-1 3.3-2 4.3-1 1-1.5 1.9-1.5 3a2.5 2.5 0 0 1-5 0"/>',
-  eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
-  toilet: '<rect x="7" y="3" width="8" height="4" rx="1"/><rect x="5" y="7.3" width="12" height="2.4" rx="1"/><path d="M7 10c0 5.8 2 10 5 10s5-4.2 5-10"/>',
-  plate: '<circle cx="12" cy="12" r="9"/><path d="M8 6.5v4.5a1.5 1.5 0 0 0 3 0V6.5M9.5 11v6.5M16 6.5v11M16 6.5a2.3 2.3 0 0 1 0 4.6"/>',
-  kidneys: '<path d="M8.3 4c-2 0-3.3 2-3.3 4.7S6.3 13 8.3 13c1.4 0 2.2-1 2.2-2.6V6.6C10.5 5 9.7 4 8.3 4z"/><path d="M15.7 4c2 0 3.3 2 3.3 4.7S17.7 13 15.7 13c-1.4 0-2.2-1-2.2-2.6V6.6c0-1.6.8-2.6 2.2-2.6z"/><path d="M8.3 13v3M15.7 13v3"/><ellipse cx="12" cy="19" rx="3" ry="2"/>',
-  nose: '<path d="M10 3.5v7.3a3 3 0 0 0 3 3h.7a2 2 0 0 1 1.7 3 3 3 0 0 1-2.6 1.5H9.5"/><circle cx="9.3" cy="17.3" r=".4" fill="var(--teal)"/>',
-  lungs: '<path d="M12 3v8.5"/><path d="M12 11.5c-.8-2.7-2.7-2.9-3.7-2-1.2 1-2 4.6-1.1 8.6.4 1.8 1.8 1.8 2.7.9.9-.9 1.6-3.7 1.6-7"/><path d="M12 11.5c.8-2.7 2.7-2.9 3.7-2 1.2 1 2 4.6 1.1 8.6-.4 1.8-1.8 1.8-2.7.9-.9-.9-1.6-3.7-1.6-7"/><path d="M8.3 9.5 6 7.3M15.7 9.5 18 7.3"/>',
-  thermometer: '<path d="M13 14.7V4.5a1.7 1.7 0 0 0-3.4 0v10.2a4 4 0 1 0 3.4 0z"/><path d="M9.6 8h2"/>',
-  tooth: '<path d="M12 4.3c-1.8 0-3.1.9-4.5.9-1.6 0-2.5-.3-2.5 2 0 2.8.9 4.6 1.4 7.6.3 1.7.9 2.7 1.8 2.7s1.1-1.8 1.4-3.6c.2-1.3.5-1.8 1.4-1.8s1.2.5 1.4 1.8c.3 1.8.5 3.6 1.4 3.6s1.5-1 1.8-2.7c.5-3 1.4-4.8 1.4-7.6 0-2.3-.9-2-2.5-2-1.4 0-2.7-.9-4.5-.9z"/>',
-  face: '<circle cx="12" cy="12" r="8.5"/><circle cx="9" cy="10" r=".7" fill="var(--teal)"/><circle cx="15" cy="10" r=".7" fill="var(--teal)"/><path d="M8.7 14.8c1 1.3 5.6 1.3 6.6 0"/>',
-  mouth: '<path d="M4 12c2.7 3.2 13.3 3.2 16 0"/><path d="M7.5 12.6c1.9 1.2 7.1 1.2 9 0"/>',
-  heart: '<path d="M12 20.5s-7.5-4.2-7.5-10.2a4.3 4.3 0 0 1 7.5-2.8 4.3 4.3 0 0 1 7.5 2.8c0 6-7.5 10.2-7.5 10.2z"/>',
-  brain: '<path d="M9.3 3.5A2.7 2.7 0 0 0 6.6 6a2.7 2.7 0 0 0-1 5.2A2.7 2.7 0 0 0 7 15.7a2.7 2.7 0 0 0 2.7 2.8h1V4.4a2.7 2.7 0 0 0-1.4-.9z"/><path d="M14.7 3.5A2.7 2.7 0 0 1 17.4 6a2.7 2.7 0 0 1 1 5.2A2.7 2.7 0 0 1 17 15.7a2.7 2.7 0 0 1-2.7 2.8h-1V4.4a2.7 2.7 0 0 1 1.4-.9z"/>',
-  forehead: '<path d="M7 20v-3.2c-1.6-1.1-2.7-3.2-2.7-5.8A7.7 7.7 0 0 1 12 3.3c3 0 5.2 1.5 6.2 3.6.3.6.9 1 1.6 1a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-1v2.8a2 2 0 0 1-2 2H15v3"/>',
-  bone: '<path d="M5.2 5.2a2.3 2.3 0 0 1 3.2 3.2l7.2 7.2a2.3 2.3 0 1 1-3.2 3.2l-7.2-7.2a2.3 2.3 0 0 1 0-6.4z"/>',
-  back: '<path d="M9 21c-1.2-3.2-1.2-6.4 0-9.5M15 21c1.2-3.2 1.2-6.4 0-9.5"/><path d="M12 3v16"/><path d="M9.7 6.2h4.6M9.7 9.4h4.6M9.7 12.6h4.6M9.7 15.8h4.6"/>',
-  leg: '<path d="M10.3 3h3.4l.4 7.5-1.2 3.3.4 7.2h-2l-.6-6.7-2.1 6.7H6.4l1.5-7.8-1.1-3.7z"/>',
-  male: '<circle cx="9.5" cy="14.5" r="6"/><path d="M14 10 19.5 4.5M15 4.5h4.5V9"/>',
-  blood: '<path d="M12 2.5s6 7 6 11.3A6 6 0 1 1 6 13.8C6 9.5 12 2.5 12 2.5z"/>',
-  clipboard: '<rect x="5" y="4.5" width="14" height="16.5" rx="2"/><rect x="9" y="2.5" width="6" height="3.6" rx="1"/><path d="M8.5 11h7M8.5 14.5h7M8.5 18h4.5"/>',
-  person: '<circle cx="12" cy="6.3" r="3"/><path d="M6 21v-2a6 6 0 0 1 12 0v2"/>',
-  female: '<circle cx="12" cy="9" r="6"/><path d="M12 15v6M9 18h6"/>',
-  hand: '<path d="M8 12.3V5.3a1.5 1.5 0 0 1 3 0v5M11 10.3V4.3a1.5 1.5 0 0 1 3 0v6M14 10.7V5.3a1.5 1.5 0 0 1 3 0v7.7c0 4-2 7-6 7h-.7c-2.7 0-3.8-1-5.1-3.7l-1.8-3.7a1.4 1.4 0 0 1 2.3-1.5L8 13.3"/>',
-  moon: '<path d="M20 14.7A8.5 8.5 0 1 1 9.3 4a7 7 0 0 0 10.7 10.7z"/>',
   lockClosed: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/><circle cx="12" cy="15.3" r="1.3" fill="var(--teal)"/>',
   lockOpen: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M16 10.5V8a4 4 0 0 0-7-2.5"/><circle cx="12" cy="15.3" r="1.3" fill="var(--teal)"/>',
 };
 
-// A block's icon can be one key (single SVG) or an array of keys (a few
-// small ones shown side by side) for groups that cover several distinct
-// body parts at once, e.g. Face + Mouth + Teeth.
-function renderIcon(keyOrKeys) {
-  if (!keyOrKeys) return '';
-  const keys = Array.isArray(keyOrKeys) ? keyOrKeys : [keyOrKeys];
-  const size = keys.length > 1 ? 20 : 26;
-  const svgs = keys.filter(k => ICON_PATHS[k]).map(k =>
-    `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[k]}</svg>`
-  );
-  if (!svgs.length) return '';
-  if (svgs.length === 1) return `<div style="margin-bottom:4px;">${svgs[0]}</div>`;
-  return `<div style="display:flex;justify-content:center;gap:4px;margin-bottom:4px;">${svgs.join('')}</div>`;
-}
-
-function renderChapterCard(ch, iconOverride) {
-  const iconKey = iconOverride || STANDALONE_CHAPTER_ICONS[ch];
-  return `<div class="ch-card" onclick="onChapterPick('${escAttr(ch)}')">
-    ${renderIcon(iconKey)}
-    <div class="en">${esc(ch)}</div>
-    ${CHAPTER_HINDI_NAMES[ch] ? `<div class="hi">${esc(CHAPTER_HINDI_NAMES[ch])}</div>` : ''}
-  </div>`;
-}
-
-function renderChapterSelect() {
-  // Guard for the rare case a patient moves through the earlier screens fast
-  // enough to arrive here before loadRepertoryData() (running in the
-  // background since bootFirstScreen()) has finished bucketing and indexing.
-  // loadRepertoryData() re-renders on its own completion if it finds the
-  // patient already sitting on this screen — see its last few lines.
-  if (!state.data.ready) return renderLoading();
-  const sex = state.patient.sex;
-  const visibleChapters = state.data.chapterList.filter(ch => {
-    if (sex === 'male' && ch === 'Genitalia female') return false;
-    if (sex === 'female' && ch === 'Genitalia male') return false;
-    return true;
-  });
-  const visibleSet = new Set(visibleChapters);
-  const caseCount = state.completeCase.length;
-  const caseFooter = caseCount ? `<div class="footer-bar">
-      <button class="btn-outline" onclick="goToCaseReview()">Review case (${caseCount} added)</button>
-    </div>` : '';
-
-  // Level 2 — a block was tapped; show just its chapters, with a way back
-  // to the overview instead of every chapter in the repertory at once.
-  if (chapterBlockView !== null) {
-    const group = CHAPTER_GROUPS[chapterBlockView];
-    const present = group.chapters.filter(ch => visibleSet.has(ch));
-    const cols = present.length === 4 ? 2 : Math.min(present.length, 3);
-    return `
-      ${renderTopbar('Guided Case Wizard', group.label)}
-      <div class="body">
-        <button class="back-btn" onclick="onChapterBlockBack()">&larr; Back</button>
-        <h2 class="step-title">${esc(group.label)}</h2>
-        <p class="hi" style="margin-bottom:10px;">${esc(group.hindi)}</p>
-        <p class="step-sub">Pick the one that best matches. जो सबसे सही लगे उसे चुनें।</p>
-        <div class="chapter-grid" style="grid-template-columns:repeat(${cols},1fr);">${present.map(ch => renderChapterCard(ch, group.icon)).join('')}</div>
-      </div>
-      ${caseFooter}
-    `;
-  }
-
-  // Level 1 — every related-chapter block shown as a single tile (tap to see
-  // its specific chapters), plus every chapter that isn't part of any block,
-  // exactly as before.
-  const groupedSet = new Set();
-  const blockTilesHtml = CHAPTER_GROUPS.map((g, idx) => {
-    const present = g.chapters.filter(ch => visibleSet.has(ch));
-    if (!present.length) return '';
-    present.forEach(ch => groupedSet.add(ch));
-    return `<div class="ch-card" onclick="onChapterBlockPick(${idx})">
-      ${renderIcon(g.icon)}
-      <div class="en">${esc(g.label)}</div>
-      <div class="hi">${esc(g.hindi)} &rsaquo;</div>
-    </div>`;
-  }).join('');
-
-  const remaining = visibleChapters.filter(ch => !groupedSet.has(ch));
-  const cards = remaining.map(ch => renderChapterCard(ch)).join('');
-
-  return `
-    ${renderTopbar('Guided Case Wizard', 'Select what is troubling the patient')}
-    <div class="body">
-      <button class="back-btn" onclick="startWarmupSequence()">&larr; Back</button>
-      <h2 class="step-title">Where is the main problem, or what kind of problem is it?</h2>
-      <p class="step-sub">Pick the one that best matches — you can add more complaints after this one. जो सबसे सही लगे उसे चुनें — इसके बाद आप और शिकायतें भी जोड़ सकते हैं।</p>
-      <p class="step-sub" style="font-size:12.5px;color:var(--ink3);">💾 Your progress is saved automatically — you can close this anytime and continue later using the same link. आपकी प्रगति अपने आप सेव हो जाती है — आप इसे कभी भी बंद करके उसी लिंक से जारी रख सकते हैं।</p>
-      <div class="chapter-grid">${blockTilesHtml}${cards}</div>
-    </div>
-    ${caseFooter}
-  `;
-}
-
-function onChapterBlockPick(groupIndex) {
-  chapterBlockView = groupIndex;
-  render();
-}
-
-function onChapterBlockBack() {
-  chapterBlockView = null;
-  render();
-}
-
+// CHANGE (2026-10): the organ/chapter-picker screen (renderChapterSelect)
+// and its "chapters" screen are gone entirely, per instruction — Search
+// (renderWizardScreen, below, now titled "Guided Case Wizard" like this
+// used to be) is the one and only way a patient enters a complaint. Along
+// with it goes chapterBlockView (that screen's own drill state) and the
+// since-added organ-switcher drawer (organSwitcherOpen/renderOrganSwitcher/
+// onSwitchToOrgan and friends) — it only ever existed to jump between
+// organs while browsing that grid, which no longer exists either.
 let searchFilter = '';
 let showAllOptions = false;
 let collapsedGroups = {}; // { groupLabel: true/false } — true = collapsed. Reusable pattern.
-let chapterBlockView = null; // null = showing the block/chapter overview; a CHAPTER_GROUPS index = drilled into that one block's chapters
-// The "stop here" card starts UNLOCKED — tapping it locks the rubric in
-// (adds it to the case) and never auto-navigates anywhere; the patient uses
-// the explicit "Add more complaints" / "Continue" buttons to move on, on
-// their own schedule. Tapping a locked card unlocks it again to reconsider —
-// for a fresh (non-editing) pick that removes it from the case until
-// something is locked again; when re-entering an already-added item to
-// reconsider it, the original stays untouched until a new lock replaces it.
-// Reset to 'unlocked' whenever the current node changes.
-let stopHereLockState = 'unlocked';
+// CHANGE (2026-10): the "stop here" card's lock (stopHereLockState) is
+// gone — onStopHereTap/alertAlreadyInList went with it. Per instruction,
+// the lock icon is replaced by the same Add/Added toggle every other
+// addable rubric uses (onQuickAddOption via renderAddToggleBtn, see
+// renderWizardScreen), and intermediate rubrics along a drilled path now
+// add themselves automatically as drilling passes them (autoAddAlongPath)
+// rather than waiting for an explicit lock tap at the deepest point only.
 // Case review list: every item shows locked by default (it's already in the
 // case). Tapping it unlocks in place first ("click to reconsider"); tapping
 // again while in that state is what navigates to the rubric's origin. Reset
@@ -2169,174 +1844,559 @@ function onToggleGroup(groupKey) {
   render();
 }
 
-function renderWalkStep() {
-  const pathTokens = state.currentWalk.pathTokens;
-  const chapter = pathTokens[0];
+// Shared Add/Added toggle: replaces the old lock icon with a single
+// unified add mechanism, reusing the exact same onQuickAddOption toggle the
+// sibling option cards already used (single click adds, a second click
+// removes it again) — now in every place a rubric can be added from: the
+// "stop here" card, an already-walked history row, and a search-result
+// tree node. rubricRef is null for a node that isn't itself a real,
+// addable rubric (a pure branching/grouping point) — renders nothing then.
+function renderAddToggleBtn(rubricRef) {
+  if (!rubricRef) return '';
+  const alreadyAdded = state.completeCase.some(c => String(c.rubricId) === String(rubricRef.id));
+  return `<button class="quick-add-btn inline ${alreadyAdded ? 'added' : ''}" onclick="event.stopPropagation(); onQuickAddOption('${escAttr(rubricRef.id)}', '${escAttr(rubricRef.path)}', ${rubricRef.remedyCount})">${alreadyAdded ? '✓ Added · जोड़ा गया' : '+ Add · जोड़ें'}</button>`;
+}
 
-  // Render every already-made selection (depth 1 .. end) as a static, indented,
-  // individually-collapsible row — this is the persistent history the patient
-  // asked for. Each row gets its own expand/collapse arrow. Collapsing a row
-  // only hides what's visually nested under it; it never removes the underlying
-  // selection (pathTokens itself is untouched by collapsing).
-  let historyHtml = '';
-  let stoppedAtCollapsedDepth = -1;
-
-  for (let depth = 1; depth < pathTokens.length; depth++) {
-    const tokenAtDepth = pathTokens[depth];
-    const pathUpToHere = pathTokens.slice(0, depth + 1).join(', ');
-    const disp = getDisplayText(chapter, pathUpToHere, tokenAtDepth);
-    const indent = (depth - 1) * 14;
-    const nodeKey = 'selectedNode::' + pathUpToHere;
-    const isCollapsed = collapsedGroups[nodeKey] === true; // selected nodes default OPEN
-
-    historyHtml += `
-      <div class="selected-node" style="margin-left:${indent}px">
-        <div class="selected-node-header" onclick="onToggleGroup('${escAttr(nodeKey)}')">
-          <span class="collapsible-arrow ${isCollapsed ? '' : 'open'}">&#9656;</span>
-          <div class="selected-node-text">
-            ${renderTrilingualBlock(disp)}
-          </div>
-        </div>
-      </div>`;
-
-    if (isCollapsed) { stoppedAtCollapsedDepth = depth; break; }
+// Checks ONE exact path and adds it to the case if it is itself a real
+// rubric (per getNextOptions' exactMatchRubric) and isn't already present.
+// Per the user's explicit instruction, every rubric genuinely on the
+// drilled path — not just the final/deepest one — lands in the case by
+// default as drilling passes it; the Add/Added button on each row simply
+// reflects (and lets the patient override) that same state.
+function autoAddExactPathIfReal(pathTokens) {
+  if (!pathTokens || !pathTokens.length) return;
+  const { exactMatchRubric } = getNextOptions(pathTokens);
+  if (!exactMatchRubric) return;
+  const already = state.completeCase.some(c => String(c.rubricId) === String(exactMatchRubric.id));
+  if (!already) {
+    state.completeCase.push({ rubricId: exactMatchRubric.id, path: exactMatchRubric.path, remedyCount: exactMatchRubric.remedyCount });
   }
+}
+// For a path set all at once — jumping straight to a search result or a
+// tree node, rather than built one step at a time — walks every prefix
+// length so a real intermediate rubric passed over on the way in still
+// auto-adds, not just the final destination. Cheap (a handful of
+// short-array checks) to call for every walk-starting entry point, not
+// just the ones that jump multiple levels at once — see each call site.
+function autoAddAlongPath(pathTokens) {
+  for (let depth = 1; depth <= pathTokens.length; depth++) {
+    autoAddExactPathIfReal(pathTokens.slice(0, depth));
+  }
+}
 
-  // If the path was cut short by a collapsed node, nothing further renders below it.
-  if (stoppedAtCollapsedDepth !== -1) {
-    return `
-      ${renderTopbar('Guided Case Wizard', chapter)}
-      ${renderBreadcrumb()}
-      <div class="body">
-        <button class="back-btn" onclick="onWalkBack()">&larr; Back</button>
-      ${state.editingCaseIndex !== null ? `<div class="editing-banner">Editing an existing complaint. मौजूदा शिकायत में बदलाव किया जा रहा है। <span class="cancel-edit-link" onclick="onCancelEdit()">Cancel — keep original · रद्द करें, पहले जैसा रखें</span></div>` : ''}
-        <h2 class="step-title">Choose what applies</h2>
-        <p class="step-sub">जो लागू हो उसे चुनें</p>
-        ${historyHtml}
+// Groups a flat list of matched searchIndex entries (already keyword- and
+// tab-filtered, one chapter's worth) into a nested tree by shared
+// path-token prefixes — e.g. "Head, pain, forehead" / "Head, pain,
+// pressing" / "Head, pain, temples" become one "pain" branch with three
+// indented children below it, instead of three unrelated-looking flat
+// cards. This is what makes the qualifier hierarchy — which symptom is a
+// qualifier of which main rubric — visible while typing (the user's own
+// picture-1-vs-picture-2 comparison). Built from the tokens AFTER the
+// chapter (index 0), since the chapter itself is already shown as this
+// group's own heading — see renderWizardScreen.
+function buildResultTree(matches) {
+  const root = {};
+  for (const r of matches) {
+    const tokens = r.path.split(',').map(s => s.trim());
+    let level = root;
+    let pathSoFar = [tokens[0]];
+    for (let i = 1; i < tokens.length; i++) {
+      pathSoFar.push(tokens[i]);
+      const key = tokens[i];
+      if (!level[key]) {
+        level[key] = { token: tokens[i], path: pathSoFar.join(', '), chapter: tokens[0], children: {}, matchHere: null };
+      }
+      if (i === tokens.length - 1) level[key].matchHere = r;
+      level = level[key].children;
+    }
+  }
+  return root;
+}
+
+// Recursively renders one node of a buildResultTree() tree, and everything
+// nested under it. Every node — whether it's one of the original matched
+// rubrics (matchHere set) or just a shared branch point above several of
+// them — is independently checked against the real data for whether IT is
+// itself a real, addable rubric: Kent's very often has a parent rubric
+// ("Head, pain") that carries its own remedies even though more specific
+// children ("Head, pain, morning") also exist. Clicking anywhere on a node
+// other than its Add button jumps the walk there, same as picking any
+// other search result — from that point on the patient can browse every
+// real child of that exact spot (getNextOptions), not just the ones that
+// happened to match the typed keywords. Siblings render as a flat sequence
+// of divs with increasing margin-left, not actual nested DOM — the same
+// convention the walked-history rows below already use.
+// CHANGE (2026-10): a raw remedy count (e.g. "pain (438)") means little to a
+// patient and nothing about how much further this can be narrowed down — per
+// instruction, dropped in favor of a plain count of how many qualifying
+// options are available from here, worded the same "N विकल्प · option(s)"
+// way the walk screen's own collapsible qualifier groups already use (see
+// renderCollapsibleSection below) rather than as a bare number. Only shown
+// when there's actually something to drill into further; a true leaf (no
+// children at all, already as specific as this search's matches get) shows
+// no badge rather than a confusing "0 options".
+function renderResultTreeNode(node, depth) {
+  const pathTokens = node.path.split(',').map(s => s.trim());
+  const disp = getDisplayText(node.chapter, node.path, node.token);
+  let rubricRef = null;
+  if (node.matchHere) {
+    rubricRef = { id: node.matchHere.id, path: node.path, remedyCount: node.matchHere.remedyCount };
+  } else {
+    const { exactMatchRubric } = getNextOptions(pathTokens);
+    if (exactMatchRubric) rubricRef = { id: exactMatchRubric.id, path: exactMatchRubric.path, remedyCount: exactMatchRubric.remedyCount };
+  }
+  const alreadyAdded = !!rubricRef && state.completeCase.some(c => String(c.rubricId) === String(rubricRef.id));
+  const rowClass = alreadyAdded ? 'selected-node-header' : 'tree-node-row';
+  const childCount = Object.keys(node.children).length;
+  const qualifierCountHtml = childCount > 0 ? `<div class="collapsible-count">${childCount} विकल्प · option(s)</div>` : '';
+  const childrenHtml = Object.values(node.children).map(child => renderResultTreeNode(child, depth + 1)).join('');
+
+  return `
+    <div class="selected-node" style="margin-left:${depth * 14}px">
+      <div class="${rowClass}" onclick="onSearchResultPick('${escAttr(node.path)}')">
+        <div class="selected-node-text">
+          ${renderTrilingualBlock(disp)}
+          ${qualifierCountHtml}
+        </div>
+        ${renderAddToggleBtn(rubricRef)}
       </div>
-      ${state.completeCase.length ? `<div class="footer-bar">
-        <button class="btn-outline" onclick="onAddAnotherComplaint()">Add more complaints · और शिकायतें जोड़ें</button>
-        <button class="btn-primary" onclick="goToCaseReview()">Continue → · जारी रखें</button>
-      </div>` : ''}
+    </div>
+    ${childrenHtml}
+  `;
+}
+
+// ONE screen for the whole patient-facing complaint entry (per instruction
+// — no more separate "walk" screen to flip to): a persistent, distinctively
+// highlighted search box at the top, always there so the patient can start
+// or pivot to a new complaint at any time ("free back and forth"), with
+// the content below it switching between three things:
+//   - typing a query shows the matched rubrics as a hierarchical Drill
+//     (buildResultTree/renderResultTreeNode) instead of the old flat list;
+//   - nothing typed, but a chapter walk is in progress, shows that walk —
+//     the persistent per-depth history, then the live options at the
+//     current depth — everything the old separate renderWalkStep rendered;
+//   - neither: a plain prompt to start typing above.
+// Replaces the old separate renderSearchScreen AND renderWalkStep entirely.
+// ============================================================
+// Structured symptom-detail boxes (2026-10 redesign) — one box per kind of
+// detail, replacing the old single search box + category tabs combo. Each
+// box reuses the exact same real searchIndex (state.data.searchIndex) and
+// the exact same AND-match-on-every-typed-word logic as the free-text box
+// above (renderWizardScreen's own Branch 1), just pre-scoped to one tag.
+// ============================================================
+const DIMENSIONS = [
+  { key: 'location',   label: 'Where is the problem? · समस्या कहाँ है',              ph: 'e.g. forehead, right eye, stomach…',        tagKey: null },
+  { key: 'sensation',  label: 'What does it feel like? · कैसा महसूस होता है',         ph: 'e.g. burning, throbbing, pressing…',        tagKey: 'sensation' },
+  { key: 'timing',     label: 'When does it happen? · कब होता है',                   ph: 'e.g. morning, night, after eating…',        tagKey: 'timing' },
+  { key: 'modality',   label: 'What affects it? · इससे क्या असर पड़ता है',            ph: 'e.g. worse from cold, better from rest…',   tagKey: 'modality' },
+  { key: 'laterality', label: 'Which side? · कौन-सी तरफ',                            ph: 'e.g. right, left, alternating…',            tagKey: 'laterality' },
+  { key: 'cause',      label: 'What caused it? · किस कारण से',                       ph: 'e.g. after grief, from injury, from cold…', tagKey: 'cause' },
+  { key: 'sequence',   label: 'Comes with / follows · साथ में / इसके बाद',            ph: 'e.g. alternates with, followed by…',        tagKey: 'sequence' },
+  { key: 'content',    label: 'Described as / like what · जैसा महसूस हो',             ph: 'e.g. as if a nail, as though floating…',    tagKey: 'content' }
+];
+
+// Same filter-then-sort shape as Branch 1 below, parameterized by an
+// optional tag so each box (and the combined bar) can reuse it directly.
+function matchRubricsByTag(tokens, tagKey) {
+  let rows = state.data.searchIndex || [];
+  if (tagKey) rows = rows.filter(r => r.tags[tagKey]);
+  if (!tokens.length) return rows;
+  return rows.filter(r => tokens.every(t => r.searchable.includes(t)));
+}
+
+function dimTokens(key) {
+  const v = (state.search.dims[key] || '').trim().toLowerCase();
+  return v ? v.split(/[,\s]+/).filter(Boolean) : [];
+}
+
+// Combined words typed into every OTHER box, for one box's ambient count —
+// guards against one box's dead-end text (a typo, or a word this repertory
+// just doesn't use) silently zeroing out every sibling box: a box's words
+// only count toward the combined query if they match something on their
+// own first.
+function combinedDimTokens(excludeKey) {
+  const tokens = [];
+  DIMENSIONS.forEach(d => {
+    if (d.key === excludeKey) return;
+    const t = dimTokens(d.key);
+    if (t.length && matchRubricsByTag(t, d.tagKey).length > 0) tokens.push(...t);
+  });
+  return tokens;
+}
+
+function renderDimResultRow(r) {
+  const disp = getDisplayText(r.chapter, r.path, r.path.split(',').map(s => s.trim()).pop());
+  const rubricRef = { id: r.id, path: r.path, remedyCount: r.remedyCount };
+  const alreadyAdded = state.completeCase.some(c => String(c.rubricId) === String(r.id));
+  return `<div class="dim-suggest-item${alreadyAdded ? ' added' : ''}">
+    <div class="selected-node-text">${renderTrilingualBlock(disp)}</div>
+    ${renderAddToggleBtn(rubricRef)}
+  </div>`;
+}
+
+function renderStructuredEntryBoxes() {
+  const rowsHtml = DIMENSIONS.map(d => {
+    const val = state.search.dims[d.key] || '';
+    const ownTokens = dimTokens(d.key);
+    let bodyHtml;
+    if (val.trim()) {
+      const matches = matchRubricsByTag(ownTokens, d.tagKey).slice().sort((a, b) => b.remedyCount - a.remedyCount);
+      bodyHtml = !matches.length
+        ? `<div class="dim-suggest-empty">No matching options found for "${esc(val.trim())}" · कोई विकल्प नहीं मिला</div>`
+        : matches.slice(0, 6).map(renderDimResultRow).join('');
+    } else {
+      const ambient = matchRubricsByTag(combinedDimTokens(d.key), d.tagKey).length;
+      bodyHtml = `<div class="dim-ambient-count">${ambient} option${ambient === 1 ? '' : 's'} on file · विकल्प उपलब्ध</div>`;
+    }
+    return `
+      <div class="dim-row" id="dimrow-${d.key}">
+        <label class="dim-label" for="diminput-${d.key}">${d.label}</label>
+        <input id="diminput-${d.key}" class="search-box" type="text" placeholder="${escAttr(d.ph)}" value="${escAttr(val)}" oninput="onDimBoxInput('${d.key}', this.value)">
+        ${bodyHtml}
+      </div>
+    `;
+  }).join('');
+
+  const combinedTokens = DIMENSIONS.reduce((acc, d) => acc.concat(dimTokens(d.key)), []);
+  let combinedHtml = '';
+  if (combinedTokens.length) {
+    const combinedMatches = matchRubricsByTag(combinedTokens, null).slice().sort((a, b) => b.remedyCount - a.remedyCount);
+    combinedHtml = `
+      <div class="dim-combined">
+        <div class="dim-combined-label">${combinedMatches.length} rubric(s) match everything typed above · ऊपर टाइप किए गए सभी से मेल खाता है</div>
+        ${combinedMatches.slice(0, 6).map(renderDimResultRow).join('')}
+      </div>
     `;
   }
 
-  // Live, interactive options at the current deepest level — same logic as
-  // before, just now indented to sit visually under the selection history.
-  const liveIndent = (pathTokens.length - 1) * 14;
-  const { exactMatchRubric, nextOptions } = getNextOptions(pathTokens);
-
-  let entries = Object.entries(nextOptions);
-  if (searchFilter) {
-    const filterWords = searchFilter.split(/[,\s]+/).map(w => w.trim().toLowerCase()).filter(Boolean);
-    entries = entries.filter(([token]) => {
-      const optPath = pathTokens.concat([token]).join(', ');
-      const disp = getDisplayText(chapter, optPath, token);
-      const searchable = (disp.kent + ' ' + disp.en + ' ' + disp.hi + ' ' + disp.roman).toLowerCase();
-      return filterWords.every(w => searchable.includes(w));
-    });
-  }
-  entries.sort((a, b) => b[1].rubricCount - a[1].rubricCount);
-
-  const totalCount = entries.length;
-  const displayEntries = showAllOptions ? entries : entries.slice(0, 15);
-
-  const grouped = {};
-  for (const [token, info] of displayEntries) {
-    const kind = classifyOptionKind(token);
-    if (!grouped[kind]) grouped[kind] = [];
-    grouped[kind].push([token, info]);
-  }
-
-  let stopHereHtml = '';
-  if (exactMatchRubric) {
-    const disp = getDisplayText(chapter, exactMatchRubric.path, pathTokens[pathTokens.length - 1]);
-    const tapArgs = `'${exactMatchRubric.id}', '${escAttr(exactMatchRubric.path)}', ${exactMatchRubric.remedyCount}`;
-    const captions = {
-      unlocked: { icon: 'lockOpen', en: 'Tap to lock', hi: 'लॉक करें' },
-      locked: { icon: 'lockClosed', en: 'Tap to unlock', hi: 'अनलॉक करें' },
-    };
-    const s = captions[stopHereLockState] || captions.unlocked;
-    const lockSvg = `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="var(--danger)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">${ICON_PATHS[s.icon]}</svg>`;
-    stopHereHtml = `<div class="stop-here-card" onclick="onStopHereTap(${tapArgs})">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
-        <div style="flex:1;min-width:0;">
-          <div class="label">Yes, this is it · हाँ, यही है</div>
-          ${renderTrilingualBlock(disp)}
-        </div>
-        <div class="lock-badge">
-          ${lockSvg}
-          <div class="caption">${esc(s.en)} · ${esc(s.hi)}</div>
-        </div>
-      </div>
-    </div>`;
-  }
-
-  const groupsHtml = Object.entries(grouped).map(([kind, opts]) => {
-    const inner = opts.map(([token, info]) => {
-      const optPath = pathTokens.concat([token]).join(', ');
-      const disp = getDisplayText(chapter, optPath, token);
-      // Two independent ways a sibling can be quick-added without leaving
-      // this screen — see getNextOptions() for the full reasoning:
-      //   1. It's itself a real rubric (ownRubricId), whether or not it
-      //      ALSO has further children of its own — by far the common case,
-      //      since a parent term is usually also a valid rubric in Kent's.
-      //   2. It isn't itself a rubric, but everything beneath it resolves
-      //      to exactly one specific descendant several levels down
-      //      (rubricCount === 1, via sampleId) — the original, narrower
-      //      case this button started with, kept as a fallback for when
-      //      case 1 doesn't apply.
-      // Anything else (still branches into more than one distinct rubric,
-      // and isn't a rubric on its own) has no single answer yet, so it
-      // keeps the plain drill-in-only behavior, unchanged.
-      const quickAdd = info.ownRubricId
-        ? { id: info.ownRubricId, path: info.ownRubricPath, remedyCount: info.ownRemedyCount }
-        : info.rubricCount === 1
-        ? { id: info.sampleId, path: info.samplePath, remedyCount: info.totalRemedies }
-        : null;
-      const alreadyAdded = !!quickAdd && state.completeCase.some(c => String(c.rubricId) === String(quickAdd.id));
-      const quickAddHtml = quickAdd
-        ? `<button class="quick-add-btn ${alreadyAdded ? 'added' : ''}" onclick="event.stopPropagation(); onQuickAddOption('${escAttr(quickAdd.id)}', '${escAttr(quickAdd.path)}', ${quickAdd.remedyCount})">${alreadyAdded ? '✓ Added · जोड़ा गया' : '+ Add · जोड़ें'}</button>`
-        : '';
-      return `<div class="opt-card" onclick="onOptionPick('${escAttr(token)}')">
-        ${renderTrilingualBlock(disp, info.rubricCount)}
-        <div class="meta">${info.totalRemedies} remedy-references</div>
-        ${quickAddHtml}
-      </div>`;
-    }).join('');
-    const kindLabel = kind + ' · ' + (KIND_HINDI[kind] || kind);
-    return renderCollapsibleSection(chapter + '::' + pathTokens.join(',') + '::' + kind, kindLabel, opts.length + ' विकल्प · option(s)', inner);
-  }).join('');
-
-  const showAllLink = (!showAllOptions && totalCount > 15)
-    ? `<div class="show-all-link" onclick="onShowAllOptions()">Show all ${totalCount} options · सभी ${totalCount} विकल्प देखें</div>` : '';
-
-  const noMoreOptions = totalCount === 0;
-  const filterMatchedNothing = noMoreOptions && searchFilter.length > 0;
-  const genuinelyNoData = noMoreOptions && searchFilter.length === 0;
-
   return `
-    ${renderTopbar('Guided Case Wizard', chapter)}
-    ${renderBreadcrumb()}
-    <div class="body">
-      <button class="back-btn" onclick="onWalkBack()">&larr; Back</button>
-      ${state.editingCaseIndex !== null ? `<div class="editing-banner">Editing an existing complaint. मौजूदा शिकायत में बदलाव किया जा रहा है। <span class="cancel-edit-link" onclick="onCancelEdit()">Cancel — keep original · रद्द करें, पहले जैसा रखें</span></div>` : ''}
-      <h2 class="step-title">Choose what applies</h2>
-      <p class="step-sub">जो लागू हो उसे चुनें। Select one to go more specific, or tap "Yes, this is it" to stop here. अधिक विशेष जानकारी के लिए एक चुनें, या यहीं रुकने के लिए "हाँ, यही है" चुनें।</p>
-      ${historyHtml}
-      <div style="margin-left:${liveIndent}px">
-        ${totalCount > 8 || searchFilter ? `<input id="walkFilterInput" class="search-box ${filterMatchedNothing ? 'no-match' : ''}" type="text" placeholder="Search these options… · यहाँ खोजें…" value="${escAttr(searchFilter)}" oninput="onSearchFilterChange(this.value)">` : ''}
-        ${filterMatchedNothing ? `<div class="no-match-msg">No option here matches "${esc(searchFilter)}" — try a shorter part of the word, or clear this to see everything again. "${esc(searchFilter)}" से कोई विकल्प मेल नहीं खाता — शब्द का छोटा हिस्सा आज़माएं, या सब देखने के लिए इसे हटाएं।</div>` : ''}
-        ${stopHereHtml}
-        ${genuinelyNoData && !exactMatchRubric ? `<div class="empty-state">No further detail on file for this exact combination. इस सटीक जानकारी के लिए कोई और विवरण उपलब्ध नहीं है।</div>` : ''}
-        ${groupsHtml}
-        ${showAllLink}
+    <div class="dim-section">
+      <div class="dim-section-title">Describe the symptom in detail · लक्षण का विस्तार से वर्णन करें</div>
+      ${rowsHtml}
+      ${combinedHtml}
+    </div>
+  `;
+}
+
+function onDimBoxInput(key, val) {
+  const inputEl = document.getElementById('diminput-' + key);
+  const cursorPos = inputEl ? inputEl.selectionStart : val.length;
+  state.search.dims[key] = val;
+  render();
+  const newInputEl = document.getElementById('diminput-' + key);
+  if (newInputEl) {
+    newInputEl.focus();
+    newInputEl.setSelectionRange(cursorPos, cursorPos);
+  }
+}
+
+function renderWizardScreen() {
+  const q = state.search.query.trim();
+  const keywords = q.split(/[,\s]+/).map(k => k.trim().toLowerCase()).filter(Boolean);
+  const pathTokens = state.currentWalk.pathTokens;
+  const inWalk = pathTokens.length > 0;
+  const chapter = pathTokens[0];
+
+  // Always on screen, whatever else is showing below it. Searches across
+  // every chapter and every kind of detail at once — no categories to pick,
+  // since the 8 boxes further down the screen already split by kind of
+  // detail (see renderStructuredEntryBoxes).
+  const searchBoxHtml = `
+    <div class="wizard-search-highlight">
+      <div class="wizard-search-label">Enter your problem here · अपनी तकलीफ़ यहाँ लिखिए</div>
+      <div style="position:relative;">
+        <input id="globalSearchInput" class="search-box wizard-search-input" type="text" placeholder="e.g. pain, morning, right side… · जैसे: दर्द, सुबह, दायीं तरफ़…" value="${escAttr(state.search.query)}" oninput="onSearchInput(this.value)">
+        ${q ? `<span class="search-clear-btn" onclick="onSearchInput('')" title="Clear">&#10005;</span>` : ''}
       </div>
     </div>
-    ${state.completeCase.length ? `<div class="footer-bar">
-      <button class="btn-outline" onclick="onAddAnotherComplaint()">Add more complaints · और शिकायतें जोड़ें</button>
-      <button class="btn-primary" onclick="goToCaseReview()">Continue → · जारी रखें</button>
-    </div>` : ''}
+  `;
+
+  // The 8 structured detail boxes (where / what it feels like / when / ...)
+  // are a separate, independent tool from the free-text box above — typing
+  // in one never affects the other. Not shown while mid-walk (inWalk), since
+  // that's already a focused drill-down into one specific rubric.
+  const structuredEntryHtml = inWalk ? '' : renderStructuredEntryBoxes();
+
+  // Back goes up one level of an active walk; with no walk in progress, it
+  // instead leaves the wizard screen the way it was reached, IF it was
+  // reached from somewhere else in the app (returnScreenAfterSearch) — when
+  // this already IS the root screen there's nowhere to show a Back to.
+  const backBtnHtml = inWalk
+    ? `<button class="back-btn" onclick="onWalkBack()">&larr; Back</button>`
+    : (state.returnScreenAfterSearch && state.returnScreenAfterSearch !== 'search'
+      ? `<button class="back-btn" onclick="onCloseSearch()">&larr; Back</button>` : '');
+
+  // Single footer button (replacing the old two-button "Add more
+  // complaints" / "Continue →" footer) — "add more" no longer needs its own
+  // button since the search box above is always there to pivot to a new
+  // complaint; this one just moves on once the patient is done.
+  const footerHtml = state.completeCase.length ? `<div class="footer-bar">
+    <button class="btn-primary" onclick="goToCaseReview()">Done and Continue to Repertorize · पूर्ण — रिपर्टराइज़ करने हेतु आगे बढ़ें</button>
+  </div>` : '';
+
+  const editingBannerHtml = state.editingCaseIndex !== null
+    ? `<div class="editing-banner">Editing an existing complaint. मौजूदा शिकायत में बदलाव किया जा रहा है। <span class="cancel-edit-link" onclick="onCancelEdit()">Cancel — keep original · रद्द करें, पहले जैसा रखें</span></div>` : '';
+
+  // ============================================================
+  // Branch 1: an active free-text query — show the matched Drill, whether
+  // or not a walk also happens to be in progress underneath it (typing
+  // here is how a patient pivots to a different complaint at any time).
+  // ============================================================
+  if (q) {
+    let resultsHtml = '';
+    let totalCount = 0;
+    let nudgeHtml = '';
+
+    if (keywords.length && state.data.searchIndex) {
+      let matches = state.data.searchIndex.filter(r => keywords.every(k => r.searchable.includes(k)));
+      matches.sort((a, b) => b.remedyCount - a.remedyCount);
+      totalCount = matches.length;
+
+      if (totalCount > 150) {
+        nudgeHtml = `<div class="search-nudge">This matched a very large number of rubrics (${totalCount}). Try adding when it happens, which side, or what makes it better/worse to narrow this down.</div>`;
+      }
+
+      const shown = matches.slice(0, state.search.displayLimit);
+      const byChapter = {};
+      for (const r of shown) {
+        if (!byChapter[r.chapter]) byChapter[r.chapter] = [];
+        byChapter[r.chapter].push(r);
+      }
+
+      resultsHtml = Object.entries(byChapter).map(([chapterName, items]) => {
+        // A rubric that is itself just the bare chapter (no qualifier
+        // tokens at all) can't go through buildResultTree's "skip the
+        // chapter token" convention — vanishingly rare in Kent's, but
+        // shown as its own plain row rather than silently dropped.
+        const chapterOnly = items.filter(r => r.path.split(',').map(s => s.trim()).length === 1);
+        const deeper = items.filter(r => r.path.split(',').map(s => s.trim()).length > 1);
+        const tree = buildResultTree(deeper);
+        const treeHtml = Object.values(tree).map(node => renderResultTreeNode(node, 0)).join('');
+        const chapterOnlyHtml = chapterOnly.map(r => {
+          const disp = getDisplayText(r.chapter, r.path, r.path.split(',').map(s => s.trim()).pop());
+          const rubricRef = { id: r.id, path: r.path, remedyCount: r.remedyCount };
+          const alreadyAdded = state.completeCase.some(c => String(c.rubricId) === String(r.id));
+          // Same treatment as renderResultTreeNode: no raw remedy count, a
+          // plain count of qualifying options instead — there's no matched
+          // sub-tree to count here (this bypasses buildResultTree entirely),
+          // so this reads straight from the real data, same as the walk
+          // screen itself would once drilled in one level.
+          const childCount = Object.keys(getNextOptions([r.chapter]).nextOptions).length;
+          const qualifierCountHtml = childCount > 0 ? `<div class="collapsible-count">${childCount} विकल्प · option(s)</div>` : '';
+          return `<div class="selected-node">
+            <div class="${alreadyAdded ? 'selected-node-header' : 'tree-node-row'}" onclick="onSearchResultPick('${escAttr(r.path)}')">
+              <div class="selected-node-text">${renderTrilingualBlock(disp)}${qualifierCountHtml}</div>
+              ${renderAddToggleBtn(rubricRef)}
+            </div>
+          </div>`;
+        }).join('');
+        return `
+          <div class="option-group-label" style="margin-top:14px">${esc(chapterName)} (${items.length} shown)</div>
+          ${chapterOnlyHtml}
+          ${treeHtml}
+        `;
+      }).join('');
+
+      if (state.search.displayLimit < totalCount) {
+        resultsHtml += `<div class="show-all-link" onclick="onSearchShowMore()">Showing ${Math.min(state.search.displayLimit, totalCount)} of ${totalCount} — show more</div>`;
+      }
+    }
+
+    return `
+      ${renderTopbar('Guided Case Wizard', inWalk ? chapter : 'Search results', false)}
+      ${renderBreadcrumb()}
+      <div class="body">
+        ${backBtnHtml}
+        ${searchBoxHtml}
+        ${editingBannerHtml}
+        <p class="step-sub">Separate multiple keywords with commas. More keywords narrow the results. · कई शब्द खोजने के लिए कॉमा से अलग करें।</p>
+        ${nudgeHtml}
+        ${!keywords.length ? `<div class="empty-state">Start typing to search across all chapters.</div>` : ''}
+        ${keywords.length && !totalCount ? `<div class="empty-state">No rubrics found matching all of: ${esc(keywords.join(', '))}</div>` : ''}
+        ${resultsHtml}
+        ${structuredEntryHtml}
+      </div>
+      ${footerHtml}
+    `;
+  }
+
+  // ============================================================
+  // Branch 2: no active query, but a chapter walk is in progress — the
+  // persistent per-depth history, then the live options at the current
+  // depth (everything the old renderWalkStep rendered, unchanged except
+  // the Add/Added button replacing the old stop-here lock icon, and that
+  // same button now also appearing on every history row).
+  // ============================================================
+  if (inWalk) {
+    let historyHtml = '';
+    let stoppedAtCollapsedDepth = -1;
+
+    for (let depth = 1; depth < pathTokens.length; depth++) {
+      const tokenAtDepth = pathTokens[depth];
+      const pathUpToHere = pathTokens.slice(0, depth + 1).join(', ');
+      const disp = getDisplayText(chapter, pathUpToHere, tokenAtDepth);
+      const indent = (depth - 1) * 14;
+      const nodeKey = 'selectedNode::' + pathUpToHere;
+      const isCollapsed = collapsedGroups[nodeKey] === true; // selected nodes default OPEN
+
+      const { exactMatchRubric: ownRubric, nextOptions: ownNextOptions } = getNextOptions(pathTokens.slice(0, depth + 1));
+      // Same reasoning as renderResultTreeNode: a bare remedy count here
+      // ("pain (438)") means little to a patient — show how many further
+      // qualifying options this step still has instead, same wording as the
+      // live collapsible groups below use, and nothing at all once there's
+      // truly nothing further to narrow down.
+      const ownChildCount = Object.keys(ownNextOptions).length;
+      const ownQualifierCountHtml = ownChildCount > 0 ? `<div class="collapsible-count">${ownChildCount} विकल्प · option(s)</div>` : '';
+
+      historyHtml += `
+        <div class="selected-node" style="margin-left:${indent}px">
+          <div class="selected-node-header" onclick="onToggleGroup('${escAttr(nodeKey)}')">
+            <span class="collapsible-arrow ${isCollapsed ? '' : 'open'}">&#9656;</span>
+            <div class="selected-node-text">
+              ${renderTrilingualBlock(disp)}
+              ${ownQualifierCountHtml}
+            </div>
+            ${renderAddToggleBtn(ownRubric)}
+          </div>
+        </div>`;
+
+      if (isCollapsed) { stoppedAtCollapsedDepth = depth; break; }
+    }
+
+    // If the path was cut short by a collapsed node, nothing further renders below it.
+    if (stoppedAtCollapsedDepth !== -1) {
+      return `
+        ${renderTopbar('Guided Case Wizard', chapter, false)}
+        ${renderBreadcrumb()}
+        <div class="body">
+          ${backBtnHtml}
+          ${searchBoxHtml}
+          ${editingBannerHtml}
+          <h2 class="step-title">Choose what applies</h2>
+          <p class="step-sub">जो लागू हो उसे चुनें</p>
+          ${historyHtml}
+        </div>
+        ${footerHtml}
+      `;
+    }
+
+    // Live, interactive options at the current deepest level.
+    const liveIndent = (pathTokens.length - 1) * 14;
+    const { exactMatchRubric, nextOptions } = getNextOptions(pathTokens);
+
+    let entries = Object.entries(nextOptions);
+    if (searchFilter) {
+      const filterWords = searchFilter.split(/[,\s]+/).map(w => w.trim().toLowerCase()).filter(Boolean);
+      entries = entries.filter(([token]) => {
+        const optPath = pathTokens.concat([token]).join(', ');
+        const disp = getDisplayText(chapter, optPath, token);
+        const searchable = (disp.kent + ' ' + disp.en + ' ' + disp.hi + ' ' + disp.roman).toLowerCase();
+        return filterWords.every(w => searchable.includes(w));
+      });
+    }
+    entries.sort((a, b) => b[1].rubricCount - a[1].rubricCount);
+
+    const totalCount = entries.length;
+    const displayEntries = showAllOptions ? entries : entries.slice(0, 15);
+
+    const grouped = {};
+    for (const [token, info] of displayEntries) {
+      const kind = classifyOptionKind(token);
+      if (!grouped[kind]) grouped[kind] = [];
+      grouped[kind].push([token, info]);
+    }
+
+    let stopHereHtml = '';
+    if (exactMatchRubric) {
+      const disp = getDisplayText(chapter, exactMatchRubric.path, pathTokens[pathTokens.length - 1]);
+      stopHereHtml = `<div class="stop-here-card">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+          <div style="flex:1;min-width:0;">
+            <div class="label">Yes, this is it · हाँ, यही है</div>
+            ${renderTrilingualBlock(disp)}
+          </div>
+          ${renderAddToggleBtn(exactMatchRubric)}
+        </div>
+      </div>`;
+    }
+
+    const groupsHtml = Object.entries(grouped).map(([kind, opts]) => {
+      const inner = opts.map(([token, info]) => {
+        const optPath = pathTokens.concat([token]).join(', ');
+        const disp = getDisplayText(chapter, optPath, token);
+        // Two independent ways a sibling can be quick-added without leaving
+        // this screen — see getNextOptions() for the full reasoning:
+        //   1. It's itself a real rubric (ownRubricId), whether or not it
+        //      ALSO has further children of its own — by far the common case,
+        //      since a parent term is usually also a valid rubric in Kent's.
+        //   2. It isn't itself a rubric, but everything beneath it resolves
+        //      to exactly one specific descendant several levels down
+        //      (rubricCount === 1, via sampleId) — the original, narrower
+        //      case this button started with, kept as a fallback for when
+        //      case 1 doesn't apply.
+        // Anything else (still branches into more than one distinct rubric,
+        // and isn't a rubric on its own) has no single answer yet, so it
+        // keeps the plain drill-in-only behavior, unchanged.
+        const quickAdd = info.ownRubricId
+          ? { id: info.ownRubricId, path: info.ownRubricPath, remedyCount: info.ownRemedyCount }
+          : info.rubricCount === 1
+          ? { id: info.sampleId, path: info.samplePath, remedyCount: info.totalRemedies }
+          : null;
+        return `<div class="opt-card" onclick="onOptionPick('${escAttr(token)}')">
+          ${renderTrilingualBlock(disp, info.rubricCount)}
+          <div class="meta">${info.totalRemedies} remedy-references</div>
+          ${renderAddToggleBtn(quickAdd)}
+        </div>`;
+      }).join('');
+      const kindLabel = kind + ' · ' + (KIND_HINDI[kind] || kind);
+      return renderCollapsibleSection(chapter + '::' + pathTokens.join(',') + '::' + kind, kindLabel, opts.length + ' विकल्प · option(s)', inner);
+    }).join('');
+
+    const showAllLink = (!showAllOptions && totalCount > 15)
+      ? `<div class="show-all-link" onclick="onShowAllOptions()">Show all ${totalCount} options · सभी ${totalCount} विकल्प देखें</div>` : '';
+
+    const noMoreOptions = totalCount === 0;
+    const filterMatchedNothing = noMoreOptions && searchFilter.length > 0;
+    const genuinelyNoData = noMoreOptions && searchFilter.length === 0;
+
+    return `
+      ${renderTopbar('Guided Case Wizard', chapter, false)}
+      ${renderBreadcrumb()}
+      <div class="body">
+        ${backBtnHtml}
+        ${searchBoxHtml}
+        ${editingBannerHtml}
+        <h2 class="step-title">Choose what applies</h2>
+        <p class="step-sub">जो लागू हो उसे चुनें। Select one to go more specific, or tap "Yes, this is it" to stop here. अधिक विशेष जानकारी के लिए एक चुनें, या यहीं रुकने के लिए "हाँ, यही है" चुनें।</p>
+        ${historyHtml}
+        <div style="margin-left:${liveIndent}px">
+          ${totalCount > 8 || searchFilter ? `<input id="walkFilterInput" class="search-box ${filterMatchedNothing ? 'no-match' : ''}" type="text" placeholder="Search these options… · यहाँ खोजें…" value="${escAttr(searchFilter)}" oninput="onSearchFilterChange(this.value)">` : ''}
+          ${filterMatchedNothing ? `<div class="no-match-msg">No option here matches "${esc(searchFilter)}" — try a shorter part of the word, or clear this to see everything again. "${esc(searchFilter)}" से कोई विकल्प मेल नहीं खाता — शब्द का छोटा हिस्सा आज़माएं, या सब देखने के लिए इसे हटाएं।</div>` : ''}
+          ${stopHereHtml}
+          ${genuinelyNoData && !exactMatchRubric ? `<div class="empty-state">No further detail on file for this exact combination. इस सटीक जानकारी के लिए कोई और विवरण उपलब्ध नहीं है।</div>` : ''}
+          ${groupsHtml}
+          ${showAllLink}
+        </div>
+      </div>
+      ${footerHtml}
+    `;
+  }
+
+  // ============================================================
+  // Branch 3: fresh — nothing typed, nothing drilled yet. The 8 structured
+  // boxes (structuredEntryHtml) are the primary way in now, so there's no
+  // separate "start typing above" placeholder message any more.
+  // ============================================================
+  return `
+    ${renderTopbar('Guided Case Wizard', 'Describe your main problem', false)}
+    ${renderBreadcrumb()}
+    <div class="body">
+      ${backBtnHtml}
+      ${searchBoxHtml}
+      ${editingBannerHtml}
+      ${structuredEntryHtml}
+    </div>
+    ${footerHtml}
   `;
 }
 
@@ -2497,97 +2557,20 @@ function renderCaseReview() {
 }
 
 // =================================================================
-function renderSearchScreen() {
-  const q = state.search.query.trim();
-  const keywords = q.split(/[,\s]+/).map(k => k.trim().toLowerCase()).filter(Boolean);
+// CHANGE (2026-10): renderSearchScreen (the old dedicated, modal-like search
+// screen) and renderWalkStep (the old separate chapter-walk screen) have
+// been merged into the one renderWizardScreen above — see its own comment.
 
-  const TAB_DEFS = [
-    { key: 'all', label: 'All' },
-    { key: 'sensation', label: 'Sensation' },
-    { key: 'timing', label: 'Timing' },
-    { key: 'modality', label: 'Modality' },
-    { key: 'laterality', label: 'Laterality' },
-    { key: 'cause', label: 'Cause' },
-    { key: 'sequence', label: 'Sequence' },
-    { key: 'content', label: 'Content' }
-  ];
-  const tabsHtml = TAB_DEFS.map(t => `
-    <button class="tab-btn ${state.search.activeTab === t.key ? 'active' : ''}" onclick="onSearchTabChange('${t.key}')">${esc(t.label)}</button>
-  `).join('');
-
-  let resultsHtml = '';
-  let totalCount = 0;
-  let nudgeHtml = '';
-
-  if (keywords.length && state.data.searchIndex) {
-    let matches = state.data.searchIndex.filter(r => keywords.every(k => r.searchable.includes(k)));
-    if (state.search.activeTab !== 'all') {
-      matches = matches.filter(r => r.tags[state.search.activeTab]);
-    }
-    matches.sort((a, b) => b.remedyCount - a.remedyCount);
-    totalCount = matches.length;
-
-    if (totalCount > 150) {
-      nudgeHtml = `<div class="search-nudge">This matched a very large number of rubrics (${totalCount}). Try adding when it happens, which side, or what makes it better/worse to narrow this down.</div>`;
-    }
-
-    const shown = matches.slice(0, state.search.displayLimit);
-    const byChapter = {};
-    for (const r of shown) {
-      if (!byChapter[r.chapter]) byChapter[r.chapter] = [];
-      byChapter[r.chapter].push(r);
-    }
-
-    resultsHtml = Object.entries(byChapter).map(([chapter, items]) => `
-      <div class="option-group-label" style="margin-top:14px">${esc(chapter)} (${items.length} shown)</div>
-      ${items.map(r => {
-        const disp = getDisplayText(r.chapter, r.path, r.path.split(',').map(s=>s.trim()).pop());
-        return `<div class="opt-card" onclick="onSearchResultPick('${escAttr(r.path)}')">
-          ${renderTrilingualBlock(disp)}
-          <div class="meta">${r.remedyCount} remedy-references</div>
-        </div>`;
-      }).join('')}
-    `).join('');
-
-    if (state.search.displayLimit < totalCount) {
-      resultsHtml += `<div class="show-all-link" onclick="onSearchShowMore()">Showing ${Math.min(state.search.displayLimit, totalCount)} of ${totalCount} — show more</div>`;
-    }
-  }
-
-  return `
-    ${renderTopbar('Search', 'Find a rubric directly, in Kent term, English, or Hindi')}
-    <div class="body">
-      <button class="back-btn" onclick="onCloseSearch()">&larr; Back</button>
-      <input id="globalSearchInput" class="search-box" type="text" placeholder="e.g. pain, morning, right side…" value="${escAttr(state.search.query)}" oninput="onSearchInput(this.value)" autofocus>
-      <p class="step-sub">Separate multiple keywords with commas. More keywords narrow the results.</p>
-      <div class="search-tabs">${tabsHtml}</div>
-      ${nudgeHtml}
-      ${!keywords.length ? `<div class="empty-state">Start typing to search across all chapters.</div>` : ''}
-      ${keywords.length && !totalCount ? `<div class="empty-state">No rubrics found matching all of: ${esc(keywords.join(', '))}</div>` : ''}
-      ${resultsHtml}
-    </div>
-  `;
-}
-
-
+// onChapterPick (the old chapter-grid screen's tap handler) has been
+// removed — it had zero remaining callers once that screen itself was
+// deleted; Search is now the one and only entry point, per instruction.
 // =================================================================
-function onChapterPick(chapter) {
-  state.currentWalk = { pathTokens: [chapter] };
-  searchFilter = '';
-  showAllOptions = false;
-  collapsedGroups = {};
-  stopHereLockState = 'unlocked';
-  state.editingCaseIndex = null; // starting a chapter fresh is never "editing" a specific existing entry
-  state.screen = 'walk';
-  render();
-}
-
 function onOptionPick(token) {
   state.currentWalk.pathTokens.push(token);
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
-  stopHereLockState = 'unlocked';
+  autoAddAlongPath(state.currentWalk.pathTokens);
   render();
 }
 
@@ -2613,7 +2596,7 @@ function onQuickAddOption(rubricId, path, remedyCount) {
 
 function onWalkBack() {
   if (state.currentWalk.pathTokens.length <= 1) {
-    state.screen = 'chapters';
+    state.currentWalk.pathTokens = []; // backs all the way out to the prompt/search-only view — screen is already always 'search'
     state.editingCaseIndex = null; // abandoning the walk cancels any in-progress edit; original entry is untouched
   } else {
     state.currentWalk.pathTokens.pop();
@@ -2621,7 +2604,6 @@ function onWalkBack() {
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
-  stopHereLockState = 'unlocked';
   render();
 }
 
@@ -2629,11 +2611,17 @@ function onEditCaseItem(index) {
   const item = state.completeCase[index];
   state.editingCaseIndex = index;
   state.currentWalk = { pathTokens: item.path.split(',').map(s => s.trim()) };
+  // A stale query left over from an earlier search would otherwise win out
+  // over this walk in renderWizardScreen's branch order (Branch 1 — an
+  // active query — takes priority over Branch 2 — an active walk) and the
+  // patient would land back on old search results instead of this item.
+  state.search.query = '';
+  state.search.displayLimit = 30;
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
-  stopHereLockState = 'unlocked'; // this rubric is already the current answer for this item — shown armed/ready
-  state.screen = 'walk';
+  state.screen = 'search';
+  autoAddAlongPath(state.currentWalk.pathTokens);
   render();
 }
 
@@ -2663,48 +2651,21 @@ function onShowAllOptions() {
   render();
 }
 
-// The "stop here" card starts unlocked. Tapping it locks the rubric in —
-// adds it to the case (or replaces the item being reconsidered, if this is
-// a re-entry from the case list) — and never auto-navigates anywhere; the
-// patient moves on using the explicit "Add more complaints" / "Continue"
-// buttons, whenever they're ready. Tapping a locked card unlocks it again:
-// for a fresh pick that just undoes the add (nothing stays half-committed);
-// for a reconsidered existing item, the original stays untouched until a
-// new lock actually replaces it, so just looking around never loses data.
-function onStopHereTap(rubricId, path, remedyCount) {
-  if (stopHereLockState === 'unlocked') {
-    const entry = { rubricId, path, remedyCount };
-    // NO-DUPLICATES: already in the list (anywhere other than the very item
-    // being reconsidered) → say so, add nothing, leave the card unlocked.
-    const dupAt = state.completeCase.findIndex(c => String(c.rubricId) === String(rubricId));
-    if (dupAt !== -1 && dupAt !== state.editingCaseIndex) {
-      alertAlreadyInList();
-      return;
-    }
-    if (state.editingCaseIndex !== null) {
-      state.completeCase[state.editingCaseIndex] = entry;
-    } else {
-      state.completeCase.push(entry);
-    }
-    stopHereLockState = 'locked';
-  } else {
-    if (state.editingCaseIndex === null) {
-      const idx = state.completeCase.findIndex(e => e.path === path);
-      if (idx !== -1) state.completeCase.splice(idx, 1);
-    }
-    stopHereLockState = 'unlocked';
-  }
-  render();
-}
+// onStopHereTap (the old lock-based add/remove handler for the "stop here"
+// card) has been retired — onQuickAddOption is now the single unified add
+// mechanism for every addable rubric (stop-here card, history rows, tree
+// nodes alike), per the drill redesign.
 
 function onConnectorAccept(connectedChapter) {
   state.connectorQueue.shift();
   state.currentWalk = { pathTokens: [connectedChapter] };
+  state.search.query = ''; // same reasoning as onEditCaseItem — don't let a stale query outrank this walk
+  state.search.displayLimit = 30;
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
-  stopHereLockState = 'unlocked';
-  state.screen = 'walk';
+  state.screen = 'search';
+  autoAddAlongPath(state.currentWalk.pathTokens);
   render();
 }
 
@@ -2741,22 +2702,25 @@ function onCaseItemTap(index) {
 function onAddAnotherComplaint() {
   state.currentWalk = { pathTokens: [] };
   state.editingCaseIndex = null; // adding ANOTHER complaint must never continue editing whichever item was last being reconsidered
+  state.search.query = ''; // a new complaint starts from a clean prompt, not whatever was last typed
+  state.search.dims = { location: '', sensation: '', timing: '', modality: '', laterality: '', cause: '', sequence: '', content: '' };
+  state.search.displayLimit = 30;
   caseItemLockState = {};
-  state.screen = 'chapters';
+  state.screen = 'search';
   render();
 }
 
 function onOpenSearch() {
   state.returnScreenAfterSearch = state.screen === 'search' ? state.returnScreenAfterSearch : state.screen;
   state.search.query = '';
-  state.search.activeTab = 'all';
+  state.search.dims = { location: '', sensation: '', timing: '', modality: '', laterality: '', cause: '', sequence: '', content: '' };
   state.search.displayLimit = 30;
   state.screen = 'search';
   render();
 }
 
 function onCloseSearch() {
-  state.screen = state.returnScreenAfterSearch || 'chapters';
+  state.screen = state.returnScreenAfterSearch || 'search';
   render();
 }
 
@@ -2775,12 +2739,6 @@ function onSearchInput(val) {
   }
 }
 
-function onSearchTabChange(tabKey) {
-  state.search.activeTab = tabKey;
-  state.search.displayLimit = 30;
-  render();
-}
-
 function onSearchShowMore() {
   state.search.displayLimit += 30;
   render();
@@ -2793,11 +2751,20 @@ function onSearchShowMore() {
 function onSearchResultPick(path) {
   const pathTokens = path.split(',').map(s => s.trim());
   state.currentWalk = { pathTokens };
+  // Clearing the query (not just searchFilter) matters here specifically:
+  // renderWizardScreen's Branch 1 (an active query) takes priority over
+  // Branch 2 (an active walk) whenever both are true, so leaving the query
+  // text in place after a pick would leave the patient staring at the same
+  // results list with nothing visibly changed, even though the walk and the
+  // auto-add below both already happened — this is the one transition point
+  // where a picked result needs to actually land the patient there.
+  state.search.query = '';
+  state.search.displayLimit = 30;
   searchFilter = '';
   showAllOptions = false;
   collapsedGroups = {};
-  stopHereLockState = 'unlocked';
-  state.screen = 'walk';
+  state.screen = 'search';
+  autoAddAlongPath(pathTokens);
   render();
 }
 
