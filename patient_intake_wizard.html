@@ -417,6 +417,29 @@ async function loadRepertoryData() {
     });
   }
   state.data.searchIndex = searchIndex;
+
+  // EXACT-PATH-INDEX: a rubric whose OWN path exactly matches a given set
+  // of tokens (used to decide whether an intermediate branch node in the
+  // search-results tree is itself a real, addable rubric, separate from
+  // its children) used to be found by calling getNextOptions and keeping
+  // only exactMatchRubric off the result -- a full linear rescan of that
+  // whole chapter's bucket just to answer one yes/no question. A narrow,
+  // multi-word search can easily need 30-40 of these per keystroke (one
+  // per branch point in the result tree), which measured at up to ~320ms
+  // total on the real repertory data -- the single biggest piece of the
+  // "typing feels like it hangs" complaint. This index answers the exact
+  // same question in O(1): built once here from the same rubric list,
+  // with the identical per-token trim+lowercase comparison getNextOptions
+  // used, so it returns identical results, just precomputed instead of
+  // rescanned every time. getNextOptions itself is untouched and still
+  // used by every OTHER caller that actually needs its full nextOptions
+  // grouping, not just this one field.
+  const exactPathIndex = {};
+  for (const [id, path, remedies] of rubrics) {
+    const key = path.split(',').map(s => s.trim().toLowerCase()).join(',');
+    exactPathIndex[key] = { id, path, remedyCount: remedies.length };
+  }
+  state.data.exactPathIndex = exactPathIndex;
   state.data.ready = true;
 
   // If the patient has already reached the search screen while this was
@@ -532,6 +555,35 @@ function getNextOptions(pathTokens) {
 
   return { exactMatchRubric, nextOptions };
 }
+
+// O(1) replacement for "getNextOptions(pathTokens).exactMatchRubric" at the
+// two call sites that only ever used that one field — see EXACT-PATH-INDEX
+// above (loadRepertoryData) for why this exists and why it's safe.
+function lookupExactPathRubric(pathTokens) {
+  const key = pathTokens.map(t => t.trim().toLowerCase()).join(',');
+  return (state.data.exactPathIndex && state.data.exactPathIndex[key]) || null;
+}
+
+// DEBOUNCE-SEARCH-INPUT: wraps an input handler's expensive part (the
+// render, not the state write) so a burst of keystrokes only pays for it
+// once, after the last one — see onSearchInput/onDimBoxInput/
+// onSearchFilterChange, which each used to run their full filter+render
+// pipeline on EVERY keystroke with nothing cancelling a now-stale run
+// already queued behind it. On the real ~75k-rubric dataset that measured
+// up to ~90ms per keystroke even with the exact-path-index fix above, so
+// typing "pain" in four quick taps could cost 300ms+ of solid, unyielding
+// main-thread work — exactly the "typing fast makes it hang" symptom. The
+// typed character itself still appears the instant it's typed regardless
+// (that's the browser's native <input> behavior, nothing to do with
+// render()) — only the results below it wait for a short pause in typing.
+function debounce(fn, ms) {
+  let timer = null;
+  return function (...args) {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => { timer = null; fn.apply(this, args); }, ms);
+  };
+}
+const SEARCH_DEBOUNCE_MS = 150;
 
 // Soft, cosmetic-only classification of an option token, purely to group same-kind
 // options under a heading. Never used to hide or filter — every option from
@@ -1865,7 +1917,7 @@ function renderAddToggleBtn(rubricRef) {
 // reflects (and lets the patient override) that same state.
 function autoAddExactPathIfReal(pathTokens) {
   if (!pathTokens || !pathTokens.length) return;
-  const { exactMatchRubric } = getNextOptions(pathTokens);
+  const exactMatchRubric = lookupExactPathRubric(pathTokens);
   if (!exactMatchRubric) return;
   const already = state.completeCase.some(c => String(c.rubricId) === String(exactMatchRubric.id));
   if (!already) {
@@ -1942,7 +1994,7 @@ function renderResultTreeNode(node, depth) {
   if (node.matchHere) {
     rubricRef = { id: node.matchHere.id, path: node.path, remedyCount: node.matchHere.remedyCount };
   } else {
-    const { exactMatchRubric } = getNextOptions(pathTokens);
+    const exactMatchRubric = lookupExactPathRubric(pathTokens);
     if (exactMatchRubric) rubricRef = { id: exactMatchRubric.id, path: exactMatchRubric.path, remedyCount: exactMatchRubric.remedyCount };
   }
   const alreadyAdded = !!rubricRef && state.completeCase.some(c => String(c.rubricId) === String(rubricRef.id));
@@ -2034,7 +2086,24 @@ function renderDimResultRow(r) {
   </div>`;
 }
 
+// MEMO-DIM-BOXES: this depends only on state.search.dims and which rubrics
+// are already in state.completeCase — never on the main free-text query
+// (state.search.query) — but used to get fully rebuilt (8 boxes, each
+// scanning the full searchIndex, several cross-checking every OTHER box
+// via combinedDimTokens) on every keystroke into the main box too, ~20ms of
+// completely wasted work each time since none of its real inputs changed.
+// Cached on a cheap key of its actual inputs; recomputed only when one of
+// them actually changes.
+let dimBoxesCacheKey = null;
+let dimBoxesCacheHtml = '';
 function renderStructuredEntryBoxes() {
+  const cacheKey = JSON.stringify(state.search.dims) + '|' + state.completeCase.map(c => c.rubricId).join(',');
+  if (cacheKey === dimBoxesCacheKey) return dimBoxesCacheHtml;
+  dimBoxesCacheKey = cacheKey;
+  dimBoxesCacheHtml = renderStructuredEntryBoxesUncached();
+  return dimBoxesCacheHtml;
+}
+function renderStructuredEntryBoxesUncached() {
   const rowsHtml = DIMENSIONS.map(d => {
     const val = state.search.dims[d.key] || '';
     const ownTokens = dimTokens(d.key);
@@ -2082,13 +2151,16 @@ function onDimBoxInput(key, val) {
   const inputEl = document.getElementById('diminput-' + key);
   const cursorPos = inputEl ? inputEl.selectionStart : val.length;
   state.search.dims[key] = val;
+  debouncedDimRender(key, cursorPos);
+}
+const debouncedDimRender = debounce((key, cursorPos) => {
   render();
   const newInputEl = document.getElementById('diminput-' + key);
   if (newInputEl) {
     newInputEl.focus();
     newInputEl.setSelectionRange(cursorPos, cursorPos);
   }
-}
+}, SEARCH_DEBOUNCE_MS);
 
 function renderWizardScreen() {
   const q = state.search.query.trim();
@@ -2148,7 +2220,13 @@ function renderWizardScreen() {
     let nudgeHtml = '';
 
     if (keywords.length && state.data.searchIndex) {
-      let matches = state.data.searchIndex.filter(r => keywords.every(k => r.searchable.includes(k)));
+      // Fast path for the overwhelmingly common case while actively typing
+      // (one keyword so far) — same matching semantics as the .every()
+      // form below, just without a closure call per rubric for a check
+      // that only ever had one keyword to test anyway.
+      let matches = keywords.length === 1
+        ? state.data.searchIndex.filter(r => r.searchable.includes(keywords[0]))
+        : state.data.searchIndex.filter(r => keywords.every(k => r.searchable.includes(k)));
       matches.sort((a, b) => b.remedyCount - a.remedyCount);
       totalCount = matches.length;
 
@@ -2637,14 +2715,16 @@ function onSearchFilterChange(val) {
   const cursorPos = inputEl ? inputEl.selectionStart : val.length;
 
   searchFilter = val;
+  debouncedWalkFilterRender(cursorPos);
+}
+const debouncedWalkFilterRender = debounce((cursorPos) => {
   render();
-
   const newInputEl = document.getElementById('walkFilterInput');
   if (newInputEl) {
     newInputEl.focus();
     newInputEl.setSelectionRange(cursorPos, cursorPos);
   }
-}
+}, SEARCH_DEBOUNCE_MS);
 
 function onShowAllOptions() {
   showAllOptions = true;
@@ -2730,14 +2810,16 @@ function onSearchInput(val) {
 
   state.search.query = val;
   state.search.displayLimit = 30; // reset pagination on every new query
+  debouncedSearchRender(cursorPos);
+}
+const debouncedSearchRender = debounce((cursorPos) => {
   render();
-
   const newInputEl = document.getElementById('globalSearchInput');
   if (newInputEl) {
     newInputEl.focus();
     newInputEl.setSelectionRange(cursorPos, cursorPos);
   }
-}
+}, SEARCH_DEBOUNCE_MS);
 
 function onSearchShowMore() {
   state.search.displayLimit += 30;
