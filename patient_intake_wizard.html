@@ -151,22 +151,6 @@ input[type=text]{font-family:var(--font)}
   padding:7px 14px 7px 12px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;
   box-shadow:0 1px 4px rgba(0,0,0,0.08);}
 #caseAnalyzerBackBtn:hover{background:var(--cream);}
-
-/* ---- Structured symptom-detail boxes (2026-10 redesign) — replaces the
-   old category tabs under the main search box. Each box below is already
-   scoped to one kind of detail (where/what/when/...), so its results reuse
-   the existing .selected-node-text + .quick-add-btn look rather than a new
-   visual language. */
-.dim-section{margin-top:18px;padding-top:16px;border-top:1.5px dashed var(--border)}
-.dim-section-title{font-size:12.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:12px}
-.dim-row{margin-bottom:16px}
-.dim-label{display:block;font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:6px}
-.dim-suggest-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--white);margin-bottom:6px}
-.dim-suggest-item.added{border-color:var(--teal);background:#F0F7F4}
-.dim-suggest-empty{font-size:12px;color:var(--ink3);font-style:italic;padding:0 2px 8px}
-.dim-ambient-count{font-size:11.5px;color:var(--ink3);padding:0 2px 2px}
-.dim-combined{margin-top:18px;padding-top:16px;border-top:1.5px solid var(--border)}
-.dim-combined-label{font-size:12px;font-weight:600;color:var(--teal);margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -237,11 +221,7 @@ const state = {
   generalsQueue: { active: false, index: -1, order: [], expandedItem: null, detailSearch: {}, answers: {}, isWarmup: false },
   search: {
     query: '',
-    displayLimit: 30,
-    // The 8 structured detail boxes below the main search box (2026-10
-    // redesign) — replaces the old category tabs entirely; each box is
-    // already scoped to one kind of detail, so there's no tab to pick.
-    dims: { location: '', sensation: '', timing: '', modality: '', laterality: '', cause: '', sequence: '', content: '' }
+    displayLimit: 30
   },
   data: {
     chaptersBucketed: null,    // { chapterName: [[id,path,remedies], ...] }
@@ -390,9 +370,7 @@ async function loadRepertoryData() {
   state.data.chapterList = Object.keys(buckets).sort();
 
   // Build the global search index once — combines Kent term + English + Hindi
-  // text into one lowercase searchable string per rubric, plus precomputed
-  // qualifier tags (reusing the same Sensation/Timing/Modality/Laterality/
-  // Cause/Sequence/Content patterns) for the distinguisher-tab filters.
+  // text into one lowercase searchable string per rubric.
   const enTable = safeGlobalLookup('TRANSLATIONS_ENGLISH') || {};
   const hiTable = safeGlobalLookup('TRANSLATIONS_HINDI') || {};
   const romanTable = safeGlobalLookup('ROMANIZED_HINDI') || {};
@@ -408,12 +386,7 @@ async function loadRepertoryData() {
     const romanText = romanEntry || ''; // Romanized Hindi is stored as a direct string, not {plain, category}
     searchIndex.push({
       id, path, chapter, remedyCount: remedies.length,
-      searchable: (path + ' ' + enText + ' ' + hiText + ' ' + romanText).toLowerCase(),
-      tags: {
-        sensation: SENSATION_RE.test(path), timing: TIMING_RE.test(path),
-        modality: MODALITY_RE.test(path), laterality: LATERALITY_RE.test(path),
-        cause: CAUSE_RE.test(path), sequence: SEQUENCE_RE.test(path), content: CONTENT_RE.test(path)
-      }
+      searchable: (path + ' ' + enText + ' ' + hiText + ' ' + romanText).toLowerCase()
     });
   }
   state.data.searchIndex = searchIndex;
@@ -566,7 +539,7 @@ function lookupExactPathRubric(pathTokens) {
 
 // DEBOUNCE-SEARCH-INPUT: wraps an input handler's expensive part (the
 // render, not the state write) so a burst of keystrokes only pays for it
-// once, after the last one — see onSearchInput/onDimBoxInput/
+// once, after the last one — see onSearchInput/
 // onSearchFilterChange, which each used to run their full filter+render
 // pipeline on EVERY keystroke with nothing cancelling a now-stale run
 // already queued behind it. On the real ~75k-rubric dataset that measured
@@ -2029,139 +2002,6 @@ function renderResultTreeNode(node, depth) {
 //     current depth — everything the old separate renderWalkStep rendered;
 //   - neither: a plain prompt to start typing above.
 // Replaces the old separate renderSearchScreen AND renderWalkStep entirely.
-// ============================================================
-// Structured symptom-detail boxes (2026-10 redesign) — one box per kind of
-// detail, replacing the old single search box + category tabs combo. Each
-// box reuses the exact same real searchIndex (state.data.searchIndex) and
-// the exact same AND-match-on-every-typed-word logic as the free-text box
-// above (renderWizardScreen's own Branch 1), just pre-scoped to one tag.
-// ============================================================
-const DIMENSIONS = [
-  { key: 'location',   label: 'Where is the problem? · समस्या कहाँ है',              ph: 'e.g. forehead, right eye, stomach…',        tagKey: null },
-  { key: 'sensation',  label: 'What does it feel like? · कैसा महसूस होता है',         ph: 'e.g. burning, throbbing, pressing…',        tagKey: 'sensation' },
-  { key: 'timing',     label: 'When does it happen? · कब होता है',                   ph: 'e.g. morning, night, after eating…',        tagKey: 'timing' },
-  { key: 'modality',   label: 'What affects it? · इससे क्या असर पड़ता है',            ph: 'e.g. worse from cold, better from rest…',   tagKey: 'modality' },
-  { key: 'laterality', label: 'Which side? · कौन-सी तरफ',                            ph: 'e.g. right, left, alternating…',            tagKey: 'laterality' },
-  { key: 'cause',      label: 'What caused it? · किस कारण से',                       ph: 'e.g. after grief, from injury, from cold…', tagKey: 'cause' },
-  { key: 'sequence',   label: 'Comes with / follows · साथ में / इसके बाद',            ph: 'e.g. alternates with, followed by…',        tagKey: 'sequence' },
-  { key: 'content',    label: 'Described as / like what · जैसा महसूस हो',             ph: 'e.g. as if a nail, as though floating…',    tagKey: 'content' }
-];
-
-// Same filter-then-sort shape as Branch 1 below, parameterized by an
-// optional tag so each box (and the combined bar) can reuse it directly.
-function matchRubricsByTag(tokens, tagKey) {
-  let rows = state.data.searchIndex || [];
-  if (tagKey) rows = rows.filter(r => r.tags[tagKey]);
-  if (!tokens.length) return rows;
-  return rows.filter(r => tokens.every(t => r.searchable.includes(t)));
-}
-
-function dimTokens(key) {
-  const v = (state.search.dims[key] || '').trim().toLowerCase();
-  return v ? v.split(/[,\s]+/).filter(Boolean) : [];
-}
-
-// Combined words typed into every OTHER box, for one box's ambient count —
-// guards against one box's dead-end text (a typo, or a word this repertory
-// just doesn't use) silently zeroing out every sibling box: a box's words
-// only count toward the combined query if they match something on their
-// own first.
-function combinedDimTokens(excludeKey) {
-  const tokens = [];
-  DIMENSIONS.forEach(d => {
-    if (d.key === excludeKey) return;
-    const t = dimTokens(d.key);
-    if (t.length && matchRubricsByTag(t, d.tagKey).length > 0) tokens.push(...t);
-  });
-  return tokens;
-}
-
-function renderDimResultRow(r) {
-  const disp = getDisplayText(r.chapter, r.path, r.path.split(',').map(s => s.trim()).pop());
-  const rubricRef = { id: r.id, path: r.path, remedyCount: r.remedyCount };
-  const alreadyAdded = state.completeCase.some(c => String(c.rubricId) === String(r.id));
-  return `<div class="dim-suggest-item${alreadyAdded ? ' added' : ''}">
-    <div class="selected-node-text">${renderTrilingualBlock(disp)}</div>
-    ${renderAddToggleBtn(rubricRef)}
-  </div>`;
-}
-
-// MEMO-DIM-BOXES: this depends only on state.search.dims and which rubrics
-// are already in state.completeCase — never on the main free-text query
-// (state.search.query) — but used to get fully rebuilt (8 boxes, each
-// scanning the full searchIndex, several cross-checking every OTHER box
-// via combinedDimTokens) on every keystroke into the main box too, ~20ms of
-// completely wasted work each time since none of its real inputs changed.
-// Cached on a cheap key of its actual inputs; recomputed only when one of
-// them actually changes.
-let dimBoxesCacheKey = null;
-let dimBoxesCacheHtml = '';
-function renderStructuredEntryBoxes() {
-  const cacheKey = JSON.stringify(state.search.dims) + '|' + state.completeCase.map(c => c.rubricId).join(',');
-  if (cacheKey === dimBoxesCacheKey) return dimBoxesCacheHtml;
-  dimBoxesCacheKey = cacheKey;
-  dimBoxesCacheHtml = renderStructuredEntryBoxesUncached();
-  return dimBoxesCacheHtml;
-}
-function renderStructuredEntryBoxesUncached() {
-  const rowsHtml = DIMENSIONS.map(d => {
-    const val = state.search.dims[d.key] || '';
-    const ownTokens = dimTokens(d.key);
-    let bodyHtml;
-    if (val.trim()) {
-      const matches = matchRubricsByTag(ownTokens, d.tagKey).slice().sort((a, b) => b.remedyCount - a.remedyCount);
-      bodyHtml = !matches.length
-        ? `<div class="dim-suggest-empty">No matching options found for "${esc(val.trim())}" · कोई विकल्प नहीं मिला</div>`
-        : matches.slice(0, 6).map(renderDimResultRow).join('');
-    } else {
-      const ambient = matchRubricsByTag(combinedDimTokens(d.key), d.tagKey).length;
-      bodyHtml = `<div class="dim-ambient-count">${ambient} option${ambient === 1 ? '' : 's'} on file · विकल्प उपलब्ध</div>`;
-    }
-    return `
-      <div class="dim-row" id="dimrow-${d.key}">
-        <label class="dim-label" for="diminput-${d.key}">${d.label}</label>
-        <input id="diminput-${d.key}" class="search-box" type="text" placeholder="${escAttr(d.ph)}" value="${escAttr(val)}" oninput="onDimBoxInput('${d.key}', this.value)">
-        ${bodyHtml}
-      </div>
-    `;
-  }).join('');
-
-  const combinedTokens = DIMENSIONS.reduce((acc, d) => acc.concat(dimTokens(d.key)), []);
-  let combinedHtml = '';
-  if (combinedTokens.length) {
-    const combinedMatches = matchRubricsByTag(combinedTokens, null).slice().sort((a, b) => b.remedyCount - a.remedyCount);
-    combinedHtml = `
-      <div class="dim-combined">
-        <div class="dim-combined-label">${combinedMatches.length} rubric(s) match everything typed above · ऊपर टाइप किए गए सभी से मेल खाता है</div>
-        ${combinedMatches.slice(0, 6).map(renderDimResultRow).join('')}
-      </div>
-    `;
-  }
-
-  return `
-    <div class="dim-section">
-      <div class="dim-section-title">Describe the symptom in detail · लक्षण का विस्तार से वर्णन करें</div>
-      ${rowsHtml}
-      ${combinedHtml}
-    </div>
-  `;
-}
-
-function onDimBoxInput(key, val) {
-  const inputEl = document.getElementById('diminput-' + key);
-  const cursorPos = inputEl ? inputEl.selectionStart : val.length;
-  state.search.dims[key] = val;
-  debouncedDimRender(key, cursorPos);
-}
-const debouncedDimRender = debounce((key, cursorPos) => {
-  render();
-  const newInputEl = document.getElementById('diminput-' + key);
-  if (newInputEl) {
-    newInputEl.focus();
-    newInputEl.setSelectionRange(cursorPos, cursorPos);
-  }
-}, SEARCH_DEBOUNCE_MS);
-
 function renderWizardScreen() {
   const q = state.search.query.trim();
   const keywords = q.split(/[,\s]+/).map(k => k.trim().toLowerCase()).filter(Boolean);
@@ -2170,9 +2010,7 @@ function renderWizardScreen() {
   const chapter = pathTokens[0];
 
   // Always on screen, whatever else is showing below it. Searches across
-  // every chapter and every kind of detail at once — no categories to pick,
-  // since the 8 boxes further down the screen already split by kind of
-  // detail (see renderStructuredEntryBoxes).
+  // every chapter and every kind of detail at once — no categories to pick.
   const searchBoxHtml = `
     <div class="wizard-search-highlight">
       <div class="wizard-search-label">Enter your problem here · अपनी तकलीफ़ यहाँ लिखिए</div>
@@ -2182,12 +2020,6 @@ function renderWizardScreen() {
       </div>
     </div>
   `;
-
-  // The 8 structured detail boxes (where / what it feels like / when / ...)
-  // are a separate, independent tool from the free-text box above — typing
-  // in one never affects the other. Not shown while mid-walk (inWalk), since
-  // that's already a focused drill-down into one specific rubric.
-  const structuredEntryHtml = inWalk ? '' : renderStructuredEntryBoxes();
 
   // Back goes up one level of an active walk; with no walk in progress, it
   // instead leaves the wizard screen the way it was reached, IF it was
@@ -2292,7 +2124,6 @@ function renderWizardScreen() {
         ${!keywords.length ? `<div class="empty-state">Start typing to search across all chapters.</div>` : ''}
         ${keywords.length && !totalCount ? `<div class="empty-state">No rubrics found matching all of: ${esc(keywords.join(', '))}</div>` : ''}
         ${resultsHtml}
-        ${structuredEntryHtml}
       </div>
       ${footerHtml}
     `;
@@ -2461,9 +2292,8 @@ function renderWizardScreen() {
   }
 
   // ============================================================
-  // Branch 3: fresh — nothing typed, nothing drilled yet. The 8 structured
-  // boxes (structuredEntryHtml) are the primary way in now, so there's no
-  // separate "start typing above" placeholder message any more.
+  // Branch 3: fresh — nothing typed, nothing drilled yet. The search box
+  // above is the only way in, so a plain "start typing" prompt is shown.
   // ============================================================
   return `
     ${renderTopbar('Guided Case Wizard', 'Describe your main problem', false)}
@@ -2472,7 +2302,7 @@ function renderWizardScreen() {
       ${backBtnHtml}
       ${searchBoxHtml}
       ${editingBannerHtml}
-      ${structuredEntryHtml}
+      <div class="empty-state">Start typing to search across all chapters. · सभी अध्यायों में खोजने के लिए टाइप करना शुरू करें।</div>
     </div>
     ${footerHtml}
   `;
@@ -2783,7 +2613,6 @@ function onAddAnotherComplaint() {
   state.currentWalk = { pathTokens: [] };
   state.editingCaseIndex = null; // adding ANOTHER complaint must never continue editing whichever item was last being reconsidered
   state.search.query = ''; // a new complaint starts from a clean prompt, not whatever was last typed
-  state.search.dims = { location: '', sensation: '', timing: '', modality: '', laterality: '', cause: '', sequence: '', content: '' };
   state.search.displayLimit = 30;
   caseItemLockState = {};
   state.screen = 'search';
@@ -2793,7 +2622,6 @@ function onAddAnotherComplaint() {
 function onOpenSearch() {
   state.returnScreenAfterSearch = state.screen === 'search' ? state.returnScreenAfterSearch : state.screen;
   state.search.query = '';
-  state.search.dims = { location: '', sensation: '', timing: '', modality: '', laterality: '', cause: '', sequence: '', content: '' };
   state.search.displayLimit = 30;
   state.screen = 'search';
   render();
