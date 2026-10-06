@@ -2249,8 +2249,13 @@ function renderWizardScreen() {
       grouped[kind].push([token, info]);
     }
 
+    // The separate "Yes, this is it" card was removed where it repeated the
+    // last history row above it (which already carries the same Add / Added
+    // button). Only when the walk is just the bare chapter (no history row
+    // above, so nothing is repeated) is it kept — otherwise that rubric
+    // would have no Add button at all.
     let stopHereHtml = '';
-    if (exactMatchRubric) {
+    if (exactMatchRubric && pathTokens.length === 1) {
       const disp = getDisplayText(chapter, exactMatchRubric.path, pathTokens[pathTokens.length - 1]);
       stopHereHtml = `<div class="stop-here-card">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
@@ -2311,7 +2316,7 @@ function renderWizardScreen() {
         ${stepSwitchHtml}
         ${editingBannerHtml}
         <h2 class="step-title">Choose what applies</h2>
-        <p class="step-sub">जो लागू हो उसे चुनें। Select one to go more specific, or tap "Yes, this is it" to stop here. अधिक विशेष जानकारी के लिए एक चुनें, या यहीं रुकने के लिए "हाँ, यही है" चुनें।</p>
+        <p class="step-sub">जो लागू हो उसे चुनें। Select one to go more specific, or tap "+ Add" on a row above to add it. अधिक विशेष जानकारी के लिए एक चुनें, या ऊपर की किसी पंक्ति पर "+ Add" दबाएँ।</p>
         ${historyHtml}
         <div style="margin-left:${liveIndent}px">
           ${totalCount > 8 || searchFilter ? `<input id="walkFilterInput" class="search-box ${filterMatchedNothing ? 'no-match' : ''}" type="text" placeholder="Search these options… · यहाँ खोजें…" value="${escAttr(searchFilter)}" oninput="onSearchFilterChange(this.value)">` : ''}
