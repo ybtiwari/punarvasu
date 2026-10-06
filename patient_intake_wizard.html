@@ -3309,8 +3309,50 @@ function escAttr(s) {
         await update(caseRef, payload); // update(), not set() — set() would replace the whole node and destroy the revisions child just written above
         return { ok: true, caseId: existingCaseId };
       } else {
+        // IDEMPOTENT-SUBMIT: the one place every new submission passes through.
+        // The same content from the same patient within a few minutes is the
+        // same submission arriving twice (double tap, two open tabs, a retry
+        // after a slow network, a refresh) -- return the case already saved
+        // instead of writing a second case and a second notification.
+        const fpStr = JSON.stringify([payload.patient && payload.patient.uid, !!isFollowUp, payload.complaints]);
+        let fpHash = 0; for (let i = 0; i < fpStr.length; i++) fpHash = (Math.imul(31, fpHash) + fpStr.charCodeAt(i)) | 0;
+        const fpKey = String(fpHash) + ':' + fpStr.length;
+        const WINDOW_MS = 10 * 60 * 1000;
+        window.__inflightSubmits = window.__inflightSubmits || {};
+        if (window.__inflightSubmits[fpKey]) return window.__inflightSubmits[fpKey];
+        const run = (async () => {
+          const uid = payload.patient && payload.patient.uid;
+          if (uid) {
+            try {
+              const fpSnap = await get(ref(db, 'patients/' + uid + '/casefile/lastCaseFingerprint'));
+              const prev = fpSnap.exists() ? fpSnap.val() : null;
+              if (prev && prev.key === fpKey && prev.caseId && (Date.now() - prev.at) < WINDOW_MS) {
+                return { ok: true, caseId: prev.caseId, duplicate: true };
+              }
+            } catch (e) { console.error('[patient-intake] duplicate check failed (non-fatal):', e); }
+          }
+          return null;
+        })();
+        window.__inflightSubmits[fpKey] = (async () => {
+          const dup = await run;
+          if (dup) return dup;
+          return await writeNewCase();
+        })();
+        let finished = null;
+        try { finished = await window.__inflightSubmits[fpKey]; }
+        finally {
+          // a failure must never be remembered -- the patient's retry has to really retry
+          if (finished && finished.ok) setTimeout(() => { delete window.__inflightSubmits[fpKey]; }, 15000);
+          else delete window.__inflightSubmits[fpKey];
+        }
+        return finished;
+        async function writeNewCase() {
         const newCaseRef = push(ref(db, 'cases'));
         await set(newCaseRef, payload);
+        if (payload.patient && payload.patient.uid) {
+          try { await set(ref(db, 'patients/' + payload.patient.uid + '/casefile/lastCaseFingerprint'), { key: fpKey, caseId: newCaseRef.key, at: Date.now() }); }
+          catch (e) { console.error('[patient-intake] fingerprint save failed (non-fatal):', e); }
+        }
         // Mirrored into casefile alongside the actual case record — not a
         // duplicate for its own sake. patient-portal.html reads only
         // patients/{uid}/casefile (its own data, plainly allowed) and
@@ -3358,6 +3400,7 @@ function escAttr(s) {
           } catch (e) { console.error('[patient-intake] new-case notification failed (non-fatal):', e); }
         }
         return { ok: true, caseId: newCaseRef.key };
+        }
       }
     } catch (e) {
       console.error('[patient-intake] case submission failed:', e);
