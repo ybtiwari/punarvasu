@@ -95,8 +95,7 @@ p.step-sub{font-size:13px;color:var(--ink3);margin-bottom:14px}
 .view-switch .vs-btn + .vs-btn{border-left:1.5px solid var(--teal)}
 .view-switch .vs-btn.on{background:var(--teal);color:#fff}
 .view-switch-hint{font-size:11.5px;color:var(--lang-en);margin:2px 0 8px}
-.mode-list .tree-node-row, .mode-list .selected-node-header{cursor:default}
-.mode-list .tree-node-row:hover{border-color:var(--border);background:var(--white)}
+.row-focus{box-shadow:0 0 0 2px var(--amber)}
 .back-row{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center}
 .selected-node-text{flex:1;min-width:0}
 .selected-node-text .kent{font-size:13.5px;font-weight:700;color:var(--teal)}
@@ -231,7 +230,7 @@ const state = {
   search: {
     query: '',
     displayLimit: 30,
-    viewMode: 'list',      // 'list' (tapping a row stays here) | 'step' (tapping a row opens the step-by-step screen)
+    focusPath: '',         // the result row last tapped in List view (where Step-by-step opens)
     backQuery: '',         // the search the patient came from, for "Back to results"
     backLimit: 30
   },
@@ -1972,6 +1971,9 @@ function buildResultTree(matches) {
 // when there's actually something to drill into further; a true leaf (no
 // children at all, already as specific as this search's matches get) shows
 // no badge rather than a confusing "0 options".
+// The first result row drawn in the latest render — where "Step-by-step"
+// opens when no row has been tapped.
+let resultFirstPath = '';
 function renderResultTreeNode(node, depth) {
   const pathTokens = node.path.split(',').map(s => s.trim());
   const disp = getDisplayText(node.chapter, node.path, node.token);
@@ -1983,14 +1985,15 @@ function renderResultTreeNode(node, depth) {
     if (exactMatchRubric) rubricRef = { id: exactMatchRubric.id, path: exactMatchRubric.path, remedyCount: exactMatchRubric.remedyCount };
   }
   const alreadyAdded = !!rubricRef && state.completeCase.some(c => String(c.rubricId) === String(rubricRef.id));
-  const rowClass = alreadyAdded ? 'selected-node-header' : 'tree-node-row';
+  const rowClass = (alreadyAdded ? 'selected-node-header' : 'tree-node-row') + (state.search.focusPath === node.path ? ' row-focus' : '');
+  if (!resultFirstPath) resultFirstPath = node.path;
   const childCount = Object.keys(node.children).length;
   const qualifierCountHtml = childCount > 0 ? `<div class="collapsible-count">${childCount} विकल्प · option(s)</div>` : '';
   const childrenHtml = Object.values(node.children).map(child => renderResultTreeNode(child, depth + 1)).join('');
 
   return `
     <div class="selected-node" style="margin-left:${depth * 14}px">
-      <div class="${rowClass}" onclick="onResultRowTap('${escAttr(node.path)}')">
+      <div class="${rowClass}" onclick="onResultRowTap('${escAttr(node.path)}', this)">
         <div class="selected-node-text">
           ${renderTrilingualBlock(disp)}
           ${qualifierCountHtml}
@@ -2033,16 +2036,18 @@ function renderWizardScreen() {
     </div>
   `;
 
-  // List view | Step-by-step switch for the search results (shown on
-  // phones and desktop alike). Which one is on decides what tapping a result
-  // row does; "+ Add" always just adds, in both.
-  const isStep = state.search.viewMode === 'step';
+  // List view | Step-by-step: two views of the SAME search. On the results
+  // screen List view is on; on the step-by-step screen (reached from this
+  // search) Step-by-step is on. Pressing the other one flips the view, with
+  // the search kept — no extra tap needed.
+  const isStep = !q;
   const switchHtml = `
-    <div class="view-switch" role="group" aria-label="Result view">
+    <div class="view-switch" role="group" aria-label="View">
       <button class="vs-btn ${isStep ? '' : 'on'}" onclick="setResultViewMode('list')">List view &middot; सूची</button>
       <button class="vs-btn ${isStep ? 'on' : ''}" onclick="setResultViewMode('step')">Step-by-step &middot; चरण-दर-चरण</button>
     </div>
-    <div class="view-switch-hint">${isStep ? 'Tap a result to go deeper, step by step. · गहराई में जाने के लिए परिणाम पर टैप करें।' : 'Tap &ldquo;+ Add&rdquo; to add a result. · जोड़ने के लिए &ldquo;+ Add&rdquo; दबाएँ।'}</div>`;
+    <div class="view-switch-hint">${isStep ? 'The same search, step by step. Press List view to see all results together. · वही खोज, चरण-दर-चरण। सभी परिणाम एक साथ देखने के लिए List view दबाएँ।' : 'Tap a row to pick it, then press Step-by-step to see it step by step. · किसी पंक्ति पर टैप करें, फिर Step-by-step दबाएँ।'}</div>`;
+  const stepSwitchHtml = (!q && inWalk && state.search.backQuery) ? switchHtml : '';
 
   // Back goes up one level of an active walk; with no walk in progress, it
   // instead leaves the wizard screen the way it was reached, IF it was
@@ -2072,6 +2077,7 @@ function renderWizardScreen() {
   // here is how a patient pivots to a different complaint at any time).
   // ============================================================
   if (q) {
+    resultFirstPath = '';
     let resultsHtml = '';
     let totalCount = 0;
     let nudgeHtml = '';
@@ -2116,10 +2122,11 @@ function renderWizardScreen() {
           // sub-tree to count here (this bypasses buildResultTree entirely),
           // so this reads straight from the real data, same as the walk
           // screen itself would once drilled in one level.
+          if (!resultFirstPath) resultFirstPath = r.path;
           const childCount = Object.keys(getNextOptions([r.chapter]).nextOptions).length;
           const qualifierCountHtml = childCount > 0 ? `<div class="collapsible-count">${childCount} विकल्प · option(s)</div>` : '';
           return `<div class="selected-node">
-            <div class="${alreadyAdded ? 'selected-node-header' : 'tree-node-row'}" onclick="onResultRowTap('${escAttr(r.path)}')">
+            <div class="${(alreadyAdded ? 'selected-node-header' : 'tree-node-row') + (state.search.focusPath === r.path ? ' row-focus' : '')}" onclick="onResultRowTap('${escAttr(r.path)}', this)">
               <div class="selected-node-text">${renderTrilingualBlock(disp)}${qualifierCountHtml}</div>
               ${renderAddToggleBtn(rubricRef)}
             </div>
@@ -2149,7 +2156,7 @@ function renderWizardScreen() {
         ${nudgeHtml}
         ${!keywords.length ? `<div class="empty-state">Start typing to search across all chapters.</div>` : ''}
         ${keywords.length && !totalCount ? `<div class="empty-state">No rubrics found matching all of: ${esc(keywords.join(', '))}</div>` : ''}
-        <div class="result-list ${state.search.viewMode === 'step' ? 'mode-step' : 'mode-list'}">${resultsHtml}</div>
+        <div class="result-list">${resultsHtml}</div>
       </div>
       ${footerHtml}
     `;
@@ -2206,6 +2213,7 @@ function renderWizardScreen() {
         <div class="body">
           ${backBtnHtml}
           ${searchBoxHtml}
+          ${stepSwitchHtml}
           ${editingBannerHtml}
           <h2 class="step-title">Choose what applies</h2>
           <p class="step-sub">जो लागू हो उसे चुनें</p>
@@ -2300,6 +2308,7 @@ function renderWizardScreen() {
       <div class="body">
         ${backBtnHtml}
         ${searchBoxHtml}
+        ${stepSwitchHtml}
         ${editingBannerHtml}
         <h2 class="step-title">Choose what applies</h2>
         <p class="step-sub">जो लागू हो उसे चुनें। Select one to go more specific, or tap "Yes, this is it" to stop here. अधिक विशेष जानकारी के लिए एक चुनें, या यहीं रुकने के लिए "हाँ, यही है" चुनें।</p>
@@ -2666,6 +2675,7 @@ function onSearchInput(val) {
   const cursorPos = inputEl ? inputEl.selectionStart : val.length;
 
   state.search.query = val;
+  state.search.focusPath = '';
   state.search.displayLimit = 30; // reset pagination on every new query
   debouncedSearchRender(cursorPos);
 }
@@ -2683,23 +2693,34 @@ function onSearchShowMore() {
   render();
 }
 
-// SWITCHER: what tapping a result row does depends on the chosen view.
-const VIEW_MODE_KEY = 'punarvasu_wizard_result_view';
+// SWITCHER: List view and Step-by-step are two views of the same search.
+// "Step-by-step" opens the row last tapped (else the first result) on the
+// step-by-step screen; "List view" returns to the same results. Nothing is
+// added to the case by switching.
 function setResultViewMode(mode) {
-  state.search.viewMode = (mode === 'step') ? 'step' : 'list';
-  try { localStorage.setItem(VIEW_MODE_KEY, state.search.viewMode); } catch (e) {}
+  const inResults = !!state.search.query.trim();
+  if (mode === 'step') { if (inResults) openStepFromResults(); }
+  else if (!inResults && state.search.backQuery) onBackToResults();
+}
+function onResultRowTap(path, el) {
+  // Tapping a row just marks it (so Step-by-step opens there); "+ Add" adds.
+  state.search.focusPath = path;
+  document.querySelectorAll('.result-list .row-focus').forEach(n => n.classList.remove('row-focus'));
+  if (el && el.classList) el.classList.add('row-focus');
+}
+function openStepFromResults() {
+  const path = state.search.focusPath || resultFirstPath;
+  if (!path) return;
+  state.search.backQuery = state.search.query;
+  state.search.backLimit = state.search.displayLimit;
+  state.currentWalk = { pathTokens: path.split(',').map(s => s.trim()) };
+  state.search.query = '';
+  state.search.displayLimit = 30;
+  searchFilter = '';
+  showAllOptions = false;
+  collapsedGroups = {};
+  state.screen = 'search';
   render();
-}
-function loadResultViewMode() {
-  try {
-    const v = localStorage.getItem(VIEW_MODE_KEY);
-    if (v === 'step' || v === 'list') state.search.viewMode = v;
-  } catch (e) {}
-}
-loadResultViewMode();
-function onResultRowTap(path) {
-  if (state.search.viewMode === 'step') onSearchResultPick(path);
-  // list view: tapping the row itself does nothing; "+ Add" adds.
 }
 // From the step-by-step screen back to the same search results, query kept.
 function onBackToResults() {
