@@ -89,6 +89,15 @@ p.step-sub{font-size:13px;color:var(--ink3);margin-bottom:14px}
    green/teal "confirmed" look, same as everywhere else "added" is shown. */
 .tree-node-row{display:flex;align-items:center;gap:8px;padding:9px 10px;cursor:pointer;background:var(--white);border:1.5px solid var(--border);border-radius:8px}
 .tree-node-row:hover{border-color:var(--amber);background:var(--amber-bg)}
+/* SWITCHER (2026-10): List view vs Step-by-step for search results. */
+.view-switch{display:flex;gap:0;margin:10px 0 4px;border:1.5px solid var(--teal);border-radius:10px;overflow:hidden}
+.view-switch .vs-btn{flex:1;padding:9px 6px;font-size:12.5px;font-weight:700;color:var(--teal);background:var(--white);border:none;cursor:pointer;line-height:1.25}
+.view-switch .vs-btn + .vs-btn{border-left:1.5px solid var(--teal)}
+.view-switch .vs-btn.on{background:var(--teal);color:#fff}
+.view-switch-hint{font-size:11.5px;color:var(--lang-en);margin:2px 0 8px}
+.mode-list .tree-node-row, .mode-list .selected-node-header{cursor:default}
+.mode-list .tree-node-row:hover{border-color:var(--border);background:var(--white)}
+.back-row{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center}
 .selected-node-text{flex:1;min-width:0}
 .selected-node-text .kent{font-size:13.5px;font-weight:700;color:var(--teal)}
 .selected-node-text .en{font-size:12px;color:var(--lang-en);margin-top:1px}
@@ -221,7 +230,10 @@ const state = {
   generalsQueue: { active: false, index: -1, order: [], expandedItem: null, detailSearch: {}, answers: {}, isWarmup: false },
   search: {
     query: '',
-    displayLimit: 30
+    displayLimit: 30,
+    viewMode: 'list',      // 'list' (tapping a row stays here) | 'step' (tapping a row opens the step-by-step screen)
+    backQuery: '',         // the search the patient came from, for "Back to results"
+    backLimit: 30
   },
   data: {
     chaptersBucketed: null,    // { chapterName: [[id,path,remedies], ...] }
@@ -1978,7 +1990,7 @@ function renderResultTreeNode(node, depth) {
 
   return `
     <div class="selected-node" style="margin-left:${depth * 14}px">
-      <div class="${rowClass}" onclick="onSearchResultPick('${escAttr(node.path)}')">
+      <div class="${rowClass}" onclick="onResultRowTap('${escAttr(node.path)}')">
         <div class="selected-node-text">
           ${renderTrilingualBlock(disp)}
           ${qualifierCountHtml}
@@ -2021,12 +2033,25 @@ function renderWizardScreen() {
     </div>
   `;
 
+  // List view | Step-by-step switch for the search results (shown on
+  // phones and desktop alike). Which one is on decides what tapping a result
+  // row does; "+ Add" always just adds, in both.
+  const isStep = state.search.viewMode === 'step';
+  const switchHtml = `
+    <div class="view-switch" role="group" aria-label="Result view">
+      <button class="vs-btn ${isStep ? '' : 'on'}" onclick="setResultViewMode('list')">List view &middot; सूची</button>
+      <button class="vs-btn ${isStep ? 'on' : ''}" onclick="setResultViewMode('step')">Step-by-step &middot; चरण-दर-चरण</button>
+    </div>
+    <div class="view-switch-hint">${isStep ? 'Tap a result to go deeper, step by step. · गहराई में जाने के लिए परिणाम पर टैप करें।' : 'Tap &ldquo;+ Add&rdquo; to add a result. · जोड़ने के लिए &ldquo;+ Add&rdquo; दबाएँ।'}</div>`;
+
   // Back goes up one level of an active walk; with no walk in progress, it
   // instead leaves the wizard screen the way it was reached, IF it was
   // reached from somewhere else in the app (returnScreenAfterSearch) — when
   // this already IS the root screen there's nowhere to show a Back to.
+  const backToResultsHtml = (inWalk && !q && state.search.backQuery)
+    ? `<button class="back-btn" onclick="onBackToResults()">&#8617; Back to results · परिणामों पर वापस</button>` : '';
   const backBtnHtml = inWalk
-    ? `<button class="back-btn" onclick="onWalkBack()">&larr; Back</button>`
+    ? `<div class="back-row"><button class="back-btn" onclick="onWalkBack()">&larr; Back</button>${backToResultsHtml}</div>`
     : (state.returnScreenAfterSearch && state.returnScreenAfterSearch !== 'search'
       ? `<button class="back-btn" onclick="onCloseSearch()">&larr; Back</button>` : '');
 
@@ -2094,7 +2119,7 @@ function renderWizardScreen() {
           const childCount = Object.keys(getNextOptions([r.chapter]).nextOptions).length;
           const qualifierCountHtml = childCount > 0 ? `<div class="collapsible-count">${childCount} विकल्प · option(s)</div>` : '';
           return `<div class="selected-node">
-            <div class="${alreadyAdded ? 'selected-node-header' : 'tree-node-row'}" onclick="onSearchResultPick('${escAttr(r.path)}')">
+            <div class="${alreadyAdded ? 'selected-node-header' : 'tree-node-row'}" onclick="onResultRowTap('${escAttr(r.path)}')">
               <div class="selected-node-text">${renderTrilingualBlock(disp)}${qualifierCountHtml}</div>
               ${renderAddToggleBtn(rubricRef)}
             </div>
@@ -2120,10 +2145,11 @@ function renderWizardScreen() {
         ${searchBoxHtml}
         ${editingBannerHtml}
         <p class="step-sub">Separate multiple keywords with commas. More keywords narrow the results. · कई शब्द खोजने के लिए कॉमा से अलग करें।</p>
+        ${keywords.length ? switchHtml : ''}
         ${nudgeHtml}
         ${!keywords.length ? `<div class="empty-state">Start typing to search across all chapters.</div>` : ''}
         ${keywords.length && !totalCount ? `<div class="empty-state">No rubrics found matching all of: ${esc(keywords.join(', '))}</div>` : ''}
-        ${resultsHtml}
+        <div class="result-list ${state.search.viewMode === 'step' ? 'mode-step' : 'mode-list'}">${resultsHtml}</div>
       </div>
       ${footerHtml}
     `;
@@ -2519,6 +2545,7 @@ function onEditCaseItem(index) {
   const item = state.completeCase[index];
   state.editingCaseIndex = index;
   state.currentWalk = { pathTokens: item.path.split(',').map(s => s.trim()) };
+  state.search.backQuery = '';
   // A stale query left over from an earlier search would otherwise win out
   // over this walk in renderWizardScreen's branch order (Branch 1 — an
   // active query — takes priority over Branch 2 — an active walk) and the
@@ -2569,6 +2596,7 @@ function onShowAllOptions() {
 function onConnectorAccept(connectedChapter) {
   state.connectorQueue.shift();
   state.currentWalk = { pathTokens: [connectedChapter] };
+  state.search.backQuery = '';
   state.search.query = ''; // same reasoning as onEditCaseItem — don't let a stale query outrank this walk
   state.search.displayLimit = 30;
   searchFilter = '';
@@ -2611,6 +2639,7 @@ function onCaseItemTap(index) {
 
 function onAddAnotherComplaint() {
   state.currentWalk = { pathTokens: [] };
+  state.search.backQuery = '';
   state.editingCaseIndex = null; // adding ANOTHER complaint must never continue editing whichever item was last being reconsidered
   state.search.query = ''; // a new complaint starts from a clean prompt, not whatever was last typed
   state.search.displayLimit = 30;
@@ -2654,11 +2683,47 @@ function onSearchShowMore() {
   render();
 }
 
+// SWITCHER: what tapping a result row does depends on the chosen view.
+const VIEW_MODE_KEY = 'punarvasu_wizard_result_view';
+function setResultViewMode(mode) {
+  state.search.viewMode = (mode === 'step') ? 'step' : 'list';
+  try { localStorage.setItem(VIEW_MODE_KEY, state.search.viewMode); } catch (e) {}
+  render();
+}
+function loadResultViewMode() {
+  try {
+    const v = localStorage.getItem(VIEW_MODE_KEY);
+    if (v === 'step' || v === 'list') state.search.viewMode = v;
+  } catch (e) {}
+}
+loadResultViewMode();
+function onResultRowTap(path) {
+  if (state.search.viewMode === 'step') onSearchResultPick(path);
+  // list view: tapping the row itself does nothing; "+ Add" adds.
+}
+// From the step-by-step screen back to the same search results, query kept.
+function onBackToResults() {
+  state.currentWalk = { pathTokens: [] };
+  state.search.query = state.search.backQuery || '';
+  state.search.displayLimit = state.search.backLimit || 30;
+  state.search.backQuery = '';
+  searchFilter = '';
+  showAllOptions = false;
+  collapsedGroups = {};
+  state.screen = 'search';
+  render();
+}
+
 // The core of the search-to-tree feature: a chosen rubric's full path becomes
 // the walk's pathTokens directly, landing the patient exactly there — the
 // exact same rendering logic used for normal click-through browsing then
 // takes over from this point on, with no special-casing needed downstream.
 function onSearchResultPick(path) {
+  // Remember where we came from, so screen 2 can offer "Back to results".
+  if (state.search.query.trim()) {
+    state.search.backQuery = state.search.query;
+    state.search.backLimit = state.search.displayLimit;
+  }
   const pathTokens = path.split(',').map(s => s.trim());
   state.currentWalk = { pathTokens };
   // Clearing the query (not just searchFilter) matters here specifically:
