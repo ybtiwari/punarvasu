@@ -2864,6 +2864,10 @@ function renderFollowUpChangesSummary() {
   `;
 }
 async function onSubmitCase() {
+  // DOUBLE-SUBMIT-GUARD: a second tap (or a second path into this function)
+  // while a submission is already in flight must do nothing — otherwise each
+  // call writes its own case and its own "submitted" notification.
+  if (state.submit.busy) return;
   state.submit.busy = true;
   state.submit.error = '';
   render();
