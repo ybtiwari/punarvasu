@@ -77,6 +77,17 @@
     .myp-chip.worse { background: #FDF3E8; color: #B4570A; border: 1px solid #F0C9A0; }
     .myp-chip.last.worse { background: #B4570A; color: #fff; border-color: #B4570A; }
     .myp-note { font-size: 12.5px; color: var(--ink2); margin-top: 8px; }
+    /* WELLBEING-CHECKIN */
+    .checkin-card { border-color: var(--teal); }
+    .ck-row { padding: 12px 0; border-top: 1px solid var(--border); }
+    .ck-name { font-size: 15px; font-weight: 600; color: var(--ink); }
+    .ck-hi { font-size: 14px; color: var(--ink2); margin-top: 2px; }
+    .ck-sel { width: 100%; margin-top: 8px; padding: 11px 12px; font-size: 15px; font-family: var(--sans); border: 1px solid var(--border); border-radius: 6px; background: var(--white); color: var(--ink); }
+    .ck-note { width: 100%; box-sizing: border-box; margin-top: 12px; padding: 10px 12px; font-size: 15px; font-family: var(--sans); border: 1px solid var(--border); border-radius: 6px; min-height: 70px; }
+    .ck-send { width: 100%; margin-top: 14px; padding: 13px; font-size: 16px; font-weight: 600; color: #fff; background: var(--teal); border: none; border-radius: 8px; cursor: pointer; }
+    .ck-send:disabled { opacity: .55; cursor: default; }
+    .ck-err { color: #B23A2E; font-size: 13.5px; margin-top: 8px; }
+    .ck-thanks { color: var(--teal2); font-size: 15px; line-height: 1.5; }
     .info-card h3 { font-family: var(--serif); font-size: 16px; color: var(--navy); margin-bottom: 6px; }
     .info-card p  { font-size: 14px; color: var(--ink2); line-height: 1.6; }
     .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
@@ -270,6 +281,7 @@
             <button onclick="document.getElementById('installPrompt').style.display='none';sessionStorage.setItem('installDismissed','1')" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:4px;padding:7px 10px;font-size:16px;cursor:pointer;line-height:1;">✕</button>
           </div>
         </div>
+        <div class="info-card checkin-card" id="dash-checkin" style="display:none;"></div><!-- WELLBEING-CHECKIN -->
         <div class="info-card my-progress" id="dash-progress" style="display:none;"></div><!-- MY-PROGRESS -->
         <div class="info-card">
           <h3>Account status</h3>
@@ -466,6 +478,7 @@ async function showPortalForUser(user) {
   document.getElementById('topbarUser').textContent = user.email;
   document.getElementById('dash-greeting').textContent  = 'Good day, ' + (user.displayName || user.email.split('@')[0]);
   loadDashboard();
+  loadCheckIns(); // WELLBEING-CHECKIN
   loadMessages();
   loadCaseFile();
   loadAppointments();
@@ -964,6 +977,93 @@ function loadCaseFile() {
 // ratings are shown as complete.
 // =================================================================
 let _myProgressSessions = null, _myProgressConsults = {};
+// WELLBEING-CHECKIN: the doctor can ask "how are you feeling?" at any time,
+// independent of visits and prescriptions. The doctor writes a request to
+// patients/{uid}/checkIns/{id} ({status:'pending', complaints, labels}); the
+// patient rates each complaint here and the same record becomes
+// {status:'answered', ratings, note}. Nothing here touches cases, stages or
+// consultations. Rating scale is the same one "Your progress" uses:
+// -1 worse, 0 same, 1-99 % better, 100 resolved.
+let _checkIns = null, _ckDraft = {}, _ckBusy = false, _ckErr = '', _ckThanks = false;
+function loadCheckIns() {
+  onValue(ref(db, `patients/${currentUser.uid}/checkIns`), snap => {
+    _checkIns = snap.exists() ? snap.val() : {};
+    renderCheckIn();
+  }, () => { _checkIns = {}; renderCheckIn(); });
+}
+function ckPending() {
+  const list = Object.entries(_checkIns || {}).filter(([k, c]) => c && c.status === 'pending' && Array.isArray(c.complaints) && c.complaints.length);
+  list.sort((a, b) => (b[1].requestedAt || 0) - (a[1].requestedAt || 0));
+  return list.length ? { id: list[0][0], rec: list[0][1] } : null;
+}
+const CK_OPTIONS = [['', 'Select… / चुनें…'], ['-1', 'Worse / बढ़ गया'], ['0', 'Same / वैसा ही'],
+  ['10', '10% better'], ['20', '20% better'], ['30', '30% better'], ['40', '40% better'], ['50', '50% better'],
+  ['60', '60% better'], ['70', '70% better'], ['80', '80% better'], ['90', '90% better'], ['100', 'Fully resolved / पूरी तरह ठीक']];
+function renderCheckIn() {
+  const el = document.getElementById('dash-checkin');
+  if (!el || _checkIns === null) return;
+  const pend = ckPending();
+  if (!pend) {
+    if (_ckThanks) { el.style.display = 'block'; el.innerHTML = '<h3>Thank you</h3><p class="ck-thanks">Your update has reached Dr. Tiwari.<br><span lang="hi">आपका अपडेट डॉ. तिवारी तक पहुँच गया है।</span></p>'; }
+    else el.style.display = 'none';
+    return;
+  }
+  _ckThanks = false;
+  const { id, rec } = pend;
+  const labels = rec.labels || {};
+  const rows = rec.complaints.map(c => {
+    const l = labels[c.rubricId] || {};
+    const title = l.en || l.kent || c.path || 'Complaint';
+    const cur = (_ckDraft[id] || {}).ratings ? _ckDraft[id].ratings[c.rubricId] : '';
+    return `<div class="ck-row">
+      <div class="ck-name">${mypEsc(title)}</div>
+      ${l.hi ? `<div class="ck-hi">${mypEsc(l.hi)}</div>` : ''}
+      <select class="ck-sel" onchange="ckSet('${id}','${c.rubricId}',this.value)">${CK_OPTIONS.map(([v, t]) => `<option value="${v}"${String(cur) === v ? ' selected' : ''}>${t}</option>`).join('')}</select>
+    </div>`;
+  }).join('');
+  const d = _ckDraft[id] || {};
+  const ready = rec.complaints.every(c => d.ratings && d.ratings[c.rubricId] !== undefined && d.ratings[c.rubricId] !== '');
+  el.style.display = 'block';
+  el.innerHTML = `<h3>How are you feeling?<br><span lang="hi" style="font-size:14px;color:var(--ink2);font-family:var(--sans);font-weight:400">आप कैसा महसूस कर रहे हैं?</span></h3>
+    <p>Dr. Tiwari would like an update. For each complaint, tell us how you are compared to when you started.<br><span lang="hi">हर तकलीफ़ के लिए बताइए कि शुरुआत की तुलना में अब कैसा है।</span></p>
+    ${rows}
+    <textarea class="ck-note" id="ckNote" placeholder="Anything else you'd like to tell the doctor? (optional) / कुछ और बताना हो तो लिखें" oninput="ckNote('${id}',this.value)">${mypEsc(d.note || '')}</textarea>
+    ${_ckErr ? `<div class="ck-err">${mypEsc(_ckErr)}</div>` : ''}
+    <button class="ck-send" onclick="ckSubmit('${id}')" ${(ready && !_ckBusy) ? '' : 'disabled'}>${_ckBusy ? 'Sending…' : 'Send to Dr. Tiwari'}</button>`;
+}
+window.ckSet = function (id, rid, v) {
+  _ckDraft[id] = _ckDraft[id] || { ratings: {}, note: '' };
+  _ckDraft[id].ratings = _ckDraft[id].ratings || {};
+  _ckDraft[id].ratings[rid] = v;
+  const ta = document.getElementById('ckNote'); if (ta) _ckDraft[id].note = ta.value;
+  renderCheckIn();
+};
+window.ckNote = function (id, v) { _ckDraft[id] = _ckDraft[id] || { ratings: {}, note: '' }; _ckDraft[id].note = v; };
+window.ckSubmit = async function (id) {
+  if (_ckBusy) return;
+  const rec = (_checkIns || {})[id]; const d = _ckDraft[id];
+  if (!rec || !d || !d.ratings) return;
+  const ratings = {};
+  for (const c of rec.complaints) {
+    const v = d.ratings[c.rubricId];
+    if (v === undefined || v === '') return;
+    ratings[c.rubricId] = Number(v);
+  }
+  _ckBusy = true; _ckErr = ''; renderCheckIn();
+  try {
+    const note = String(d.note || '').trim().slice(0, 1000);
+    await update(ref(db, `patients/${currentUser.uid}/checkIns/${id}`), { status: 'answered', answeredAt: Date.now(), ratings, note });
+    try {
+      await push(ref(db, 'notifications/admin'), { type: 'checkin_answered', patientUid: currentUser.uid, name: currentUser.displayName || currentUser.email.split('@')[0], checkInId: id, timestamp: Date.now() });
+    } catch (e) { console.error('check-in notification failed (non-fatal):', e); }
+    delete _ckDraft[id]; _ckThanks = true;
+  } catch (e) {
+    console.error('check-in submit failed:', e);
+    _ckErr = 'Could not send — please check your internet and try again.';
+  }
+  _ckBusy = false; renderCheckIn();
+};
+
 function loadMyProgress() {
   onValue(ref(db, `patients/${currentUser.uid}/followUpSessions`), snap => {
     _myProgressSessions = snap.exists() ? snap.val() : {};
