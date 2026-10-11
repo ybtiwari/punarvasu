@@ -277,6 +277,55 @@ function waitForWindowFn(name, maxWaitMs = 3000) {
   });
 }
 
+// PICK-MODE: the doctor's Case Analyzer opens this very wizard with ?pick=1&returnUrl=...&name=...&have=ids to ADD rubrics to an
+// existing case. Same search, List view and Step-by-step as the patient sees - but no patient account, no draft saved, no
+// case submitted: pressing Done sends the chosen rubric ids straight back to the Case Analyzer (returnUrl, local machine only).
+let pickMode = null;
+function pickModeParse() {
+  const q = new URLSearchParams(window.location.search);
+  if (q.get('pick') !== '1') return null;
+  const ret = q.get('returnUrl') || '';
+  if (!/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//.test(ret)) return null;     // only ever back to the doctor's own machine
+  return { returnUrl: ret, name: q.get('name') || '', have: (q.get('have') || '').split(',').map(s => s.trim()).filter(Boolean) };
+}
+function pickNew() { return state.completeCase.filter(c => !c.locked); }
+function pickFooterHtml() {
+  const n = pickNew().length;
+  return `<div class="footer-bar" style="gap:10px">
+    <button class="btn-outline" style="width:auto;white-space:nowrap" onclick="onPickCancel()">&larr; Back to case</button>
+    <button class="btn-primary" onclick="onPickDone()">${n ? 'Done \u2014 add ' + n + ' rubric' + (n === 1 ? '' : 's') + ' to the case \u2192' : 'Done \u2014 nothing added'}</button>
+  </div>`;
+}
+function pickGoBack(ids) {
+  if (!pickMode) return;
+  const sep = pickMode.returnUrl.indexOf('?') > -1 ? '&' : '?';
+  const url = pickMode.returnUrl + (ids && ids.length ? sep + 'addRubrics=' + ids.join(',') : '');
+  // Inside the doctor's Workspace tab this page sits in a frame, and a public website may not navigate a frame to the
+  // doctor's own computer - so ask the Workspace (the page around this frame) to do it. On its own tab, just go.
+  if (window.parent !== window) {
+    try { window.parent.postMessage({ pvPickDone: true, url }, new URL(pickMode.returnUrl).origin); } catch (e) {}
+    setTimeout(function () { window.location.href = url; }, 900);   // not in a Workspace after all -> go directly
+    return;
+  }
+  window.location.href = url;
+}
+window.onPickDone = function () { pickGoBack(pickNew().map(c => c.rubricId)); };
+window.onPickCancel = function () { pickGoBack([]); };
+async function pickModeStart() {
+  state.screen = 'search';
+  state.currentWalk = { pathTokens: [] };
+  render();
+  await loadRepertoryData();          // builds the search index (and re-renders the search screen)
+  // Rubrics the case already has show as "Added" and are never sent back.
+  if (typeof EMBEDDED_DATA !== 'undefined') {
+    const want = new Set(pickMode.have.map(String));
+    for (const [id, path, remedies] of EMBEDDED_DATA.rubrics) {
+      if (want.has(String(id))) state.completeCase.push({ rubricId: id, path, remedyCount: remedies.length, locked: true });
+    }
+    render();
+  }
+}
+
 async function bootFirstScreen() {
   try {
     const res = await fetch('connector_map.json');
@@ -285,6 +334,9 @@ async function bootFirstScreen() {
     console.warn('connector_map.json not found — connector suggestions disabled.');
     state.data.connectorMap = {};
   }
+
+  pickMode = pickModeParse();
+  if (pickMode) { await pickModeStart(); return; }   // PICK-MODE: skip language / details / guide entirely
 
   // If a ?uid=XXXX parameter is present in the URL (every invite link now
   // carries the patient's own account id, not a code — no code exists
@@ -1769,6 +1821,7 @@ function onContinueToRepertorizeFromSubmitted() {
 // point at the screen it's already on.
 function renderTopbar(title, sub, showSearchBtn) {
   if (showSearchBtn === undefined) showSearchBtn = true;
+  if (pickMode) { title = 'Add rubrics to this case'; sub = esc(pickMode.name || ''); }   // PICK-MODE
   return `<div class="topbar">
     <div style="display:flex;align-items:center;justify-content:space-between">
       <div><h1>${title}</h1><div class="sub">${sub}</div></div>
@@ -2064,7 +2117,7 @@ function renderWizardScreen() {
   // complaints" / "Continue →" footer) — "add more" no longer needs its own
   // button since the search box above is always there to pivot to a new
   // complaint; this one just moves on once the patient is done.
-  const footerHtml = state.completeCase.length ? `<div class="footer-bar">
+  const footerHtml = pickMode ? pickFooterHtml() : state.completeCase.length ? `<div class="footer-bar">
     <button class="btn-primary" onclick="goToCaseReview()">Done and Continue to Repertorize · पूर्ण — रिपर्टराइज़ करने हेतु आगे बढ़ें</button>
   </div>` : '';
 
