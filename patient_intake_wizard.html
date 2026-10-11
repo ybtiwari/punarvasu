@@ -1895,7 +1895,8 @@ let caseItemLockState = {};
 // intended for reuse anywhere else in the app that needs the same
 // collapsed-by-default, tap-to-expand-and-collapse-again behavior.
 function renderCollapsibleSection(groupKey, label, countLabel, innerHtml) {
-  const isCollapsed = collapsedGroups[groupKey] !== false; // collapsed by default
+  // STEP-SEARCH (pick mode): while filtering a step's options, matching groups open by themselves.
+  const isCollapsed = collapsedGroups[groupKey] !== false && !(pickMode && searchFilter && !state.search.query.trim()); // collapsed by default
   return `
     <div class="collapsible-section">
       <div class="collapsible-header" onclick="onToggleGroup('${escAttr(groupKey)}')">
@@ -2079,12 +2080,15 @@ function renderWizardScreen() {
 
   // Always on screen, whatever else is showing below it. Searches across
   // every chapter and every kind of detail at once — no categories to pick.
+  // STEP-SEARCH (pick mode): in Step-by-step the same box searches the options of the step being shown, instead of jumping to List view.
+  const stepSearch = !!(pickMode && !q && inWalk);
+  const boxVal = stepSearch ? searchFilter : state.search.query;
   const searchBoxHtml = `
     <div class="wizard-search-highlight">
       <div class="wizard-search-label">Enter your problem here · अपनी तकलीफ़ यहाँ लिखिए</div>
       <div style="position:relative;">
-        <input id="globalSearchInput" class="search-box wizard-search-input" type="text" placeholder="e.g. pain, morning, right side… · जैसे: दर्द, सुबह, दायीं तरफ़…" value="${escAttr(state.search.query)}" oninput="onSearchInput(this.value)">
-        ${q ? `<span class="search-clear-btn" onclick="onSearchInput('')" title="Clear">&#10005;</span>` : ''}
+        <input id="globalSearchInput" class="search-box wizard-search-input" type="text" placeholder="e.g. pain, morning, right side… · जैसे: दर्द, सुबह, दायीं तरफ़…" value="${escAttr(boxVal)}" oninput="onSearchInput(this.value)">
+        ${(q || (stepSearch && searchFilter)) ? `<span class="search-clear-btn" onclick="onSearchInput('')" title="Clear">&#10005;</span>` : ''}
       </div>
     </div>
   `;
@@ -2372,7 +2376,7 @@ function renderWizardScreen() {
         <p class="step-sub">जो लागू हो उसे चुनें। Select one to go more specific, or tap "+ Add" on a row above to add it. अधिक विशेष जानकारी के लिए एक चुनें, या ऊपर की किसी पंक्ति पर "+ Add" दबाएँ।</p>
         ${historyHtml}
         <div style="margin-left:${liveIndent}px">
-          ${totalCount > 8 || searchFilter ? `<input id="walkFilterInput" class="search-box ${filterMatchedNothing ? 'no-match' : ''}" type="text" placeholder="Search these options… · यहाँ खोजें…" value="${escAttr(searchFilter)}" oninput="onSearchFilterChange(this.value)">` : ''}
+          ${!pickMode && (totalCount > 8 || searchFilter) ? `<input id="walkFilterInput" class="search-box ${filterMatchedNothing ? 'no-match' : ''}" type="text" placeholder="Search these options… · यहाँ खोजें…" value="${escAttr(searchFilter)}" oninput="onSearchFilterChange(this.value)">` : ''}
           ${filterMatchedNothing ? `<div class="no-match-msg">No option here matches "${esc(searchFilter)}" — try a shorter part of the word, or clear this to see everything again. "${esc(searchFilter)}" से कोई विकल्प मेल नहीं खाता — शब्द का छोटा हिस्सा आज़माएं, या सब देखने के लिए इसे हटाएं।</div>` : ''}
           ${stopHereHtml}
           ${genuinelyNoData && !exactMatchRubric ? `<div class="empty-state">No further detail on file for this exact combination. इस सटीक जानकारी के लिए कोई और विवरण उपलब्ध नहीं है।</div>` : ''}
@@ -2731,6 +2735,12 @@ function onCloseSearch() {
 function onSearchInput(val) {
   const inputEl = document.getElementById('globalSearchInput');
   const cursorPos = inputEl ? inputEl.selectionStart : val.length;
+  // STEP-SEARCH (pick mode): while Step-by-step is showing, typing filters that step's options and stays in Step-by-step.
+  if (pickMode && !state.search.query.trim() && state.currentWalk.pathTokens.length > 0) {
+    searchFilter = val; showAllOptions = true;
+    debouncedSearchRender(cursorPos);
+    return;
+  }
 
   state.search.query = val;
   state.search.focusPath = '';
