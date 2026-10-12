@@ -431,7 +431,7 @@ window.setLang = function(lang) {
 
 function applyTranslations() {
   const t = T[currentLang];
-  document.getElementById('dash-greeting').textContent = t.greeting + (currentUser ? ', ' + (currentUser.displayName || currentUser.email.split('@')[0]) : '');
+  document.getElementById('dash-greeting').textContent = t.greeting + (currentUser ? ', ' + (shownName()) : '');
   document.querySelector('[data-panel="dashboard"]').innerHTML  = `<span class="nav-icon">🏠</span> ${t.dashboard}`;
   document.querySelector('[data-panel="messenger"]').innerHTML  = `<span class="nav-icon">💬</span> ${t.messages}`;
   document.querySelector('[data-panel="casefile"]').innerHTML   = `<span class="nav-icon">📋</span> ${t.casefile}`;
@@ -465,6 +465,7 @@ const LS_UID_KEY   = 'punarvasu_patient_uid';
 let validatedThisPageLoad = false;
 let loginAttemptInProgress = false;
 
+function shownName() { return window.__pvShownName || (currentUser && (currentUser.displayName || currentUser.email.split('@')[0])) || ''; } // EDIT-PROFILE
 async function showPortalForUser(user) {
   currentUser = user;
   const snap = await get(ref(db, `patients/${user.uid}/status`));
@@ -476,7 +477,8 @@ async function showPortalForUser(user) {
   document.getElementById('loginScreen').style.display  = 'none';
   document.getElementById('portalScreen').style.display = 'flex';
   document.getElementById('topbarUser').textContent = user.email;
-  document.getElementById('dash-greeting').textContent  = 'Good day, ' + (user.displayName || user.email.split('@')[0]);
+  try { const ns = await get(ref(db, `patients/${user.uid}/name`)); window.__pvShownName = ns.exists() ? String(ns.val() || '').trim() : ''; } catch (e) { window.__pvShownName = ''; } // EDIT-PROFILE: the clinic's current spelling of the name
+  document.getElementById('dash-greeting').textContent  = 'Good day, ' + shownName();
   loadDashboard();
   loadCheckIns(); // WELLBEING-CHECKIN
   loadMessages();
@@ -640,7 +642,7 @@ document.getElementById('recoveryFindBtn').addEventListener('click', async () =>
       uids.forEach(uid => {
         const opt = document.createElement('option');
         opt.value = uid;
-        opt.textContent = recoveryMatches[uid];
+        opt.textContent = String(recoveryMatches[uid]).split('|')[0]; // EDIT-PROFILE
         select.appendChild(opt);
       });
       document.getElementById('recoveryNameChoice').style.display = 'block';
@@ -657,10 +659,14 @@ document.getElementById('recoveryConfirmBtn').addEventListener('click', async ()
 });
 
 async function recoverySignIn(cleanPhone, uid) {
-  const name = recoveryMatches[uid] || '';
+  // EDIT-PROFILE: an entry is either "name" (the number the patient registered with) or "name|loginPhone" (a number the clinic
+  // added later). The login e-mail and password are always built from the ORIGINAL login phone and name, which never change.
+  const parts = String(recoveryMatches[uid] || '').split('|');
+  const name = parts[0];
+  const loginPhone = parts[1] || cleanPhone;
   const normalizedName = name.toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.+|\.+$/g, '');
-  const email = cleanPhone + '.' + normalizedName + '@punarvasu.clinic';
-  const pass  = 'Pun@' + cleanPhone.slice(-6) + 'Cl!';
+  const email = loginPhone + '.' + normalizedName + '@punarvasu.clinic';
+  const pass  = 'Pun@' + loginPhone.slice(-6) + 'Cl!';
   document.getElementById('loginErr').textContent = '';
   try {
     const cred = await signInWithEmailAndPassword(auth, email, pass);
@@ -1054,7 +1060,7 @@ window.ckSubmit = async function (id) {
     const note = String(d.note || '').trim().slice(0, 1000);
     await update(ref(db, `patients/${currentUser.uid}/checkIns/${id}`), { status: 'answered', answeredAt: Date.now(), ratings, note });
     try {
-      await push(ref(db, 'notifications/admin'), { type: 'checkin_answered', patientUid: currentUser.uid, name: currentUser.displayName || currentUser.email.split('@')[0], checkInId: id, timestamp: Date.now() });
+      await push(ref(db, 'notifications/admin'), { type: 'checkin_answered', patientUid: currentUser.uid, name: shownName(), checkInId: id, timestamp: Date.now() });
     } catch (e) { console.error('check-in notification failed (non-fatal):', e); }
     delete _ckDraft[id]; _ckThanks = true;
   } catch (e) {
@@ -1436,7 +1442,7 @@ window.submitPost = async function() {
   await push(ref(db, 'forum'), {
     title, body, category,
     authorUid: currentUser.uid,
-    authorName: currentUser.displayName || currentUser.email.split('@')[0],
+    authorName: shownName(),
     timestamp: Date.now(), status: 'pending'
   });
   await push(ref(db, 'notifications/admin'), {
@@ -1458,7 +1464,7 @@ window.openThread = function(postId) {
       push(ref(db, `forum/${postId}/replies`), {
         body: reply.trim(),
         authorUid: currentUser.uid,
-        authorName: currentUser.displayName || currentUser.email.split('@')[0],
+        authorName: shownName(),
         timestamp: Date.now(), status: 'pending'
       });
       push(ref(db, 'notifications/admin'), {
