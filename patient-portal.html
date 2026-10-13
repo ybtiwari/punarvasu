@@ -83,6 +83,24 @@
     .ck-name { font-size: 15px; font-weight: 600; color: var(--ink); }
     .ck-hi { font-size: 14px; color: var(--ink2); margin-top: 2px; }
     .ck-sel { width: 100%; margin-top: 8px; padding: 11px 12px; font-size: 15px; font-family: var(--sans); border: 1px solid var(--border); border-radius: 6px; background: var(--white); color: var(--ink); }
+    /* CHECKIN-RING */
+    .ck-ring-wrap { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
+    .ck-ring { width: 96px; height: 96px; flex: none; touch-action: none; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; }
+    .ck-ring.auto { cursor: default; }
+    .ck-ring .trk { fill: none; stroke: #E7E2D6; stroke-width: 9; }
+    .ck-ring .arc { fill: none; stroke: var(--teal); stroke-width: 9; stroke-linecap: round; transition: stroke-dasharray .08s; }
+    .ck-ring.worse .arc { stroke: #B4570A; }
+    .ck-ring.unset .arc { stroke: transparent; }
+    .ck-ring .knob { fill: #fff; stroke: var(--teal); stroke-width: 3; }
+    .ck-ring.unset .knob { stroke: #B8B2A3; }
+    .ck-ring .pct { font: 700 20px var(--sans); fill: var(--ink); text-anchor: middle; }
+    .ck-ring .sub { font: 500 9px var(--sans); fill: var(--ink2); text-anchor: middle; }
+    .ck-quick { display: flex; flex-direction: column; gap: 6px; }
+    .ck-chip { font-size: 13.5px; padding: 7px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--ink); cursor: pointer; font-family: var(--sans); text-align: left; }
+    .ck-chip.on { background: var(--teal); color: #fff; border-color: var(--teal); }
+    .ck-chip.worse.on { background: #B4570A; border-color: #B4570A; }
+    .ck-overall { margin-top: 16px; padding: 14px 12px; border-radius: 10px; background: #F2EFE8; }
+    .ck-overall .ck-name { font-size: 15px; }
     .ck-note { width: 100%; box-sizing: border-box; margin-top: 12px; padding: 10px 12px; font-size: 15px; font-family: var(--sans); border: 1px solid var(--border); border-radius: 6px; min-height: 70px; }
     .ck-send { width: 100%; margin-top: 14px; padding: 13px; font-size: 16px; font-weight: 600; color: #fff; background: var(--teal); border: none; border-radius: 8px; cursor: pointer; }
     .ck-send:disabled { opacity: .55; cursor: default; }
@@ -1002,9 +1020,28 @@ function ckPending() {
   list.sort((a, b) => (b[1].requestedAt || 0) - (a[1].requestedAt || 0));
   return list.length ? { id: list[0][0], rec: list[0][1] } : null;
 }
-const CK_OPTIONS = [['', 'Select… / चुनें…'], ['-1', 'Worse / बढ़ गया'], ['0', 'Same / वैसा ही'],
-  ['10', '10% better'], ['20', '20% better'], ['30', '30% better'], ['40', '40% better'], ['50', '50% better'],
-  ['60', '60% better'], ['70', '70% better'], ['80', '80% better'], ['90', '90% better'], ['100', 'Fully resolved / पूरी तरह ठीक']];
+// CHECKIN-RING: rating scale as before - -1 worse, 0 same, 1-100 % better. The wheel moves in steps of 5.
+let _ckPrev = {};
+function ckRingSvg(id, rid, v, auto) {
+  const unset = (v === undefined || v === '' || v === null), worse = v === -1;
+  const p = unset || worse ? 0 : Math.max(0, Math.min(100, Number(v)));
+  const C = 2 * Math.PI * 40, ang = p / 100 * 2 * Math.PI;
+  const kx = 50 + 40 * Math.sin(ang), ky = 50 - 40 * Math.cos(ang);
+  const label = unset ? (auto ? '—' : 'Tap') : (worse ? 'Worse' : p + '%');
+  return '<svg class="ck-ring' + (auto ? ' auto' : '') + (worse ? ' worse' : '') + (unset ? ' unset' : '') + '" viewBox="0 0 100 100" data-ring="' + rid + '"' +
+    (auto ? ' role="img" aria-label="Overall ' + label + '"' : ' role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + p + '" onpointerdown="ckDrag(event,\'' + id + '\',\'' + rid + '\')" onkeydown="ckKey(event,\'' + id + '\',\'' + rid + '\')"') + '>' +
+    '<circle class="trk" cx="50" cy="50" r="40"/>' +
+    '<circle class="arc" cx="50" cy="50" r="40" transform="rotate(-90 50 50)" stroke-dasharray="' + (C * p / 100).toFixed(2) + ' ' + C.toFixed(2) + '"/>' +
+    (auto ? '' : '<circle class="knob" cx="' + kx.toFixed(2) + '" cy="' + ky.toFixed(2) + '" r="6"/>') +
+    '<text class="pct" x="50" y="' + (auto ? 56 : 53) + '">' + label + '</text>' + (auto || unset ? '' : '<text class="sub" x="50" y="66">better</text>') + '</svg>';
+}
+function ckAverage(rec, d) {
+  const vals = rec.complaints.map(c => (d.ratings || {})[c.rubricId]).filter(v => v !== undefined && v !== '' && v !== null).map(Number);
+  if (!vals.length) return undefined;
+  if (vals.every(v => v === -1)) return -1;
+  return Math.round(vals.reduce((t, v) => t + Math.max(v, 0), 0) / vals.length);
+}
+function ckReady(rec, d) { return rec.complaints.every(c => d.ratings && d.ratings[c.rubricId] !== undefined && d.ratings[c.rubricId] !== '' && d.ratings[c.rubricId] !== null); }
 function renderCheckIn() {
   const el = document.getElementById('dash-checkin');
   if (!el || _checkIns === null) return;
@@ -1017,34 +1054,78 @@ function renderCheckIn() {
   _ckThanks = false;
   const { id, rec } = pend;
   const labels = rec.labels || {};
+  const d = _ckDraft[id] || { ratings: {} };
   const rows = rec.complaints.map(c => {
     const l = labels[c.rubricId] || {};
     const title = l.en || l.kent || c.path || 'Complaint';
-    const cur = (_ckDraft[id] || {}).ratings ? _ckDraft[id].ratings[c.rubricId] : '';
-    return `<div class="ck-row">
-      <div class="ck-name">${mypEsc(title)}</div>
-      ${l.hi ? `<div class="ck-hi">${mypEsc(l.hi)}</div>` : ''}
-      <select class="ck-sel" onchange="ckSet('${id}','${c.rubricId}',this.value)">${CK_OPTIONS.map(([v, t]) => `<option value="${v}"${String(cur) === v ? ' selected' : ''}>${t}</option>`).join('')}</select>
-    </div>`;
+    const v = (d.ratings || {})[c.rubricId];
+    return '<div class="ck-row" data-row="' + c.rubricId + '"><div class="ck-name">' + mypEsc(title) + '</div>' + (l.hi ? '<div class="ck-hi">' + mypEsc(l.hi) + '</div>' : '') +
+      '<div class="ck-ring-wrap"><span data-slot="' + c.rubricId + '">' + ckRingSvg(id, c.rubricId, v, false) + '</span>' +
+      '<div class="ck-quick"><button type="button" class="ck-chip worse' + (v === -1 ? ' on' : '') + '" onclick="ckSet(\'' + id + '\',\'' + c.rubricId + '\',-1)">Worse / बढ़ गया</button>' +
+      '<button type="button" class="ck-chip' + (v === 0 ? ' on' : '') + '" onclick="ckSet(\'' + id + '\',\'' + c.rubricId + '\',0)">Same / वैसा ही</button>' +
+      '<button type="button" class="ck-chip' + (v === 100 ? ' on' : '') + '" onclick="ckSet(\'' + id + '\',\'' + c.rubricId + '\',100)">Fully better / पूरी तरह ठीक</button></div></div></div>';
   }).join('');
-  const d = _ckDraft[id] || {};
-  const ready = rec.complaints.every(c => d.ratings && d.ratings[c.rubricId] !== undefined && d.ratings[c.rubricId] !== '');
   el.style.display = 'block';
-  el.innerHTML = `<h3>How are you feeling?<br><span lang="hi" style="font-size:14px;color:var(--ink2);font-family:var(--sans);font-weight:400">आप कैसा महसूस कर रहे हैं?</span></h3>
-    <p>Dr. Tiwari would like an update. For each complaint, tell us how you are compared to when you started.<br><span lang="hi">हर तकलीफ़ के लिए बताइए कि शुरुआत की तुलना में अब कैसा है।</span></p>
-    ${rows}
-    <textarea class="ck-note" id="ckNote" placeholder="Anything else you'd like to tell the doctor? (optional) / कुछ और बताना हो तो लिखें" oninput="ckNote('${id}',this.value)">${mypEsc(d.note || '')}</textarea>
-    ${_ckErr ? `<div class="ck-err">${mypEsc(_ckErr)}</div>` : ''}
-    <button class="ck-send" onclick="ckSubmit('${id}')" ${(ready && !_ckBusy) ? '' : 'disabled'}>${_ckBusy ? 'Sending…' : 'Send to Dr. Tiwari'}</button>`;
+  el.innerHTML = '<h3>How are you feeling?<br><span lang="hi" style="font-size:14px;color:var(--ink2);font-family:var(--sans);font-weight:400">आप कैसा महसूस कर रहे हैं?</span></h3>' +
+    '<p>Since your last prescription, how much better is each complaint? Turn the circle (or tap Worse / Same).<br><span lang="hi">पिछली दवा के बाद से हर तकलीफ़ में कितना सुधार है? गोले को घुमाइए।</span></p>' + rows +
+    '<div class="ck-overall"><div class="ck-name">Overall since your last prescription</div><div class="ck-hi">पिछली दवा के बाद कुल मिलाकर</div>' +
+    '<div class="ck-ring-wrap"><span id="ckOverall">' + ckRingSvg(id, 'overall', ckAverage(rec, d), true) + '</span><div class="ck-hi">Worked out automatically from your answers above.<br>ऊपर के उत्तरों से अपने-आप निकला।</div></div></div>' +
+    (_ckErr ? '<div class="ck-err">' + mypEsc(_ckErr) + '</div>' : '') +
+    '<button class="ck-send" id="ckSendBtn" onclick="ckSubmit(\'' + id + '\')" ' + ((ckReady(rec, d) && !_ckBusy) ? '' : 'disabled') + '>' + (_ckBusy ? 'Sending…' : 'Send to Dr. Tiwari') + '</button>';
 }
+// Update only what changed (no full re-draw while a finger is dragging the circle).
+function ckPaint(id) {
+  const rec = (_checkIns || {})[id]; if (!rec) return;
+  const d = _ckDraft[id] || { ratings: {} };
+  rec.complaints.forEach(c => {
+    const v = d.ratings[c.rubricId];
+    const slot = document.querySelector('[data-slot="' + c.rubricId + '"]'); if (!slot) return;
+    if (_ckPointer && _ckPointer.rid === String(c.rubricId)) {
+      const svg = slot.firstChild, p = (v === -1 || v === undefined) ? 0 : v, C = 2 * Math.PI * 40, ang = p / 100 * 2 * Math.PI;
+      svg.setAttribute('class', 'ck-ring' + (v === -1 ? ' worse' : '') + (v === undefined ? ' unset' : ''));
+      svg.setAttribute('aria-valuenow', p);
+      svg.querySelector('.arc').setAttribute('stroke-dasharray', (C * p / 100).toFixed(2) + ' ' + C.toFixed(2));
+      const k = svg.querySelector('.knob'); k.setAttribute('cx', (50 + 40 * Math.sin(ang)).toFixed(2)); k.setAttribute('cy', (50 - 40 * Math.cos(ang)).toFixed(2));
+      const t = svg.querySelector('.pct'); t.textContent = v === undefined ? 'Tap' : (v === -1 ? 'Worse' : p + '%');
+    } else slot.innerHTML = ckRingSvg(id, c.rubricId, v, false);
+    const row = document.querySelector('[data-row="' + c.rubricId + '"]');
+    if (row) { const chips = row.querySelectorAll('.ck-chip'); [-1, 0, 100].forEach((x, i) => chips[i] && chips[i].classList.toggle('on', v === x)); }
+  });
+  const ov = document.getElementById('ckOverall'); if (ov) ov.innerHTML = ckRingSvg(id, 'overall', ckAverage(rec, d), true);
+  const btn = document.getElementById('ckSendBtn'); if (btn) btn.disabled = !(ckReady(rec, d) && !_ckBusy);
+}
+let _ckPointer = null;
 window.ckSet = function (id, rid, v) {
-  _ckDraft[id] = _ckDraft[id] || { ratings: {}, note: '' };
+  _ckDraft[id] = _ckDraft[id] || { ratings: {} };
   _ckDraft[id].ratings = _ckDraft[id].ratings || {};
-  _ckDraft[id].ratings[rid] = v;
-  const ta = document.getElementById('ckNote'); if (ta) _ckDraft[id].note = ta.value;
-  renderCheckIn();
+  _ckDraft[id].ratings[rid] = Number(v);
+  ckPaint(id);
 };
-window.ckNote = function (id, v) { _ckDraft[id] = _ckDraft[id] || { ratings: {}, note: '' }; _ckDraft[id].note = v; };
+window.ckDrag = function (ev, id, rid) {
+  ev.preventDefault();
+  const svg = ev.currentTarget;
+  _ckPointer = { rid: String(rid) };
+  const cur = ((_ckDraft[id] || {}).ratings || {})[rid];
+  let prev = (cur === undefined || cur === -1) ? 0 : cur;
+  const move = function (e) {
+    const r = svg.getBoundingClientRect(), dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+    let a = Math.atan2(dx, -dy); if (a < 0) a += 2 * Math.PI;
+    let pct = Math.round(a / (2 * Math.PI) * 100 / 5) * 5;
+    if (prev >= 70 && pct <= 30) pct = 100; else if (prev <= 30 && pct >= 70) pct = 0; // no jumping across the top
+    prev = pct;
+    _ckDraft[id] = _ckDraft[id] || { ratings: {} }; _ckDraft[id].ratings = _ckDraft[id].ratings || {};
+    _ckDraft[id].ratings[rid] = pct; ckPaint(id);
+  };
+  const up = function () { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); _ckPointer = null; ckPaint(id); };
+  window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+  move(ev);
+};
+window.ckKey = function (ev, id, rid) {
+  const k = ev.key; if (k !== 'ArrowLeft' && k !== 'ArrowRight' && k !== 'ArrowUp' && k !== 'ArrowDown') return;
+  ev.preventDefault();
+  const cur = ((_ckDraft[id] || {}).ratings || {})[rid]; const base = (cur === undefined || cur === -1) ? 0 : cur;
+  window.ckSet(id, rid, Math.max(0, Math.min(100, base + ((k === 'ArrowRight' || k === 'ArrowUp') ? 5 : -5))));
+};
 window.ckSubmit = async function (id) {
   if (_ckBusy) return;
   const rec = (_checkIns || {})[id]; const d = _ckDraft[id];
@@ -1057,8 +1138,8 @@ window.ckSubmit = async function (id) {
   }
   _ckBusy = true; _ckErr = ''; renderCheckIn();
   try {
-    const note = String(d.note || '').trim().slice(0, 1000);
-    await update(ref(db, `patients/${currentUser.uid}/checkIns/${id}`), { status: 'answered', answeredAt: Date.now(), ratings, note });
+    const overall = ckAverage(rec, d); // CHECKIN-RING: the average of the wheels, worked out - never typed
+    await update(ref(db, `patients/${currentUser.uid}/checkIns/${id}`), { status: 'answered', answeredAt: Date.now(), ratings, overall });
     try {
       await push(ref(db, 'notifications/admin'), { type: 'checkin_answered', patientUid: currentUser.uid, name: shownName(), checkInId: id, timestamp: Date.now() });
     } catch (e) { console.error('check-in notification failed (non-fatal):', e); }
