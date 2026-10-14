@@ -64,7 +64,6 @@
     <div class="fp-brand">
       <div class="fp-brand-name">Punarvasu Clinic</div>
       <div class="fp-brand-sub">Dr. Yogeshwar Tiwari, BHMS · Ahmedabad</div>
-      <a class="fp-pdf-link" href="fee-structure.pdf" target="_blank" rel="noopener">📄 Download the full fee guide (PDF · English, हिंदी, ગુજરાતી)</a>
     </div>
     <div class="fc-card">
       <div id="fcContent"></div>
@@ -110,10 +109,10 @@
     payoffTitle: { en:"That's exactly why our fees are flexible, not fixed.",
                    hi:"इसीलिए हमारी फीस लचीली (फ्लेक्सिबल) है, तय नहीं।",
                    gu:"એટલે જ અમારી ફી લવચીક (ફ્લેક્સિબલ) છે, નિશ્ચિત નથી." },
-    payoffBody:  { en:"At Punarvasu, different patients are charged differently, based on what their case actually needs. Tap the link above 👆 to see the typical slabs — they're just for your reference; your actual fee is settled through honest, mutual agreement with you and your family, and there's always room to talk it through.",
-                   hi:"पुनर्वसु में, अलग-अलग मरीज़ों से अलग-अलग फीस ली जाती है, उनके केस की वास्तविक ज़रूरत के अनुसार। ऊपर दिए गए लिंक पर टैप करें 👆 सामान्य स्लैब देखने के लिए — ये केवल आपकी जानकारी के लिए हैं; आपकी असली फीस आपसे और आपके परिवार से ईमानदार, आपसी सहमति से तय होती है, और इस पर बात करने की हमेशा गुंजाइश रहती है।",
-                   gu:"પુનર્વસુમાં, જુદા-જુદા દર્દીઓ પાસેથી જુદી-જુદી ફી લેવામાં આવે છે, તેમના કેસની ખરેખરી જરૂરિયાત મુજબ. ઉપર આપેલી લિંક પર ટેપ કરો 👆 સામાન્ય સ્લેબ જોવા માટે — આ ફક્ત તમારી જાણકારી માટે છે; તમારી ખરેખરી ફી તમારી અને તમારા પરિવાર સાથે પ્રામાણિક, પરસ્પર સંમતિથી નક્કી થાય છે, અને આના પર વાત કરવાની હંમેશા શક્યતા રહે છે." },
-    bookNow:  { en:"Book a consultation →", hi:"परामर्श बुक करें →", gu:"પરામર્શ બુક કરો →" },
+    payoffBody:  { en:"At Punarvasu, different patients are charged differently, based on what their case actually needs. Tap the button below 👇 to see the fee structure — they're just for your reference; your actual fee is settled through honest, mutual agreement with you and your family, and there's always room to talk it through.",
+                   hi:"पुनर्वसु में, अलग-अलग मरीज़ों से अलग-अलग फीस ली जाती है, उनके केस की वास्तविक ज़रूरत के अनुसार। नीचे दिए गए बटन पर टैप करें 👇 फीस स्ट्रक्चर देखने के लिए — ये केवल आपकी जानकारी के लिए हैं; आपकी असली फीस आपसे और आपके परिवार से ईमानदार, आपसी सहमति से तय होती है, और इस पर बात करने की हमेशा गुंजाइश रहती है।",
+                   gu:"પુનર્વસુમાં, જુદા-જુદા દર્દીઓ પાસેથી જુદી-જુદી ફી લેવામાં આવે છે, તેમના કેસની ખરેખરી જરૂરિયાત મુજબ. નીચે આપેલા બટન પર ટેપ કરો 👇 ફી સ્ટ્રક્ચર જોવા માટે — આ ફક્ત તમારી જાણકારી માટે છે; તમારી ખરેખરી ફી તમારી અને તમારા પરિવાર સાથે પ્રામાણિક, પરસ્પર સંમતિથી નક્કી થાય છે, અને આના પર વાત કરવાની હંમેશા શક્યતા રહે છે." },
+    feePage:  { en:"See fee structure →", hi:"फीस स्ट्रक्चर देखें →", gu:"ફી સ્ટ્રક્ચર જુઓ →" }, // FEE-GUIDE-DOWNLOAD
     restart:  { en:"Read again", hi:"फिर से पढ़ें", gu:"ફરીથી વાંચો" }
   };
 
@@ -122,7 +121,7 @@
 
   function renderLangSelect() {
     document.getElementById('fcContent').innerHTML =
-      '<div class="fc-eyebrow">Punarvasu Clinic · बुक करने से पहले · બુક કરતા પહેલા</div>' +
+      '<div class="fc-eyebrow">Punarvasu Clinic · फीस के बारे में · ફી વિશે</div>' +
       '<div class="fc-statement" style="font-size:18px;">Choose your language to continue</div>' +
       '<button class="fc-lang-btn" onclick="window.fcSetLang(\'en\')">English</button>' +
       '<button class="fc-lang-btn" onclick="window.fcSetLang(\'hi\')">हिंदी</button>' +
@@ -153,7 +152,7 @@
         '<div class="fc-progress">' + (SLIDES.length+1) + ' / ' + (SLIDES.length+1) + '</div>' +
         '<div class="fc-payoff-title">' + t('payoffTitle') + '</div>' +
         '<div class="fc-payoff-body">' + t('payoffBody') + '</div>' +
-        '<a class="fc-btn-primary" href="appointment/index.html">' + t('bookNow') + '</a>' +
+        '<a class="fc-btn-primary" href="treatment/fees.html" target="_blank" rel="noopener">' + t('feePage') + '</a>' +
         '<button class="fc-btn-secondary" onclick="window.fcRestart()">' + t('restart') + '</button>';
     }
   }
