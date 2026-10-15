@@ -217,7 +217,7 @@ window.submitStory = async function () {
     const caseKey = push(ref(db, 'cases')).key;
     await set(ref(db, 'cases/' + caseKey), payload);
     if (patient.uid) { try { await set(ref(db, 'patients/' + patient.uid + '/casefile/lastCaseSubmittedAt'), new Date(submittedAt).getTime()); } catch (e) {} }
-    try { await push(ref(db, 'notifications/admin'), { type: 'case_submitted', patientUid: patient.uid || '', name: patient.name, timestamp: Date.now(), viaStory: true }); } catch (e) {}
+    try { await push(ref(db, 'notifications/admin'), { type: 'case_submitted', patientUid: patient.uid || '', name: patient.name, timestamp: Date.now(), viaStory: true, caseKey }); } catch (e) {}
     document.getElementById('formWrap').hidden = true; document.getElementById('bar').hidden = true; document.getElementById('doneWrap').hidden = false; window.scrollTo(0, 0);
   } catch (e) {
     console.error('[story] submit failed:', e);
