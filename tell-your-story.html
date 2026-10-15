@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tell us your problem in your own words — Punarvasu Clinic</title>
+<meta name="robots" content="noindex">
+<style>
+:root{--teal:#0f6b66;--teal2:#14524f;--cream:#faf6ee;--ink:#1d2b2a;--mut:#667;--line:#d9d4c7;--warn:#a1431a;--ok:#1d7a4a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--ink);font:16px/1.5 -apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Sans Devanagari","Noto Sans Gujarati",sans-serif}
+header{background:var(--teal2);color:#fff;padding:14px 16px}
+header b{font-size:18px;letter-spacing:.2px}
+header span{display:block;font-size:12.5px;opacity:.85}
+main{max-width:640px;margin:0 auto;padding:16px 16px 120px}
+h1{font-size:21px;line-height:1.3;margin:6px 0 4px;color:var(--teal2)}
+h1 small{display:block;font-size:15px;font-weight:600;color:#3a4a49}
+.lead{font-size:14.5px;color:#334;margin:8px 0 14px}
+.lead i{display:block;color:var(--mut);font-style:normal;margin-top:2px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+label.f{display:block;font-weight:600;font-size:14px;margin:10px 0 4px}
+label.f small{font-weight:400;color:var(--mut)}
+input[type=text],input[type=tel],input[type=number],textarea,select{width:100%;padding:11px 12px;border:1.5px solid #bdb7a8;border-radius:10px;font:inherit;background:#fff;color:var(--ink)}
+textarea{min-height:92px;resize:vertical}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(15,107,102,.15)}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.cbox{position:relative}
+.cbox .num{font-weight:700;color:var(--teal2);font-size:14px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
+.rm{background:none;border:0;color:var(--warn);font-size:13px;cursor:pointer;padding:4px}
+.tools{display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap}
+.mic{border:1.5px solid var(--teal);background:#fff;color:var(--teal2);border-radius:999px;padding:8px 14px;font:600 14px inherit;cursor:pointer}
+.mic.on{background:#c0392b;border-color:#c0392b;color:#fff;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.7}}
+.langs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 2px}
+.langs button{border:1.5px solid #bdb7a8;background:#fff;border-radius:999px;padding:6px 12px;font:600 13.5px inherit;cursor:pointer}
+.langs button.on{background:var(--teal);border-color:var(--teal);color:#fff}
+.add{width:100%;border:1.5px dashed var(--teal);background:#f1f8f7;color:var(--teal2);border-radius:12px;padding:12px;font:600 15px inherit;cursor:pointer;margin-top:4px}
+.hint{font-size:12.5px;color:var(--mut);margin-top:4px}
+.hint.tip{background:#fff8e6;border:1px solid #ecd9a0;border-radius:8px;padding:6px 9px;color:#5b4a14}
+.who{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.who b{font-size:17px}
+.link{background:none;border:0;color:var(--teal);text-decoration:underline;font:inherit;cursor:pointer;padding:0}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 16px;box-shadow:0 -4px 14px rgba(0,0,0,.06)}
+.bar div{max-width:640px;margin:0 auto}
+.go{width:100%;background:var(--teal);color:#fff;border:0;border-radius:12px;padding:14px;font:700 17px inherit;cursor:pointer}
+.go:disabled{opacity:.55}
+.err{color:var(--warn);font-size:14px;margin-top:8px;min-height:18px}
+.done{text-align:center;padding:30px 10px}
+.done .big{font-size:46px}
+.done h2{color:var(--ok);margin:8px 0}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header><b>Punarvasu Clinic</b><span>Dr. Yogeshwar Tiwari (BHMS)</span></header>
+<main id="main">
+
+<div id="formWrap">
+  <h1>Tell us your problem in your own words
+    <small>अपनी तकलीफ़ अपने शब्दों में बताइए · તમારી તકલીફ તમારા પોતાના શબ્દોમાં જણાવો</small></h1>
+  <p class="lead">Write one complaint in each box, in simple words — in English, Hindi or Gujarati. Or press <b>🎤 Speak</b> and say it aloud.
+    <i>हर डिब्बे में एक तकलीफ़ सरल शब्दों में लिखिए — अंग्रेज़ी, हिन्दी या गुजराती में। या <b>🎤 बोलिए</b> दबाकर बोलिए।</i>
+    <i>દરેક બોક્સમાં એક તકલીફ સરળ શબ્દોમાં લખો — અંગ્રેજી, હિન્દી કે ગુજરાતીમાં. અથવા <b>🎤 બોલો</b> દબાવીને બોલો.</i></p>
+
+  <div class="card" id="whoCard">
+    <div id="whoKnown" class="who" hidden>
+      <div><div style="font-size:13px;color:var(--mut)">Namaste · नमस्ते · નમસ્તે</div><b id="whoName"></b></div>
+      <button class="link" type="button" onclick="notMe()">Not you? · आप नहीं? · તમે નથી?</button>
+    </div>
+    <div id="whoForm" hidden>
+      <label class="f" for="pName">Your name · आपका नाम · તમારું નામ</label>
+      <input id="pName" type="text" autocomplete="name">
+      <label class="f" for="pPhone">Mobile number · मोबाइल नंबर · મોબાઈલ નંબર</label>
+      <input id="pPhone" type="tel" inputmode="numeric" autocomplete="tel">
+      <div class="row">
+        <div><label class="f" for="pAge">Age · उम्र · ઉંમર</label><input id="pAge" type="number" min="0" max="120" inputmode="numeric"></div>
+        <div><label class="f" for="pSex">Sex · लिंग · જાતિ</label><select id="pSex"><option value="">—</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="langs" id="langs" role="group" aria-label="Speaking language">
+    <span style="font-size:13px;align-self:center;color:var(--mut)">🎤 Speak in:</span>
+    <button type="button" data-l="en-IN" class="on">English</button>
+    <button type="button" data-l="hi-IN">हिन्दी</button>
+    <button type="button" data-l="gu-IN">ગુજરાતી</button>
+  </div>
+
+  <div id="boxes"></div>
+  <button class="add" type="button" onclick="addBox()">+ Add another complaint · + एक और तकलीफ़ जोड़ें · + બીજી તકલીફ ઉમેરો</button>
+
+  <div class="card" style="margin-top:16px">
+    <div class="num" style="font-weight:700;color:var(--teal2)">About your health in general <small style="font-weight:400;color:var(--mut)">(optional · वैकल्पिक · વૈકલ્પિક)</small></div>
+    <div class="hint" style="margin:2px 0 6px">Hunger, thirst, sleep, feeling hot or cold, bowels, urine, mood, fears, anything else.<br>भूख, प्यास, नींद, गर्मी-सर्दी, पेट, पेशाब, मन, डर, और कुछ भी।<br>ભૂખ, તરસ, ઊંઘ, ગરમી-ઠંડી, પેટ, પેશાબ, મન, ડર, બીજું કંઈ પણ.</div>
+    <textarea id="general" data-mic="1" placeholder="e.g. I feel very thirsty, I feel cold all the time, I sleep late and wake up tired"></textarea>
+    <div class="tools"><button class="mic" type="button" data-for="general">🎤 Speak · बोलिए · બોલો</button></div>
+  </div>
+
+  <p class="hint tip" id="kbTip" hidden>Tip: if the 🎤 button does not work on your phone, tap the box and use the microphone key on your phone&rsquo;s keyboard.<br>अगर 🎤 बटन न चले तो डिब्बे में टैप करके अपने फ़ोन के कीबोर्ड का माइक दबाइए। · જો 🎤 બટન ન ચાલે તો બોક્સમાં ટૅપ કરી ફોનના કીબોર્ડનો માઇક દબાવો.</p>
+  <p class="hint">What you write is seen only by Dr. Tiwari. · आपका लिखा केवल डॉ. तिवारी देखेंगे। · તમે લખેલું ફક્ત ડૉ. તિવારી જોશે.</p>
+</div>
+
+<div id="doneWrap" class="done" hidden>
+  <div class="big">🙏</div>
+  <h2>Thank you · धन्यवाद · આભાર</h2>
+  <p>Your complaints have reached Dr. Tiwari. He will study them and be in touch.<br>आपकी तकलीफ़ें डॉ. तिवारी तक पहुँच गई हैं।<br>તમારી તકલીફો ડૉ. તિવારી સુધી પહોંચી ગઈ છે.</p>
+  <p class="hint">You can close this page. · आप यह पेज बंद कर सकते हैं। · તમે આ પેજ બંધ કરી શકો છો.</p>
+</div>
+</main>
+
+<div class="bar" id="bar"><div>
+  <button class="go" id="goBtn" type="button" onclick="submitStory()">Submit · भेजें · મોકલો</button>
+  <div class="err" id="err" role="alert"></div>
+</div></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, set, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+const app = initializeApp({
+  apiKey: "AIzaSyAqzKPqBzNoBJc5FWjnVXMER4prgrbhqag",
+  authDomain: "punarvasu-790a8.firebaseapp.com",
+  databaseURL: "https://punarvasu-790a8-default-rtdb.firebaseio.com",
+  projectId: "punarvasu-790a8",
+  storageBucket: "punarvasu-790a8.firebasestorage.app",
+  messagingSenderId: "774115339459",
+  appId: "1:774115339459:web:4ee1f45e1e25d61666c676"
+}, 'patientStoryApp');
+const db = getDatabase(app);
+
+// ---- who is writing (the invite link carries the patient's own id) ----
+const uid = (new URLSearchParams(location.search).get('uid') || '').trim();
+let known = null;   // { uid, name, phone, age, sex }
+window.__ready = (async () => {
+  if (uid) {
+    try {
+      const snap = await get(ref(db, 'pendingIntakeContext/' + uid));
+      if (snap.exists()) {
+        const c = snap.val();
+        if (c && c.name) known = { uid, name: String(c.name), phone: c.phone != null ? String(c.phone) : '', age: c.age || '', sex: c.sex || '' };
+      }
+    } catch (e) { console.error('[story] context lookup failed:', e); }
+  }
+  if (known) { document.getElementById('whoName').textContent = known.name; document.getElementById('whoKnown').hidden = false; }
+  else document.getElementById('whoForm').hidden = false;
+})();
+window.notMe = function () { known = null; document.getElementById('whoKnown').hidden = true; document.getElementById('whoForm').hidden = false; };
+
+// ---- complaint boxes ----
+let n = 0;
+window.addBox = function (focus) {
+  n++;
+  const d = document.createElement('div'); d.className = 'card cbox'; d.dataset.box = n;
+  d.innerHTML = `<div class="num"><span>Complaint ${n} · तकलीफ़ ${n} · તકલીફ ${n}</span>${n > 1 ? '<button class="rm" type="button" onclick="this.closest(\'.cbox\').remove()">✕ Remove · हटाएँ · કાઢો</button>' : ''}</div>
+    <textarea id="c${n}" data-mic="1" placeholder="e.g. Headache for 2 months, worse in sunlight, better after sleep&#10;जैसे: 2 महीने से सिरदर्द, धूप में बढ़ता है, सोने से आराम&#10;જેમ કે: 2 મહિનાથી માથાનો દુખાવો, તડકામાં વધે, ઊંઘથી રાહત"></textarea>
+    <div class="tools"><button class="mic" type="button" data-for="c${n}">🎤 Speak · बोलिए · બોલો</button></div>`;
+  document.getElementById('boxes').appendChild(d);
+  wireMics(d);
+  if (focus !== false) d.querySelector('textarea').focus();
+};
+
+// ---- speaking: the phone turns the voice into text right in the box; nothing is recorded or stored ----
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let lang = 'en-IN', rec = null, recFor = null, wantOn = false;
+if (!SR) { document.querySelectorAll('.mic').forEach(b => b.hidden = true); document.getElementById('langs').hidden = true; }
+document.getElementById('kbTip').hidden = false;
+document.getElementById('langs').addEventListener('click', e => {
+  const b = e.target.closest('button[data-l]'); if (!b) return;
+  lang = b.dataset.l; document.querySelectorAll('#langs button').forEach(x => x.classList.toggle('on', x === b));
+  if (wantOn) { const id = recFor; stopMic(); startMic(id); }
+});
+function wireMics(root) { (root || document).querySelectorAll('.mic').forEach(b => { b.hidden = !SR; if (b._w) return; b._w = 1; b.addEventListener('click', () => { if (wantOn && recFor === b.dataset.for) stopMic(); else { stopMic(); startMic(b.dataset.for); } }); }); }
+function stopMic() { wantOn = false; try { rec && rec.stop(); } catch (e) {} rec = null; document.querySelectorAll('.mic.on').forEach(b => { b.classList.remove('on'); b.innerHTML = '🎤 Speak · बोलिए · બોલો'; }); recFor = null; }
+function startMic(id) {
+  if (!SR) return;
+  const ta = document.getElementById(id); if (!ta) return;
+  const btn = document.querySelector('.mic[data-for="' + id + '"]');
+  recFor = id; wantOn = true;
+  const mk = () => {
+    const r = new SR(); r.lang = lang; r.continuous = true; r.interimResults = true;
+    let base = ta.value ? ta.value.replace(/\s+$/, '') + ' ' : '';
+    r.onresult = ev => {
+      let fin = '', tmp = '';
+      for (let i = ev.resultIndex; i < ev.results.length; i++) { const t = ev.results[i][0].transcript; if (ev.results[i].isFinal) fin += t; else tmp += t; }
+      if (fin) base += fin.trim() + ' ';
+      ta.value = (base + tmp).trim();
+    };
+    r.onerror = ev => { if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { wantOn = false; setErr('Microphone is blocked. Allow it in your browser, or use the microphone key on your keyboard. · माइक बंद है।'); } };
+    r.onend = () => { if (wantOn && recFor === id) { try { rec = mk(); rec.start(); } catch (e) { stopMic(); } } else if (btn) { btn.classList.remove('on'); btn.innerHTML = '🎤 Speak · बोलिए · બોલો'; } };
+    return r;
+  };
+  try { rec = mk(); rec.start(); btn.classList.add('on'); btn.textContent = '⏹ Stop · रोकिए · રોકો'; setErr(''); } catch (e) { stopMic(); }
+}
+function setErr(m) { document.getElementById('err').textContent = m || ''; }
+
+// ---- submit ----
+let sending = false;
+window.submitStory = async function () {
+  if (sending) return;
+  stopMic(); setErr('');
+  const parts = [...document.querySelectorAll('#boxes textarea')].map(t => t.value.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  const general = document.getElementById('general').value.replace(/\s+/g, ' ').trim();
+  if (!parts.length || parts.join('').length < 4) { setErr('Please write at least one complaint. · कृपया कम से कम एक तकलीफ़ लिखिए। · ઓછામાં ઓછી એક તકલીફ લખો.'); return; }
+  let patient;
+  if (known) patient = { uid: known.uid, name: known.name, phone: known.phone || '', age: known.age || '', sex: known.sex || '' };
+  else {
+    const name = document.getElementById('pName').value.trim(), phone = document.getElementById('pPhone').value.replace(/[^\d+]/g, '');
+    if (!name) { setErr('Please enter your name. · कृपया अपना नाम लिखिए। · કૃપા કરી તમારું નામ લખો.'); return; }
+    if (phone.replace(/\D/g, '').length < 10) { setErr('Please enter your 10-digit mobile number. · कृपया 10 अंकों का मोबाइल नंबर लिखिए। · કૃપા કરી 10 અંકનો મોબાઈલ નંબર લખો.'); return; }
+    patient = { uid: uid || '', name, phone, age: document.getElementById('pAge').value || '', sex: document.getElementById('pSex').value || '' };   // a link that carries the patient's id still files it under that patient
+  }
+  sending = true; const btn = document.getElementById('goBtn'); btn.disabled = true; btn.textContent = '…';
+  const submittedAt = new Date().toISOString();
+  const story = parts.concat(general ? [general] : []).join('\n');   // one complaint per line; the general health line last
+  const payload = { patient, submittedAt, story, storyParts: { complaints: parts, general }, storyEntry: true, storyLang: lang };
+  if (!patient.uid) payload.unlinked = true;
+  try {
+    const caseKey = push(ref(db, 'cases')).key;
+    await set(ref(db, 'cases/' + caseKey), payload);
+    if (patient.uid) { try { await set(ref(db, 'patients/' + patient.uid + '/casefile/lastCaseSubmittedAt'), new Date(submittedAt).getTime()); } catch (e) {} }
+    try { await push(ref(db, 'notifications/admin'), { type: 'case_submitted', patientUid: patient.uid || '', name: patient.name, timestamp: Date.now(), viaStory: true }); } catch (e) {}
+    document.getElementById('formWrap').hidden = true; document.getElementById('bar').hidden = true; document.getElementById('doneWrap').hidden = false; window.scrollTo(0, 0);
+  } catch (e) {
+    console.error('[story] submit failed:', e);
+    sending = false; btn.disabled = false; btn.textContent = 'Submit · भेजें · મોકલો';
+    setErr('Could not send. Please check your internet and press Submit again. · भेज नहीं सके। इंटरनेट देखकर फिर दबाइए। · મોકલી શક્યા નથી. ઇન્ટરનેટ જોઈ ફરી દબાવો.');
+  }
+};
+addBox(false); wireMics();
+</script>
+</body>
+</html>
