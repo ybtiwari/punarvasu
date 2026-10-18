@@ -3305,8 +3305,9 @@ function escAttr(s) {
   };
 
   // FOLLOWUP-FIRST: live counterpart of computeStage (also in
-  // case_analyzer_local.html, admin-panel.html, dashboard.html and
-  // patient-portal.html — change all five together). peekPatientContext
+  // case_analyzer_local.html, admin-panel.html, dashboard.html,
+  // patient-portal.html, coordinator-panel.html and the repertory tool —
+  // change all seven together). peekPatientContext
   // above only reflects the doctor's intent at the moment this link was
   // sent, not whether the consultation is STILL open now — a patient who
   // sits on this screen a while, or returns to a stale link later, could
@@ -3337,9 +3338,30 @@ function escAttr(s) {
       if (cf.prescriptions) {
         Object.values(cf.prescriptions).forEach(e => { if (e && e.sessionId && e.sessionId > latestRxAt) latestRxAt = e.sessionId; });
       }
+      // STAGE-V2: besides prescribing, the doctor can answer a follow-up by choosing
+      // "continue same Rx" (no new prescription); that decision is logged on the
+      // follow-up record itself, so those records are read too. If they cannot be
+      // read, this fails open like everything else here.
+      let latestContinueAt = 0, followUpsUnreadable = false;
+      try {
+        const fuSnap = await get(ref(db, 'patients/' + uid + '/followUpSessions'));
+        if (fuSnap.exists()) {
+          Object.values(fuSnap.val()).forEach(e => {
+            if (e && e.decision === 'continue' && e.decidedAt && e.decidedAt > latestContinueAt) latestContinueAt = e.decidedAt;
+          });
+        }
+      } catch (e) {
+        console.error('[patient-intake] follow-up records unreadable (non-fatal, failing open):', e);
+        followUpsUnreadable = true;
+      }
+      const latestDecisionAt = Math.max(latestRxAt, latestContinueAt);
       const closedAt = cf.sessionClosedAt || 0;
-      if (closedAt > latestCaseAt && closedAt > latestRxAt) return false; // stage 4 — already closed
-      return latestRxAt > latestCaseAt; // true only at stage 3; stage 2 (another follow-up already pending) also refuses
+      if (closedAt > latestDecisionAt && closedAt > latestCaseAt) return false; // stage 4 — already closed
+      if (latestDecisionAt > latestCaseAt) return true; // stage 3 — the only stage a follow-up fits
+      // Stage 2 (a new case still awaiting its first prescription) and stage 5 (a follow-up
+      // already in, awaiting the doctor's decision) both refuse — unless the follow-up
+      // records could not be read, when "decided" cannot be ruled out and it lets it through.
+      return followUpsUnreadable;
     } catch (e) {
       // Can't confirm live state (offline, a permission hiccup, etc.) — fail
       // OPEN rather than blocking a legitimate follow-up on a transient

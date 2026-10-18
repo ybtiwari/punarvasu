@@ -68,6 +68,7 @@
     .stage-badge { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11.5px; font-weight:700; border:1px solid var(--border); background:var(--cream); color:var(--ink2); }
     .stage-badge.stage-3 { background:rgba(28,107,90,0.1); border-color:rgba(28,107,90,0.25); color:var(--teal); }
     .stage-badge.stage-4 { background:rgba(74,100,120,0.1); border-color:var(--border); color:var(--ink3); }
+    .stage-badge.stage-5 { background:#F1EAFA; border-color:#D2C0E8; color:#6B3FA0; } /* STAGE-V2: follow-up received */
     .empty { text-align:center; padding:40px 20px; color:var(--ink3); }
     .empty-icon { font-size:32px; margin-bottom:10px; }
 
@@ -590,22 +591,46 @@ document.querySelectorAll('.nav-item').forEach(item => {
 // by the intake wizard at submission specifically so a page like this one
 // never needs the shared cases/ node just to compute a stage. Same approach
 // patient-portal.html uses for its own computeMyStage.
-// STAGE-RULE: "closed" = closed after BOTH the latest visit and the latest
-// prescription — so a consultation closed right after a final follow-up
-// (everything resolved, no new prescription) counts as closed. Same rule in
-// case_analyzer_local.html, admin-panel.html, dashboard.html,
-// patient-portal.html, coordinator-panel.html and the repertory tool —
-// change all six together.
-function computeStage(s) {
+// STAGE-V2 / STAGE-RULE (v2) — the stage is always worked out from the data,
+// never stored. In this order:
+//   4  closed after the newest visit AND after the doctor's latest action (a
+//      prescription, or a "continue same Rx" decision) — so a consultation
+//      closed right after a final follow-up, with no new prescription, counts
+//      as closed;
+//   3  the doctor's latest action is newer than the newest visit: waiting for
+//      the patient's next follow-up;
+//   5  the newest visit is newer than the doctor's latest action AND is a
+//      follow-up (every real follow-up saves a followUpSessions record dated
+//      the same instant as its own case): the doctor decides to continue or
+//      to change the prescription;
+//   2  the newest visit is newer than the doctor's latest action and is not a
+//      follow-up: a new case waiting for its first prescription.
+// (1 = no case at all.) Same rule in case_analyzer_local.html, admin-panel.html,
+// dashboard.html, patient-portal.html, coordinator-panel.html, the intake
+// wizard's checkFollowUpConsultationStillOpen and the repertory tool — change
+// all seven together. Takes the patient's followUpSessions as well as the
+// casefile: they come in the same per-patient record loadMyPatients() already
+// reads, so no extra reads are needed.
+function computeStage(s, followUpSessions) {
   if (!s) return 1;
   const caseAt = s.lastCaseSubmittedAt || 0;
   let latestRxAt = 0;
   if (s.prescriptions) {
     Object.values(s.prescriptions).forEach(e => { if (e.sessionId && e.sessionId > latestRxAt) latestRxAt = e.sessionId; });
   }
+  let latestContinueAt = 0, latestFollowUpAt = 0;
+  if (followUpSessions && typeof followUpSessions === 'object') {
+    Object.values(followUpSessions).forEach(e => {
+      const at = e && e.date ? new Date(e.date).getTime() : 0;
+      if (at > latestFollowUpAt) latestFollowUpAt = at;
+      if (e && e.decision === 'continue' && e.decidedAt && e.decidedAt > latestContinueAt) latestContinueAt = e.decidedAt;
+    });
+  }
+  const latestDecisionAt = Math.max(latestRxAt, latestContinueAt);
   const closedAt = s.sessionClosedAt || 0;
-  if (closedAt > caseAt && closedAt > latestRxAt) return 4;
-  return (latestRxAt > caseAt) ? 3 : 2;
+  if (closedAt > latestDecisionAt && closedAt > caseAt) return 4;
+  if (latestDecisionAt > caseAt) return 3;
+  return (latestFollowUpAt > 0 && latestFollowUpAt >= caseAt) ? 5 : 2;
 }
 // STAGE-INDICATOR: a small read-only label for where a consultation sits —
 // never a control, same as every other copy of this function (stage stays
@@ -617,6 +642,7 @@ function stageBadge(stage) {
   if (stage === 2) return '<span class="stage-badge stage-2">Awaiting Prescription</span>';
   if (stage === 3) return '<span class="stage-badge stage-3">Prescribed</span>';
   if (stage === 4) return '<span class="stage-badge stage-4">Closed</span>';
+  if (stage === 5) return '<span class="stage-badge stage-5">Follow-up received</span>'; // STAGE-V2
   return '';
 }
 
@@ -656,7 +682,7 @@ function loadMyPatients() {
       let html = '';
       Object.entries(myPatients).forEach(([uid, p]) => {
         const status = p.status || 'active';
-        const stage = computeStage(p.casefile);
+        const stage = computeStage(p.casefile, p.followUpSessions); // STAGE-V2
         html += `<div class="patient-item">
           <div class="patient-info">
             <h4>${p.name || 'Unknown'}</h4>
@@ -932,7 +958,7 @@ window.loadCaseFile = function() {
   document.getElementById('caseTitle').textContent = (pat?.name || 'Patient') + ' — Case File';
   // STAGE-INDICATOR: same badge as the patient-list row, repeated here on
   // the record view itself — see computeStage/stageBadge above.
-  document.getElementById('caseStageBadge').innerHTML = stageBadge(computeStage(pat?.casefile));
+  document.getElementById('caseStageBadge').innerHTML = stageBadge(computeStage(pat?.casefile, pat?.followUpSessions)); // STAGE-V2
   document.getElementById('caseWrap').style.display = 'block';
 
   ['notes','prescriptions','followups','appointments'].forEach(section => {
