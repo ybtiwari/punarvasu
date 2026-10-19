@@ -112,7 +112,7 @@ function buildSidebar(currentPath) {
         <span class="sidebar-section-title" style="color:#4A6478;margin-top:4px;">${section.label}</span>`;
     } else if (section.single) {
       const active = currentPath.endsWith(section.href) || currentPath === section.href ? 'active' : '';
-      const style  = section.highlight ? 'font-weight:500;color:#1C6B5A;' : '';
+      const style  = section.highlight ? 'font-weight:500;color:#2055A4;' : '';
       html += `<div class="sidebar-section">
         <a href="${section.href}" class="sidebar-link ${active}" style="${style}">${section.label}</a>
       </div>`;
@@ -181,3 +181,4 @@ document.addEventListener('DOMContentLoaded', () => {
     footer.appendChild(adminLink);
   }
 });
+// THEME-NAVY-GOLD

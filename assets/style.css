@@ -5,9 +5,9 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --navy:   #0F2035;
-  --teal:   #1C6B5A;
-  --teal2:  #155448;
+  --navy:   #1C2E50;
+  --teal:   #2055A4;
+  --teal2:  #163d7a;
   --cream:  #F5F2EC;
   --cream2: #EEE9DF;
   --white:  #FFFFFF;
@@ -15,7 +15,7 @@
   --ink2:   #2A4055;
   --ink3:   #4A6478;
   --border: #D0DDE8;
-  --orange: #C8600A;
+  --orange: #C8962E;
   --serif:  'Lora', Georgia, serif;
   --sans:   'Source Sans 3', system-ui, sans-serif;
   --sidebar-w: 240px;
@@ -103,7 +103,7 @@ blockquote p { font-family: var(--serif); font-style: italic; font-size: 18px; c
 .sidebar-link.active {
   color: var(--teal); font-weight: 500;
   border-left-color: var(--teal);
-  background: rgba(28,107,90,0.06);
+  background: rgba(32,85,164,0.06);
 }
 .sidebar-divider { height: 1px; background: var(--border); margin: 10px 20px; }
 
@@ -167,7 +167,7 @@ blockquote p { font-family: var(--serif); font-style: italic; font-size: 18px; c
   transition: box-shadow 0.2s, border-color 0.2s;
   text-decoration: none !important; display: block;
 }
-.card:hover { box-shadow: 0 4px 20px rgba(15,32,53,0.07); border-color: var(--teal); }
+.card:hover { box-shadow: 0 4px 20px rgba(28,46,80,0.07); border-color: var(--teal); }
 .card .card-label { font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink3); margin-bottom: 8px; display: block; }
 .card h3 { font-size: 17px; margin-bottom: 8px; }
 .card p  { font-size: 14px; color: var(--ink2); margin: 0; }
@@ -218,7 +218,7 @@ blockquote p { font-family: var(--serif); font-style: italic; font-size: 18px; c
 /* ── MOBILE OVERLAY SIDEBAR ── */
 .sidebar-overlay {
   display: none; position: fixed; inset: 0;
-  background: rgba(15,32,53,0.4); z-index: 99;
+  background: rgba(28,46,80,0.4); z-index: 99;
 }
 .sidebar-overlay.open { display: block; }
 
@@ -252,3 +252,7 @@ blockquote p { font-family: var(--serif); font-style: italic; font-size: 18px; c
   .page-nav { flex-direction: column; }
   .page-nav .next { margin-left: 0; }
 }
+
+/* THEME-NAVY-GOLD */
+.topbar{box-shadow:inset 0 -3px 0 #C8962E}
+blockquote{border-left-color:#C8962E}
