@@ -5,7 +5,7 @@
   "start_url": "/patient-portal.html",
   "display": "standalone",
   "background_color": "#F5F2EC",
-  "theme_color": "#1C6B5A",
+  "theme_color": "#1C2E50",
   "orientation": "portrait",
   "icons": [
     {

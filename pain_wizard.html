@@ -8,7 +8,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --teal:#1C6B5A;--teal2:#2E7D32;--amber:#C8600A;--amber-bg:#FDF3E8;
+  --teal:#2055A4;--teal2:#2E7D32;--amber:#C8962E;--amber-bg:#FDF3E0;
   --ink:#1a1a1a;--ink2:#444;--ink3:#888;
   --border:#e0e0e0;--white:#fff;--cream:#f7f5f0;--bg:#f2f0eb;
   --success:#2E7D32;--danger:#c0392b;
@@ -46,7 +46,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 .ch-icon{font-size:22px;margin-bottom:5px}
 .ch-en{display:block;font-size:12px;font-weight:600;color:var(--ink)}
 .ch-hi{display:block;font-size:11px;color:var(--ink3);margin-top:1px}
-.ch-card.sel .ch-en{color:var(--amber)}
+.ch-card.sel .ch-en{color:#8A5200}
 
 /* Option chips (sub-location, timing, better/worse) */
 .chips{display:flex;flex-wrap:wrap;gap:8px;padding-top:4px}
@@ -60,7 +60,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 /* Pain type grid */
 .type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:4px}
 .type-card{border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;background:var(--white);transition:all .12s}
-.type-card.sel{border-color:var(--teal);background:#F0F7F4}
+.type-card.sel{border-color:var(--teal);background:#EEF2FA}
 .type-card:active{transform:scale(.97)}
 .type-en{font-size:13px;font-weight:500;color:var(--ink);line-height:1.35}
 .type-hi{font-size:11.5px;color:var(--ink3);margin-top:2px}
@@ -84,8 +84,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 
 /* Result / Review */
 .result-card{border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;position:relative}
-.result-card.sel{border-color:var(--teal);background:#F0F7F4}
-.result-ch{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--amber);margin-bottom:4px}
+.result-card.sel{border-color:var(--teal);background:#EEF2FA}
+.result-ch{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#8A5200;margin-bottom:4px}
 .result-en{font-size:13px;color:var(--ink);line-height:1.4}
 .result-hi{font-size:12px;color:var(--ink3);margin-top:2px}
 .result-path{font-size:10.5px;color:var(--ink3);margin-top:4px;font-style:italic}
@@ -103,6 +103,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 .no-result{text-align:center;padding:30px 0;font-size:13px;color:var(--ink3)}
 .btn-primary{background:var(--teal);color:white;border:none;border-radius:8px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;width:100%}
 .btn-outline{background:none;border:1.5px solid var(--border);border-radius:8px;padding:10px 16px;font-size:13px;color:var(--ink2);cursor:pointer;width:100%}
+
+/* THEME-NAVY-GOLD */
+.topbar{background:linear-gradient(135deg,#1C2E50 0%,#2055A4 100%);box-shadow:inset 0 -3px 0 #C8962E}
 </style>
 </head>
 <body>

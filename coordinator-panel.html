@@ -9,20 +9,20 @@
   <style>
     *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
     :root {
-      --navy:#0F2035; --teal:#1C6B5A; --teal2:#155448;
+      --navy:#1C2E50; --teal:#2055A4; --teal2:#163d7a;
       --cream:#F5F2EC; --white:#FFFFFF; --ink:#0F1E2D;
       --ink2:#2A4055; --ink3:#4A6478; --border:#D0DDE8;
-      --red:#c0392b; --orange:#c8600a;
+      --red:#c0392b; --orange:#c8962e;
       --serif:'Lora',Georgia,serif; --sans:'Source Sans 3',system-ui,sans-serif;
     }
     body { font-family:var(--sans); background:var(--cream); color:var(--ink); min-height:100vh; }
 
     /* LOGIN SCREEN */
     .login-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
-    .login-box { background:var(--white); border:1px solid var(--border); border-radius:10px; padding:44px 40px; width:100%; max-width:400px; box-shadow:0 4px 24px rgba(15,32,53,0.08); text-align:center; }
+    .login-box { background:var(--white); border:1px solid var(--border); border-radius:10px; padding:44px 40px; width:100%; max-width:400px; box-shadow:0 4px 24px rgba(28,46,80,0.08); text-align:center; }
     .login-logo { font-family:var(--serif); font-size:22px; color:var(--navy); margin-bottom:4px; }
     .login-sub  { font-size:12px; color:var(--ink3); margin-bottom:8px; }
-    .coord-badge { display:inline-block; background:rgba(200,96,10,0.1); color:var(--orange); padding:3px 10px; border-radius:10px; font-size:12px; font-weight:500; margin-bottom:24px; }
+    .coord-badge { display:inline-block; background:rgba(200,150,46,0.1); color:#8A5200; padding:3px 10px; border-radius:10px; font-size:12px; font-weight:500; margin-bottom:24px; }
     .login-title { font-family:var(--serif); font-size:20px; color:var(--navy); margin-bottom:8px; }
     .login-err { font-size:13px; color:var(--red); margin-top:10px; }
 
@@ -38,7 +38,7 @@
     .sidebar { width:220px; background:var(--navy); padding:20px 0; min-height:calc(100vh - 56px); flex-shrink:0; }
     .nav-item { display:flex; align-items:center; justify-content:space-between; padding:11px 20px; font-size:14px; color:rgba(255,255,255,0.6); cursor:pointer; border-left:2px solid transparent; transition:all 0.15s; }
     .nav-item:hover { background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.9); }
-    .nav-item.active { color:white; border-left-color:#22A08A; background:rgba(255,255,255,0.06); font-weight:500; }
+    .nav-item.active { color:white; border-left-color:#C8962E; background:rgba(255,255,255,0.06); font-weight:500; }
     .nav-badge { background:var(--orange); color:white; border-radius:10px; padding:1px 7px; font-size:11px; min-width:20px; text-align:center; }
 
     /* CONTENT */
@@ -61,12 +61,12 @@
     .btn-gray { background:var(--cream); color:var(--ink2); border:1px solid var(--border); }
     .btn-gray:hover { background:#e8e5dc; }
     .badge { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11.5px; font-weight:500; }
-    .badge-active   { background:rgba(28,107,90,0.1); color:var(--teal); }
+    .badge-active   { background:rgba(32,85,164,0.1); color:var(--teal); }
     .badge-disabled { background:rgba(192,57,43,0.1); color:var(--red); }
     /* STAGE-INDICATOR: same three labels/colors as admin-panel.html's own
        stageBadge() — change together, same as computeStage's own six-file rule. */
     .stage-badge { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11.5px; font-weight:700; border:1px solid var(--border); background:var(--cream); color:var(--ink2); }
-    .stage-badge.stage-3 { background:rgba(28,107,90,0.1); border-color:rgba(28,107,90,0.25); color:var(--teal); }
+    .stage-badge.stage-3 { background:rgba(32,85,164,0.1); border-color:rgba(32,85,164,0.25); color:var(--teal); }
     .stage-badge.stage-4 { background:rgba(74,100,120,0.1); border-color:var(--border); color:var(--ink3); }
     .stage-badge.stage-5 { background:#F1EAFA; border-color:#D2C0E8; color:#6B3FA0; } /* STAGE-V2: follow-up received */
     .empty { text-align:center; padding:40px 20px; color:var(--ink3); }
@@ -95,7 +95,7 @@
     .msg-bubble { padding:10px 14px; border-radius:12px; font-size:14px; line-height:1.55; }
     .msg-bubble.from-patient { background:var(--cream); border:1px solid var(--border); border-bottom-left-radius:3px; }
     .msg-bubble.from-doctor  { background:var(--teal); color:white; border-bottom-right-radius:3px; }
-    .msg-bubble.from-coordinator { background:#FBE9DD; border:1px solid #F0C9AE; color:var(--ink); border-bottom-right-radius:3px; }
+    .msg-bubble.from-coordinator { background:#FBEFD5; border:1px solid #E8D3A0; color:var(--ink); border-bottom-right-radius:3px; }
     .msg-sender { font-size:11px; font-weight:600; opacity:0.75; margin-bottom:3px; }
     .msg-meta { font-size:11px; opacity:0.65; margin-top:4px; }
     .chat-input-row { display:flex; gap:8px; padding:12px 16px; border-top:1px solid var(--border); }
@@ -118,8 +118,15 @@
     .case-entry { background:var(--cream); border:1px solid var(--border); border-radius:6px; padding:14px 16px; margin-bottom:10px; }
     .case-entry-date { font-size:11px; color:var(--ink3); margin-bottom:5px; }
     .case-entry-text { font-size:14px; color:var(--ink2); line-height:1.65; }
-    .read-only-note { font-size:12px; color:var(--ink3); background:rgba(28,107,90,0.06); border:1px solid rgba(28,107,90,0.15); border-radius:4px; padding:8px 12px; margin-bottom:16px; }
-  </style>
+    .read-only-note { font-size:12px; color:var(--ink3); background:rgba(32,85,164,0.06); border:1px solid rgba(32,85,164,0.15); border-radius:4px; padding:8px 12px; margin-bottom:16px; }
+  
+/* THEME-NAVY-GOLD */
+.topbar{background:linear-gradient(135deg,var(--navy) 0%,var(--teal) 100%);box-shadow:inset 0 -3px 0 #C8962E}
+.login-box{border-top:4px solid #C8962E}
+.nav-badge{color:#1C2E50;font-weight:700}
+.topbar-name{color:rgba(255,255,255,.9)}
+.topbar-right button[onclick="coordSignOut()"]{color:rgba(255,255,255,.88)!important;border-color:rgba(255,255,255,.4)!important}
+</style>
 </head>
 <body>
 
