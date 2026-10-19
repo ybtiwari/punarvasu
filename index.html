@@ -4,277 +4,404 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Book Appointment · Punarvasu Clinic</title>
+  <title>Punarvasu Clinic · Dr. Yogeshwar Tiwari, BHMS · Ahmedabad</title>
+  <meta name="description" content="Classical homeopathic practice by Dr. Yogeshwar Tiwari, BHMS. Constitutional healing, complete restoration. Ahmedabad, Gujarat."/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="../assets/style.css"/>
+  <link rel="stylesheet" href="assets/style.css"/>
+  <style>
+    /* Hero */
+    .hero {
+      min-height: 80vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 24px 60px;
+      text-align: center;
+      background: var(--cream);
+    }
+    .hero-inner { max-width: 680px; }
+    .hero-label {
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--teal);
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .hero-title {
+      font-family: var(--serif);
+      font-size: clamp(32px, 5vw, 52px);
+      color: var(--navy);
+      line-height: 1.2;
+      margin-bottom: 20px;
+    }
+    .hero-subtitle {
+      font-size: 18px;
+      color: var(--ink3);
+      line-height: 1.7;
+      margin-bottom: 36px;
+      font-weight: 300;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      background: var(--teal);
+      color: white;
+      padding: 13px 28px;
+      border-radius: 4px;
+      font-family: var(--sans);
+      font-size: 15px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .btn-primary:hover { background: var(--teal2); }
+    .btn-outline {
+      background: transparent;
+      color: var(--teal);
+      border: 1.5px solid var(--teal);
+      padding: 13px 28px;
+      border-radius: 4px;
+      font-family: var(--sans);
+      font-size: 15px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.15s;
+    }
+    .btn-outline:hover { background: var(--teal); color: white; }
+
+    /* Divider */
+    .section-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0;
+    }
+
+    /* Pillars */
+    .pillars {
+      padding: 72px 24px;
+      background: var(--white);
+    }
+    .pillars-inner { max-width: 900px; margin: 0 auto; }
+    .section-label {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--teal);
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: var(--serif);
+      font-size: clamp(22px, 3vw, 30px);
+      color: var(--navy);
+      margin-bottom: 14px;
+      line-height: 1.3;
+    }
+    .section-body {
+      font-size: 16px;
+      color: var(--ink3);
+      line-height: 1.8;
+      max-width: 620px;
+      margin-bottom: 48px;
+      font-weight: 300;
+    }
+    .pillars-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+    }
+    .pillar {
+      padding: 28px 24px;
+      background: var(--cream);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    .pillar-num {
+      font-family: var(--serif);
+      font-size: 28px;
+      color: var(--teal);
+      opacity: 0.5;
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+    .pillar-title {
+      font-family: var(--serif);
+      font-size: 17px;
+      color: var(--navy);
+      margin-bottom: 8px;
+    }
+    .pillar-body {
+      font-size: 14px;
+      color: var(--ink3);
+      line-height: 1.7;
+    }
+
+    /* Sections nav */
+    .sections-nav {
+      padding: 72px 24px;
+      background: var(--cream);
+    }
+    .sections-nav-inner { max-width: 900px; margin: 0 auto; }
+    .sections-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-top: 36px;
+    }
+    .section-card {
+      display: block;
+      padding: 24px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      text-decoration: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .section-card:hover {
+      border-color: var(--teal);
+      box-shadow: 0 2px 12px rgba(28,107,90,0.08);
+    }
+    .section-card-icon { font-size: 24px; margin-bottom: 10px; }
+    .section-card-title {
+      font-family: var(--serif);
+      font-size: 16px;
+      color: var(--navy);
+      margin-bottom: 6px;
+    }
+    .section-card-desc {
+      font-size: 13px;
+      color: var(--ink3);
+      line-height: 1.6;
+    }
+
+    /* Doctor */
+    .doctor-section {
+      padding: 72px 24px;
+      background: var(--navy);
+    }
+    .doctor-inner {
+      max-width: 700px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .doctor-label {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .doctor-name {
+      font-family: var(--serif);
+      font-size: clamp(24px, 3.5vw, 36px);
+      color: white;
+      margin-bottom: 8px;
+    }
+    .doctor-qual {
+      font-size: 14px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 28px;
+    }
+    .doctor-bio {
+      font-size: 16px;
+      color: rgba(255,255,255,0.75);
+      line-height: 1.8;
+      font-weight: 300;
+      margin-bottom: 36px;
+    }
+    .doctor-link {
+      color: #6DD9C0;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      letter-spacing: 0.04em;
+    }
+    .doctor-link:hover { color: white; }
+
+    /* CTA */
+    .cta-section {
+      padding: 72px 24px;
+      background: var(--white);
+      text-align: center;
+    }
+    .cta-inner { max-width: 580px; margin: 0 auto; }
+    .cta-title {
+      font-family: var(--serif);
+      font-size: clamp(22px, 3vw, 30px);
+      color: var(--navy);
+      margin-bottom: 14px;
+    }
+    .cta-body {
+      font-size: 16px;
+      color: var(--ink3);
+      line-height: 1.7;
+      margin-bottom: 32px;
+      font-weight: 300;
+    }
+
+    /* Responsive */
+    @media (max-width: 700px) {
+      .pillars-grid  { grid-template-columns: 1fr; gap: 16px; }
+      .sections-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
+      .hero { min-height: 60vh; padding: 100px 20px 48px; }
+    }
+    @media (max-width: 480px) {
+      .sections-grid { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
+
 <header class="topbar">
-  <a href="../index.html" class="topbar-logo">
+  <a href="index.html" class="topbar-logo">
     <span class="logo-name">Punarvasu Clinic</span>
     <span class="logo-sub">Natural law · Constitutional healing · Complete restoration</span>
   </a>
   <div class="topbar-right">
-    <a href="../appointment/index.html" class="topbar-appt">Book Appointment</a>
+    <a href="appointment/index.html" class="topbar-appt">Book Appointment</a>
     <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
   </div>
 </header>
 <nav class="sidebar" id="sidebar"></nav>
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
-<main class="page-wrap">
-  <div class="page-content">
-    <div class="page-header"><span class="sec-label">Appointment</span><h1>Book a Consultation</h1><p>The first consultation is a detailed case-taking session of 45–60 minutes. Please be prepared to discuss your full health history — not just the current complaint, but the sequence in which conditions have appeared, and all treatments taken so far.</p></div>
-<div class="content-block">
-  <div class="form-grid">
-    <div class="fg"><label>Full name</label><input type="text" id="leadName" placeholder="Your name"/></div>
-    <div class="fg"><label>Phone / WhatsApp</label><input type="tel" id="leadPhone" placeholder="+91 92747 91141"/></div>
-    <div class="fg full"><label>Brief health history</label><textarea id="leadHistory" placeholder="Main complaint, how long it has been present, any past illnesses, treatments taken so far, and anything else you feel is relevant."></textarea></div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <p class="hero-label">Classical Homeopathy · Ahmedabad</p>
+    <h1 class="hero-title">Healing that follows<br/><em>natural law</em></h1>
+    <p class="hero-subtitle">Punarvasu Clinic offers classical homeopathic care — treating the person, not the disease. Every case is taken in depth. Every remedy is chosen by the totality.</p>
+    <div class="hero-actions">
+      <a href="appointment/index.html" class="btn-primary">Book a consultation</a>
+      <a href="philosophy/index.html" class="btn-outline">Our approach</a>
+    </div>
   </div>
-  <div id="leadFormError" style="color:#B23A2E;font-size:14px;margin-bottom:10px;display:none;"></div>
-  <button class="form-btn" id="leadSubmitBtn" onclick="submitLeadForm()">Send request</button>
-  <p style="font-size:14px;color:var(--ink3);margin-top:12px;">Mon – Sat, 10 am – 7 pm &nbsp;·&nbsp; Ahmedabad &nbsp;·&nbsp; +91 92747 91141</p>
-</div>
-<div class="content-block" style="margin-top:36px;padding-top:32px;border-top:1px solid var(--border);">
-  <h2>Prefer to reach us directly on WhatsApp?</h2>
-  <p>If you would like to connect before booking — to ask a question or check if your case is suitable — you are welcome to message us directly.</p>
-  <a href="https://wa.me/919274791141?text=Hello%2C%20I%20would%20like%20to%20enquire%20about%20a%20consultation%20at%20Punarvasu%20Clinic." class="whatsapp-btn" target="_blank" rel="noopener">
-    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-    Connect on WhatsApp
-  </a>
-</div>
-    <div class="page-nav"><a href="/articles/index.html" class="prev"><span class="nav-dir">← Previous</span><span class="nav-title">Articles</span></a></div>
+</section>
+
+<hr class="section-divider"/>
+
+<!-- PILLARS -->
+<section class="pillars">
+  <div class="pillars-inner">
+    <p class="section-label">The foundation</p>
+    <h2 class="section-title">Three principles that guide every case</h2>
+    <p class="section-body">Classical homeopathy is not symptom suppression. It is the restoration of the vital force — methodical, unhurried, and guided by law.</p>
+    <div class="pillars-grid">
+      <div class="pillar">
+        <div class="pillar-num">01</div>
+        <div class="pillar-title">The totality</div>
+        <div class="pillar-body">Every symptom — physical, mental, emotional — is part of one picture. The remedy must match the whole person.</div>
+      </div>
+      <div class="pillar">
+        <div class="pillar-num">02</div>
+        <div class="pillar-title">The single remedy</div>
+        <div class="pillar-body">One remedy at a time. The most similar remedy, in the minimum dose. This is Hahnemann's method, unchanged.</div>
+      </div>
+      <div class="pillar">
+        <div class="pillar-num">03</div>
+        <div class="pillar-title">The direction of cure</div>
+        <div class="pillar-body">True healing follows Hering's law — from within outward, from above downward, in reverse order of appearance.</div>
+      </div>
+    </div>
   </div>
-</main>
+</section>
+
+<hr class="section-divider"/>
+
+<!-- SECTIONS NAV -->
+<section class="sections-nav">
+  <div class="sections-nav-inner">
+    <p class="section-label">Explore</p>
+    <h2 class="section-title">Everything you need to know</h2>
+    <div class="sections-grid">
+      <a href="philosophy/index.html" class="section-card">
+        <div class="section-card-icon">🌿</div>
+        <div class="section-card-title">Philosophy</div>
+        <div class="section-card-desc">The principles behind classical homeopathy and how we approach every case.</div>
+      </a>
+      <a href="treatment/index.html" class="section-card">
+        <div class="section-card-icon">⚕️</div>
+        <div class="section-card-title">Treatment</div>
+        <div class="section-card-desc">What to expect during a consultation, case-taking, and the course of treatment.</div>
+      </a>
+      <a href="conditions/index.html" class="section-card">
+        <div class="section-card-icon">📋</div>
+        <div class="section-card-title">Conditions</div>
+        <div class="section-card-desc">Cases and conditions that respond well to classical homeopathic treatment.</div>
+      </a>
+      <a href="medicine/index.html" class="section-card">
+        <div class="section-card-icon">💊</div>
+        <div class="section-card-title">Medicine</div>
+        <div class="section-card-desc">Understanding homeopathic remedies, potencies, and how they are prescribed.</div>
+      </a>
+      <a href="mission-vision/index.html" class="section-card">
+        <div class="section-card-icon">🎯</div>
+        <div class="section-card-title">Mission &amp; Vision</div>
+        <div class="section-card-desc">Why Punarvasu Clinic exists and what we are working toward.</div>
+      </a>
+      <a href="articles/index.html" class="section-card">
+        <div class="section-card-icon">📝</div>
+        <div class="section-card-title">Articles</div>
+        <div class="section-card-desc">Reading on homeopathy, health, and the philosophy of healing.</div>
+      </a>
+      <a href="about/dr-tiwari.html" class="section-card">
+        <div class="section-card-icon">👨‍⚕️</div>
+        <div class="section-card-title">About Dr. Tiwari</div>
+        <div class="section-card-desc">Background, training, and approach of Dr. Yogeshwar Tiwari, BHMS.</div>
+      </a>
+      <a href="community-forum.html" class="section-card">
+        <div class="section-card-icon">👥</div>
+        <div class="section-card-title">Community Forum</div>
+        <div class="section-card-desc">Questions, discussions, and experiences shared by patients.</div>
+      </a>
+      <a href="appointment/index.html" class="section-card">
+        <div class="section-card-icon">📅</div>
+        <div class="section-card-title">Book Appointment</div>
+        <div class="section-card-desc">Schedule an in-clinic or online consultation with Dr. Tiwari.</div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider"/>
+
+<!-- DOCTOR -->
+<section class="doctor-section">
+  <div class="doctor-inner">
+    <p class="doctor-label">The physician</p>
+    <h2 class="doctor-name">Dr. Yogeshwar Tiwari</h2>
+    <p class="doctor-qual">BHMS · Classical Homeopath · Ahmedabad, Gujarat</p>
+    <p class="doctor-bio">Dr. Tiwari has practiced classical homeopathy for over 18 years, working exclusively with constitutional prescribing and classical repertory systems — Kent, Boger, Boenninghausen. His cases are taken in full, his prescriptions are single remedies, and his follow-ups are methodical.</p>
+    <a href="about/dr-tiwari.html" class="doctor-link">Read more about Dr. Tiwari →</a>
+  </div>
+</section>
+
+<hr class="section-divider"/>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-inner">
+    <h2 class="cta-title">Ready to begin?</h2>
+    <p class="cta-body">The first consultation is 45–60 minutes. You will be heard in full — not just your current complaint, but your full health history, the sequence of conditions, and everything in between.</p>
+    <a href="appointment/index.html" class="btn-primary">Book a consultation</a>
+  </div>
+</section>
+
 <footer class="site-footer">
   <div class="footer-inner">
-    <p>© 2025 Punarvasu Clinic · Dr. Yogeshwar Tiwari, BHMS · Ahmedabad, Gujarat</p>
-    <p class="footer-disc">Homeopathy is a system of complementary medicine. For emergencies, seek appropriate medical care.</p>
+    <p>© 2025 Punarvasu Clinic · Dr. Yogeshwar Tiwari, BHMS · 307, Harvey Complex, Gurukul Road, Memnagar, Ahmedabad – 380 052</p>
+    <p class="footer-disc">Homeopathy is a system of complementary medicine. For emergencies, seek appropriate medical care. · <a href="admin-panel.html" style="color:inherit;opacity:0.4;">Admin</a></p>
   </div>
 </footer>
-<script src="../assets/nav.js"></script>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, push }
-    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-  // Same Firebase project used throughout the rest of the site (patient
-  // portal, intake wizard, admin panel) — this form previously had NO
-  // backend at all; clicking "Send request" only changed the button's own
-  // text via inline JS, with nothing actually reaching the doctor. This
-  // wires it to a real write plus an admin notification.
-  const firebaseConfig = {
-    apiKey: "AIzaSyAqzKPqBzNoBJc5FWjnVXMER4prgrbhqag",
-    authDomain: "punarvasu-790a8.firebaseapp.com",
-    databaseURL: "https://punarvasu-790a8-default-rtdb.firebaseio.com",
-    projectId: "punarvasu-790a8",
-    storageBucket: "punarvasu-790a8.firebasestorage.app",
-    messagingSenderId: "774115339459",
-    appId: "1:774115339459:web:4ee1f45e1e25d61666c676"
-  };
-  const app = initializeApp(firebaseConfig);
-  const db  = getDatabase(app);
-
-  window.submitLeadForm = async function() {
-    const name    = document.getElementById('leadName').value.trim();
-    const phone   = document.getElementById('leadPhone').value.trim();
-    const history = document.getElementById('leadHistory').value.trim();
-    const errEl   = document.getElementById('leadFormError');
-    const btn     = document.getElementById('leadSubmitBtn');
-
-    errEl.style.display = 'none';
-    if (!name || !phone) {
-      errEl.textContent = 'Please fill in your name and phone number so we can reach you.';
-      errEl.style.display = 'block';
-      return;
-    }
-
-    btn.disabled = true;
-    btn.textContent = 'Sending…';
-
-    try {
-      // The lead itself — doctor-readable only, per the site's Firebase
-      // rules. Unauthenticated visitors can write here (that's the whole
-      // point of a public inquiry form) but cannot read other people's
-      // submissions. Email and consultation type were dropped from this
-      // form (Aug 2026) — matching admin-panel's own New Patient flow,
-      // which only ever asked for these same two fields.
-      await push(ref(db, 'leads'), {
-        name, phone,
-        healthHistory: history, submittedAt: Date.now(), status: 'new'
-      });
-
-      // Surfaces immediately in Admin Panel's existing notification list —
-      // same place patient messages and follow-up answers already show up.
-      await push(ref(db, 'notifications/admin'), {
-        type: 'new_lead', name, phone,
-        timestamp: Date.now(), read: false
-      });
-
-      btn.textContent = 'Request received. We will contact you within 24 hours.';
-      btn.style.background = '#155448';
-    } catch (e) {
-      btn.disabled = false;
-      btn.textContent = 'Send request';
-      errEl.textContent = 'Something went wrong sending your request — please try WhatsApp below instead, or call us directly.';
-      errEl.style.display = 'block';
-      console.error('[lead form] submit failed:', e);
-    }
-  };
-</script>
-<!-- Fee-context popup — a short, honest sequence explaining why fees here
-     aren't fixed, shown once per visitor before they reach the booking
-     form. Fully dismissible at any point; never blocks booking. -->
-<div id="feeConvoOverlay" class="fc-overlay" style="display:none;">
-  <div class="fc-card">
-    <button class="fc-close" onclick="window.fcDismiss()" aria-label="Close">×</button>
-    <div id="fcContent"></div>
-  </div>
-</div>
-<style>
-  .fc-overlay{position:fixed;inset:0;z-index:9999;background:rgba(15,32,53,0.55);display:flex;align-items:center;justify-content:center;padding:20px;}
-  .fc-card{background:var(--white);border-radius:12px;padding:30px 28px;max-width:480px;width:100%;max-height:85vh;overflow-y:auto;position:relative;box-shadow:0 12px 40px rgba(0,0,0,0.3);font-family:var(--sans);}
-  .fc-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:24px;line-height:1;color:var(--ink3);cursor:pointer;padding:4px;}
-  .fc-close:hover{color:var(--ink);}
-  .fc-lang-btn{display:block;width:100%;padding:14px 18px;margin-bottom:10px;border:1px solid var(--border);border-radius:8px;background:var(--cream);font-family:var(--sans);font-size:16px;color:var(--ink);cursor:pointer;text-align:left;transition:border-color .15s;}
-  .fc-lang-btn:hover{border-color:var(--teal);}
-  .fc-eyebrow{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);font-weight:600;margin-bottom:8px;}
-  .fc-back-btn{display:inline-block;background:none;border:none;color:var(--ink3);font-family:var(--sans);font-size:13px;cursor:pointer;padding:0;margin-bottom:14px;}
-  .fc-back-btn:hover{color:var(--teal);}
-  .fc-progress{font-size:12px;color:var(--ink3);margin-bottom:14px;}
-  .fc-statement{font-family:var(--serif);font-size:20px;line-height:1.5;color:var(--ink);margin-bottom:22px;}
-  .fc-btn-row{display:flex;gap:10px;flex-wrap:wrap;}
-  .fc-btn{flex:1;min-width:120px;padding:12px 16px;border-radius:8px;font-family:var(--sans);font-size:15px;cursor:pointer;border:none;}
-  .fc-btn-agree{background:var(--teal);color:var(--white);}
-  .fc-btn-agree:hover{background:var(--teal2);}
-  .fc-btn-soft{background:var(--cream2);color:var(--ink2);}
-  .fc-btn-soft:hover{background:var(--border);}
-  .fc-aside{font-size:14px;color:var(--ink3);margin-top:14px;font-style:italic;}
-  .fc-payoff-title{font-family:var(--serif);font-size:22px;color:var(--ink);margin-bottom:12px;line-height:1.4;}
-  .fc-payoff-body{font-size:15px;color:var(--ink2);line-height:1.6;margin-bottom:20px;}
-  .fc-btn-primary{display:inline-block;width:100%;box-sizing:border-box;padding:13px 16px;border-radius:8px;background:var(--teal);color:var(--white);text-align:center;text-decoration:none;font-size:15px;margin-bottom:10px;cursor:pointer;border:none;font-family:var(--sans);}
-  .fc-btn-primary:hover{background:var(--teal2);}
-  .fc-btn-secondary{display:block;width:100%;box-sizing:border-box;padding:13px 16px;border-radius:8px;background:none;color:var(--ink3);text-align:center;text-decoration:none;font-size:14px;cursor:pointer;border:1px solid var(--border);font-family:var(--sans);}
-</style>
-<script>
-(function(){
-  var STORAGE_KEY = 'pv_fee_convo_seen_v1';
-
-  var SLIDES = [
-    { en:"Most people try modern medicine first, before ever considering homeopathy.",
-      hi:"ज़्यादातर लोग होम्योपैथी के बारे में सोचने से पहले, पहले आधुनिक चिकित्सा (एलोपैथी) आज़माते हैं।",
-      gu:"મોટાભાગના લોકો હોમિયોપેથી વિશે વિચારતા પહેલા આધુનિક ચિકિત્સા (એલોપેથી) અજમાવે છે." },
-    { en:"So if someone reaches a homeopath, it's often because modern medicine hasn't fully resolved their case yet.",
-      hi:"इसलिए अगर कोई होम्योपैथिक डॉक्टर तक पहुँचता है, तो अक्सर इसलिए क्योंकि आधुनिक चिकित्सा उनके केस को पूरी तरह हल नहीं कर पाई।",
-      gu:"તેથી જો કોઈ હોમિયોપેથિક ડૉક્ટર સુધી પહોંચે છે, તો ઘણી વાર એટલા માટે કારણ કે આધુનિક ચિકિત્સા તેમનો કેસ સંપૂર્ણપણે ઉકેલી શકી નથી." },
-    { en:"That means the cases a homeopath actually sees are, by default, already the harder ones — not the easy ones.",
-      hi:"इसका मतलब है कि होम्योपैथिक डॉक्टर के पास जो केस आते हैं, वे स्वाभाविक रूप से पहले से ही मुश्किल होते हैं — आसान नहीं।",
-      gu:"એનો અર્થ એ કે હોમિયોપેથિક ડૉક્ટર પાસે જે કેસ આવે છે તે સ્વાભાવિક રીતે પહેલેથી જ મુશ્કેલ હોય છે — સરળ નહીં." },
-    { en:"A case that's already complex naturally needs more time and more follow-ups to resolve properly — not a single quick fix.",
-      hi:"जो केस पहले से ही जटिल है, उसे ठीक से हल करने के लिए स्वाभाविक रूप से ज़्यादा समय और ज़्यादा फॉलो-अप चाहिए — एक झटके में समाधान नहीं।",
-      gu:"જે કેસ પહેલેથી જ જટિલ છે તેને યોગ્ય રીતે ઉકેલવા માટે સ્વાભાવિક રીતે વધુ સમય અને વધુ ફોલો-અપની જરૂર પડે છે — એક ઝટકે ઉકેલ નહીં." },
-    { en:"At the same time, some people believe homeopathy is only suited for trivial complaints — cough, cold, minor issues — and that serious diseases should only be handled by highly qualified modern-medicine specialists.",
-      hi:"साथ ही, कुछ लोग मानते हैं कि होम्योपैथी केवल छोटी-मोटी शिकायतों — जैसे खांसी, ज़ुकाम — के लिए ही उपयुक्त है, और गंभीर बीमारियों का इलाज केवल उच्च योग्यता प्राप्त आधुनिक चिकित्सा विशेषज्ञों से ही करवाना चाहिए।",
-      gu:"તે જ સાથે, કેટલાક લોકો માને છે કે હોમિયોપેથી ફક્ત નાની-મોટી ફરિયાદો — જેમ કે ખાંસી, શરદી — માટે જ યોગ્ય છે, અને ગંભીર બીમારીઓની સારવાર ફક્ત ઉચ્ચ લાયકાત ધરાવતા આધુનિક ચિકિત્સા નિષ્ણાતો પાસેથી જ કરાવવી જોઈએ." },
-    { en:"So it follows that a homeopath ends up seeing everything — from the most trivial complaints to the most complicated, difficult cases.",
-      hi:"तो इससे यह निष्कर्ष निकलता है कि एक होम्योपैथिक डॉक्टर के पास बहुत छोटी शिकायतों से लेकर बेहद जटिल केस तक, हर तरह के मरीज़ आते हैं।",
-      gu:"તો આનાથી એવું તારણ નીકળે છે કે એક હોમિયોપેથિક ડૉક્ટર પાસે ખૂબ નાની ફરિયાદોથી લઈને અત્યંત જટિલ કેસ સુધી, દરેક પ્રકારના દર્દીઓ આવે છે." },
-    { en:"Given that range, it isn't realistic to expect the same time, effort, and fee for every single patient — a homeopath simply can't keep one fixed fee across every kind of case.",
-      hi:"इस विविधता को देखते हुए, हर मरीज़ से एक जैसा समय, मेहनत और फीस की उम्मीद करना उचित नहीं है — एक होम्योपैथिक डॉक्टर हर तरह के केस के लिए एक ही निश्चित फीस नहीं रख सकता।",
-      gu:"આ વિવિધતાને ધ્યાનમાં રાખતાં, દરેક દર્દી પાસેથી સરખો સમય, મહેનત અને ફી અપેક્ષા રાખવી વ્યાજબી નથી — એક હોમિયોપેથિક ડૉક્ટર દરેક પ્રકારના કેસ માટે એક જ નિશ્ચિત ફી રાખી શકે નહીં." },
-    { en:"So it isn't fair to say the same fixed fee should apply to a patient with a trivial ailment — cough, cold, fever — and to a patient who has lost all hope from modern medicine, or is living with a long-standing, complicated, incurable disease like cancer, diabetes, Parkinson's disease, pancreatitis, kidney failure, or liver cirrhosis.",
-      hi:"तो यह कहना उचित नहीं होगा कि एक ही निश्चित फीस, एक साधारण शिकायत — जैसे खांसी, ज़ुकाम, बुखार — वाले मरीज़ से भी ली जाए, और उस मरीज़ से भी जिसने आधुनिक चिकित्सा से सारी उम्मीद खो दी हो, या जो कैंसर, डायबिटीज़, पार्किंसन रोग, पैंक्रियाटाइटिस, किडनी फेलियर, या लीवर सिरोसिस जैसी लंबी, जटिल, असाध्य बीमारी से जूझ रहा हो।",
-      gu:"તો એમ કહેવું વ્યાજબી નહીં હોય કે એક જ નિશ્ચિત ફી, એક સામાન્ય ફરિયાદ — જેમ કે ખાંસી, શરદી, તાવ — ધરાવતા દર્દી પાસેથી પણ લેવાય, અને એ દર્દી પાસેથી પણ જેણે આધુનિક ચિકિત્સાથી બધી આશા ગુમાવી દીધી હોય, અથવા જે કેન્સર, ડાયાબિટીસ, પાર્કિન્સન રોગ, પેન્ક્રિયાટાઇટિસ, કિડની ફેલ્યોર, અથવા લિવર સિરોસિસ જેવી લાંબી, જટિલ, અસાધ્ય બીમારીથી ઝઝૂમી રહ્યો હોય." }
-  ];
-
-  var STRINGS = {
-    eyebrow:  { en:"Before you book", hi:"बुक करने से पहले", gu:"બુક કરતા પહેલા" },
-    agree:    { en:"Agree", hi:"सहमत हूं", gu:"સહમત છું" },
-    notReally:{ en:"Not really", hi:"पूरी तरह नहीं", gu:"બરાબર નહીં" },
-    aside:    { en:"Fair enough — not everyone's experience matches this exactly, and that's okay.",
-                hi:"ठीक है — यह सबके अनुभव से बिल्कुल मेल नहीं खा सकता, और यह कोई बात नहीं।",
-                gu:"ઠીક છે — આ દરેકના અનુભવ સાથે બરાબર મેળ ન પણ ખાય, અને એ કંઈ વાંધો નથી." },
-    continue: { en:"Continue", hi:"आगे बढ़ें", gu:"આગળ વધો" },
-    payoffTitle: { en:"That's exactly why our fees are flexible, not fixed.",
-                   hi:"इसीलिए हमारी फीस लचीली (फ्लेक्सिबल) है, तय नहीं।",
-                   gu:"એટલે જ અમારી ફી લવચીક (ફ્લેક્સિબલ) છે, નિશ્ચિત નથી." },
-    payoffBody:  { en:"At Punarvasu, different patients are charged differently, based on what their case actually needs. The typical slabs below are just for your reference — your actual fee is settled through honest, mutual agreement with you and your family, and there's always room to talk it through.",
-                   hi:"पुनर्वसु में, अलग-अलग मरीज़ों से अलग-अलग फीस ली जाती है, उनके केस की वास्तविक ज़रूरत के अनुसार। नीचे दिए गए सामान्य स्लैब केवल आपकी जानकारी के लिए हैं; आपकी असली फीस आपसे और आपके परिवार से ईमानदार, आपसी सहमति से तय होती है, और इस पर बात करने की हमेशा गुंजाइश रहती है।",
-                   gu:"પુનર્વસુમાં, જુદા-જુદા દર્દીઓ પાસેથી જુદી-જુદી ફી લેવામાં આવે છે, તેમના કેસની ખરેખરી જરૂરિયાત મુજબ. નીચે આપેલા સામાન્ય સ્લેબ ફક્ત તમારી જાણકારી માટે છે; તમારી ખરેખરી ફી તમારી અને તમારા પરિવાર સાથે પ્રામાણિક, પરસ્પર સંમતિથી નક્કી થાય છે, અને આના પર વાત કરવાની હંમેશા શક્યતા રહે છે." },
-    seeFees:  { en:"See the fees & what's included →", hi:"फीस और शामिल सेवाएं देखें →", gu:"ફી અને સામેલ સેવાઓ જુઓ →" },
-    toBooking:{ en:"Continue to booking", hi:"बुकिंग जारी रखें", gu:"બુકિંગ ચાલુ રાખો" }
-  };
-
-  var lang = null, step = 0;
-
-  function t(key) { return STRINGS[key][lang]; }
-
-  window.fcDismiss = function() {
-    document.getElementById('feeConvoOverlay').style.display = 'none';
-    try { localStorage.setItem(STORAGE_KEY, '1'); } catch(e) {}
-  };
-
-  function renderLangSelect() {
-    document.getElementById('fcContent').innerHTML =
-      '<div class="fc-eyebrow">Before you book · बुक करने से पहले · બુક કરતા પહેલા</div>' +
-      '<div class="fc-statement" style="font-size:17px;">Choose your language to continue</div>' +
-      '<button class="fc-lang-btn" onclick="window.fcSetLang(\'en\')">English</button>' +
-      '<button class="fc-lang-btn" onclick="window.fcSetLang(\'hi\')">हिंदी</button>' +
-      '<button class="fc-lang-btn" onclick="window.fcSetLang(\'gu\')">ગુજરાતી</button>';
-  }
-
-  window.fcSetLang = function(l) { lang = l; step = 0; renderSlide(); };
-
-  function renderSlide() {
-    var el = document.getElementById('fcContent');
-    var backBtn = '<button class="fc-back-btn" onclick="window.fcBack()">← Back</button><br/>';
-    if (step < SLIDES.length) {
-      var s = SLIDES[step];
-      el.innerHTML =
-        backBtn +
-        '<div class="fc-eyebrow">' + t('eyebrow') + '</div>' +
-        '<div class="fc-progress">' + (step+1) + ' / ' + (SLIDES.length+1) + '</div>' +
-        '<div class="fc-statement">' + s[lang] + '</div>' +
-        '<div class="fc-btn-row">' +
-          '<button class="fc-btn fc-btn-agree" onclick="window.fcNext()">' + t('agree') + '</button>' +
-          '<button class="fc-btn fc-btn-soft" onclick="window.fcSoftNo()">' + t('notReally') + '</button>' +
-        '</div>' +
-        '<div id="fcAside"></div>';
-    } else {
-      el.innerHTML =
-        backBtn +
-        '<div class="fc-eyebrow">' + t('eyebrow') + '</div>' +
-        '<div class="fc-progress">' + (SLIDES.length+1) + ' / ' + (SLIDES.length+1) + '</div>' +
-        '<div class="fc-payoff-title">' + t('payoffTitle') + '</div>' +
-        '<div class="fc-payoff-body">' + t('payoffBody') + '</div>' +
-        '<a class="fc-btn-primary" href="/treatment/fees.html">' + t('seeFees') + '</a>' +
-        '<button class="fc-btn-secondary" onclick="window.fcDismiss()">' + t('toBooking') + '</button>';
-    }
-  }
-
-  window.fcNext = function() { step++; renderSlide(); };
-
-  window.fcBack = function() {
-    if (step === 0) { renderLangSelect(); }
-    else { step--; renderSlide(); }
-  };
-
-  window.fcSoftNo = function() {
-    var aside = document.getElementById('fcAside');
-    if (aside) aside.innerHTML = '<div class="fc-aside">' + t('aside') + '</div>';
-    setTimeout(function(){ window.fcNext(); }, 1400);
-  };
-
-  document.addEventListener('DOMContentLoaded', function() {
-    var seen = false;
-    try { seen = !!localStorage.getItem(STORAGE_KEY); } catch(e) {}
-    if (!seen) {
-      document.getElementById('feeConvoOverlay').style.display = 'flex';
-      renderLangSelect();
-    }
-  });
-})();
-</script>
+<script src="assets/nav.js"></script>
 </body>
 </html>
