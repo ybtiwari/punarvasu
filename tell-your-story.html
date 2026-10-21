@@ -89,6 +89,7 @@ header{background:linear-gradient(135deg,#1C2E50 0%,#2055A4 100%);box-shadow:ins
     <button type="button" data-l="gu-IN">ગુજરાતી</button>
   </div>
 
+  <p class="hint tip" id="pauseTip" hidden>Press &#127908;, speak, then pause for a moment &mdash; your words appear here when you pause.<br>&#127908; दबाइए, बोलिए, फिर थोड़ा रुकिए &mdash; रुकते ही आपके शब्द यहाँ दिखेंगे।<br>&#127908; દબાવો, બોલો, પછી થોડું અટકો &mdash; અટકતાં જ તમારા શબ્દો અહીં દેખાશે.</p>
   <div id="boxes"></div>
   <button class="add" type="button" onclick="addBox()">+ Add another complaint · + एक और तकलीफ़ जोड़ें · + બીજી તકલીફ ઉમેરો</button>
 
@@ -163,7 +164,7 @@ window.addBox = function (focus) {
 
 // ---- speaking: the phone turns the voice into text right in the box; nothing is recorded or stored ----
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let lang = 'en-IN', rec = null, recFor = null, wantOn = false;
+let lang = 'en-IN', rec = null, recFor = null, wantOn = false, winding = null;   // STORY-VOICE-CLEAN
 if (!SR) { document.querySelectorAll('.mic').forEach(b => b.hidden = true); document.getElementById('langs').hidden = true; }
 document.getElementById('kbTip').hidden = false;
 document.getElementById('langs').addEventListener('click', e => {
@@ -172,34 +173,61 @@ document.getElementById('langs').addEventListener('click', e => {
   if (wantOn) { const id = recFor; stopMic(); startMic(id); }
 });
 function wireMics(root) { (root || document).querySelectorAll('.mic').forEach(b => { b.hidden = !SR; if (b._w) return; b._w = 1; b.addEventListener('click', () => { if (wantOn && recFor === b.dataset.for) stopMic(); else { stopMic(); startMic(b.dataset.for); } }); }); }
-function stopMic() { wantOn = false; try { rec && rec.stop(); } catch (e) {} rec = null; document.querySelectorAll('.mic.on').forEach(b => { b.classList.remove('on'); b.innerHTML = '🎤 Speak · बोलिए · બોલો'; }); recFor = null; }
+function stopMic() { wantOn = false; if (rec && !rec._done) { if (winding) retireMic(winding); winding = rec; try { rec.stop(); } catch (e) {} } rec = null; document.querySelectorAll('.mic.on').forEach(b => { b.classList.remove('on'); b.innerHTML = '🎤 Speak · बोलिए · બોલો'; }); recFor = null; }
 function startMic(id) {
   if (!SR) return;
   const ta = document.getElementById(id); if (!ta) return;
   const btn = document.querySelector('.mic[data-for="' + id + '"]');
+  if (winding) { retireMic(winding); winding = null; }
   recFor = id; wantOn = true;
   const mk = () => {
-    const r = new SR(); r.lang = lang; r.continuous = true; r.interimResults = true;
+    const r = new SR(); r.lang = lang; r.continuous = true; r.interimResults = liveText;
     let base = ta.value ? ta.value.replace(/\s+$/, '') + ' ' : '';
     r.onresult = ev => {
-      let fin = '', tmp = '';
-      for (let i = ev.resultIndex; i < ev.results.length; i++) { const t = ev.results[i][0].transcript; if (ev.results[i].isFinal) fin += t; else tmp += t; }
-      if (fin) base += fin.trim() + ' ';
-      ta.value = (base + tmp).trim();
+      if (r !== rec && r !== winding) return;   // only the recogniser that is listening (or just finishing) may write
+      const heard = [];
+      for (let i = 0; i < ev.results.length; i++) heard.push(ev.results[i][0].transcript);   // the whole list every time, not only what is new
+      if (!heard.length) return;
+      ta.value = (base + mergeHeard(heard)).trim();
     };
-    r.onerror = ev => { if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { wantOn = false; setErr('Microphone is blocked. Allow it in your browser, or use the microphone key on your keyboard. · माइक बंद है।'); } };
-    r.onend = () => { if (wantOn && recFor === id) { try { rec = mk(); rec.start(); } catch (e) { stopMic(); } } else if (btn) { btn.classList.remove('on'); btn.innerHTML = '🎤 Speak · बोलिए · બોલો'; } };
+    r.onerror = ev => { if (r !== rec) return; if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { wantOn = false; setErr('Microphone is blocked. Allow it in your browser, or use the microphone key on your keyboard. · माइक बंद है।'); } };
+    r.onend = () => { r._done = true; if (r === winding) { winding = null; return; } if (r !== rec) return; if (wantOn && recFor === id) { try { rec = mk(); rec.start(); } catch (e) { stopMic(); } } else if (btn) { btn.classList.remove('on'); btn.innerHTML = '🎤 Speak · बोलिए · બોલો'; } };
     return r;
   };
   try { rec = mk(); rec.start(); btn.classList.add('on'); btn.textContent = '⏹ Stop · रोकिए · રોકો'; setErr(''); } catch (e) { stopMic(); }
 }
 function setErr(m) { document.getElementById('err').textContent = m || ''; }
 
+// ---- voice clean-up: some phones hand over every half-finished guess as if it were a finished sentence ----
+// The box text is rebuilt from the whole list of results each time (never added to), and a guess that only goes on from the one before it replaces it.
+// On Android phones the half-finished guesses are not asked for at all: the words then appear after each pause, as the phone's final version.
+// Adding &live=on or &live=off to the page address chooses the other way.
+const liveParam = (new URLSearchParams(location.search).get('live') || '').toLowerCase();
+const liveText = liveParam === 'on' ? true : liveParam === 'off' ? false : !/android/i.test(navigator.userAgent);
+if (SR && !liveText) document.getElementById('pauseTip').hidden = false;
+const HEARD_SKIP = ' .,;:!?\'"()[]{}-' + String.fromCharCode(0x2013, 0x2014, 0x2018, 0x2019, 0x201c, 0x201d, 0x2026, 0x964, 0x965, 0x200b, 0x200c, 0x200d, 0xfeff);
+function heardKey(w) { w = w.toLowerCase(); let a = 0, b = w.length; while (a < b && HEARD_SKIP.indexOf(w.charAt(a)) !== -1) a++; while (b > a && HEARD_SKIP.indexOf(w.charAt(b - 1)) !== -1) b--; return w.slice(a, b); }
+function heardStarts(a, b) { if (b.length > a.length) return false; for (let i = 0; i < b.length; i++) if (a[i] !== b[i]) return false; return true; }
+function mergeHeard(list) {
+  const out = []; let total = 0;
+  for (let n = 0; n < list.length; n++) {
+    const w = String(list[n] || '').split(/\s+/).filter(Boolean); if (!w.length) continue;
+    const k = w.map(x => heardKey(x)), last = out[out.length - 1];
+    if (last && heardStarts(k, last.k)) { total += k.length - last.k.length; out[out.length - 1] = { w, k }; continue; }   // goes on from the one before, or repeats it: keep the longer
+    if (last && heardStarts(last.k, k)) continue;   // only the beginning of the one before: nothing new
+    if (out.length > 1 && k.length >= total && heardStarts(k, [].concat.apply([], out.map(g => g.k)))) { out.length = 0; total = 0; }   // says everything so far again, and more
+    out.push({ w, k }); total += k.length;
+  }
+  return out.map(g => g.w.join(' ')).join(' ');
+}
+function retireMic(r) { if (!r) return; r.onresult = r.onerror = r.onend = null; try { r.abort(); } catch (e) {} }
+async function settleMic() { for (let i = 0; i < 20 && winding && !winding._done; i++) await new Promise(res => setTimeout(res, 75)); }
+
 // ---- submit ----
 let sending = false;
 window.submitStory = async function () {
   if (sending) return;
-  stopMic(); setErr('');
+  stopMic(); setErr(''); await settleMic();   // the last words may still be on their way
   const parts = [...document.querySelectorAll('#boxes textarea')].map(t => t.value.replace(/\s+/g, ' ').trim()).filter(Boolean);
   const general = document.getElementById('general').value.replace(/\s+/g, ' ').trim();
   if (!parts.length || parts.join('').length < 4) { setErr('Please write at least one complaint. · कृपया कम से कम एक तकलीफ़ लिखिए। · ઓછામાં ઓછી એક તકલીફ લખો.'); return; }
