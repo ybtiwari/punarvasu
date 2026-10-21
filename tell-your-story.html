@@ -55,67 +55,132 @@ header{background:linear-gradient(135deg,#1C2E50 0%,#2055A4 100%);box-shadow:ins
 </style>
 </head>
 <body>
-<header><b>Punarvasu Clinic</b><span>Dr. Yogeshwar Tiwari (BHMS)</span></header>
+<header><b data-tx="brand">Punarvasu Clinic</b><span data-tx="doctor">Dr. Yogeshwar Tiwari (BHMS)</span></header>
 <main id="main">
 
 <div id="formWrap">
-  <h1>Tell us your problem in your own words
+  <h1 data-tx="title">Tell us your problem in your own words
     <small>अपनी तकलीफ़ अपने शब्दों में बताइए · તમારી તકલીફ તમારા પોતાના શબ્દોમાં જણાવો</small></h1>
-  <p class="lead">Write one complaint in each box, in simple words — in English, Hindi or Gujarati. Or press <b>🎤 Speak</b> and say it aloud.
+  <p class="lead" data-tx="lead">Write one complaint in each box, in simple words — in English, Hindi or Gujarati. Or press <b>🎤 Speak</b> and say it aloud.
     <i>हर डिब्बे में एक तकलीफ़ सरल शब्दों में लिखिए — अंग्रेज़ी, हिन्दी या गुजराती में। या <b>🎤 बोलिए</b> दबाकर बोलिए।</i>
     <i>દરેક બોક્સમાં એક તકલીફ સરળ શબ્દોમાં લખો — અંગ્રેજી, હિન્દી કે ગુજરાતીમાં. અથવા <b>🎤 બોલો</b> દબાવીને બોલો.</i></p>
 
   <div class="card" id="whoCard">
     <div id="whoKnown" class="who" hidden>
-      <div><div style="font-size:13px;color:var(--mut)">Namaste · नमस्ते · નમસ્તે</div><b id="whoName"></b></div>
-      <button class="link" type="button" onclick="notMe()">Not you? · आप नहीं? · તમે નથી?</button>
+      <div><div style="font-size:13px;color:var(--mut)" data-tx="namaste">Namaste · नमस्ते · નમસ્તે</div><b id="whoName"></b></div>
+      <button class="link" type="button" onclick="notMe()" data-tx="notYou">Not you? · आप नहीं? · તમે નથી?</button>
     </div>
     <div id="whoForm" hidden>
-      <label class="f" for="pName">Your name · आपका नाम · તમારું નામ</label>
+      <label class="f" for="pName" data-tx="lName">Your name · आपका नाम · તમારું નામ</label>
       <input id="pName" type="text" autocomplete="name">
-      <label class="f" for="pPhone">Mobile number · मोबाइल नंबर · મોબાઈલ નંબર</label>
+      <label class="f" for="pPhone" data-tx="lPhone">Mobile number · मोबाइल नंबर · મોબાઈલ નંબર</label>
       <input id="pPhone" type="tel" inputmode="numeric" autocomplete="tel">
       <div class="row">
-        <div><label class="f" for="pAge">Age · उम्र · ઉંમર</label><input id="pAge" type="number" min="0" max="120" inputmode="numeric"></div>
-        <div><label class="f" for="pSex">Sex · लिंग · જાતિ</label><select id="pSex"><option value="">—</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+        <div><label class="f" for="pAge" data-tx="lAge">Age · उम्र · ઉંમર</label><input id="pAge" type="number" min="0" max="120" inputmode="numeric"></div>
+        <div><label class="f" for="pSex" data-tx="lSex">Sex · लिंग · જાતિ</label><select id="pSex"><option value="">—</option><option value="Male" data-tx="male">Male</option><option value="Female" data-tx="female">Female</option><option value="Other" data-tx="other">Other</option></select></div>
       </div>
     </div>
   </div>
 
   <div class="langs" id="langs" role="group" aria-label="Speaking language">
-    <span style="font-size:13px;align-self:center;color:var(--mut)">🎤 Speak in:</span>
+    <span style="font-size:13px;align-self:center;color:var(--mut)" data-tx="speakIn">🎤 Speak in:</span>
     <button type="button" data-l="en-IN" class="on">English</button>
     <button type="button" data-l="hi-IN">हिन्दी</button>
     <button type="button" data-l="gu-IN">ગુજરાતી</button>
   </div>
 
-  <p class="hint tip" id="pauseTip" hidden>Press &#127908;, speak, then pause for a moment &mdash; your words appear here when you pause.<br>&#127908; दबाइए, बोलिए, फिर थोड़ा रुकिए &mdash; रुकते ही आपके शब्द यहाँ दिखेंगे।<br>&#127908; દબાવો, બોલો, પછી થોડું અટકો &mdash; અટકતાં જ તમારા શબ્દો અહીં દેખાશે.</p>
+  <p class="hint tip" id="pauseTip" hidden data-tx="pauseTip">Press &#127908;, speak, then pause for a moment &mdash; your words appear here when you pause.<br>&#127908; दबाइए, बोलिए, फिर थोड़ा रुकिए &mdash; रुकते ही आपके शब्द यहाँ दिखेंगे।<br>&#127908; દબાવો, બોલો, પછી થોડું અટકો &mdash; અટકતાં જ તમારા શબ્દો અહીં દેખાશે.</p>
   <div id="boxes"></div>
-  <button class="add" type="button" onclick="addBox()">+ Add another complaint · + एक और तकलीफ़ जोड़ें · + બીજી તકલીફ ઉમેરો</button>
+  <button class="add" type="button" onclick="addBox()" data-tx="addBox">+ Add another complaint · + एक और तकलीफ़ जोड़ें · + બીજી તકલીફ ઉમેરો</button>
 
   <div class="card" style="margin-top:16px">
-    <div class="num" style="font-weight:700;color:var(--teal2)">About your health in general <small style="font-weight:400;color:var(--mut)">(optional · वैकल्पिक · વૈકલ્પિક)</small></div>
-    <div class="hint" style="margin:2px 0 6px">Hunger, thirst, sleep, feeling hot or cold, bowels, urine, mood, fears, anything else.<br>भूख, प्यास, नींद, गर्मी-सर्दी, पेट, पेशाब, मन, डर, और कुछ भी।<br>ભૂખ, તરસ, ઊંઘ, ગરમી-ઠંડી, પેટ, પેશાબ, મન, ડર, બીજું કંઈ પણ.</div>
-    <textarea id="general" data-mic="1" placeholder="e.g. I feel very thirsty, I feel cold all the time, I sleep late and wake up tired"></textarea>
-    <div class="tools"><button class="mic" type="button" data-for="general">🎤 Speak · बोलिए · બોલો</button></div>
+    <div class="num" style="font-weight:700;color:var(--teal2)" data-tx="genHead">About your health in general <small style="font-weight:400;color:var(--mut)">(optional · वैकल्पिक · વૈકલ્પિક)</small></div>
+    <div class="hint" style="margin:2px 0 6px" data-tx="genHint">Hunger, thirst, sleep, feeling hot or cold, bowels, urine, mood, fears, anything else.<br>भूख, प्यास, नींद, गर्मी-सर्दी, पेट, पेशाब, मन, डर, और कुछ भी।<br>ભૂખ, તરસ, ઊંઘ, ગરમી-ઠંડી, પેટ, પેશાબ, મન, ડર, બીજું કંઈ પણ.</div>
+    <textarea id="general" data-mic="1" data-tx-ph="genPh" placeholder="e.g. I feel very thirsty, I feel cold all the time, I sleep late and wake up tired"></textarea>
+    <div class="tools"><button class="mic" type="button" data-for="general" data-tx="mic">🎤 Speak · बोलिए · બોલો</button></div>
   </div>
 
-  <p class="hint tip" id="kbTip" hidden>Tip: if the 🎤 button does not work on your phone, tap the box and use the microphone key on your phone&rsquo;s keyboard.<br>अगर 🎤 बटन न चले तो डिब्बे में टैप करके अपने फ़ोन के कीबोर्ड का माइक दबाइए। · જો 🎤 બટન ન ચાલે તો બોક્સમાં ટૅપ કરી ફોનના કીબોર્ડનો માઇક દબાવો.</p>
-  <p class="hint">What you write is seen only by Dr. Tiwari. · आपका लिखा केवल डॉ. तिवारी देखेंगे। · તમે લખેલું ફક્ત ડૉ. તિવારી જોશે.</p>
+  <p class="hint tip" id="kbTip" hidden data-tx="kbTip">Tip: if the 🎤 button does not work on your phone, tap the box and use the microphone key on your phone&rsquo;s keyboard.<br>अगर 🎤 बटन न चले तो डिब्बे में टैप करके अपने फ़ोन के कीबोर्ड का माइक दबाइए। · જો 🎤 બટન ન ચાલે તો બોક્સમાં ટૅપ કરી ફોનના કીબોર્ડનો માઇક દબાવો.</p>
+  <p class="hint" data-tx="privacy">What you write is seen only by Dr. Tiwari. · आपका लिखा केवल डॉ. तिवारी देखेंगे। · તમે લખેલું ફક્ત ડૉ. તિવારી જોશે.</p>
 </div>
 
 <div id="doneWrap" class="done" hidden>
   <div class="big">🙏</div>
-  <h2>Thank you · धन्यवाद · આભાર</h2>
-  <p>Your complaints have reached Dr. Tiwari. He will study them and be in touch.<br>आपकी तकलीफ़ें डॉ. तिवारी तक पहुँच गई हैं।<br>તમારી તકલીફો ડૉ. તિવારી સુધી પહોંચી ગઈ છે.</p>
-  <p class="hint">You can close this page. · आप यह पेज बंद कर सकते हैं। · તમે આ પેજ બંધ કરી શકો છો.</p>
+  <h2 data-tx="thanks">Thank you · धन्यवाद · આભાર</h2>
+  <p data-tx="doneMsg">Your complaints have reached Dr. Tiwari. He will study them and be in touch.<br>आपकी तकलीफ़ें डॉ. तिवारी तक पहुँच गई हैं।<br>તમારી તકલીફો ડૉ. તિવારી સુધી પહોંચી ગઈ છે.</p>
+  <p class="hint" data-tx="closePage">You can close this page. · आप यह पेज बंद कर सकते हैं। · તમે આ પેજ બંધ કરી શકો છો.</p>
 </div>
 </main>
 
 <div class="bar" id="bar"><div>
-  <button class="go" id="goBtn" type="button" onclick="submitStory()">Submit · भेजें · મોકલો</button>
+  <button class="go" id="goBtn" type="button" onclick="submitStory()" data-tx="submit">Submit · भेजें · મોકલો</button>
   <div class="err" id="err" role="alert"></div>
 </div></div>
+
+<script>
+// STORY-LANG: the link may carry &lang=en, &lang=hi or &lang=gu - the language the doctor chose for this patient.
+// With it the page shows that one language only (form, hints, messages, thank-you screen) and the microphone starts in it.
+// Without it (links shared earlier) the page shows all three languages together, exactly as before.
+(function () {
+  var q = (new URLSearchParams(location.search).get('lang') || '').trim().toLowerCase();
+  var L = (q === 'en' || q === 'hi' || q === 'gu') ? q : '';
+  var T = {
+    pageTitle: { en: 'Tell us your problem in your own words — Punarvasu Clinic', hi: 'अपनी तकलीफ़ अपने शब्दों में बताइए — पुनर्वसु क्लिनिक', gu: 'તમારી તકલીફ તમારા પોતાના શબ્દોમાં જણાવો — પુનર્વસુ ક્લિનિક' },
+    brand: { en: 'Punarvasu Clinic', hi: 'पुनर्वसु क्लिनिक', gu: 'પુનર્વસુ ક્લિનિક' },
+    doctor: { en: 'Dr. Yogeshwar Tiwari (BHMS)', hi: 'डॉ. योगेश्वर तिवारी (BHMS)', gu: 'ડૉ. યોગેશ્વર તિવારી (BHMS)' },
+    title: { en: 'Tell us your problem in your own words', hi: 'अपनी तकलीफ़ अपने शब्दों में बताइए', gu: 'તમારી તકલીફ તમારા પોતાના શબ્દોમાં જણાવો' },
+    lead: { en: 'Write one complaint in each box, in simple words — in English, Hindi or Gujarati. Or press <b>🎤 Speak</b> and say it aloud.', hi: 'हर डिब्बे में एक तकलीफ़ सरल शब्दों में लिखिए — अंग्रेज़ी, हिन्दी या गुजराती में। या <b>🎤 बोलिए</b> दबाकर बोलिए।', gu: 'દરેક બોક્સમાં એક તકલીફ સરળ શબ્દોમાં લખો — અંગ્રેજી, હિન્દી કે ગુજરાતીમાં. અથવા <b>🎤 બોલો</b> દબાવીને બોલો.' },
+    namaste: { en: 'Namaste', hi: 'नमस्ते', gu: 'નમસ્તે' },
+    notYou: { en: 'Not you?', hi: 'आप नहीं?', gu: 'તમે નથી?' },
+    lName: { en: 'Your name', hi: 'आपका नाम', gu: 'તમારું નામ' },
+    lPhone: { en: 'Mobile number', hi: 'मोबाइल नंबर', gu: 'મોબાઈલ નંબર' },
+    lAge: { en: 'Age', hi: 'उम्र', gu: 'ઉંમર' },
+    lSex: { en: 'Sex', hi: 'लिंग', gu: 'જાતિ' },
+    male: { en: 'Male', hi: 'पुरुष', gu: 'પુરુષ' },
+    female: { en: 'Female', hi: 'महिला', gu: 'સ્ત્રી' },
+    other: { en: 'Other', hi: 'अन्य', gu: 'અન્ય' },
+    speakIn: { en: '🎤 Speak in:', hi: '🎤 बोलने की भाषा:', gu: '🎤 બોલવાની ભાષા:' },
+    pauseTip: { en: 'Press &#127908;, speak, then pause for a moment &mdash; your words appear here when you pause.', hi: '&#127908; दबाइए, बोलिए, फिर थोड़ा रुकिए &mdash; रुकते ही आपके शब्द यहाँ दिखेंगे।', gu: '&#127908; દબાવો, બોલો, પછી થોડું અટકો &mdash; અટકતાં જ તમારા શબ્દો અહીં દેખાશે.' },
+    addBox: { en: '+ Add another complaint', hi: '+ एक और तकलीफ़ जोड़ें', gu: '+ બીજી તકલીફ ઉમેરો' },
+    genHead: { en: 'About your health in general <small style="font-weight:400;color:var(--mut)">(optional)</small>', hi: 'आपके सामान्य स्वास्थ्य के बारे में <small style="font-weight:400;color:var(--mut)">(वैकल्पिक)</small>', gu: 'તમારા સામાન્ય સ્વાસ્થ્ય વિશે <small style="font-weight:400;color:var(--mut)">(વૈકલ્પિક)</small>' },
+    genHint: { en: 'Hunger, thirst, sleep, feeling hot or cold, bowels, urine, mood, fears, anything else.', hi: 'भूख, प्यास, नींद, गर्मी-सर्दी, पेट, पेशाब, मन, डर, और कुछ भी।', gu: 'ભૂખ, તરસ, ઊંઘ, ગરમી-ઠંડી, પેટ, પેશાબ, મન, ડર, બીજું કંઈ પણ.' },
+    genPh: { en: 'e.g. I feel very thirsty, I feel cold all the time, I sleep late and wake up tired', hi: 'जैसे: बहुत प्यास लगती है, हर समय ठंड लगती है, देर से नींद आती है और सुबह थकान रहती है', gu: 'જેમ કે: ખૂબ તરસ લાગે છે, હંમેશાં ઠંડી લાગે છે, મોડી ઊંઘ આવે છે અને સવારે થાક લાગે છે' },
+    kbTip: { en: 'Tip: if the 🎤 button does not work on your phone, tap the box and use the microphone key on your phone&rsquo;s keyboard.', hi: 'अगर 🎤 बटन न चले तो डिब्बे में टैप करके अपने फ़ोन के कीबोर्ड का माइक दबाइए।', gu: 'જો 🎤 બટન ન ચાલે તો બોક્સમાં ટૅપ કરી ફોનના કીબોર્ડનો માઇક દબાવો.' },
+    privacy: { en: 'What you write is seen only by Dr. Tiwari.', hi: 'आपका लिखा केवल डॉ. तिवारी देखेंगे।', gu: 'તમે લખેલું ફક્ત ડૉ. તિવારી જોશે.' },
+    thanks: { en: 'Thank you', hi: 'धन्यवाद', gu: 'આભાર' },
+    doneMsg: { en: 'Your complaints have reached Dr. Tiwari. He will study them and be in touch.', hi: 'आपकी तकलीफ़ें डॉ. तिवारी तक पहुँच गई हैं। वे उनका अध्ययन करके आपसे संपर्क करेंगे।', gu: 'તમારી તકલીફો ડૉ. તિવારી સુધી પહોંચી ગઈ છે. તેઓ તેનો અભ્યાસ કરીને તમારો સંપર્ક કરશે.' },
+    closePage: { en: 'You can close this page.', hi: 'आप यह पेज बंद कर सकते हैं।', gu: 'તમે આ પેજ બંધ કરી શકો છો.' },
+    submit: { en: 'Submit', hi: 'भेजें', gu: 'મોકલો' },
+    complaint: { en: 'Complaint {n}', hi: 'तकलीफ़ {n}', gu: 'તકલીફ {n}' },
+    remove: { en: '✕ Remove', hi: '✕ हटाएँ', gu: '✕ કાઢો' },
+    boxPh: { en: 'e.g. Headache for 2 months, worse in sunlight, better after sleep', hi: 'जैसे: 2 महीने से सिरदर्द, धूप में बढ़ता है, सोने से आराम', gu: 'જેમ કે: 2 મહિનાથી માથાનો દુખાવો, તડકામાં વધે, ઊંઘથી રાહત' },
+    mic: { en: '🎤 Speak', hi: '🎤 बोलिए', gu: '🎤 બોલો' },
+    stop: { en: '⏹ Stop', hi: '⏹ रोकिए', gu: '⏹ રોકો' },
+    micBlocked: { en: 'Microphone is blocked. Allow it in your browser, or use the microphone key on your keyboard.', hi: 'माइक बंद है। इसे ब्राउज़र में चालू करने की अनुमति दीजिए, या कीबोर्ड का माइक दबाइए।', gu: 'માઇક બંધ છે. તેને બ્રાઉઝરમાં ચાલુ કરવાની મંજૂરી આપો, અથવા કીબોર્ડનો માઇક દબાવો.' },
+    errNone: { en: 'Please write at least one complaint.', hi: 'कृपया कम से कम एक तकलीफ़ लिखिए।', gu: 'ઓછામાં ઓછી એક તકલીફ લખો.' },
+    errName: { en: 'Please enter your name.', hi: 'कृपया अपना नाम लिखिए।', gu: 'કૃપા કરી તમારું નામ લખો.' },
+    errPhone: { en: 'Please enter your 10-digit mobile number.', hi: 'कृपया 10 अंकों का मोबाइल नंबर लिखिए।', gu: 'કૃપા કરી 10 અંકનો મોબાઈલ નંબર લખો.' },
+    sendFail: { en: 'Could not send. Please check your internet and press Submit again.', hi: 'भेज नहीं सके। इंटरनेट देखकर फिर दबाइए।', gu: 'મોકલી શક્યા નથી. ઇન્ટરનેટ જોઈ ફરી દબાવો.' }
+  };
+  // t(key, all, n): the text in the chosen language; with no chosen language, `all` (the three-language text the page always had)
+  function t(key, all, n) {
+    if (!L) return all;
+    var e = T[key], s = e && e[L];
+    if (s === undefined) return all;
+    return n === undefined ? s : s.replace(/\{n\}/g, n);
+  }
+  window.UI = { L: L, speak: ({ en: 'en-IN', hi: 'hi-IN', gu: 'gu-IN' })[L] || 'en-IN', t: t };
+  if (!L) return;
+  try {
+    document.documentElement.lang = L;
+    document.title = T.pageTitle[L];
+    document.querySelectorAll('[data-tx]').forEach(function (el) { var e = T[el.getAttribute('data-tx')]; if (e && e[L] !== undefined) el.innerHTML = e[L]; });
+    document.querySelectorAll('[data-tx-ph]').forEach(function (el) { var e = T[el.getAttribute('data-tx-ph')]; if (e && e[L] !== undefined) el.setAttribute('placeholder', e[L]); });
+    var want = window.UI.speak;   // the microphone starts in the patient's language
+    document.querySelectorAll('#langs button[data-l]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-l') === want); });
+  } catch (e) { /* the page then simply stays as it is, in all three languages */ }
+})();
+</script>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -130,6 +195,8 @@ const app = initializeApp({
   appId: "1:774115339459:web:4ee1f45e1e25d61666c676"
 }, 'patientStoryApp');
 const db = getDatabase(app);
+const UI = window.UI || { L: '', speak: 'en-IN', t: (k, all) => all };   // the one-language helper; if it is missing the page keeps all three languages
+const BOX_PH_ALL = 'e.g. Headache for 2 months, worse in sunlight, better after sleep&#10;जैसे: 2 महीने से सिरदर्द, धूप में बढ़ता है, सोने से आराम&#10;જેમ કે: 2 મહિનાથી માથાનો દુખાવો, તડકામાં વધે, ઊંઘથી રાહત';
 
 // ---- who is writing (the invite link carries the patient's own id) ----
 const uid = (new URLSearchParams(location.search).get('uid') || '').trim();
@@ -154,9 +221,9 @@ let n = 0;
 window.addBox = function (focus) {
   n++;
   const d = document.createElement('div'); d.className = 'card cbox'; d.dataset.box = n;
-  d.innerHTML = `<div class="num"><span>Complaint ${n} · तकलीफ़ ${n} · તકલીફ ${n}</span>${n > 1 ? '<button class="rm" type="button" onclick="this.closest(\'.cbox\').remove()">✕ Remove · हटाएँ · કાઢો</button>' : ''}</div>
-    <textarea id="c${n}" data-mic="1" placeholder="e.g. Headache for 2 months, worse in sunlight, better after sleep&#10;जैसे: 2 महीने से सिरदर्द, धूप में बढ़ता है, सोने से आराम&#10;જેમ કે: 2 મહિનાથી માથાનો દુખાવો, તડકામાં વધે, ઊંઘથી રાહત"></textarea>
-    <div class="tools"><button class="mic" type="button" data-for="c${n}">🎤 Speak · बोलिए · બોલો</button></div>`;
+  d.innerHTML = `<div class="num"><span>${UI.t('complaint', 'Complaint ' + n + ' · तकलीफ़ ' + n + ' · તકલીફ ' + n, n)}</span>${n > 1 ? '<button class="rm" type="button" onclick="this.closest(\'.cbox\').remove()">' + UI.t('remove', '✕ Remove · हटाएँ · કાઢો') + '</button>' : ''}</div>
+    <textarea id="c${n}" data-mic="1" placeholder="${UI.t('boxPh', BOX_PH_ALL)}"></textarea>
+    <div class="tools"><button class="mic" type="button" data-for="c${n}">${UI.t('mic', '🎤 Speak · बोलिए · બોલો')}</button></div>`;
   document.getElementById('boxes').appendChild(d);
   wireMics(d);
   if (focus !== false) d.querySelector('textarea').focus();
@@ -164,7 +231,7 @@ window.addBox = function (focus) {
 
 // ---- speaking: the phone turns the voice into text right in the box; nothing is recorded or stored ----
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let lang = 'en-IN', rec = null, recFor = null, wantOn = false, winding = null;   // STORY-VOICE-CLEAN
+let lang = UI.speak, rec = null, recFor = null, wantOn = false, winding = null;   // STORY-VOICE-CLEAN
 if (!SR) { document.querySelectorAll('.mic').forEach(b => b.hidden = true); document.getElementById('langs').hidden = true; }
 document.getElementById('kbTip').hidden = false;
 document.getElementById('langs').addEventListener('click', e => {
@@ -173,7 +240,7 @@ document.getElementById('langs').addEventListener('click', e => {
   if (wantOn) { const id = recFor; stopMic(); startMic(id); }
 });
 function wireMics(root) { (root || document).querySelectorAll('.mic').forEach(b => { b.hidden = !SR; if (b._w) return; b._w = 1; b.addEventListener('click', () => { if (wantOn && recFor === b.dataset.for) stopMic(); else { stopMic(); startMic(b.dataset.for); } }); }); }
-function stopMic() { wantOn = false; if (rec && !rec._done) { if (winding) retireMic(winding); winding = rec; try { rec.stop(); } catch (e) {} } rec = null; document.querySelectorAll('.mic.on').forEach(b => { b.classList.remove('on'); b.innerHTML = '🎤 Speak · बोलिए · બોલો'; }); recFor = null; }
+function stopMic() { wantOn = false; if (rec && !rec._done) { if (winding) retireMic(winding); winding = rec; try { rec.stop(); } catch (e) {} } rec = null; document.querySelectorAll('.mic.on').forEach(b => { b.classList.remove('on'); b.innerHTML = UI.t('mic', '🎤 Speak · बोलिए · બોલો'); }); recFor = null; }
 function startMic(id) {
   if (!SR) return;
   const ta = document.getElementById(id); if (!ta) return;
@@ -190,11 +257,11 @@ function startMic(id) {
       if (!heard.length) return;
       ta.value = (base + mergeHeard(heard)).trim();
     };
-    r.onerror = ev => { if (r !== rec) return; if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { wantOn = false; setErr('Microphone is blocked. Allow it in your browser, or use the microphone key on your keyboard. · माइक बंद है।'); } };
-    r.onend = () => { r._done = true; if (r === winding) { winding = null; return; } if (r !== rec) return; if (wantOn && recFor === id) { try { rec = mk(); rec.start(); } catch (e) { stopMic(); } } else if (btn) { btn.classList.remove('on'); btn.innerHTML = '🎤 Speak · बोलिए · બોલો'; } };
+    r.onerror = ev => { if (r !== rec) return; if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { wantOn = false; setErr(UI.t('micBlocked', 'Microphone is blocked. Allow it in your browser, or use the microphone key on your keyboard. · माइक बंद है।')); } };
+    r.onend = () => { r._done = true; if (r === winding) { winding = null; return; } if (r !== rec) return; if (wantOn && recFor === id) { try { rec = mk(); rec.start(); } catch (e) { stopMic(); } } else if (btn) { btn.classList.remove('on'); btn.innerHTML = UI.t('mic', '🎤 Speak · बोलिए · બોલો'); } };
     return r;
   };
-  try { rec = mk(); rec.start(); btn.classList.add('on'); btn.textContent = '⏹ Stop · रोकिए · રોકો'; setErr(''); } catch (e) { stopMic(); }
+  try { rec = mk(); rec.start(); btn.classList.add('on'); btn.textContent = UI.t('stop', '⏹ Stop · रोकिए · રોકો'); setErr(''); } catch (e) { stopMic(); }
 }
 function setErr(m) { document.getElementById('err').textContent = m || ''; }
 
@@ -230,13 +297,13 @@ window.submitStory = async function () {
   stopMic(); setErr(''); await settleMic();   // the last words may still be on their way
   const parts = [...document.querySelectorAll('#boxes textarea')].map(t => t.value.replace(/\s+/g, ' ').trim()).filter(Boolean);
   const general = document.getElementById('general').value.replace(/\s+/g, ' ').trim();
-  if (!parts.length || parts.join('').length < 4) { setErr('Please write at least one complaint. · कृपया कम से कम एक तकलीफ़ लिखिए। · ઓછામાં ઓછી એક તકલીફ લખો.'); return; }
+  if (!parts.length || parts.join('').length < 4) { setErr(UI.t('errNone', 'Please write at least one complaint. · कृपया कम से कम एक तकलीफ़ लिखिए। · ઓછામાં ઓછી એક તકલીફ લખો.')); return; }
   let patient;
   if (known) patient = { uid: known.uid, name: known.name, phone: known.phone || '', age: known.age || '', sex: known.sex || '' };
   else {
     const name = document.getElementById('pName').value.trim(), phone = document.getElementById('pPhone').value.replace(/[^\d+]/g, '');
-    if (!name) { setErr('Please enter your name. · कृपया अपना नाम लिखिए। · કૃપા કરી તમારું નામ લખો.'); return; }
-    if (phone.replace(/\D/g, '').length < 10) { setErr('Please enter your 10-digit mobile number. · कृपया 10 अंकों का मोबाइल नंबर लिखिए। · કૃપા કરી 10 અંકનો મોબાઈલ નંબર લખો.'); return; }
+    if (!name) { setErr(UI.t('errName', 'Please enter your name. · कृपया अपना नाम लिखिए। · કૃપા કરી તમારું નામ લખો.')); return; }
+    if (phone.replace(/\D/g, '').length < 10) { setErr(UI.t('errPhone', 'Please enter your 10-digit mobile number. · कृपया 10 अंकों का मोबाइल नंबर लिखिए। · કૃપા કરી 10 અંકનો મોબાઈલ નંબર લખો.')); return; }
     patient = { uid: uid || '', name, phone, age: document.getElementById('pAge').value || '', sex: document.getElementById('pSex').value || '' };   // a link that carries the patient's id still files it under that patient
   }
   sending = true; const btn = document.getElementById('goBtn'); btn.disabled = true; btn.textContent = '…';
@@ -252,8 +319,8 @@ window.submitStory = async function () {
     document.getElementById('formWrap').hidden = true; document.getElementById('bar').hidden = true; document.getElementById('doneWrap').hidden = false; window.scrollTo(0, 0);
   } catch (e) {
     console.error('[story] submit failed:', e);
-    sending = false; btn.disabled = false; btn.textContent = 'Submit · भेजें · મોકલો';
-    setErr('Could not send. Please check your internet and press Submit again. · भेज नहीं सके। इंटरनेट देखकर फिर दबाइए। · મોકલી શક્યા નથી. ઇન્ટરનેટ જોઈ ફરી દબાવો.');
+    sending = false; btn.disabled = false; btn.textContent = UI.t('submit', 'Submit · भेजें · મોકલો');
+    setErr(UI.t('sendFail', 'Could not send. Please check your internet and press Submit again. · भेज नहीं सके। इंटरनेट देखकर फिर दबाइए। · મોકલી શક્યા નથી. ઇન્ટરનેટ જોઈ ફરી દબાવો.'));
   }
 };
 addBox(false); wireMics();
