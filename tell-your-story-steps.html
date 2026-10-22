@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tell us your problem — Punarvasu Clinic</title>
+<meta name="robots" content="noindex">
+<!-- STORY-STEPS: the step-by-step version of the "Tell your story" form. One question at a time, in English, Hindi or Gujarati (&lang=en|hi|gu).
+     It sends the same kind of record as tell-your-story.html (a plain "story" text), so the Case Analyzer reads it the same way.
+     &test=1 turns on test mode: nothing is sent, and the thank-you screen shows the text that would have been sent. -->
+<style>
+:root{--blue:#2055a4;--navy:#163d7a;--cream:#faf6ee;--ink:#1d2b2a;--mut:#566066;--soft:#4a5554;--line:#d9d4c7;--field:#bdb7a8;--warn:#a1431a;--ok:#1d7a4a}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--cream);color:var(--ink);font:16px/1.5 -apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Sans Devanagari","Noto Sans Gujarati",sans-serif;overflow-wrap:break-word;overflow-wrap:anywhere}
+button,input,select,textarea{font-family:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+[hidden]{display:none!important}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(32,85,164,.45);outline-offset:2px}
+
+/* the blue-and-gold header used on every Punarvasu page */
+.hd{padding:14px 16px;background:linear-gradient(135deg,#1C2E50 0%,#2055A4 100%);box-shadow:inset 0 -3px 0 #C8962E;color:#fff}
+.hd b{display:block;font-size:18px;line-height:1.3;letter-spacing:.2px}
+.hd span{display:block;font-size:12.5px;line-height:1.35;opacity:.9}
+.tb{padding:7px 16px;background:#fff8e6;border-bottom:1px solid #ecd9a0;color:#5b4a14;font-size:13.5px;line-height:1.4;text-align:center}
+
+/* progress: six parts, the part you are in fills with gold */
+.prog{max-width:640px;margin:0 auto;padding:14px 16px 0}
+.segs{display:flex}
+.seg{position:relative;flex:1;height:6px;border-radius:3px;background:#e2dbc9;overflow:hidden}
+.seg+.seg{margin-left:5px}
+.seg.done{background:#163d7a}
+.seg i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:#C8962E}
+.plab{display:flex;justify-content:space-between;align-items:baseline;min-height:21px;margin-top:8px;font-size:13px;color:var(--mut)}
+.plab b{font-size:14px;color:var(--navy)}
+
+.view{max-width:640px;margin:0 auto;padding:12px 16px 170px;outline:none}
+.q{margin:6px 0 6px;font-size:24px;line-height:1.3;font-weight:700;color:var(--navy);outline:none}
+@supports (text-wrap:balance){.q{text-wrap:balance}}
+.q.big{margin-top:22px;font-size:30px;line-height:1.25}
+.help{margin:0 0 14px;font-size:15px;line-height:1.5;color:var(--soft)}
+.lab{display:block;margin:14px 0 6px;font-size:14px;font-weight:600;color:var(--navy)}
+.lab small{font-size:13px;font-weight:400;color:var(--mut)}
+.in,.ta{display:block;width:100%;padding:11px 12px;border:1.5px solid var(--field);border-radius:10px;background:#fff;font-size:16px;line-height:1.5;color:var(--ink)}
+.ta{min-height:128px;max-height:380px;resize:none;overflow-y:auto}
+.ta.sm{min-height:84px}
+.in:focus,.ta:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(32,85,164,.15)}
+.in.bad,.ta.bad{border-color:var(--warn);box-shadow:0 0 0 3px rgba(161,67,26,.12)}
+::placeholder{color:#656d76;opacity:1}
+.pair{display:flex}
+.pair>div{flex:1;min-width:0}
+.pair>div+div{margin-left:10px}
+.card{margin:0 0 12px;padding:14px 16px;background:#fff;border:1px solid var(--line);border-radius:14px}
+.tips{margin:0;padding:0;list-style:none}
+.tips li{display:flex;align-items:flex-start;margin:0 0 12px;font-size:16px;line-height:1.5}
+.tips li:last-child{margin-bottom:0}
+.tips svg{flex:none;margin:2px 12px 0 0;color:var(--blue)}
+.notyou{display:inline-block;margin:0 0 8px;padding:8px 0;min-height:40px;border:0;background:none;font-size:15px;color:var(--blue);text-decoration:underline}
+.mini{margin:0;font-size:13px;line-height:1.4;color:var(--mut)}
+.hint{margin:10px 0 0;font-size:13px;line-height:1.45;color:var(--mut)}
+.hint.tip{padding:7px 10px;background:#fff8e6;border:1px solid #ecd9a0;border-radius:8px;color:#5b4a14}
+
+/* speaking */
+.tools{display:flex;align-items:center;flex-wrap:wrap;margin:8px -10px 0 0}
+.tools>*{margin-right:10px}
+.mic{display:inline-flex;align-items:center;min-height:44px;padding:4px 16px 4px 12px;border:1.5px solid var(--blue);border-radius:22px;background:#fff;font-size:15px;font-weight:600;color:var(--navy)}
+.mic svg{flex:none;margin-right:8px;color:var(--blue)}
+.mic.on{background:#c0392b;border-color:#c0392b;color:#fff;animation:pulse 1.2s infinite}
+.mic.on svg{color:#fff}
+@keyframes pulse{50%{opacity:.75}}
+@media (prefers-reduced-motion:reduce){.mic.on{animation:none}}
+.langs{display:flex;flex-wrap:wrap;align-items:center;margin:0 -6px 6px 0}
+.langs>*{margin:0 6px 6px 0}
+.langs span{margin:0 8px 6px 0;font-size:13px;color:var(--mut)}
+@media (max-width:399px){.langs span{flex:0 0 100%;margin:0 0 6px}}
+.langs button{min-height:40px;padding:6px 13px;border:1.5px solid var(--field);border-radius:999px;background:#fff;font-size:14px;font-weight:600;color:var(--ink)}
+.langs button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.langs.after{margin:10px -6px -6px 0}
+
+/* other problems */
+.pbox{margin:0 0 12px;padding:12px 14px 14px;background:#fff;border:1px solid var(--line);border-radius:14px}
+.pbox .ph{display:flex;align-items:center;justify-content:space-between;min-height:32px;margin-bottom:6px;font-size:14px;font-weight:600;color:var(--navy)}
+.rm{display:inline-flex;align-items:center;min-height:40px;margin:-4px 0;padding:2px 4px;border:0;background:none;font-size:14px;font-weight:600;color:var(--mut)}
+.add{display:flex;align-items:center;justify-content:center;width:100%;min-height:50px;padding:6px 8px;border:1.5px dashed var(--blue);border-radius:12px;background:#fff;font-size:16px;font-weight:600;color:var(--navy)}
+
+/* the answers to tap */
+.opts{margin:0}
+.opts.two{display:grid;grid-template-columns:1fr 1fr;grid-template-columns:repeat(2,minmax(0,1fr));grid-gap:10px;gap:10px}
+.opts.two.one{grid-template-columns:1fr;grid-template-columns:minmax(0,1fr)}   /* one answer per line: set by the page when two to a line would not fit (large text) */
+.opt{display:flex;align-items:center;width:100%;min-height:56px;margin:0 0 10px;padding:10px 14px;background:#fff;border:1.5px solid #cfc7b6;border-radius:12px;font-size:17px;line-height:1.3;text-align:left;color:var(--ink)}
+.opts.two .opt{margin:0;padding:10px 12px;font-size:16px}
+.opt span:last-child{min-width:0;overflow-wrap:break-word;overflow-wrap:anywhere}
+.opts.two:not(.one) .opt span:last-child{overflow-wrap:normal}   /* in two columns a word is never cut: if one does not fit, the page switches to one column */
+@supports (text-wrap:balance){.opt span:last-child{text-wrap:balance}}
+.mk{flex:none;display:flex;align-items:center;justify-content:center;margin-right:12px;width:24px;height:24px;border:2px solid #7d838c;border-radius:50%;background:#fff}
+.mk.sq{border-radius:6px}
+.mk i{display:block;width:10px;height:10px;border-radius:50%;background:#fff}
+.mk svg{color:#fff}
+.add svg,.more svg,.chg svg{color:var(--blue)}
+.rm svg,.cell svg{color:var(--mut)}
+.add svg,.more svg{margin-right:8px}
+.chg svg{margin-right:5px}
+.rm svg{margin-right:4px}
+.opt.on{background:#eef2fa;border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue);font-weight:600;color:var(--navy)}
+.opt.on .mk{border-color:var(--blue);background:var(--blue)}
+.more{display:flex;align-items:center;min-height:48px;margin-top:2px;padding:4px;border:0;background:none;font-size:16px;font-weight:600;color:var(--blue)}
+@media (max-width:340px){.opts.two{grid-template-columns:1fr;grid-template-columns:minmax(0,1fr)}}
+
+/* check your answers */
+.rv{margin:0 0 8px;padding:6px 14px 10px;background:#fff;border:1px solid var(--line);border-radius:14px}
+.rh{display:flex;align-items:center;justify-content:space-between;min-height:30px}
+.rh b{font-size:15px;line-height:1.3;color:var(--navy)}
+.chg{display:inline-flex;align-items:center;min-height:44px;margin:-7px 0;padding:2px 2px 2px 6px;border:0;background:none;font-size:14px;font-weight:600;color:var(--blue)}
+.rv p{margin:2px 0 0;font-size:15px;line-height:1.4;overflow-wrap:break-word}
+.rv p.mu{font-size:14px;color:var(--soft)}
+.rv p.mu b{font-weight:600;color:var(--mut)}
+.gr{display:grid;grid-template-columns:1fr 1fr;grid-gap:2px 12px;gap:2px 12px;margin-top:4px}
+.cell{display:block;min-width:0;min-height:40px;margin:0;padding:8px 0;border:0;background:none;font-size:14px;line-height:1.35;text-align:left;color:var(--ink);overflow-wrap:break-word}
+.cell b{font-weight:600;color:var(--mut)}
+.cell svg{vertical-align:-1px}
+.sk{color:var(--mut);font-style:italic}
+html[lang=hi] .sk,html[lang=gu] .sk{font-style:normal}
+
+/* resume and thank-you screens */
+.at{margin:2px 0 0;font-size:19px;line-height:1.35;font-weight:700;color:var(--navy)}
+.meter{display:flex;margin-top:12px}
+.meter i{flex:1;height:6px;border-radius:3px;background:#e2dbc9}
+.meter i+i{margin-left:4px}
+.meter i.on{background:var(--navy)}
+.stack{display:flex;flex-direction:column;margin-top:20px}
+.stack>*+*{margin-top:12px}
+.ty{display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:56px;padding-top:12vh}
+.ring{display:flex;align-items:center;justify-content:center;width:92px;height:92px;border:3px solid #C8962E;border-radius:50%;background:#fff}
+.ty .help{margin:0 8px 18px;font-size:17px}
+.prev{width:100%;margin-top:26px;text-align:left}
+.prev pre{margin:8px 0 0;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:10px;font:13.5px/1.5 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word}
+
+/* the bar at the bottom */
+.bar{position:fixed;left:0;right:0;bottom:0;padding:12px 16px 18px;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));background:#fff;border-top:1px solid var(--line);box-shadow:0 -4px 14px rgba(0,0,0,.06)}
+.barin{max-width:640px;margin:0 auto}
+.err{margin:0 0 8px;font-size:14px;line-height:1.4;color:var(--warn)}
+.err:empty{display:none}
+.err.note{color:var(--mut)}
+.btns{display:flex}
+.btns>*+*{margin-left:10px}
+.btn{display:flex;align-items:center;justify-content:center;min-height:52px;border:0;border-radius:12px;padding:8px 16px;font-size:17px;font-weight:700;line-height:1.2}
+.btn.go{background:var(--blue);color:#fff}
+.btn.alt{background:#fff;border:1.5px solid var(--blue);color:var(--navy)}
+.btn.main{flex:1;min-width:0}
+.btn.back{flex:none;width:112px}
+.btn.back.wide{width:auto;min-width:112px;max-width:55%}
+.btn:disabled{opacity:.55}
+.stack .btn{width:100%}
+</style>
+</head>
+<body>
+<header class="hd"><b id="brand">Punarvasu Clinic</b><span id="doctor">Dr. Yogeshwar Tiwari (BHMS)</span></header>
+<div class="tb" id="tb" hidden></div>
+<div class="prog" id="prog" hidden></div>
+<main class="view" id="view" tabindex="-1">
+  <noscript><p class="help">Please turn on JavaScript to use this page. · कृपया इस पेज के लिए JavaScript चालू कीजिए। · કૃપા કરી આ પેજ માટે JavaScript ચાલુ કરો.</p></noscript>
+</main>
+<div class="bar" id="bar" hidden><div class="barin"><div class="err" id="err" role="alert"></div><div class="btns" id="btns"></div></div></div>
+
+<script>
+(function () {
+'use strict';
+// ============================================================ the link
+// ?uid=...   the patient's own id (the clinic puts it in the link)         ?lang=en|hi|gu   the language Dr. Tiwari chose for this patient
+// ?test=1    test mode: nothing is sent                                    ?live=on|off     live words while speaking (see "voice" below)
+var P = new URLSearchParams(location.search);
+var urlLang = (P.get('lang') || '').trim().toLowerCase();
+if (urlLang !== 'en' && urlLang !== 'hi' && urlLang !== 'gu') urlLang = '';
+var uid = (P.get('uid') || '').trim();
+var testMode = P.get('test') === '1';
+var LI = { en: 0, hi: 1, gu: 2 };
+var SPEAK = { en: 'en-IN', hi: 'hi-IN', gu: 'gu-IN' };
+var L = urlLang || 'en';
+
+// ============================================================ the words on the screen: [English, Hindi, Gujarati]
+var T = {
+  pageTitle: ['Tell us your problem — Punarvasu Clinic', 'अपनी तकलीफ़ बताइए — पुनर्वसु क्लिनिक', 'તમારી તકલીફ જણાવો — પુનર્વસુ ક્લિનિક'],
+  brand: ['Punarvasu Clinic', 'पुनर्वसु क्लिनिक', 'પુનર્વસુ ક્લિનિક'],
+  doctor: ['Dr. Yogeshwar Tiwari (BHMS)', 'डॉ. योगेश्वर तिवारी (BHMS)', 'ડૉ. યોગેશ્વર તિવારી (BHMS)'],
+  wait: ['One moment…', 'एक क्षण…', 'એક ક્ષણ…'],
+  // the six parts of the form
+  sYou: ['You', 'आप', 'તમે'],
+  sMain: ['Main problem', 'मुख्य तकलीफ़', 'મુખ્ય તકલીફ'],
+  sOthers: ['Other problems', 'दूसरी तकलीफ़ें', 'બીજી તકલીફો'],
+  sGeneral: ['General health', 'सामान्य स्वास्थ्य', 'સામાન્ય સ્વાસ્થ્ય'],
+  sExtra: ['Anything else', 'और कुछ', 'બીજું કંઈ'],
+  sCheck: ['Check and send', 'जाँचिए और भेजिए', 'ચકાસો અને મોકલો'],
+  ofN: ['{i} of {n}', '{n} में से {i}', '{n} માંથી {i}'],
+  // buttons
+  back: ['Back', 'पीछे', 'પાછળ'],
+  next: ['Next', 'आगे', 'આગળ'],
+  skip: ['Skip', 'छोड़ें', 'છોડો'],
+  start: ['Start', 'शुरू करें', 'શરૂ કરો'],
+  cont: ['Continue', 'जारी रखें', 'ચાલુ રાખો'],
+  again: ['Start again', 'फिर से शुरू करें', 'ફરીથી શરૂ કરો'],
+  toCheck: ['Back to check', 'जाँच पर लौटें', 'ચકાસણી પર પાછા'],
+  done: ['Done', 'हो गया', 'થઈ ગયું'],
+  noElse: ['No, nothing else', 'नहीं, और कुछ नहीं', 'ના, બીજું કંઈ નથી'],
+  check: ['Check my answers', 'जवाब जाँचिए', 'જવાબ ચકાસો'],
+  send: ['Send to Dr. Tiwari', 'डॉ. तिवारी को भेजें', 'ડૉ. તિવારીને મોકલો'],
+  change: ['Change', 'बदलिए', 'બદલો'],
+  remove: ['Remove', 'हटाएँ', 'કાઢો'],
+  addProblem: ['Add another problem', 'एक और तकलीफ़ जोड़ें', 'બીજી તકલીફ ઉમેરો'],
+  addOwn: ['Add your own words', 'अपने शब्द जोड़ें', 'તમારા શબ્દો ઉમેરો'],
+  ownLabel: ['Your own words', 'अपने शब्दों में लिखिए', 'તમારા શબ્દોમાં લખો'],
+  optional: ['(optional)', '(वैकल्पिक)', '(વૈકલ્પિક)'],
+  speak: ['Speak', 'बोलिए', 'બોલો'],
+  stop: ['Stop', 'रोकिए', 'રોકો'],
+  speakIn: ['Speak in:', 'बोलने की भाषा:', 'બોલવાની ભાષા:'],
+  // 1 - You
+  namaste: ['Namaste', 'नमस्ते', 'નમસ્તે'],
+  notYou: ['Not you?', 'आप नहीं?', 'તમે નથી?'],
+  knownHelp: ['Dr. Tiwari reads your answers before your consultation.', 'डॉ. तिवारी परामर्श से पहले आपके जवाब पढ़ते हैं।', 'ડૉ. તિવારી સલાહ પહેલાં તમારા જવાબ વાંચે છે.'],
+  tip1: ['It takes about 5 minutes.', 'इसमें लगभग 5 मिनट लगते हैं।', 'આમાં લગભગ 5 મિનિટ લાગે છે.'],
+  tip2: ['You can speak instead of typing.', 'आप टाइप करने की जगह बोल सकते हैं।', 'તમે ટાઇપ કરવાને બદલે બોલી શકો છો.'],
+  tip3: ['You can skip any question you prefer not to answer.', 'जिस सवाल का जवाब न देना चाहें, उसे छोड़ सकते हैं।', 'જે સવાલનો જવાબ ન આપવો હોય તે છોડી શકો છો.'],
+  firstDetails: ['First, a few details about you.', 'पहले, आपके बारे में कुछ जानकारी।', 'પહેલાં, તમારા વિશે થોડી માહિતી.'],
+  lName: ['Your name', 'आपका नाम', 'તમારું નામ'],
+  lPhone: ['Mobile number', 'मोबाइल नंबर', 'મોબાઈલ નંબર'],
+  lAge: ['Age', 'उम्र', 'ઉંમર'],
+  lSex: ['Sex', 'लिंग', 'જાતિ'],
+  sexChoose: ['Choose', 'चुनिए', 'પસંદ કરો'],
+  male: ['Male', 'पुरुष', 'પુરુષ'],
+  female: ['Female', 'महिला', 'સ્ત્રી'],
+  other: ['Other', 'अन्य', 'અન્ય'],
+  sexWhy: ['This helps us ask the right questions.', 'इससे हम सही सवाल पूछ पाते हैं।', 'તેનાથી અમે યોગ્ય સવાલો પૂછી શકીએ છીએ.'],
+  unlinkedMini: ['About 5 minutes. You can speak instead of typing, and skip any question you prefer not to answer.', 'लगभग 5 मिनट। आप टाइप करने की जगह बोल सकते हैं, और जिस सवाल का जवाब न देना चाहें उसे छोड़ सकते हैं।', 'લગભગ 5 મિનિટ. તમે ટાઇપ કરવાને બદલે બોલી શકો છો, અને જે સવાલનો જવાબ ન આપવો હોય તે છોડી શકો છો.'],
+  // opening the link again
+  wbTitle: ['Welcome back', 'वापस स्वागत है', 'ફરી સ્વાગત છે'],
+  wbHelp: ['Your earlier answers are saved on this phone.', 'आपके पहले के जवाब इसी फ़ोन में सुरक्षित हैं।', 'તમારા પહેલાંના જવાબ આ ફોનમાં સાચવેલા છે.'],
+  wbStopped: ['You stopped at', 'आप यहाँ रुके थे', 'તમે અહીં અટક્યા હતા'],
+  wbQ: ['{i} of {n} questions', '{n} में से {i} सवाल', '{n} માંથી {i} સવાલ'],
+  // 2 - Main problem, other problems
+  mainQ: ['What troubles you the most?', 'आपको सबसे ज़्यादा क्या परेशान करता है?', 'તમને સૌથી વધુ શું પરેશાન કરે છે?'],
+  mainHelp: ['Write it in your own words, or press Speak and say it aloud.', 'अपने शब्दों में लिखिए, या बोलिए दबाकर बोल दीजिए।', 'તમારા શબ્દોમાં લખો, અથવા બોલો દબાવીને બોલી દો.'],
+  mainPh: ['e.g. Pain in both knees for 6 months, worse on stairs', 'जैसे: दोनों घुटनों में 6 महीने से दर्द, सीढ़ी चढ़ने पर बढ़ता है', 'જેમ કે: બંને ઘૂંટણમાં 6 મહિનાથી દુખાવો, સીડી ચડતાં વધે છે'],
+  sinceL: ['Since when?', 'कब से?', 'ક્યારથી?'],
+  sincePh: ['e.g. 6 months', 'जैसे: 6 महीने से', 'જેમ કે: 6 મહિનાથી'],
+  betterL: ['What makes it better or worse?', 'किस चीज़ से आराम मिलता है या बढ़ता है?', 'શાથી રાહત મળે છે કે વધે છે?'],
+  othersQ: ['Is anything else troubling you?', 'क्या और भी कोई तकलीफ़ है?', 'બીજી કોઈ તકલીફ છે?'],
+  othersHelp: ['Even small things. Write one problem in each box.', 'छोटी बातें भी। हर डिब्बे में एक तकलीफ़ लिखिए।', 'નાની વાતો પણ. દરેક બોક્સમાં એક તકલીફ લખો.'],
+  problemN: ['Problem {n}', 'तकलीफ़ {n}', 'તકલીફ {n}'],
+  othersPh1: ['e.g. acidity after meals', 'जैसे: खाने के बाद एसिडिटी', 'જેમ કે: જમ્યા પછી એસિડિટી'],
+  othersPhN: ['e.g. trouble sleeping', 'जैसे: नींद न आना', 'જેમ કે: ઊંઘ ન આવવી'],
+  // 3 - General health
+  genOne: ['Choose one.', 'एक चुनिए।', 'એક પસંદ કરો.'],
+  genMany: ['Choose all that apply.', 'जो-जो लागू हों, सब चुनिए।', 'જે લાગુ પડે તે બધા પસંદ કરો.'],
+  // 4 - Anything else, check, thank you
+  extraQ: ['Anything else you would like to tell Dr. Tiwari?', 'क्या आप डॉ. तिवारी को कुछ और बताना चाहेंगे?', 'શું તમે ડૉ. તિવારીને બીજું કંઈ કહેવા માંગો છો?'],
+  extraHelp: ['Past illnesses, medicines you take, illnesses in the family, or anything on your mind.', 'पहले की बीमारियाँ, जो दवाइयाँ आप लेते हैं, परिवार में किसी को कोई बीमारी, या मन में कोई भी बात।', 'પહેલાંની બીમારીઓ, તમે લો છો તે દવાઓ, પરિવારમાં કોઈને બીમારી, અથવા મનમાં કોઈ પણ વાત.'],
+  extraPh: ['e.g. Thyroid for 5 years, thyroxine every morning', 'जैसे: 5 साल से थायरॉइड, रोज़ सुबह थायरॉक्सिन की गोली', 'જેમ કે: 5 વર્ષથી થાઇરોઇડ, રોજ સવારે થાઇરોક્સિનની ગોળી'],
+  reviewTitle: ['Check your answers', 'अपने जवाब जाँच लीजिए', 'તમારા જવાબ ચકાસી લો'],
+  lSince: ['Since when:', 'कब से:', 'ક્યારથી:'],
+  lBetter: ['Better or worse:', 'आराम या बढ़ना:', 'રાહત કે વધારો:'],
+  nothingAdded: ['Nothing added', 'कुछ नहीं जोड़ा', 'કંઈ ઉમેર્યું નથી'],
+  skipped: ['Skipped', 'छोड़ा गया', 'છોડ્યું'],
+  ownAdded: ['own words added', 'अपने शब्द जुड़े हैं', 'પોતાના શબ્દો ઉમેર્યા છે'],
+  thanks: ['Thank you', 'धन्यवाद', 'આભાર'],
+  doneMsg: ['Your answers have reached Dr. Tiwari. He will read them and be in touch.', 'आपके जवाब डॉ. तिवारी तक पहुँच गए हैं। वे उन्हें पढ़कर आपसे संपर्क करेंगे।', 'તમારા જવાબ ડૉ. તિવારી સુધી પહોંચી ગયા છે. તેઓ તે વાંચીને તમારો સંપર્ક કરશે.'],
+  closePage: ['You can close this page.', 'आप यह पेज बंद कर सकते हैं।', 'તમે આ પેજ બંધ કરી શકો છો.'],
+  // speaking
+  micBlocked: ['Microphone is blocked. Allow it in your browser, or use the microphone key on your keyboard.', 'माइक बंद है। इसे ब्राउज़र में चालू करने की अनुमति दीजिए, या कीबोर्ड का माइक दबाइए।', 'માઇક બંધ છે. તેને બ્રાઉઝરમાં ચાલુ કરવાની મંજૂરી આપો, અથવા કીબોર્ડનો માઇક દબાવો.'],
+  kbTip: ['If Speak does not work, tap the box and use the microphone key on your keyboard.', 'अगर बोलिए न चले तो डिब्बे में टैप करके कीबोर्ड का माइक दबाइए।', 'જો બોલો ન ચાલે તો બોક્સમાં ટૅપ કરી કીબોર્ડનો માઇક દબાવો.'],
+  kbTipNo: ['To speak instead of typing, tap the box and use the microphone key on your keyboard.', 'बोलकर लिखने के लिए डिब्बे में टैप करके कीबोर्ड का माइक दबाइए।', 'બોલીને લખવા માટે બોક્સમાં ટૅપ કરી કીબોર્ડનો માઇક દબાવો.'],
+  pauseTip: ['Speak, then pause for a moment — your words appear when you pause.', 'बोलिए, फिर थोड़ा रुकिए — रुकते ही आपके शब्द दिखेंगे।', 'બોલો, પછી થોડું અટકો — અટકતાં જ તમારા શબ્દો દેખાશે.'],
+  listenLive: ['Listening… speak now.', 'सुना जा रहा है… अब बोलिए।', 'સાંભળી રહ્યું છે… હવે બોલો.'],
+  // messages
+  errMain: ['Please write what troubles you the most — one line is enough.', 'कृपया लिखिए कि आपको सबसे ज़्यादा क्या परेशान करता है — एक पंक्ति काफ़ी है।', 'કૃપા કરી લખો કે તમને સૌથી વધુ શું પરેશાન કરે છે — એક લીટી પૂરતી છે.'],
+  errName: ['Please enter your name.', 'कृपया अपना नाम लिखिए।', 'કૃપા કરી તમારું નામ લખો.'],
+  errPhone: ['Please enter your 10-digit mobile number.', 'कृपया 10 अंकों का मोबाइल नंबर लिखिए।', 'કૃપા કરી 10 અંકનો મોબાઈલ નંબર લખો.'],
+  errSex: ['Please choose one.', 'कृपया एक चुनिए।', 'કૃપા કરી એક પસંદ કરો.'],
+  sendFail: ['Could not send. Please check your internet and press Send again.', 'भेज नहीं सके। इंटरनेट देखकर फिर से “भेजें” दबाइए।', 'મોકલી શક્યા નથી. ઇન્ટરનેટ જોઈ ફરી “મોકલો” દબાવો.'],
+  slowSend: ['This is taking longer than usual. Please keep this page open and check your internet.', 'इसमें सामान्य से ज़्यादा समय लग रहा है। यह पेज खुला रखिए और इंटरनेट देखिए।', 'આમાં સામાન્ય કરતાં વધુ સમય લાગી રહ્યો છે. આ પેજ ખુલ્લું રાખો અને ઇન્ટરનેટ જુઓ.']
+};
+function t(k, vars) {
+  var e = T[k], s = e ? e[LI[L]] : k;
+  if (vars) for (var key in vars) if (Object.prototype.hasOwnProperty.call(vars, key)) s = s.split('{' + key + '}').join(String(vars[key]));
+  return s;
+}
+function pk(a) { return a[LI[L]]; }
+
+// ============================================================ the ten general-health questions
+// O(value saved in English, label on the button [en, hi, gu], short label for the check screen [en, hi, gu] - the same as the label if left out)
+function O(v, l, r) { return { v: v, l: l, r: r || l }; }
+var Q = [
+  { id: 'hunger', lab: 'Hunger', name: ['Hunger', 'भूख', 'ભૂખ'], multi: false,
+    title: ['How is your hunger?', 'आपकी भूख कैसी है?', 'તમારી ભૂખ કેવી છે?'],
+    opts: [
+      O('Strong', ['Strong, I get hungry quickly', 'तेज़ भूख, जल्दी भूख लग जाती है', 'તેજ ભૂખ, જલદી ભૂખ લાગી જાય છે'], ['Strong', 'तेज़', 'તેજ']),
+      O('Normal', ['Normal', 'सामान्य', 'સામાન્ય']),
+      O('Less than before', ['Less than before', 'पहले से कम', 'પહેલાં કરતાં ઓછી'], ['Less', 'कम', 'ઓછી']),
+      O('Almost no hunger', ['Almost no hunger', 'लगभग भूख नहीं लगती', 'લગભગ ભૂખ લાગતી નથી'], ['Almost none', 'लगभग नहीं', 'લગભગ નહીં'])
+    ] },
+  { id: 'thirst', lab: 'Thirst', name: ['Thirst', 'प्यास', 'તરસ'], multi: false,
+    title: ['How is your thirst?', 'आपको प्यास कैसी लगती है?', 'તમને તરસ કેવી લાગે છે?'],
+    opts: [
+      O('Very thirsty', ['Very thirsty', 'बहुत ज़्यादा प्यास लगती है', 'ખૂબ તરસ લાગે છે'], ['Very thirsty', 'बहुत ज़्यादा', 'ખૂબ વધારે']),
+      O('Normal', ['Normal', 'सामान्य', 'સામાન્ય']),
+      O('Little thirst', ['Little thirst', 'थोड़ी प्यास लगती है', 'થોડી તરસ લાગે છે'], ['Little', 'थोड़ी', 'થોડી']),
+      O('Almost no thirst', ['Almost no thirst', 'लगभग प्यास नहीं लगती', 'લગભગ તરસ લાગતી નથી'], ['Almost none', 'लगभग नहीं', 'લગભગ નહીં'])
+    ] },
+  { id: 'food', lab: 'Food', name: ['Food', 'खाना', 'ખાવાનું'], multi: true,
+    title: ['Which foods do you crave?', 'आपका किन चीज़ों को खाने का ज़्यादा मन करता है?', 'તમને કઈ વસ્તુઓ ખાવાનું વધુ મન થાય છે?'],
+    own: ['Foods you dislike or cannot eat', 'जो चीज़ें पसंद नहीं हैं या नहीं खा सकते', 'જે વસ્તુઓ ગમતી નથી કે ખાઈ શકતા નથી'],
+    opts: [
+      O('Sweet', ['Sweet', 'मीठा', 'ગળ્યું']),
+      O('Salty', ['Salty', 'नमकीन', 'ખારું']),
+      O('Spicy', ['Spicy', 'तीखा', 'તીખું']),
+      O('Sour', ['Sour', 'खट्टा', 'ખાટું']),
+      O('Oily or fried', ['Oily or fried', 'तला-भुना या चिकना', 'તળેલું કે તેલવાળું']),
+      O('Milk and curd', ['Milk and curd', 'दूध और दही', 'દૂધ અને દહીં'])
+    ] },
+  { id: 'hotcold', lab: 'Hot or cold', name: ['Hot or cold', 'गर्मी-सर्दी', 'ગરમી-ઠંડી'], multi: false,
+    title: ['Do you feel hot or cold more than other people?', 'क्या आपको दूसरों से ज़्यादा गर्मी या ठंड लगती है?', 'શું તમને બીજા લોકો કરતાં વધુ ગરમી કે ઠંડી લાગે છે?'],
+    opts: [
+      O('Feels hot easily', ['I feel hot easily', 'मुझे जल्दी गर्मी लगती है', 'મને જલદી ગરમી લાગે છે'], ['Hot', 'गर्मी', 'ગરમી']),
+      O('Feels cold easily', ['I feel cold easily', 'मुझे जल्दी ठंड लगती है', 'મને જલદી ઠંડી લાગે છે'], ['Cold', 'ठंड', 'ઠંડી']),
+      O('Normal, like other people', ['Normal, like other people', 'सामान्य, दूसरों जैसा', 'સામાન્ય, બીજા લોકો જેવું'], ['Normal', 'सामान्य', 'સામાન્ય'])
+    ] },
+  { id: 'sweat', lab: 'Sweat', name: ['Sweat', 'पसीना', 'પરસેવો'], multi: false,
+    title: ['How is your sweating?', 'आपको पसीना कैसा आता है?', 'તમને પરસેવો કેવો આવે છે?'],
+    opts: [
+      O('A lot', ['A lot', 'बहुत ज़्यादा', 'ખૂબ વધારે'], ['A lot', 'बहुत', 'ખૂબ']),
+      O('Normal', ['Normal', 'सामान्य', 'સામાન્ય']),
+      O('Very little', ['Very little', 'बहुत कम', 'ખૂબ ઓછો'], ['Little', 'कम', 'ઓછો']),
+      O('Only on some parts of the body', ['Only on some parts of the body', 'शरीर के कुछ हिस्सों में ही', 'શરીરના અમુક ભાગમાં જ'], ['Some parts', 'कुछ हिस्सों में', 'અમુક ભાગમાં'])
+    ] },
+  { id: 'sleep', lab: 'Sleep', name: ['Sleep', 'नींद', 'ઊંઘ'], multi: false,
+    title: ['How is your sleep?', 'आपकी नींद कैसी है?', 'તમારી ઊંઘ કેવી છે?'],
+    opts: [
+      O('Good, wakes up fresh', ['Good, I wake up fresh', 'अच्छी नींद, सुबह तरोताज़ा महसूस होता है', 'સારી ઊંઘ, સવારે તાજગી લાગે છે'], ['Good', 'अच्छी', 'સારી']),
+      O('Hard to fall asleep', ['Hard to fall asleep', 'नींद आने में देर लगती है', 'ઊંઘ આવવામાં વાર લાગે છે'], ['Late to sleep', 'देर से नींद', 'મોડી ઊંઘ']),
+      O('Wakes in the night', ['I wake in the night', 'रात को नींद खुल जाती है', 'રાત્રે ઊંઘ ઊડી જાય છે'], ['Wakes at night', 'रात को खुलती है', 'રાત્રે ઊડી જાય']),
+      O('Sleeps a lot and still tired', ['I sleep a lot and still feel tired', 'नींद बहुत आती है, फिर भी थकान रहती है', 'ઊંઘ ઘણી આવે છે, છતાં થાક રહે છે'], ['Tired', 'थकान', 'થાક'])
+    ] },
+  { id: 'stool', lab: 'Stool', name: ['Stool', 'शौच', 'ઝાડો'], multi: false,
+    title: ['How are your motions (stool)?', 'आपका शौच कैसा होता है?', 'તમારો ઝાડો કેવો આવે છે?'],
+    opts: [
+      O('Regular', ['Regular', 'नियमित', 'નિયમિત']),
+      O('Hard or constipated', ['Hard, or constipated', 'सख़्त, या कब्ज़', 'કડક, અથવા કબજિયાત'], ['Hard', 'सख़्त', 'કડક']),
+      O('Loose or many times', ['Loose, or many times', 'पतला, या बार-बार', 'પાતળો, અથવા વારંવાર'], ['Loose', 'पतला', 'પાતળો']),
+      O('Never fully clear', ['Never fully clear', 'पेट कभी पूरा साफ़ नहीं होता', 'પેટ ક્યારેય પૂરું સાફ થતું નથી'], ['Not clear', 'साफ़ नहीं', 'સાફ નહીં'])
+    ] },
+  { id: 'urine', lab: 'Urine', name: ['Urine', 'पेशाब', 'પેશાબ'], multi: false,
+    title: ['How is your urine?', 'आपका पेशाब कैसा है?', 'તમારો પેશાબ કેવો છે?'],
+    opts: [
+      O('Normal', ['Normal', 'सामान्य', 'સામાન્ય']),
+      O('Many times in the day', ['Many times in the day', 'दिन में बार-बार', 'દિવસમાં વારંવાર'], ['Frequent', 'बार-बार', 'વારંવાર']),
+      O('Burning or pain', ['Burning or pain', 'जलन या दर्द', 'બળતરા કે દુખાવો'], ['Burning', 'जलन', 'બળતરા']),
+      O('Wakes at night to pass urine', ['I wake at night to pass urine', 'रात को पेशाब के लिए उठना पड़ता है', 'રાત્રે પેશાબ માટે ઊઠવું પડે છે'], ['At night', 'रात को', 'રાત્રે'])
+    ] },
+  { id: 'mind', lab: 'Mind', name: ['Mind', 'मन', 'મન'], multi: true,
+    title: ['How is your mind these days?', 'इन दिनों आपका मन कैसा रहता है?', 'આ દિવસોમાં તમારું મન કેવું રહે છે?'],
+    own: ['Your fears or worries, in your own words', 'आपके डर या चिंताएँ, अपने शब्दों में', 'તમારા ડર કે ચિંતાઓ, તમારા શબ્દોમાં'],
+    opts: [
+      O('Worried or anxious', ['Worried or anxious', 'चिंता या घबराहट', 'ચિંતા કે ગભરામણ'], ['Worried', 'चिंता', 'ચિંતા']),
+      O('Easily angry', ['Easily angry', 'जल्दी गुस्सा आता है', 'જલદી ગુસ્સો આવે છે'], ['Angry', 'गुस्सा', 'ગુસ્સો']),
+      O('Sad, often in tears', ['Sad, often in tears', 'उदासी, अक्सर रोना आता है', 'ઉદાસી, ઘણીવાર રડવું આવે છે'], ['Sad', 'उदासी', 'ઉદાસી']),
+      O('Afraid of something', ['Afraid of something', 'किसी बात का डर', 'કશાકનો ડર'], ['Afraid', 'डर', 'ડર']),
+      O('Prefer to be alone', ['Prefer to be alone', 'अकेले रहना पसंद है', 'એકલા રહેવું ગમે છે'], ['Alone', 'अकेले', 'એકલા']),
+      O('Like company', ['Like company', 'लोगों का साथ पसंद है', 'લોકોનો સાથ ગમે છે'], ['Company', 'साथ', 'સાથ'])
+    ] },
+  { id: 'periods', lab: 'Periods', name: ['Periods', 'माहवारी', 'માસિક'], multi: true,
+    title: ['How are your periods?', 'आपकी माहवारी (पीरियड्स) कैसी है?', 'તમારું માસિક (પીરિયડ્સ) કેવું છે?'],
+    opts: [
+      O('Regular', ['Regular', 'नियमित', 'નિયમિત']),
+      O('Irregular', ['Irregular', 'अनियमित', 'અનિયમિત']),
+      O('Painful', ['Painful', 'दर्द के साथ', 'દુખાવા સાથે']),
+      O('Heavy', ['Heavy', 'ज़्यादा रक्तस्राव', 'વધારે સ્ત્રાવ'], ['Heavy', 'ज़्यादा', 'વધારે']),
+      O('Scanty', ['Scanty', 'कम रक्तस्राव', 'ઓછો સ્ત્રાવ'], ['Scanty', 'कम', 'ઓછો']),
+      O('Stopped', ['Stopped', 'बंद हो गई', 'બંધ થઈ ગયું'], ['Stopped', 'बंद', 'બંધ'])
+    ] }
+];
+var Qby = {};
+Q.forEach(function (q) { Qby[q.id] = q; });
+
+// ============================================================ small helpers
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+function clean(s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); }
+function isArray(x) { return Object.prototype.toString.call(x) === '[object Array]'; }
+function matches(el, sel) { var f = el.matches || el.webkitMatchesSelector || el.msMatchesSelector; return !!f && f.call(el, sel); }
+function closest(el, sel) { while (el && el.nodeType === 1) { if (matches(el, sel)) return el; el = el.parentNode; } return null; }
+function each(sel, fn) { var n = document.querySelectorAll(sel); for (var i = 0; i < n.length; i++) fn(n[i], i); }
+function val(id) { var e = $(id); return e ? e.value : ''; }
+
+// icons (drawn in the colour of the text around them)
+function svg(size, sw, inner, fill) {
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="' + (fill ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="' + sw + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
+}
+var P_MIC = '<path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M19 11a7 7 0 0 1-14 0"/><path d="M12 18v3"/>';
+var P_STOP = '<rect x="6" y="6" width="12" height="12" rx="2"/>';
+var P_PLUS = '<path d="M12 5v14M5 12h14"/>';
+var P_X = '<path d="M6 6l12 12M18 6L6 18"/>';
+var P_PEN = '<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>';
+var P_TICK = '<path d="M5 12.5l4.5 4.5L19 7.5"/>';
+var P_CLOCK = '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>';
+var P_SKIP = '<path d="M5 12h11"/><path d="M12 7l5 5-5 5"/><path d="M20 6v12"/>';
+
+// ============================================================ what the patient has told us so far
+var GROUPS = ['you', 'main', 'others', 'general', 'extra', 'review'];
+var GLAB = { you: 'sYou', main: 'sMain', others: 'sOthers', general: 'sGeneral', extra: 'sExtra', review: 'sCheck' };
+var S = freshState();          // the answers
+var known = null;              // the patient the link belongs to: { uid, name, phone, age, sex }
+var booted = false, cur = '', nav = [], navAt = 0, edit = null, pending = null;
+var sent = false, sending = false, navBusy = false, lastNav = 0, saveTimer = null, slowTimer = null, boxSeq = 0;
+var W = { uid: uid, init: init, sender: null };
+
+function freshState() { return { name: '', phone: '', age: '', sex: '', main: '', since: '', better: '', others: [''], g: {}, extra: '' }; }
+function ga(id) { var a = S.g[id]; if (!a) a = S.g[id] = { v: Qby[id].multi ? [] : '', own: '' }; return a; }
+function answered(id) { var a = S.g[id]; if (!a) return false; return (Qby[id].multi ? a.v.length > 0 : !!a.v) || clean(a.own) !== ''; }
+// anything stored on the phone is checked before it is used
+function normState(x) {
+  var s = freshState();
+  function str(v) { return typeof v === 'string' ? v : ''; }
+  if (!x || typeof x !== 'object') return s;
+  s.name = str(x.name); s.phone = str(x.phone); s.age = str(x.age); s.sex = str(x.sex);
+  s.main = str(x.main); s.since = str(x.since); s.better = str(x.better); s.extra = str(x.extra);
+  if (isArray(x.others)) s.others = x.others.slice(0, 8).map(str);
+  if (!s.others.length) s.others = [''];
+  if (x.g && typeof x.g === 'object') Q.forEach(function (q) {
+    var a = x.g[q.id]; if (!a || typeof a !== 'object') return;
+    var o = { v: q.multi ? [] : '', own: str(a.own) }, ok = q.opts.map(function (op) { return op.v; });
+    if (q.multi) { if (isArray(a.v)) a.v.forEach(function (v) { if (ok.indexOf(v) >= 0 && o.v.indexOf(v) < 0) o.v.push(v); }); }
+    else if (typeof a.v === 'string' && ok.indexOf(a.v) >= 0) o.v = a.v;
+    s.g[q.id] = o;
+  });
+  return s;
+}
+function hasContent(s) {
+  if (clean(s.main) || clean(s.since) || clean(s.better) || clean(s.extra)) return true;
+  var i;
+  for (i = 0; i < s.others.length; i++) if (clean(s.others[i])) return true;
+  for (i = 0; i < Q.length; i++) { var a = s.g[Q[i].id]; if (a && ((Q[i].multi ? a.v.length : a.v) || clean(a.own))) return true; }
+  return false;
+}
+
+// male / female / other, whatever way the clinic wrote it
+function sexKind(s) {
+  s = String(s == null ? '' : s).trim().toLowerCase(); if (!s) return '';
+  var c = s.charAt(0);
+  if (c === 'f' || c === 'w' || s === 'स्त्री' || s === 'महिला' || s === 'સ્ત્રી') return 'F';
+  if (c === 'm' || s === 'पुरुष' || s === 'પુરુષ') return 'M';
+  return 'O';
+}
+function effSex() { return (known && sexKind(known.sex)) ? known.sex : S.sex; }
+function askPeriods() { var k = sexKind(effSex()); return k === 'F' || k === 'O'; }
+function generalList() { var a = []; for (var i = 0; i < Q.length; i++) { if (Q[i].id === 'periods' && !askPeriods()) continue; a.push('g_' + Q[i].id); } return a; }
+function stepsList() { return ['you', 'main', 'others'].concat(generalList(), ['extra', 'review']); }
+function groupOf(step) { return step.indexOf('g_') === 0 ? 'general' : step; }
+function firstOfGroup(g) { return g === 'general' ? generalList()[0] : g; }
+function isLastOfGroup(step) { if (groupOf(step) !== 'general') return true; var gl = generalList(); return gl[gl.length - 1] === step; }
+function stepTitle(step) { return step.indexOf('g_') === 0 ? t('sGeneral') + ': ' + pk(Qby[step.slice(2)].name) : t(GLAB[groupOf(step)]); }
+
+// ============================================================ the story that is sent (plain text, one line for each thing)
+function qLine(q) {
+  var a = ga(q.id), tapped = '';
+  if (q.multi) {
+    var picks = []; q.opts.forEach(function (o) { if (a.v.indexOf(o.v) >= 0) picks.push(o.v); });
+    if (picks.length) tapped = (q.id === 'food' ? 'Craves ' : '') + picks.join(', ');
+  } else tapped = a.v || '';
+  var own = clean(a.own), body = tapped ? (own ? tapped + '. ' + own : tapped) : own;
+  return body ? q.lab + ': ' + body : '';
+}
+function buildStory() {
+  var main = clean(S.main), since = clean(S.since), better = clean(S.better), extra = clean(S.extra), others = [], gen = [];
+  S.others.forEach(function (o) { var c = clean(o); if (c) others.push(c); });
+  generalList().forEach(function (id) { var l = qLine(Qby[id.slice(2)]); if (l) gen.push(l); });
+  var lines = [main];
+  if (since) lines.push('Since when: ' + since);
+  if (better) lines.push('Better or worse: ' + better);
+  lines = lines.concat(others, gen);
+  var extraLine = extra ? 'Anything else: ' + extra : '';
+  if (extraLine) lines.push(extraLine);
+  return { story: lines.join('\n'), complaints: [main].concat(others), general: gen.concat(extraLine ? [extraLine] : []).join('\n') };
+}
+
+// ============================================================ saved on this phone until it is sent
+var DKEY = 'pvStorySteps1' + (testMode ? 'T' : '') + ':' + (uid || 'anon');
+function loadDraft() {
+  try {
+    var raw = localStorage.getItem(DKEY); if (!raw) return null;
+    var d = JSON.parse(raw);
+    if (!d || d.v !== 1 || !d.S || typeof d.step !== 'string') return null;
+    if (Date.now() - Number(d.t) > 7 * 24 * 3600 * 1000) { localStorage.removeItem(DKEY); return null; }
+    return d;
+  } catch (e) { return null; }
+}
+function clearDraft() { try { localStorage.removeItem(DKEY); } catch (e) {} }
+function draftSoon() { if (saveTimer) clearTimeout(saveTimer); saveTimer = setTimeout(draftNow, 600); }
+function draftNow() {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  if (!booted || sent || !cur || cur === 'resume' || cur === 'done') return;
+  try { localStorage.setItem(DKEY, JSON.stringify({ v: 1, t: Date.now(), step: cur, lang: L, speak: micLang, S: S })); } catch (e) {}
+}
+
+// ============================================================ reading what is on the screen into S
+function collect() {
+  if (!booted || sent) return;
+  var s = cur;
+  if (s === 'you') {
+    if (!known) { S.name = val('fName'); S.phone = val('fPhone'); S.age = val('fAge'); S.sex = val('fSex'); }
+    else if (!sexKind(known.sex) && $('fSex')) S.sex = val('fSex');
+  } else if (s === 'main') { S.main = val('fMain'); S.since = val('fSince'); S.better = val('fBetter'); }
+  else if (s === 'others') {
+    var o = []; each('#plist textarea', function (ta) { o.push(ta.value); });
+    S.others = o.length ? o : [''];
+  } else if (s.indexOf('g_') === 0) { if ($('fOwn')) ga(s.slice(2)).own = val('fOwn'); }
+  else if (s === 'extra') { S.extra = val('fExtra'); }
+}
+function validate(step) {
+  if (step === 'you') {
+    if (!known) {
+      if (clean(S.name) === '') return ['fName', t('errName')];
+      if (S.phone.replace(/\D/g, '').length < 10) return ['fPhone', t('errPhone')];
+      if (!S.sex) return ['fSex', t('errSex')];
+    } else if (!sexKind(known.sex) && !S.sex) return ['fSex', t('errSex')];
+  }
+  if (step === 'main' && clean(S.main).length < 2) return ['fMain', t('errMain')];
+  return null;
+}
+function setMsg(m, kind) { var e = $('err'); e.textContent = m || ''; e.className = 'err' + (kind === 'note' ? ' note' : ''); noteOn = kind === 'note' && !!m; fitBar(); }
+// keep the last lines of a screen clear of the bottom bar, even when the patient's phone shows large text (the bar grows with the text)
+// two answers to a line only while every answer fits in its box (bold included); with large text or on a narrow phone, one answer per line
+function fitOpts() {
+  each('.opts.two', function (g) {
+    g.className = g.className.replace(/\s*\bone\b/g, '');
+    var sp = g.querySelectorAll('.opt span:last-child'), bad = false, i, w;
+    for (i = 0; i < sp.length && !bad; i++) { sp[i].style.fontWeight = '600'; w = sp[i].scrollWidth > sp[i].clientWidth + 1; sp[i].style.fontWeight = ''; if (w) bad = true; }
+    if (bad) g.className += ' one';
+  });
+}
+function fitBar() {
+  var bar = $('bar'), v = $('view'); if (!bar || !v) return;
+  var need = bar.hidden ? 0 : bar.offsetHeight + 28;
+  v.style.paddingBottom = (need > 170 ? need : 170) + 'px';
+}
+var noteOn = false;
+function showError(bad) {
+  setMsg(bad[1]);
+  var f = $(bad[0]); if (!f) return;
+  f.className = (f.className + ' bad').replace(/^ /, '');
+  try { f.scrollIntoView({ block: 'center' }); } catch (e) {}
+  try { f.focus(); } catch (e2) {}
+}
+// the box is made short for a moment to measure the text, which can make the page shorter and scroll it up; keep the page where it was
+function grow(ta) {
+  if (!ta || ta.tagName !== 'TEXTAREA') return;
+  var x = window.pageXOffset || 0, y = window.pageYOffset || 0;
+  ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 3) + 'px';
+  if ((window.pageYOffset || 0) !== y) { try { window.scrollTo(x, y); } catch (e) {} }
+}
+
+// ============================================================ the screens
+function uiLangRow() {
+  if (urlLang) return '';
+  var h = '<div class="langs" role="group" aria-label="Language">';
+  [['en', 'English'], ['hi', 'हिन्दी'], ['gu', 'ગુજરાતી']].forEach(function (x) {
+    h += '<button type="button" data-act="lang" data-l="' + x[0] + '" aria-pressed="' + (L === x[0]) + '"' + (L === x[0] ? ' class="on"' : '') + '>' + x[1] + '</button>';
+  });
+  return h + '</div>';
+}
+function speakRow(after) {
+  if (!SR) return '';
+  var h = '<div class="langs' + (after ? ' after' : '') + '" role="group" aria-label="' + esc(t('speakIn')) + '"><span>' + t('speakIn') + '</span>';
+  [['en-IN', 'English'], ['hi-IN', 'हिन्दी'], ['gu-IN', 'ગુજરાતી']].forEach(function (x) {
+    h += '<button type="button" data-act="speaklang" data-l="' + x[0] + '" aria-pressed="' + (micLang === x[0]) + '"' + (micLang === x[0] ? ' class="on"' : '') + '>' + x[1] + '</button>';
+  });
+  return h + '</div>';
+}
+function micInner(on) { return (on ? svg(20, 2, P_STOP, true) : svg(20, 2, P_MIC)) + '<span>' + t(on ? 'stop' : 'speak') + '</span>'; }
+function micBtn(id) { return SR ? '<button type="button" class="mic" data-act="mic" data-for="' + id + '">' + micInner(false) + '</button>' : ''; }
+function h1(text, big) { return '<h1 class="q' + (big ? ' big' : '') + '" id="h1" tabindex="-1">' + text + '</h1>'; }
+function tip(path, text) { return '<li>' + svg(22, 2, path) + '<span>' + text + '</span></li>'; }
+
+function sexField(first) {
+  function op(v, key) { return '<option value="' + v + '"' + (S.sex === v ? ' selected' : '') + '>' + t(key) + '</option>'; }
+  return '<label class="lab" for="fSex"' + (first ? ' style="margin-top:0"' : '') + '>' + t('lSex') + '</label><select class="in" id="fSex"><option value="">' + t('sexChoose') + '</option>' + op('Male', 'male') + op('Female', 'female') + op('Other', 'other') + '</select>';
+}
+function youHtml() {
+  var h = uiLangRow();
+  if (known) {
+    h += h1(t('namaste') + ', ' + esc(known.name), true);
+    h += '<button type="button" class="notyou" data-act="notyou">' + t('notYou') + '</button>';
+    h += '<p class="help">' + t('knownHelp') + '</p>';
+    h += '<div class="card"><ul class="tips">' + tip(P_CLOCK, t('tip1')) + tip(P_MIC, t('tip2')) + tip(P_SKIP, t('tip3')) + '</ul></div>';
+    if (!sexKind(known.sex)) h += '<div class="card">' + sexField(true) + '<p class="mini" style="margin-top:8px">' + t('sexWhy') + '</p></div>';
+  } else {
+    h += h1(t('namaste'), true) + '<p class="help">' + t('firstDetails') + '</p>';
+    h += '<div class="card"><label class="lab" for="fName" style="margin-top:0">' + t('lName') + '</label><input class="in" id="fName" type="text" autocomplete="name" value="' + esc(S.name) + '">';
+    h += '<label class="lab" for="fPhone">' + t('lPhone') + '</label><input class="in" id="fPhone" type="tel" inputmode="numeric" autocomplete="tel" value="' + esc(S.phone) + '">';
+    h += '<div class="pair"><div><label class="lab" for="fAge">' + t('lAge') + '</label><input class="in" id="fAge" type="number" min="0" max="120" inputmode="numeric" value="' + esc(S.age) + '"></div><div>' + sexField(false) + '</div></div></div>';
+    h += '<p class="mini">' + t('unlinkedMini') + '</p>';
+  }
+  return h;
+}
+function resumeHtml() {
+  var step = pending.step;
+  var h = uiLangRow() + h1(t('wbTitle'), true) + '<p class="help">' + t('wbHelp') + '</p>';
+  h += '<div class="card"><p class="mini">' + t('wbStopped') + '</p><p class="at">' + esc(stepTitle(step)) + '</p>';
+  if (step.indexOf('g_') === 0) {
+    var gl = generalList(), n = gl.length, i = gl.indexOf(step) + 1;
+    h += '<div class="meter">'; for (var k = 1; k <= n; k++) h += '<i' + (k <= i ? ' class="on"' : '') + '></i>';
+    h += '</div><p class="mini" style="margin-top:8px">' + t('wbQ', { i: i, n: n }) + '</p>';
+  }
+  return h + '</div><div class="stack"><button type="button" class="btn go" data-act="resume">' + t('cont') + '</button><button type="button" class="btn alt" data-act="again">' + t('again') + '</button></div>';
+}
+function mainHtml() {
+  return h1(t('mainQ')) + '<p class="help">' + t('mainHelp') + '</p>' + speakRow(false)
+    + '<textarea class="ta" id="fMain" aria-label="' + esc(t('mainQ')) + '" placeholder="' + esc(t('mainPh')) + '">' + esc(S.main) + '</textarea>'
+    + '<div class="tools">' + micBtn('fMain') + '</div><p class="hint tip">' + t(SR ? 'kbTip' : 'kbTipNo') + '</p>'
+    + '<label class="lab" for="fSince">' + t('sinceL') + ' <small>' + t('optional') + '</small></label><input class="in" id="fSince" type="text" placeholder="' + esc(t('sincePh')) + '" value="' + esc(S.since) + '">'
+    + '<label class="lab" for="fBetter">' + t('betterL') + ' <small>' + t('optional') + '</small></label><textarea class="ta sm" id="fBetter">' + esc(S.better) + '</textarea>'
+    + '<div class="tools">' + micBtn('fBetter') + '</div>';
+}
+function pbox(value, i) {
+  var id = 'fO' + (++boxSeq), label = t('problemN', { n: i + 1 });
+  return '<div class="pbox"><div class="ph"><span class="pn">' + label + '</span><button type="button" class="rm" data-act="rmprob">' + svg(16, 2.4, P_X) + t('remove') + '</button></div>'
+    + '<textarea class="ta sm" id="' + id + '" aria-label="' + esc(label) + '" placeholder="' + esc(t(i === 0 ? 'othersPh1' : 'othersPhN')) + '">' + esc(value) + '</textarea>'
+    + '<div class="tools">' + micBtn(id) + '</div></div>';
+}
+function othersHtml() {
+  var h = h1(t('othersQ')) + '<p class="help">' + t('othersHelp') + '</p><div id="plist">';
+  for (var i = 0; i < S.others.length; i++) h += pbox(S.others[i], i);
+  return h + '</div><button type="button" class="add" id="addBtn" data-act="addprob">' + svg(20, 2.2, P_PLUS) + t('addProblem') + '</button>';
+}
+function mkInner(multi, on) { return on ? (multi ? svg(14, 3.4, P_TICK) : '<i></i>') : ''; }
+function generalHtml(q) {
+  var a = ga(q.id), title = pk(q.title);
+  var h = h1(esc(title)) + '<p class="help">' + t(q.multi ? 'genMany' : 'genOne') + '</p>';
+  h += '<div class="opts' + (q.multi ? ' two' : '') + '" role="' + (q.multi ? 'group' : 'radiogroup') + '" aria-label="' + esc(title) + '">';
+  q.opts.forEach(function (o, i) {
+    var on = q.multi ? a.v.indexOf(o.v) >= 0 : a.v === o.v;
+    h += '<button type="button" role="' + (q.multi ? 'checkbox' : 'radio') + '" aria-checked="' + on + '" class="opt' + (on ? ' on' : '') + '" data-act="pick" data-q="' + q.id + '" data-i="' + i + '">'
+      + '<span class="mk' + (q.multi ? ' sq' : '') + '">' + mkInner(q.multi, on) + '</span><span>' + esc(pk(o.l)) + '</span></button>';
+  });
+  h += '</div>';
+  var own = '<label class="lab" for="fOwn">' + esc(pk(q.own || T.ownLabel)) + ' <small>' + t('optional') + '</small></label>'
+    + '<textarea class="ta sm" id="fOwn">' + esc(a.own) + '</textarea><div class="tools">' + micBtn('fOwn') + '</div>';
+  if (clean(a.own)) return h + '<div id="ownBox">' + own + '</div>';
+  return h + '<button type="button" class="more" id="moreBtn" data-act="more">' + svg(20, 2.2, P_PLUS) + t('addOwn') + '</button><div id="ownBox" hidden>' + own + '</div>';
+}
+function extraHtml() {
+  return h1(t('extraQ')) + '<p class="help">' + t('extraHelp') + '</p>'
+    + '<textarea class="ta" id="fExtra" aria-label="' + esc(t('extraQ')) + '" placeholder="' + esc(t('extraPh')) + '">' + esc(S.extra) + '</textarea>'
+    + '<div class="tools">' + micBtn('fExtra') + '</div>';
+}
+// the short form of an answer, for the check screen
+function shortVal(q) {
+  var a = ga(q.id), out = [];
+  q.opts.forEach(function (o) { if (q.multi ? a.v.indexOf(o.v) >= 0 : a.v === o.v) out.push(pk(o.r)); });
+  return out.join(', ');
+}
+function cellHtml(q) {
+  var own = clean(ga(q.id).own), v = shortVal(q), body;
+  if (!answered(q.id)) body = '<span class="sk">' + t('skipped') + '</span>';
+  else if (v) body = esc(v) + (own ? ' ' + svg(12, 2.4, P_PEN).replace('aria-hidden="true"', 'role="img" aria-label="' + esc(t('ownAdded')) + '"') : '');
+  else body = esc(own.length > 26 ? own.slice(0, 25) + '…' : own);
+  return '<button type="button" class="cell" data-act="cell" data-s="g_' + q.id + '"><b>' + esc(pk(q.name)) + ':</b> ' + body + '</button>';
+}
+function rvGroup(g, body) {
+  return '<div class="rv"><div class="rh"><b>' + t(GLAB[g]) + '</b><button type="button" class="chg" data-act="change" data-g="' + g + '">' + svg(16, 2.2, P_PEN) + t('change') + '</button></div>' + body + '</div>';
+}
+function reviewHtml() {
+  var since = clean(S.since), better = clean(S.better), others = [], i;
+  S.others.forEach(function (o) { var c = clean(o); if (c) others.push(esc(c)); });
+  var h = h1(t('reviewTitle'));
+  h += rvGroup('main', '<p>' + esc(clean(S.main)) + '</p>'
+    + (since ? '<p class="mu"><b>' + t('lSince') + '</b> ' + esc(since) + '</p>' : '')
+    + (better ? '<p class="mu"><b>' + t('lBetter') + '</b> ' + esc(better) + '</p>' : ''));
+  h += rvGroup('others', others.length ? '<p>' + others.join('<br>') + '</p>' : '<p class="mu">' + t('nothingAdded') + '</p>');
+  var cells = ''; generalList().forEach(function (id) { cells += cellHtml(Qby[id.slice(2)]); });
+  h += rvGroup('general', '<div class="gr">' + cells + '</div>');
+  h += rvGroup('extra', clean(S.extra) ? '<p>' + esc(clean(S.extra)) + '</p>' : '<p class="mu">' + t('nothingAdded') + '</p>');
+  return h;
+}
+function viewHtml(step) {
+  if (step === 'resume') return resumeHtml();
+  if (step === 'you') return youHtml();
+  if (step === 'main') return mainHtml();
+  if (step === 'others') return othersHtml();
+  if (step === 'extra') return extraHtml();
+  if (step === 'review') return reviewHtml();
+  return generalHtml(Qby[step.slice(2)]);
+}
+
+function drawProg(step) {
+  var g = groupOf(step), gi = GROUPS.indexOf(g), frac = 0.4, sub = '';
+  if (g === 'general') { var gl = generalList(), i = gl.indexOf(step) + 1; frac = i / gl.length; sub = t('ofN', { i: i, n: gl.length }); }
+  else if (g === 'review') frac = 0.6;
+  var h = '<div class="segs">';
+  for (var k = 0; k < GROUPS.length; k++) h += k < gi ? '<span class="seg done"></span>' : (k === gi ? '<span class="seg"><i style="width:' + Math.round(frac * 100) + '%"></i></span>' : '<span class="seg"></span>');
+  $('prog').innerHTML = h + '</div><div class="plab"><b>' + t(GLAB[g]) + '</b><span>' + sub + '</span></div>';
+  $('prog').hidden = false;
+}
+function anyOther() {
+  if (cur === 'others' && $('plist')) { var any = false; each('#plist textarea', function (ta) { if (clean(ta.value)) any = true; }); return any; }
+  for (var i = 0; i < S.others.length; i++) if (clean(S.others[i])) return true;
+  return false;
+}
+// what the big button on the right says and looks like
+function primaryLook(step) {
+  if (edit && (edit.single || isLastOfGroup(step))) return ['done', 'go'];
+  if (step === 'you') return ['start', 'go'];
+  if (step === 'main') return ['next', 'go'];
+  if (step === 'others') return [anyOther() ? 'next' : 'noElse', 'go'];
+  if (step === 'extra') return ['check', 'go'];
+  if (step === 'review') return ['send', 'go'];
+  return answered(step.slice(2)) ? ['next', 'go'] : ['skip', 'alt'];
+}
+function drawBar(step) {
+  var bar = $('bar');
+  if (step === 'resume' || step === 'done') { bar.hidden = true; fitBar(); return; }
+  bar.hidden = false;
+  var h = '';
+  if (edit) h += '<button type="button" class="btn alt back wide" data-act="tocheck">' + t('toCheck') + '</button>';
+  else if (step !== 'you') h += '<button type="button" class="btn alt back" data-act="back">' + t('back') + '</button>';
+  $('btns').innerHTML = h + '<button type="button" class="btn main go" id="primary" data-act="primary"></button>';
+  fitBar();
+}
+function refreshControls() {
+  var p = $('primary');
+  if (p && !sending) { var look = primaryLook(cur); p.textContent = t(look[0]); p.className = 'btn main ' + look[1]; }
+  if (cur === 'others' && $('plist')) {
+    var boxes = $('plist').children, n = boxes.length;
+    for (var i = 0; i < n; i++) boxes[i].querySelector('.rm').hidden = (n === 1 && !clean(boxes[i].querySelector('textarea').value));
+    $('addBtn').hidden = n >= 8;
+  }
+  fitBar();
+}
+function render(step) {
+  cur = step;
+  if (step === 'review') edit = null;
+  $('view').innerHTML = viewHtml(step);
+  if (step === 'resume') $('prog').hidden = true; else drawProg(step);
+  drawBar(step);
+  fitOpts();
+  setMsg('');
+  each('.ta', grow);
+  refreshControls();
+  try { window.scrollTo(0, 0); } catch (e) {}
+  var head = $('h1'); if (head) { try { head.focus({ preventScroll: true }); } catch (e1) { try { head.focus(); } catch (e2) {} } }
+}
+function renderDone(preview) {
+  cur = 'done'; sent = true; setMsg('');
+  $('prog').hidden = true; $('bar').hidden = true;
+  var h = '<div class="ty"><div class="ring" style="color:#163d7a">' + svg(46, 2.6, P_TICK) + '</div>' + h1(t('thanks'), true)
+    + '<p class="help">' + t('doneMsg') + '</p><p class="mini">' + t('closePage') + '</p>';
+  if (testMode) h += '<div class="prev"><p class="mini"><b>Test mode: nothing was sent.</b> This is the text Dr. Tiwari would have received:</p><pre id="testOut">' + esc(preview || '') + '</pre>'
+    + '<p style="margin-top:14px"><button type="button" class="btn alt" style="width:100%" data-act="newtest">Start a new test</button></p></div>';
+  $('view').innerHTML = h + '</div>';
+  try { window.scrollTo(0, 0); } catch (e) {}
+  var hd = $('h1'); if (hd) { try { hd.focus({ preventScroll: true }); } catch (e1) { try { hd.focus(); } catch (e2) {} } }
+}
+
+// ============================================================ moving between screens (the phone's Back button works too)
+function leave(fn, retry) {   // stop the microphone (late words still land), keep what is on the screen, then go on
+  if (navBusy) { if (retry) setTimeout(function () { leave(fn, retry); }, 60); return; }
+  navBusy = true; stopMic();
+  settleMic().then(function () { navBusy = false; collect(); draftNow(); fn(); });
+}
+function startAt(step) { nav = [step]; navAt = 0; try { history.replaceState({ d: 0 }, ''); } catch (e) {} render(step); }
+function go(step) {
+  leave(function () {
+    lastNav = Date.now();
+    nav = nav.slice(0, navAt + 1); nav.push(step); navAt = nav.length - 1;
+    try { history.pushState({ d: navAt }, ''); } catch (e) {}
+    render(step);
+  });
+}
+function backOne() {
+  if (navAt > 0) { try { lastNav = Date.now(); history.back(); return; } catch (e) {} }
+  var a = stepsList(), i = a.indexOf(cur);
+  if (i > 0) leave(function () { lastNav = Date.now(); startAt(a[i - 1]); });
+}
+function backToCheck() {
+  var j = -1;
+  for (var i = navAt - 1; i >= 0; i--) if (nav[i] === 'review') { j = i; break; }
+  if (j >= 0) { try { lastNav = Date.now(); history.go(j - navAt); return; } catch (e) {} }
+  go('review');
+}
+window.addEventListener('popstate', function (e) {
+  if (!booted) return;
+  if (sent) {   // once it is sent the form never comes back
+    nav = ['done']; navAt = 0; try { history.replaceState({ d: 0 }, ''); } catch (x) {}
+    if (cur !== 'done') renderDone('');
+    return;
+  }
+  var d = (e.state && typeof e.state.d === 'number') ? e.state.d : 0;
+  if (d > nav.length - 1) d = nav.length - 1;
+  if (d < 0) d = 0;
+  leave(function () { lastNav = Date.now(); navAt = d; render(nav[d]); }, true);
+});
+function startEdit(group, step, single) { edit = { group: group, single: !!single }; go(step); }
+function onPrimary() {
+  collect();
+  var bad = validate(cur); if (bad) { showError(bad); return; }
+  setMsg('');
+  if (cur === 'review') { send(); return; }
+  if (edit && (edit.single || isLastOfGroup(cur))) { edit = null; backToCheck(); return; }
+  var a = stepsList(); go(a[a.indexOf(cur) + 1]);
+}
+
+// ============================================================ sending
+function patientNow() {
+  if (known) return { uid: known.uid, name: known.name, phone: known.phone || '', age: known.age || '', sex: effSex() || '' };
+  return { uid: uid || '', name: clean(S.name), phone: S.phone.replace(/[^\d+]/g, ''), age: S.age || '', sex: S.sex || '' };   // a link that carries the patient's id still files it under that patient
+}
+function afterSent(preview) {
+  clearDraft(); renderDone(preview);
+  var k = navAt; nav = ['done']; navAt = 0;
+  try { if (k > 0) history.go(-k); else history.replaceState({ d: 0 }, ''); } catch (e) {}
+}
+function send() {
+  if (sending || sent) return;
+  collect();
+  var bad = validate('you') || validate('main'); if (bad) { setMsg(bad[1]); return; }
+  var patient = patientNow(), b = buildStory();
+  var payload = { patient: patient, submittedAt: new Date().toISOString(), story: b.story, storyParts: { complaints: b.complaints, general: b.general }, storyEntry: true, storyLang: micLang };
+  if (!patient.uid) payload.unlinked = true;
+  if (testMode) { afterSent(b.story); return; }
+  sending = true; setMsg('');
+  var btn = $('primary'); if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  slowTimer = setTimeout(function () { if (sending) setMsg(t('slowSend'), 'note'); }, 12000);
+  var p;
+  try { p = W.sender ? W.sender(payload) : Promise.reject(new Error('the sender is not ready')); } catch (e) { p = Promise.reject(e); }
+  p.then(function () { clearTimeout(slowTimer); sending = false; afterSent(''); },
+    function (err) {
+      clearTimeout(slowTimer); sending = false;
+      try { console.error('[story] submit failed:', err); } catch (e2) {}
+      if (btn) btn.disabled = false;
+      refreshControls(); setMsg(t('sendFail'));
+    });
+}
+
+// ============================================================ what the patient does on a screen
+function doPick(qid, i) {
+  var q = Qby[qid], a = ga(qid), v = q.opts[i].v;
+  if (q.multi) { var k = a.v.indexOf(v); if (k >= 0) a.v.splice(k, 1); else a.v.push(v); }
+  else a.v = (a.v === v) ? '' : v;
+  each('.opt[data-q="' + qid + '"]', function (el) {
+    var j = +el.getAttribute('data-i'), x = q.opts[j].v, on = q.multi ? a.v.indexOf(x) >= 0 : a.v === x;
+    el.className = 'opt' + (on ? ' on' : ''); el.setAttribute('aria-checked', on ? 'true' : 'false');
+    el.firstChild.innerHTML = mkInner(q.multi, on);
+  });
+  refreshControls(); draftSoon();
+}
+function renumber() {
+  var boxes = $('plist').children;
+  for (var i = 0; i < boxes.length; i++) {
+    var label = t('problemN', { n: i + 1 }), ta = boxes[i].querySelector('textarea');
+    boxes[i].querySelector('.pn').textContent = label; ta.setAttribute('aria-label', label); ta.setAttribute('placeholder', t(i === 0 ? 'othersPh1' : 'othersPhN'));
+  }
+}
+function addProblem() {
+  var list = $('plist'); if (list.children.length >= 8) return;
+  var d = document.createElement('div'); d.innerHTML = pbox('', list.children.length);
+  var box = d.firstChild; list.appendChild(box);
+  refreshControls();
+  var ta = box.querySelector('textarea');
+  try { ta.focus(); } catch (e) {}
+  try { box.scrollIntoView({ block: 'center' }); } catch (e2) {}
+}
+function removeProblem(btn) {
+  stopMic();
+  var box = closest(btn, '.pbox'), list = $('plist');
+  if (list.children.length > 1) { list.removeChild(box); renumber(); }
+  else { var ta = box.querySelector('textarea'); ta.value = ''; grow(ta); }
+  collect(); refreshControls(); draftSoon();
+}
+function onInput(e) {
+  var el = e.target;
+  if (matches(el, '.bad')) { el.className = el.className.replace(/\s*\bbad\b/, ''); if (!noteOn) setMsg(''); }
+  if (el.tagName === 'TEXTAREA') grow(el);
+  collect(); refreshControls(); draftSoon();
+}
+function textChanged(ta) { grow(ta); collect(); refreshControls(); draftSoon(); }
+function applyLang() {
+  document.documentElement.lang = L; document.title = t('pageTitle');
+  $('brand').textContent = t('brand'); $('doctor').textContent = t('doctor');
+  if (!micTouched) micLang = SPEAK[L];
+}
+function onClick(e) {
+  var b = closest(e.target, '[data-act]'); if (!b || !booted) return;
+  var act = b.getAttribute('data-act');
+  if ((act === 'primary' || act === 'back' || act === 'tocheck') && (navBusy || Date.now() - lastNav < 280)) return;   // a double tap must not skip a screen
+  if (act === 'pick') doPick(b.getAttribute('data-q'), +b.getAttribute('data-i'));
+  else if (act === 'more') { b.hidden = true; $('ownBox').hidden = false; var ta = $('fOwn'); grow(ta); try { ta.focus(); } catch (x) {} }
+  else if (act === 'mic') micToggle(b.getAttribute('data-for'));
+  else if (act === 'speaklang') setMicLang(b.getAttribute('data-l'));
+  else if (act === 'addprob') addProblem();
+  else if (act === 'rmprob') removeProblem(b);
+  else if (act === 'notyou') leave(function () { known = null; render('you'); });
+  else if (act === 'lang') { var l2 = b.getAttribute('data-l'); leave(function () { L = l2; applyLang(); render(cur); draftNow(); }); }
+  else if (act === 'change') { var g = b.getAttribute('data-g'); startEdit(g, firstOfGroup(g), false); }
+  else if (act === 'cell') startEdit('general', b.getAttribute('data-s'), true);
+  else if (act === 'resume') { var st = pending.step; pending = null; lastNav = Date.now(); startAt(st); }
+  else if (act === 'again') {
+    clearDraft(); var keep = S; S = freshState(); S.name = keep.name; S.phone = keep.phone; S.age = keep.age; S.sex = keep.sex;
+    pending = null; lastNav = Date.now(); startAt('you');
+  }
+  else if (act === 'primary') onPrimary();
+  else if (act === 'back') backOne();
+  else if (act === 'tocheck') { collect(); var bad = validate(cur); if (bad) { showError(bad); return; } edit = null; backToCheck(); }
+  else if (act === 'newtest') { clearDraft(); location.reload(); }
+}
+
+// ============================================================ speaking: the phone turns the voice into text right in the box; nothing is recorded or stored
+// (this is the same voice code as the live form: the box text is rebuilt from the whole list of results each time, never added to)
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var micLang = SPEAK[L], micTouched = false, rec = null, recFor = null, wantOn = false, winding = null;
+// On Android phones the half-finished guesses are not asked for at all: the words then appear after each pause, as the phone's final version.
+// Adding &live=on or &live=off to the page address chooses the other way.
+var liveParam = (P.get('live') || '').toLowerCase();
+var liveText = liveParam === 'on' ? true : liveParam === 'off' ? false : !/android/i.test(navigator.userAgent);
+var HEARD_SKIP = ' .,;:!?\'"()[]{}-' + String.fromCharCode(0x2013, 0x2014, 0x2018, 0x2019, 0x201c, 0x201d, 0x2026, 0x964, 0x965, 0x200b, 0x200c, 0x200d, 0xfeff);
+function heardKey(w) { w = w.toLowerCase(); var a = 0, b = w.length; while (a < b && HEARD_SKIP.indexOf(w.charAt(a)) !== -1) a++; while (b > a && HEARD_SKIP.indexOf(w.charAt(b - 1)) !== -1) b--; return w.slice(a, b); }
+function heardStarts(a, b) { if (b.length > a.length) return false; for (var i = 0; i < b.length; i++) if (a[i] !== b[i]) return false; return true; }
+function mergeHeard(list) {
+  var out = [], total = 0;
+  for (var n = 0; n < list.length; n++) {
+    var w = String(list[n] || '').split(/\s+/).filter(Boolean); if (!w.length) continue;
+    var k = w.map(function (x) { return heardKey(x); }), last = out[out.length - 1];
+    if (last && heardStarts(k, last.k)) { total += k.length - last.k.length; out[out.length - 1] = { w: w, k: k }; continue; }   // goes on from the one before, or repeats it: keep the longer
+    if (last && heardStarts(last.k, k)) continue;   // only the beginning of the one before: nothing new
+    if (out.length > 1 && k.length >= total && heardStarts(k, [].concat.apply([], out.map(function (g) { return g.k; })))) { out.length = 0; total = 0; }   // says everything so far again, and more
+    out.push({ w: w, k: k }); total += k.length;
+  }
+  return out.map(function (g) { return g.w.join(' '); }).join(' ');
+}
+function retireMic(r) { if (!r) return; r.onresult = r.onerror = r.onend = null; try { r.abort(); } catch (e) {} }
+function settleMic() {   // the last words may still be on their way
+  return new Promise(function (resolve) {
+    var n = 0;
+    (function wait() { if (winding && !winding._done && n++ < 20) setTimeout(wait, 75); else resolve(); })();
+  });
+}
+function resetMicButtons() { each('.mic.on', function (b) { b.className = 'mic'; b.innerHTML = micInner(false); }); }
+function stopMic() {
+  wantOn = false;
+  if (rec && !rec._done) { if (winding) retireMic(winding); winding = rec; try { rec.stop(); } catch (e) {} }
+  rec = null; resetMicButtons(); recFor = null;
+  if (noteOn) setMsg('');
+}
+function startMic(id) {
+  if (!SR) return;
+  var ta = $(id); if (!ta) return;
+  var btn = null; each('.mic', function (b) { if (b.getAttribute('data-for') === id) btn = b; });
+  if (winding) { retireMic(winding); winding = null; }
+  recFor = id; wantOn = true;
+  function mk() {
+    var r = new SR(); r.lang = micLang; r.continuous = true; r.interimResults = liveText;
+    var base = ta.value ? ta.value.replace(/\s+$/, '') + ' ' : '';
+    r.onresult = function (ev) {
+      if (r !== rec && r !== winding) return;   // only the recogniser that is listening (or just finishing) may write
+      var heard = [];
+      for (var i = 0; i < ev.results.length; i++) heard.push(ev.results[i][0].transcript);   // the whole list every time, not only what is new
+      if (!heard.length) return;
+      ta.value = (base + mergeHeard(heard)).trim();
+      textChanged(ta);
+    };
+    r.onerror = function (ev) { if (r !== rec) return; if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { wantOn = false; setMsg(t('micBlocked')); } };
+    r.onend = function () {
+      r._done = true;
+      if (r === winding) { winding = null; return; }
+      if (r !== rec) return;
+      if (wantOn && recFor === id) { try { rec = mk(); rec.start(); } catch (e) { stopMic(); } }
+      else if (btn) { btn.className = 'mic'; btn.innerHTML = micInner(false); }
+    };
+    return r;
+  }
+  try { rec = mk(); rec.start(); if (btn) { btn.className = 'mic on'; btn.innerHTML = micInner(true); } setMsg(liveText ? t('listenLive') : t('pauseTip'), 'note'); } catch (e) { stopMic(); }
+}
+function micToggle(id) { if (wantOn && recFor === id) stopMic(); else { stopMic(); startMic(id); } }
+function setMicLang(code) {
+  micLang = code; micTouched = true;
+  each('[data-act="speaklang"]', function (b) { var on = b.getAttribute('data-l') === code; b.className = on ? 'on' : ''; b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+  if (wantOn) { var id = recFor; stopMic(); startMic(id); }
+}
+
+// ============================================================ start-up (called once the patient has been looked up)
+function init(k) {
+  if (booted) { if (k && !known && cur === 'you' && !sent) { known = k; render('you'); } return; }
+  booted = true; known = k || null;
+  var d = loadDraft();
+  if (d) {
+    if (!urlLang && (d.lang === 'en' || d.lang === 'hi' || d.lang === 'gu')) L = d.lang;
+    if (d.speak === 'en-IN' || d.speak === 'hi-IN' || d.speak === 'gu-IN') { micLang = d.speak; micTouched = d.speak !== SPEAK[L]; }
+  }
+  applyLang();
+  if (testMode) { $('tb').textContent = 'Test mode: nothing is sent to Dr. Tiwari. The answers you type stay on this page only.'; $('tb').hidden = false; }
+  if (d && hasContent(normState(d.S))) {
+    S = normState(d.S); pending = { step: d.step };
+    if (stepsList().indexOf(pending.step) < 0) pending.step = 'you';
+    nav = ['resume']; navAt = 0; try { history.replaceState({ d: 0 }, ''); } catch (e) {}
+    render('resume');
+  } else {
+    S = freshState();
+    if (d) { var x = normState(d.S); S.name = x.name; S.phone = x.phone; S.age = x.age; S.sex = x.sex; }
+    startAt('you');
+  }
+}
+
+$('view').addEventListener('click', onClick);
+$('bar').addEventListener('click', onClick);
+$('view').addEventListener('input', onInput);
+$('view').addEventListener('change', onInput);
+window.addEventListener('pagehide', function () { collect(); draftNow(); });
+window.addEventListener('resize', function () { fitOpts(); fitBar(); });
+document.addEventListener('visibilitychange', function () { if (document.hidden) { collect(); draftNow(); } });
+try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
+applyLang();
+$('view').innerHTML = '<p class="help" style="margin-top:20px">' + t('wait') + '</p>';
+setTimeout(function () { if (!booted) init(null); }, 9000);   // if the clinic's server cannot be reached, the form still opens (as for a patient not yet known)
+window.Wizard = W;
+})();
+</script>
+
+<script type="module">
+// Sending and looking up the patient: the same Firebase project, the same places and the same record as tell-your-story.html
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, set, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+const app = initializeApp({
+  apiKey: "AIzaSyAqzKPqBzNoBJc5FWjnVXMER4prgrbhqag",
+  authDomain: "punarvasu-790a8.firebaseapp.com",
+  databaseURL: "https://punarvasu-790a8-default-rtdb.firebaseio.com",
+  projectId: "punarvasu-790a8",
+  storageBucket: "punarvasu-790a8.firebasestorage.app",
+  messagingSenderId: "774115339459",
+  appId: "1:774115339459:web:4ee1f45e1e25d61666c676"
+}, 'patientStoryApp');
+const db = getDatabase(app);
+const W = window.Wizard;
+
+// the form calls this when the patient presses "Send to Dr. Tiwari" (never in test mode)
+W.sender = async function (payload) {
+  const patient = payload.patient;
+  const caseKey = push(ref(db, 'cases')).key;
+  await set(ref(db, 'cases/' + caseKey), payload);
+  if (patient.uid) { try { await set(ref(db, 'patients/' + patient.uid + '/casefile/lastCaseSubmittedAt'), new Date(payload.submittedAt).getTime()); } catch (e) {} }
+  try { await push(ref(db, 'notifications/admin'), { type: 'case_submitted', patientUid: patient.uid || '', name: patient.name, timestamp: Date.now(), viaStory: true, caseKey }); } catch (e) {}
+};
+
+// who is writing (the invite link carries the patient's own id), then the form opens
+window.__ready = (async () => {
+  let known = null;
+  if (W.uid) {
+    try {
+      const snap = await get(ref(db, 'pendingIntakeContext/' + W.uid));
+      if (snap.exists()) {
+        const c = snap.val();
+        if (c && c.name) known = { uid: W.uid, name: String(c.name), phone: c.phone != null ? String(c.phone) : '', age: c.age || '', sex: c.sex || '' };
+      }
+    } catch (e) { console.error('[story] context lookup failed:', e); }
+  }
+  W.init(known);
+})();
+</script>
+</body>
+</html>
