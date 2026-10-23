@@ -11,7 +11,7 @@
   --border:#e0e0e0;--white:#fff;--cream:#f7f5f0;--bg:#f2f0eb;
   --success:#2E7D32;--danger:#c0392b;
   --lang-en:#2055A4;--lang-hi:#8A5200;
-  --font:'Source Sans 3','Noto Sans Devanagari',system-ui,sans-serif;
+  --font:'Source Sans 3','Noto Sans Devanagari','Noto Sans Gujarati',system-ui,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh}
@@ -246,6 +246,48 @@ const state = {
     ready: false               // true once loadRepertoryData() finishes bucketing + indexing
   }
 };
+
+// =================================================================
+// GUJARATI (ગુજરાતી)
+// =================================================================
+// Gujarati is a third language. It is kept in state.patient.preferredLang exactly like 'en' and 'hi'
+// (the clinic's Admin Panel and Case Analyzer already offer it, and write it to the patient's record).
+// English and Hindi screens are NOT changed: every helper below gives back today's English / Hindi text
+// unless the patient chose Gujarati.
+function isGu() { return state.patient.preferredLang === 'gu'; }
+// Screens that never had Hindi: English for everyone, Gujarati for Gujarati patients.
+function G(en, gu) { return state.patient.preferredLang === 'gu' ? gu : en; }
+// Screens that had English and Hindi: one of the three by the patient's language.
+function L3(en, hi, gu) { var l = state.patient.preferredLang; return l === 'gu' ? gu : (l === 'hi' ? hi : en); }
+// The second half of an "English · Hindi" line: Gujarati for Gujarati patients, the same Hindi for everyone else.
+function HG(hi, gu) { return state.patient.preferredLang === 'gu' ? gu : hi; }
+
+// Gujarati names for the five groups the options are sorted into (see KIND_HINDI).
+const KIND_GUJARATI = {
+  'What it feels like': 'કેવું લાગે છે',
+  'When it happens': 'ક્યારે થાય છે',
+  'What affects it': 'શાથી અસર થાય છે',
+  'Which side': 'કઈ બાજુ',
+  'Other details': 'અન્ય માહિતી'
+};
+// A group's name for the generals detail lists: English for English and Hindi patients (as before), Gujarati for Gujarati.
+function kindName(kind) { return state.patient.preferredLang === 'gu' ? (KIND_GUJARATI[kind] || kind) : kind; }
+
+// Gujarati name for every chapter of the repertory (shown next to the English chapter name in the search results).
+const CHAPTER_GUJARATI_NAMES = {
+  'Abdomen': 'પેટ', 'Appetite': 'ભૂખ', 'Back': 'પીઠ', 'Bladder': 'મૂત્રાશય',
+  'Blood': 'લોહી', 'Chest': 'છાતી', 'Chill': 'ઠંડી લાગવી', 'Clinical': 'ક્લિનિકલ',
+  'Cough': 'ખાંસી', 'Ear': 'કાન', 'Expectoration': 'કફ', 'External throat': 'ગળાનો બહારનો ભાગ',
+  'Extremities': 'હાથ-પગ', 'Eye': 'આંખ', 'Face': 'ચહેરો', 'Fever': 'તાવ',
+  'Generalities': 'સામાન્ય લક્ષણો', 'Genitalia female': 'સ્ત્રી જનનાંગ', 'Genitalia male': 'પુરુષ જનનાંગ',
+  'Head': 'માથું', 'Hearing': 'સાંભળવું', 'Heart & Circulation': 'હૃદય અને રક્તસંચાર',
+  'Kidneys': 'કિડની', 'Larynx and trachea': 'સ્વરપેટી અને શ્વાસનળી', 'Mind': 'મન',
+  'Mouth': 'મોં', 'Nose': 'નાક', 'Perspiration': 'પરસેવો', 'Prostate gland': 'પ્રોસ્ટેટ ગ્રંથિ',
+  'Rectum': 'ગુદામાર્ગ', 'Respiration': 'શ્વાસ', 'Skin': 'ત્વચા', 'Sleep': 'ઊંઘ',
+  'Stomach': 'જઠર', 'Stool': 'ઝાડો', 'Teeth': 'દાંત', 'Throat': 'ગળું',
+  'Urethra': 'મૂત્રમાર્ગ', 'Urine': 'પેશાબ', 'Vertigo': 'ચક્કર', 'Vision': 'દૃષ્ટિ'
+};
+function chapterNameGu(chapter) { return state.patient.preferredLang === 'gu' && CHAPTER_GUJARATI_NAMES[chapter] ? CHAPTER_GUJARATI_NAMES[chapter] : ''; }
 
 // =================================================================
 // DATA LOADING & INDEXING
@@ -492,6 +534,505 @@ async function loadRepertoryData() {
 // =================================================================
 // CORE ENGINE
 // =================================================================
+// =================================================================
+// GUJARATI TYPING HELPER - used only for patients who chose Gujarati.
+// The repertory text is English + Hindi. When a Gujarati patient types a Gujarati word
+// (માથું, દુખાવો, સવારે ...) it is turned into the English words the search understands,
+// using the word list below. A word that is not in the list is tried as Hindi (same letters,
+// other script). Anything typed in English or Hindi works exactly as it always did.
+// =================================================================
+const GU_LEXICON = String.raw`
+stop: છે છું છો છીએ હતું હતો હતી હતા હતાં હોય હશે હોવું રહ્યું રહ્યો રહી રહ્યા રહ્યાં રહે રહેતું રહેતો રહેતી રહેતા રહેવું
+stop: હું અમે અમને અમારા અમારી અમારું તમે તમને તમારા તમારી તમારું તું તને મને મારા મારી મારું મારો મારે મારામાં મારાથી
+stop: તેને તે તેનું તેની તેનો તેના તેઓ એ આ આને એને એનું એની એનો આના આની આનો આનું
+stop: અને પણ કે તો જ નો ની નું ના નાં માં થી પર પરંતુ તેમજ અથવા માટે સાથે જેથી જેમ તેમ એટલે એટલા એટલું એટલી એવું એવી એવો એવા કારણે કારણ દ્વારા વિશે વિષે ફક્ત માત્ર જ્યારે ત્યારે જ્યાં ત્યાં અહીં
+stop: ન નથી નહીં નહિ નહી
+stop: ખૂબ ખૂબજ ઘણું ઘણી ઘણા ઘણો બહુ થોડું થોડી થોડા થોડો જરા કંઈ કાંઈ કંઇ કશું કોઈ કોઈક કેટલું કેટલા કેટલી કેટલાક બધું બધા બધી બધો સૌ
+stop: થાય થતું થતી થતો થતા થતાં થવું થવા થયું થયો થઈ થઇ થયા થયાં થયેલ થશે થઈને થઇને
+stop: આવ* લાગ* કરવ* કરી* કરય* કરેલ* કરશે લેવ* ગયું ગયો ગઈ ગઇ ગયા ગયાં જાય જતું જતી જતો જતા જવું
+stop: લાગે લાગતું લાગતી લાગતો લાગ્યું લાગી લાગ્યા લાગવું લાગતા
+stop: કરે કરતાં કરતા કરતી કરતો કરવું કરવા કરી કર્યું કર્યો કર્યા કરું કરો
+stop: મળે મળતો મળતી મળતું મળ્યું મળ્યો આપે આપ્યું લે લેતા લેવું લીધું લીધો બને બનતું નીકળે નીકળતું નીકળતો નીકળતી
+stop: વખતે વખત સમયે સમય વાર સખત તીવ્ર ભયંકર અસહ્ય જોરદાર
+stop: દિવસ દિવસો દિવસથી દિવસોથી અઠવાડિયું અઠવાડિયા અઠવાડિયાથી મહિનો મહિના મહિનાથી મહિનાઓ વર્ષ વર્ષો વર્ષથી વર્ષોથી કલાક કલાકથી મિનિટ કાલ કાલથી કાલે આજ આજે આજથી ગઈકાલે ગઈકાલથી હમણાં હમણાંથી હંમેશા હમેશા
+stop: ચડે ચડી ચડવો ચડવું ચડતો ચડતી ચડતું ચડતા ચડતાં ચઢે ચઢી ચઢવો ચઢવું ચઢતો ચઢતી ચઢતું ચઢતા ચઢતાં
+stop: ખરેખર તકલીફ તકલીફો સમસ્યા ફરિયાદ બીમારી રોગ લક્ષણ લક્ષણો હેરાન પરેશાની પરેશાન
+stop: આખા આખી આખું આખો દેખાય દેખાતું દેખાતા દેખાતી સામાન્ય ખાસ કંઈક અમુક તબિયત ક્યારે ક્યારેક ક્યારેય ક્યારથી ક્યાંય
+stop: એક બે ત્રણ ચાર પાંચ છ સાત આઠ નવ દસ
+માથ = head
+કપાળ = forehead
+ખોપરી = skull, scalp
+ચહેર|ચેહર = face
+મુખ$|મોં$|મોઢ = mouth, face
+આંખ = ~eye
+કાન = /\bear(?!l|n|t)/
+નાક = nose, nostril, nasal
+જીભ = tongue
+દાંત|દાઢ = teeth, tooth
+પેઢા|પેઢું$ = gums
+ગળ$|ગળા$ = throat
+ગળવ|ગળત = swallow
+ગરદન|ડોક$ = neck
+હોઠ|હોંઠ = lips
+પાંપણ|પોપચ = eyelid
+ગાલ$ = cheek
+વાળ = hair
+ખભ* = shoulder
+હાથ = hand, /\barms?\b|forearm/
+કોણી = elbow
+કાંડ = wrist
+આંગળ = finger
+અંગૂઠ = thumb, toe
+હથેળ = palm
+નખ$ = nail
+છાતી = chest
+સ્તન = breast, mamma
+હૃદય|હ્રદય|હદય = heart
+પેટ = abdomen, stomach, belly
+નાભિ|નાભી|ડૂંટી|ડુંટી = umbilic, belly button
+કમર = lumbar, sacral
+પીઠ = /\bback\b/
+કરોડ = spine, spinal
+પગ$ = /\blegs?\b/, foot, feet, lower limb
+પગથિય = stairs, ascend, climb
+જાંઘ|સાથળ = thigh
+ઘૂંટણ|ઘુંટણ = knee
+પિંડી|પિંડ = calf
+એડી$ = heel
+તળિય = ~sole
+સાંધ = joint
+સ્નાયુ = muscle
+હાડક|હાડ$ = bone
+ચામડી|ચામડ|ત્વચ = skin
+બગલ = axilla, armpit
+શરીર|બદન|કાયા = body
+કિડની|મૂત્રપિંડ = kidney
+મૂત્રાશય = bladder
+લીવર|યકૃત = liver
+ફેફસ = lung
+ગુદા = anus, rectum
+લોહી = blood, bleeding
+નસ$ = vein, nerve
+આંતરડ = bowel, intestin
+હોજરી|જઠર = stomach
+પેશાબ|મૂત્ર = /\burin/
+યોનિ = vagina
+ગર્ભાશય = uterus, womb
+લિંગ|શિશ્ન = penis
+જનનાંગ|ગુપ્તાંગ = genital
+વૃષણ = testes, testicle
+ગર્ભ|સગર્ભા|પ્રેગ્નન્સી = pregnan
+માસિક|માસીક|માહવારી|પીરિયડ|પિરિયડ|પીરીયડ = menses, menstru
+દુખ|દરદ|પીડ|વેદન = pain, ache
+દુખિ|દુખિય = sad
+બળતર|બળત|બળવ|બળે|સળગ|દાઝ = burn
+ખંજવાળ|ખંજવા|ખણજ|ખુજલ|ચળ$ = /\bitch/
+સોજ|સુજ = swell, swollen
+ખાંસ|ખાસી|ઉધરસ = cough
+શરદ = coryza, runny nose
+છીંક = sneez
+તાવ = fever
+ઠંડ|ટાઢ = cold, chill
+ગરમ|ઉષ્ણ = /\bheat/, warm, /\bhot/
+ઉલટ|ઓકત|ઓકવ = vomit
+ઉબકા|ઊબકા|મોળ$ = nausea
+ઝાડા|જુલાબ = diarrh
+ઝાડો|શૌચ|ટટ્ટી|ટટી = stool, bowel
+કબજ = constipation
+ગેસ = /\bgas\b/, flatulen, flatus
+વાયુ|વાયડ|વાછૂટ = flatulen, flatus, /\bwind/
+એસિડ|એસીડ|અમ્લ|ખટાશ = acid, heartburn
+ઓડક = eructation, burp
+અપચ|અજીર્ણ|અજીરણ = indigestion, dyspep
+ભૂખ = appetite, hunger
+તરસ = thirst
+નબળ|કમજોર|અશક્ત = weak
+થાક = fatigue, tired, weary, exhaust
+ચક્કર|ભમરી|ભમે$|ભમત = vertigo, dizz
+બેભાન|મૂર્છ|બેશુદ્ધ|બેહોશ = faint, unconscious
+ઊંઘ|નિદ્ર|નીંદર|નિંદર = sleep
+અનિદ્ર|અનિંદર|ઉજાગરા = sleeplessness, insomnia
+સપન|સ્વપ્ન|સપ્ન = dream
+પરસેવ|પસીન = perspiration, sweat
+શ્વાસ$|શ્વસન = breath, respiration
+શ્વાસનળી|સ્વરપેટી = larynx, trachea, windpipe
+હાંફ = breath, respiration, dyspn
+દમ$|અસ્થમ = asthma
+ધબકાર|ધડકન|ધડક = palpitation
+ધબક = throbbing, pulsat
+ખેંચ = convulsion, cramp, spasm
+ખેંચાણ|ખેંચાય|ખેંચાવ|ખેંચત|ખેંચી = cramp, drawing, pulling, spasm
+આંચકી|આંચકા|આંચક|ફેફરું|ફેફરુ|વાઈ$ = convulsion, seizure, epilep, jerk
+જકડ|અકડ = stiff, tight
+ઝણઝણ|ઝાંઝણ|કીડી$ = tingling, formication, crawling
+સુન્ન|નિષ્ક્રિય = numb
+ફોલ્લી = eruption, rash, pimple
+ફોલ્લા|ફોલ્લ = blister, vesicle
+ફોડકી|ગૂમડ|ગુમડ = boil, abscess, pustule
+ચાંદ = ulcer
+ખીલ = pimple, acne
+ડાઘ|ધબ્બ|ચાઠ = spot, discolor
+ખરજવ = eczema
+ગાંઠ|ગાઠ = lump, tumo, node, nodule, growth
+પથર = stone, calcul, gravel
+મસા$|મસ્સા$ = hemorrhoid, haemorrhoid, piles
+ભગંદર = fistula
+સ્ત્રાવ|ડિસ્ચાર્જ|ડીસ્ચાર્જ = discharge
+અનિયમિત = irregular
+કફ$|ગળફ = expectoration, phlegm, mucus
+લાળ = saliva
+રક્તસ્ત્રાવ|રક્તસ્રાવ = bleeding, /h(?:a)?emorrhage/
+વાગ્ય|વાગી|વાગે|વાગત|ઈજા|ઇજા = injur
+ઘા$|ઘાવ$ = wound
+મચકોડ|મચક = sprain
+ફ્રેક્ચર|ફ્રેકચર|તૂટ = fracture, broken
+કળતર|કળત|કચડ|ઉઝરડ = bruised, sore
+ચચર = smarting
+ટાંક = stitching
+ફાટ = tearing, crack
+કાપ$|કાપત|કાપવ|કપાય = cutting
+ખૂંચ|ખુંચ|ભોંક = stabbing, stitching
+શૂળ|શુળ = stabbing, shooting
+ચૂંક|ચુંક = colic, griping
+મરડો$|મરડા$ = dysentery
+ભારે|ભાર$ = heav
+ગૂંગળ|ગુંગળ|રૂંધાય|રુંધ = suffocat, chok
+ઘરઘર = wheez
+હેડકી|હેડકિ = hiccough, hiccup
+બગાસ = yawn
+નસકોર = nostril, snor
+ગંધ|દુર્ગંધ|વાસ$ = odor, odour, smell
+અવાજ = voice, noise, sound
+સ્વાદ = taste
+કમળો|કમળ$ = jaundice
+લકવો|લકવા|પક્ષઘાત = paralys
+સંધિવા|આમવાત|આર્થરાઇટિસ|આર્થરાઈટિસ|વા$ = rheumat, arthritis
+ગાઉટ = gout
+સાયટિક|સાયેટિક|સાયટીક = sciatica
+થાઇરોઇડ|થાયરોઇડ = thyroid, goit
+એલર્જ = allerg
+બ્રોન્કાઇટિસ|બ્રોંકાઇટિસ = bronchitis
+ન્યુમોનિયા|ન્યૂમોનિયા = pneumonia
+સાઇનસ|સાયનસ = sinus
+કાકડા|કાકડ|ટૉન્સિલ|ટોન્સિલ = tonsil
+મોતિય|મોતીયો = cataract
+કેન્સર|કર્કરોગ = cancer
+ટીબી$|ક્ષય$|ક્ષયરોગ = tubercul
+ટાઇફોઇડ|ટાયફોઇડ = typhoid
+મલેરિયા|મેલેરિયા = malaria
+ડાયાબિટીસ|ડાયાબીટીસ|ડાયાબિટીઝ|મધુપ્રમેહ|સુગર$|શુગર$ = /urine\W+sugar/, polyuria
+માઇગ્રેન|માઈગ્રેન|આધાશીશી|અર્ધશીશી = headache
+ખોડો = dandruff
+ટાલ$ = bald
+પાણી = water
+સવાર|પ્રભાત = morning
+બપોર = noon
+સાંજ = evening
+રાત|રાત્રિ|રાત્ર = night
+મધરાત|મધ્યરાત્રિ = midnight
+દિવસે$|દિવસના$ = /\bday/
+પછી = after
+પહેલા|પહેલાં = before
+દરમિયાન = during, while
+ઊઠત|ઉઠત|ઉઠય|ઉઠવ|ઊઠી|જાગત|જાગવ|જાગી = rising, wak
+સૂતા|સૂવ|સૂઈ|સુતા|સુવ = lying
+ચાલવ|ચાલત|ચાલી|ચાલે = walk
+સીડી|દાદર|ચઢાણ|ચડાણ = stairs, ascend, climb
+ઉતરત|ઉતરવ = descend
+બેસ|બેઠ = /\bsit/
+ઉભ$|ઉભા$ = /\bstand/
+હલનચલન|હલન|હલત|હલવ = /\bmotion/, movement, moving
+આરામ|વિશ્રામ = /\brest/
+વરસાદ|ભેજ|ચોમાસ = damp, wet, /\brain/
+હવા$|પવન = /\bair\b/, /\bwind/
+ન્હાવ|નહાવ|સ્નાન = bath
+દબાણ|દબાવ|દબાય = /\bpress/
+સ્પર્શ|અડવ|અડત = touch
+શિયાળ = winter
+ઉનાળ = summer
+જમણ = /\bright/
+ડાબ = /\bleft\b/
+બંને|બન્ને|બેય = both
+બાજુ|તરફ = /\bsides?\b/
+ઉપર$|ઉપલ$ = upper, above
+નીચ = lower, below
+વધે|વધત|વધાર|વધુ|વધી|વધ$|બગડ = agg, worse, increas, extreme, excessive
+રાહત|સારું|સારુ|ઓછ|ઘટે|ઘટત|ઘટાડ|ઘટી|સુધાર|મટિ|મટે|મટત = amel, better, relief, improve, diminish, decreas, wanting
+વારંવાર|ઘણીવાર|વારેવારે = frequent, repeat
+અચાનક|એકદમ = sudden
+સતત = constant, continu
+ખાધ|ખાવ|ખાતા|ખાતાં|ખાતુ|ખાતો|ખાતી|ખાઈ|ખાય|ખાઉ|ખાઓ|જમ્ય|જમત|જમવ|ભોજન = /\beat/
+પીવ|પીતા|પીતાં|પીધ|પીઓ|પીએ|પીઉ|પીવાય = drink
+ગળ્ય|ગળપણ|સાકર|ખાંડ$ = sweet, sugar
+મીઠું$|મીઠુ$ = salt
+મીઠાઈ|મીઠાઇ|મીઠા$|મીઠી$|મીઠો$ = sweet
+ખાર|નમક = salt
+ખાટ = sour
+તીખ|મરચ = spic, pungent, pepper
+તળેલ|તેલવાળ|તેલ$ = /\bfat\b/, fried, oil
+દૂધ = milk
+ચા$|ચાય$ = /\btea\b/
+કોફી = coffee
+ડુંગળી|ડુંગળ = onion
+લસણ = garlic
+ઈંડા|ઇંડા = egg
+માંસ|મટન = meat
+માછલી = fish
+બટાટા|બટાકા = potato
+ભાત$ = /\brice/
+રોટલી|રોટલ|બ્રેડ = bread
+ચોકલેટ = chocolate
+ફળ$ = fruit
+દારૂ$ = alcohol, wine, brandy, beer, whisky
+તમાકુ|બીડી|સિગારેટ = tobacco
+ખાલી$ = empty
+પીળ = yellow
+લાલ = /\bred(?!uc)/
+કાળ$ = black
+સફેદ = white
+લીલ = green
+રંગ = /colou?r/
+દૃષ્ટિ|દ્રષ્ટિ|નજર$ = vision, sight
+ઝાંખ|ધુંધળ|ધૂંધળ = dim, blur
+સાંભળ|સંભળ = /\bhear/
+બહેર = deaf
+મન$|મગજ|દિમાગ = mind, brain
+માનસિક = mental, mind
+ડર|ડરત|ડરવ|ડરપોક|ભય$ = fear
+ચિંતા|ફિકર = anxi, worr
+ગભરામણ|ગભરાટ|ગભરાય = anxi, frighten
+ગુસ્સ|ક્રોધ|રીસ = anger, angry
+ઉદાસ|નિરાશ|હતાશ|ડિપ્રેશન = /\bsad/, depress
+રડવ|રડ$|રડે|રડત|આંસુ = weep, /\bcry/
+ચીડ|ચિડ = irritab
+એકલ|એકાંત = alone, solitude
+ઈર્ષ્યા|ઇર્ષ્યા = jealous
+શંકા|વહેમ = suspicio, doubt
+ભૂલ|ભુલકણ = forget, memory
+એકાગ્રતા|ધ્યાન = concentrat
+બેચેન|અશાંતિ|અસ્વસ્થ = restless
+તણાવ|ટેન્શન = stress, tension
+શોક = grief
+આઘાત = shock
+ઘમંડ|અભિમાન = haughty, pride
+ગાંડપણ|પાગલ = insan, /\bmad/
+ભ્રમ = delusion
+આત્મહત્યા = suicid
+નપુંસક = impoten
+ઘેન|ઝોકા|ઝોકુ = drows, sleepiness
+કડક|કઠણ = hard
+નરમ|પોચ = soft
+પાતળ = thin, loose
+ચીકણ = sticky, tenacious
+ડહોળ = turbid, cloudy, muddy
+પ્રોસ્ટેટ = prostate
+ગ્રંથિ|ગ્રંથી = gland
+હવામાન = weather
+રક્તસંચાર = circulation
+ખુલ્લ = open
+ખોરાક|અન્ન = food
+સ્ત્રી = female
+પુરુષ = /\bmale/
+શારીરિક = physical
+બંધ$ = blocked, stopped, obstruct, closed
+ભરાઈ|ભરાય|ભરાવ = blocked, congest, fullness
+બોલવ|બોલત|વાણી = speech, talking
+મોડ = /\blate\b/
+હાજત = urg
+ઇચ્છ|ઈચ્છ = desire, crav
+વગર = without
+પાછળ = behind
+આગળ = front, forward
+અંદર = inside, internal
+બહાર = /\boutside/, external
+વચ્ચે|મધ્ય = middle, between
+કપડ = clothes, clothing
+સંગીત = music
+દહીં|છાશ = curd, yogurt, buttermilk
+દવા$|દવાઓ$ = medicine
+સુક|સૂક = dry
+ભીન|ભીંજ = wet, damp
+ખરાશ = raw, rough, scrap
+ખરે$|ખરવ|ખરત|ખરી$ = falling, fall
+`;
+// Endings that Gujarati words carry (-માં in, -નો of, -ને to, -થી from ...). Taken off when a whole word must match.
+const GU_ENDINGS = ['માં', 'ોમાં', 'ોના', 'ોનો', 'ોની', 'ોનું', 'ોને', 'ોથી', 'ાઓ', 'નાં', 'ના', 'નો', 'ની', 'નું', 'ને', 'થી', 'ાં', 'ે', 'ો', 'ા', 'ી', 'ુ', 'ું', 'ઓ'];
+// Spelling that is treated as the same letter: dropped marks, then merged letters.
+const GU_DROP = { 0x200B: 1, 0x200C: 1, 0x200D: 1, 0xFEFF: 1, 0x0ABC: 1, 0x0A83: 1, 0x0ACD: 1, 0x3A: 1 };
+const GU_MERGE = { 0x0A81: 0x0A82, 0x0AC0: 0x0ABF, 0x0AC2: 0x0AC1, 0x0A88: 0x0A87, 0x0A8A: 0x0A89, 0x0AC9: 0x0ACB, 0x0AC5: 0x0AC7, 0x0A91: 0x0A93, 0x0AB6: 0x0AB8, 0x0AB7: 0x0AB8 };
+let guLexCache = null;
+
+function guHas(s) {
+  for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); if (c >= 0x0A80 && c <= 0x0AFF) return true; }
+  return false;
+}
+function guLetters(s) {
+  let out = '';
+  for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); if ((c >= 0x0A80 && c <= 0x0AFF) || c === 0x200C || c === 0x200D) out += s.charAt(i); }
+  return out;
+}
+function guNorm(s) {
+  s = String(s || '').toLowerCase();
+  let out = '';
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (GU_DROP[c]) continue;
+    out += String.fromCharCode(GU_MERGE[c] || c);
+  }
+  return out;
+}
+function guOnlyDigits(s) {
+  if (!s) return false;
+  for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); if (c < 0x0AE6 || c > 0x0AEF) return false; }
+  return true;
+}
+// Gujarati and Devanagari letters sit side by side in Unicode, exactly 0x180 apart.
+function guToDev(s) {
+  let out = '';
+  for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); out += (c >= 0x0A81 && c <= 0x0AEF) ? String.fromCharCode(c - 0x180) : s.charAt(i); }
+  return out;
+}
+
+function guLex() {
+  if (guLexCache) return guLexCache;
+  const lex = { entries: [], stop: {}, stopPre: [], suffixes: [] };
+  GU_LEXICON.split('\n').forEach(function (line) {
+    line = line.trim();
+    if (!line || line.charAt(0) === '#') return;
+    if (line.indexOf('stop:') === 0) {
+      line.slice(5).trim().split(/\s+/).forEach(function (w) {
+        if (!w) return;
+        if (w.charAt(w.length - 1) === '*') lex.stopPre.push(guNorm(w.slice(0, -1)));
+        else lex.stop[guNorm(w)] = 1;
+      });
+      return;
+    }
+    const eq = line.indexOf(' = ');
+    if (eq < 0) return;
+    const stems = line.slice(0, eq).split('|').map(function (s) {
+      s = s.trim();
+      const last = s.charAt(s.length - 1);
+      const wholeWord = last === '$', forceStart = last === '*';
+      if (wholeWord || forceStart) s = s.slice(0, -1);
+      const n = guNorm(s);
+      return { s: n, exact: wholeWord || (n.length <= 2 && !forceStart) };
+    }).filter(function (st) { return st.s; });
+    const alts = line.slice(eq + 3).split(',').map(function (a) {
+      a = a.trim();
+      if (a.charAt(0) === '/' && a.charAt(a.length - 1) === '/') return { re: new RegExp(a.slice(1, -1)) };
+      if (a.charAt(0) === '~') return { re: new RegExp('\\b' + a.slice(1).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) };
+      return { s: a.toLowerCase() };
+    }).filter(function (a) { return a.re || a.s; });
+    if (stems.length && alts.length) lex.entries.push({ stems: stems, alts: alts });
+  });
+  lex.suffixes = GU_ENDINGS.map(guNorm).sort(function (a, b) { return b.length - a.length; });
+  guLexCache = lex;
+  return lex;
+}
+
+function guAlts(entries) {
+  const out = [], seen = {};
+  entries.forEach(function (e) {
+    e.alts.forEach(function (a) {
+      const key = a.re ? 're:' + a.re.source : 's:' + a.s;
+      if (!seen[key]) { seen[key] = 1; out.push(a); }
+    });
+  });
+  return out;
+}
+
+// One typed Gujarati word -> { alts: [things to look for], known: true/false }, or null when the word means nothing for the search.
+// atEnd = it is the last word typed, so it may still be unfinished.
+function guTerm(word, atEnd) {
+  const lex = guLex();
+  const raw = guLetters(word);
+  const w = guNorm(raw);
+  if (!w || guOnlyDigits(w)) return null;
+  if (lex.stop[w]) return null;
+  for (let i = 0; i < lex.stopPre.length; i++) if (w.indexOf(lex.stopPre[i]) === 0) return null;
+  const bases = [w];
+  lex.suffixes.forEach(function (sf) { if (w.length > sf.length && w.slice(-sf.length) === sf) bases.push(w.slice(0, -sf.length)); });
+  // 1. a whole-word entry (the word itself, or with an ending taken off)
+  const whole = lex.entries.filter(function (e) {
+    return e.stems.some(function (st) { return st.exact && bases.indexOf(st.s) !== -1; });
+  });
+  if (whole.length) return { alts: guAlts(whole), known: true };
+  // 2. an entry whose stem the word starts with - the longest stem wins
+  let best = 0;
+  const lens = lex.entries.map(function (e) {
+    let m = 0;
+    e.stems.forEach(function (st) { if (!st.exact && st.s.length > m && w.indexOf(st.s) === 0) m = st.s.length; });
+    if (m > best) best = m;
+    return m;
+  });
+  if (best) return { alts: guAlts(lex.entries.filter(function (e, i) { return lens[i] === best; })), known: true };
+  // 3. the last word is still being typed - it is the beginning of a known word
+  if (atEnd && w.length >= 4) {
+    const part = lex.entries.filter(function (e) { return e.stems.some(function (st) { return st.s.indexOf(w) === 0; }); });
+    if (part.length) return { alts: guAlts(part), known: true };
+  }
+  // 4. not in the list: one or two letters mean nothing yet; otherwise try the same letters as Hindi
+  if (w.length < 3) return null;
+  const alts = [{ s: guToDev(raw) }];
+  for (let i = 0; i < GU_ENDINGS.length; i++) {
+    const en = GU_ENDINGS[i];
+    if (raw.length - en.length >= 3 && raw.slice(-en.length) === en) { alts.push({ s: guToDev(raw.slice(0, -en.length)) }); break; }
+  }
+  return { alts: alts, known: false };
+}
+
+function guAny(alts, hay) {
+  for (let i = 0; i < alts.length; i++) {
+    const a = alts[i];
+    if (a.re ? a.re.test(hay) : hay.indexOf(a.s) !== -1) return true;
+  }
+  return false;
+}
+function guAll(terms, hay) {
+  if (!terms.length) return false;
+  for (let i = 0; i < terms.length; i++) if (!guAny(terms[i].alts, hay)) return false;
+  return true;
+}
+
+// words = the typed words (already split and lower-cased); open = the last word may still be unfinished.
+// Returns test(text) - does the text contain everything the patient typed. Gujarati words we cannot understand
+// are left out of the search as long as at least one other word was understood (they are reported in "ignored");
+// when nothing at all was understood, those words are tried as Hindi (and reported in "notFound" if nothing comes up).
+function guMatcher(words, open) {
+  const known = [], unk = [], unkWords = [];
+  let pend = null, pendWord = '';
+  words.forEach(function (k, i) {
+    if (!guHas(k)) { known.push({ alts: [{ s: k }] }); return; }
+    const atEnd = i === words.length - 1;
+    const t = guTerm(k, atEnd);
+    if (!t) return;
+    if (t.known) { known.push(t); return; }
+    if (atEnd && open) { pend = t; pendWord = guLetters(k); return; }
+    unk.push(t);
+    unkWords.push(guLetters(k));
+  });
+  const useKnown = known.length > 0;
+  const active = useKnown ? known : unk.concat(pend ? [pend] : []);
+  return {
+    active: active,
+    ignored: useKnown ? unkWords : [],
+    notFound: useKnown ? [] : unkWords.concat(pendWord ? [pendWord] : []),
+    test: function (hay) { return guAll(active, hay); }
+  };
+}
+
+function guSearch(m, index) {
+  return index.filter(function (r) { return m.test(r.searchable); });
+}
+function guSoftHtml(m) {
+  if (!m || !m.ignored.length) return '';
+  return '<div class="search-nudge">આ શબ્દો સમજાયા નથી: ' + m.ignored.map(esc).join(', ') + '. એટલે બાકીના શબ્દો પ્રમાણે પરિણામો બતાવ્યા છે.</div>';
+}
+function guNoResultHint(m) {
+  const bad = m ? m.ignored.concat(m.notFound) : [];
+  if (bad.length) return ' આ શબ્દો સમજાયા નથી: ' + bad.map(esc).join(', ') + '. એ જ શબ્દ અંગ્રેજી કે હિન્દીમાં લખી જુઓ.';
+  return ' ઓછા શબ્દો લખી જુઓ, અથવા અંગ્રેજી કે હિન્દીમાં લખો.';
+}
 function slugifyChapter(chapter) {
   if (chapter === 'Heart & Circulation') return 'heart-and-circulation';
   return chapter.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -744,6 +1285,7 @@ window.onBackToCaseAnalyzer = function () {
 };
 
 function render() {
+  if (state.patient.preferredLang === 'gu' && document.documentElement.lang !== 'gu') document.documentElement.lang = 'gu'; // GUJARATI: tells the browser which script to show
   if (state.reviewMode === 'postSubmission' && state.screen !== 'submitted') {
     state.reviewSessionExpiresAt = Date.now() + REVIEW_SESSION_MINUTES * 60 * 1000; // any interaction resets the 30-min window
   }
@@ -791,9 +1333,11 @@ function renderLanguageScreen() {
     <div class="screen-pad" style="max-width:420px;margin:0 auto;padding:32px 20px;text-align:center;">
       <div style="font-size:15px;color:var(--ink3);margin-bottom:6px;">Punarvasu Clinic</div>
       <h2 style="font-size:20px;margin-bottom:6px;">Choose your preferred language</h2>
-      <p style="font-size:15px;color:var(--ink2);margin-bottom:28px;">अपनी पसंदीदा भाषा चुनें</p>
+      <p style="font-size:15px;color:var(--ink2);margin-bottom:6px;">अपनी पसंदीदा भाषा चुनें</p>
+      <p style="font-size:15px;color:var(--ink2);margin-bottom:28px;">તમારી પસંદગીની ભાષા પસંદ કરો</p>
       <button onclick="onLanguagePick('en')" style="display:block;width:100%;padding:16px;margin-bottom:14px;border:1.5px solid var(--border,#ccc);border-radius:10px;background:#fff;font-size:17px;font-weight:600;cursor:pointer;">English</button>
-      <button onclick="onLanguagePick('hi')" style="display:block;width:100%;padding:16px;border:1.5px solid var(--border,#ccc);border-radius:10px;background:#fff;font-size:17px;font-weight:600;cursor:pointer;">हिंदी</button>
+      <button onclick="onLanguagePick('hi')" style="display:block;width:100%;padding:16px;margin-bottom:14px;border:1.5px solid var(--border,#ccc);border-radius:10px;background:#fff;font-size:17px;font-weight:600;cursor:pointer;">हिंदी</button>
+      <button onclick="onLanguagePick('gu')" style="display:block;width:100%;padding:16px;border:1.5px solid var(--border,#ccc);border-radius:10px;background:#fff;font-size:17px;font-weight:600;cursor:pointer;">ગુજરાતી</button>
     </div>
   `;
 }
@@ -807,11 +1351,16 @@ window.onLanguagePick = function (lang) {
 // repeated for a recognized returning patient (see proceedPastUnlock).
 function renderGuideScreen() {
   const hi = state.patient.preferredLang === 'hi';
+  const gu = isGu();
   const isFollowUp = state.patient.priorGenerals && state.patient.priorGenerals.length > 0;
   const title = isFollowUp
-    ? (hi ? 'आपका पुनः स्वागत है' : 'Welcome Back')
-    : (hi ? 'शुरू करने से पहले' : 'Before You Begin');
-  const body = isFollowUp ? (hi ? `
+    ? (gu ? 'ફરી સ્વાગત છે' : hi ? 'आपका पुनः स्वागत है' : 'Welcome Back')
+    : (gu ? 'શરૂ કરતાં પહેલાં' : hi ? 'शुरू करने से पहले' : 'Before You Begin');
+  const body = isFollowUp ? (gu ? `
+    <p style="margin-bottom:14px;">તમારો સમય બચાવવા માટે, તમારા અગાઉ નોંધાયેલા લક્ષણો નીચે પહેલેથી પસંદ કરેલા છે.</p>
+    <p style="margin-bottom:14px;"><strong>કૃપા કરી દરેક લક્ષણ ધ્યાનથી જુઓ.</strong> જો કોઈ લક્ષણમાં સુધારો થયો હોય, તે મટી ગયું હોય કે બદલાઈ ગયું હોય, તો તેને અપડેટ કરો અથવા કાઢી નાખો. છેલ્લી મુલાકાત પછી કંઈ નવું થયું હોય, તો તે ઉમેરો.</p>
+    <p>તમારા લક્ષણોની સાચી સમીક્ષા કરવાથી — પહેલી મુલાકાતની જેમ જ — ડૉ. યોગેશ્વર તિવારીને તમારી પ્રગતિ સમજવામાં અને દર વખતે યોગ્ય દવા પસંદ કરવામાં મદદ મળે છે.</p>
+  ` : hi ? `
     <p style="margin-bottom:14px;">समय बचाने के लिए, आपके पहले दर्ज किए गए लक्षण पहले से चुने हुए हैं।</p>
     <p style="margin-bottom:14px;"><strong>कृपया हर एक को ध्यान से देखें।</strong> यदि कोई लक्षण ठीक हो गया है, चला गया है, या बदल गया है, तो उसे अपडेट करें या हटा दें। यदि पिछली बार के बाद कुछ नया हुआ है, तो उसे जोड़ें।</p>
     <p>अपने लक्षणों की सही समीक्षा करना — पहली बार की तरह ही — डॉ. योगेश्वर तिवारी को आपकी प्रगति को समझने और हर बार सही दवा चुनने में मदद करता है।</p>
@@ -819,7 +1368,16 @@ function renderGuideScreen() {
     <p style="margin-bottom:14px;">To save you time, your previously recorded symptoms are already selected below.</p>
     <p style="margin-bottom:14px;"><strong>Please go through each one carefully.</strong> If a symptom has improved, gone away, or changed, please update or remove it. If something new has come up since your last visit, please add it.</p>
     <p>Reviewing your symptoms accurately — the same as your first visit — helps Dr. Tiwari track your progress and choose the right medicine each time.</p>
-  `) : (hi ? `
+  `) : (gu ? `
+    <p style="margin-bottom:14px;"><strong>શાસ્ત્રીય હોમિયોપેથીમાં, તમારા લક્ષણો જ સર્વસ્વ છે.</strong></p>
+    <p style="margin-bottom:14px;">જ્યારે દવા તમારા પૂરા અને વિગતવાર લક્ષણોના આધારે પસંદ કરવામાં આવે છે, ત્યારે તે પોતે જ તમારી બીમારીના મૂળ સુધી પહોંચીને તેની સારવાર કરે છે — ડૉક્ટરે પહેલાં બીમારીનું નામ કે નિદાન જાણવાની જરૂર રહેતી નથી. સાચા અને વિગતવાર લક્ષણોના આધારે સારી રીતે પસંદ કરેલી દવા આ કામ પોતે જ કરી લે છે.</p>
+    <p style="margin-bottom:18px;">એટલે જ તમે તમારી તકલીફોનું વર્ણન કેવી રીતે કરો છો તે ખૂબ મહત્ત્વનું છે.</p>
+    <p style="font-weight:600;margin-bottom:10px;">તમારા લક્ષણો કેવી રીતે પસંદ કરવા:</p>
+    <p style="margin-bottom:10px;">1. <strong>જગ્યાથી શરૂ કરો</strong> — શરીરનો તે ભાગ કે અંગ પસંદ કરો જ્યાં ખરેખર તમને તકલીફ છે.</p>
+    <p style="margin-bottom:10px;">2. <strong>પૂરેપૂરું વર્ણન કરો</strong> — દરેક તકલીફનો પોતાનો અલગ સ્વભાવ હોય છે. તમને લાગુ પડતા દરેક પાસાં શોધો: શાથી રાહત મળે છે, શાથી વધે છે, ક્યારે થાય છે, કેવું લાગે છે.</p>
+    <p style="margin-bottom:18px;">3. <strong>આખા શરીરને આવરી લો</strong> — શરીરમાં ક્યાંય પણ થતી બીજી કોઈ પણ બાબત પણ પસંદ કરો, ભલે તે નાની કે અસંબંધિત લાગતી હોય.</p>
+    <p>કંઈક અધૂરું રહી જાય તો ચિંતા ન કરો — તમારાથી બને તેટલો પ્રયત્ન કરો. જે કંઈ બાકી રહેશે, તે ડૉ. યોગેશ્વર તિવારી પોતે તમારો કેસ જોઈને, દવા લખતાં પહેલાં તમારી સાથે પૂરું કરશે.</p>
+  ` : hi ? `
     <p style="margin-bottom:14px;"><strong>शास्त्रीय होम्योपैथी में, आपके लक्षण ही सब कुछ हैं।</strong></p>
     <p style="margin-bottom:14px;">जब दवा आपके पूरे, विस्तृत लक्षणों के आधार पर चुनी जाती है, तो वह स्वयं आपकी बीमारी की जड़ तक पहुंचकर उसका इलाज करती है — डॉक्टर को पहले बीमारी का नाम या निदान जानने की ज़रूरत नहीं होती। सही और विस्तृत लक्षणों पर आधारित सही ढंग से चुनी गई दवा, यह काम स्वयं कर लेती है।</p>
     <p style="margin-bottom:18px;">इसीलिए आप अपनी शिकायतों का वर्णन कैसे करते हैं, यह बहुत मायने रखता है।</p>
@@ -842,7 +1400,7 @@ function renderGuideScreen() {
     <div class="screen-pad" style="max-width:480px;margin:0 auto;padding:28px 20px;">
       <h2 style="font-size:19px;margin-bottom:18px;">${title}</h2>
       <div style="font-size:14.5px;line-height:1.6;color:var(--ink2,#333);text-align:left;">${body}</div>
-      <button onclick="onGuideContinue()" style="display:block;width:100%;padding:15px;margin-top:24px;border:none;border-radius:10px;background:var(--teal,#2055A4);color:#fff;font-size:16px;font-weight:600;cursor:pointer;">${hi ? 'आगे बढ़ें' : 'Continue'}</button>
+      <button onclick="onGuideContinue()" style="display:block;width:100%;padding:15px;margin-top:24px;border:none;border-radius:10px;background:var(--teal,#2055A4);color:#fff;font-size:16px;font-weight:600;cursor:pointer;">${gu ? 'આગળ વધો' : hi ? 'आगे बढ़ें' : 'Continue'}</button>
     </div>
   `;
 }
@@ -935,40 +1493,40 @@ function proceedPastUnlock() {
 function renderIntakeScreen() {
   const p = state.patient;
   return `
-    ${renderTopbar('Punarvasu Clinic', 'A few details before we begin')}
+    ${renderTopbar(G('Punarvasu Clinic', 'પુનર્વસુ ક્લિનિક'), G('A few details before we begin', 'શરૂ કરતાં પહેલાં થોડી માહિતી'))}
     <div class="body">
-      <h2 class="step-title">Tell us about yourself</h2>
-      <p class="step-sub">This helps the doctor understand your case.</p>
+      <h2 class="step-title">${G('Tell us about yourself', 'તમારા વિશે જણાવો')}</h2>
+      <p class="step-sub">${G('This helps the doctor understand your case.', 'આથી ડૉક્ટરને તમારો કેસ સમજવામાં મદદ મળે છે.')}</p>
 
       <div class="option-group">
-        <div class="option-group-label">Name</div>
-        <input id="intakeNameField" class="search-box" type="text" placeholder="Full name" value="${escAttr(p.name)}">
+        <div class="option-group-label">${G('Name', 'નામ')}</div>
+        <input id="intakeNameField" class="search-box" type="text" placeholder="${G('Full name', 'પૂરું નામ')}" value="${escAttr(p.name)}">
       </div>
       <div class="option-group">
-        <div class="option-group-label">Mobile number</div>
-        <input id="intakePhoneField" class="search-box" type="tel" placeholder="10-digit mobile number" value="${escAttr(p.phone)}">
+        <div class="option-group-label">${G('Mobile number', 'મોબાઈલ નંબર')}</div>
+        <input id="intakePhoneField" class="search-box" type="tel" placeholder="${G('10-digit mobile number', '10 અંકનો મોબાઈલ નંબર')}" value="${escAttr(p.phone)}">
       </div>
       <div class="option-group">
-        <div class="option-group-label">Age</div>
-        <input id="intakeAgeField" class="search-box" type="number" min="0" max="120" placeholder="Age in years" value="${escAttr(p.age)}">
+        <div class="option-group-label">${G('Age', 'ઉંમર')}</div>
+        <input id="intakeAgeField" class="search-box" type="number" min="0" max="120" placeholder="${G('Age in years', 'ઉંમર વર્ષમાં')}" value="${escAttr(p.age)}">
       </div>
       <div class="option-group">
-        <div class="option-group-label">Sex</div>
+        <div class="option-group-label">${G('Sex', 'જાતિ')}</div>
         <div style="display:flex;gap:8px">
           ${['male','female','other'].map(s => `
             <div class="ch-card" style="flex:1;${p.sex===s ? 'border-color:var(--teal);background:var(--amber-bg)' : ''}" onclick="onIntakeSexPick('${s}')">
-              <div class="en">${s.charAt(0).toUpperCase()+s.slice(1)}</div>
+              <div class="en">${G(s.charAt(0).toUpperCase()+s.slice(1), { male: 'પુરુષ', female: 'સ્ત્રી', other: 'અન્ય' }[s])}</div>
             </div>
           `).join('')}
         </div>
       </div>
       <div class="option-group">
-        <div class="option-group-label">Reason for consultation</div>
-        <textarea id="intakeReasonField" class="search-box" style="height:80px" placeholder="Briefly, what brings you in today?">${esc(p.reason)}</textarea>
+        <div class="option-group-label">${G('Reason for consultation', 'સલાહ લેવાનું કારણ')}</div>
+        <textarea id="intakeReasonField" class="search-box" style="height:80px" placeholder="${G('Briefly, what brings you in today?', 'ટૂંકમાં, આજે તમે શા માટે આવ્યા છો?')}">${esc(p.reason)}</textarea>
       </div>
 
       ${state.lock.error && state.screen==='intake' ? `<div class="no-match-msg">${esc(state.lock.error)}</div>` : ''}
-      <button class="btn-primary" onclick="onIntakeContinue()" ${state.patient.accountBusy ? 'disabled' : ''}>${state.patient.accountBusy ? 'Setting up your account…' : 'Continue'}</button>
+      <button class="btn-primary" onclick="onIntakeContinue()" ${state.patient.accountBusy ? 'disabled' : ''}>${state.patient.accountBusy ? G('Setting up your account…', 'તમારું ખાતું તૈયાર થઈ રહ્યું છે…') : G('Continue', 'ચાલુ રાખો')}</button>
     </div>
   `;
 }
@@ -992,12 +1550,12 @@ function onIntakeSexPick(sex) {
 async function onIntakeContinue() {
   const p = state.patient;
   if (!p.name.trim() || !p.age || !p.sex) {
-    state.lock.error = 'Please fill in name, age, and sex before continuing.';
+    state.lock.error = G('Please fill in name, age, and sex before continuing.', 'આગળ વધતાં પહેલાં કૃપા કરી નામ, ઉંમર અને જાતિ ભરો.');
     render();
     return;
   }
   if (!p.phone.trim()) {
-    state.lock.error = 'Please enter a mobile number before continuing.';
+    state.lock.error = G('Please enter a mobile number before continuing.', 'આગળ વધતાં પહેલાં કૃપા કરી મોબાઈલ નંબર લખો.');
     render();
     return;
   }
@@ -1228,6 +1786,102 @@ const GENERALS_WALKS = [
         ] },
     ] },
 ];
+
+// GUJARATI: the Gujarati wording of every question above, matched by the question's rubric path.
+// (The three "pick from a list" questions have no path of their own, so they are matched by their English
+// wording; their answer options are matched by path.)
+const GENERALS_GU = {
+  'Appetite, increased (hunger in general)': 'શું તમારી ભૂખ સામાન્ય કરતાં વધી ગઈ છે?',
+  'Appetite, diminished': 'શું તમારી ભૂખ ઓછી થઈ ગઈ છે?',
+  'Appetite, ravenous': 'શું તમને બહુ જ જોરદાર અને તીવ્ર ભૂખ લાગે છે?',
+  'Appetite, wanting': 'શું તમને લગભગ બિલકુલ ભૂખ લાગતી નથી?',
+  'Appetite, insatiable': 'શું ગમે તેટલું ખાઓ તો પણ ભૂખ મટતી નથી?',
+  'Appetite, gnawing': 'શું પેટમાં કંઈક કોરતું હોય એવું, ખાલી-ખાલી લાગે છે?',
+  'Appetite, satiety': 'શું થોડું ખાતાં જ પેટ ભરાઈ ગયું હોય એવું લાગે છે?',
+  'Appetite, disgust': 'શું ખાવાથી મન ઊઠી જાય છે — કંઈ પણ ખાવાનું મન થતું નથી?',
+
+  'Stomach, thirst, extreme': 'શું તમને ખૂબ જ વધારે તરસ લાગે છે?',
+  'Stomach, thirstless': 'શું તમને ખૂબ ઓછી અથવા બિલકુલ તરસ લાગતી નથી?',
+  'Stomach, thirst, large quantities': 'શું તરસ લાગે ત્યારે એકસાથે ઘણું બધું પાણી પીવાનું મન થાય છે?',
+  'Stomach, thirst, small quantities': 'શું તરસ લાગી હોય તો પણ તમે થોડું-થોડું જ પાણી પીઓ છો?',
+  'Stomach, thirst, water, drinking, cold': 'શું તમને ખાસ કરીને ઠંડું પાણી પીવાની ઇચ્છા થાય છે?',
+  'Stomach, thirst, unquenchable': 'શું ગમે તેટલું પાણી પીઓ તો પણ તરસ છીપતી નથી?',
+
+  'Perspiration, profuse': 'શું તમને ખૂબ વધારે પરસેવો આવે છે?',
+  'Perspiration, scanty sweat': 'શું તમને ખૂબ ઓછો પરસેવો આવે છે?',
+  'Perspiration, night': 'શું તમને મોટે ભાગે રાત્રે પરસેવો આવે છે?',
+  'Perspiration, cold': 'શું તમારો પરસેવો ત્વચા પર ઠંડો લાગે છે?',
+  'Perspiration, odor': 'શું તમારા પરસેવામાંથી કોઈ ખાસ ગંધ આવે છે?',
+  'Perspiration, staining the linen': 'શું પરસેવાથી કપડાં કે ચાદર પર ડાઘ પડી જાય છે?',
+  'Perspiration, anxiety': 'શું ગભરામણ કે ચિંતા થાય ત્યારે પરસેવો આવે છે?',
+  'Perspiration, exertion': 'શું થોડી મહેનત કે કસરતથી જ પરસેવો આવી જાય છે?',
+
+  'Sleep, sleeplessness': 'શું તમને ઊંઘ આવવામાં કે ઊંઘ ટકી રહેવામાં તકલીફ થાય છે?',
+  'Sleep, sleepiness': 'શું તમને ખૂબ વધારે ઊંઘ અને ઘેન રહે છે?',
+  'Sleep, restless': 'શું તમારી ઊંઘ બેચેન અને અશાંત રહે છે?',
+  'Sleep, deep': 'શું તમને ખૂબ ગાઢ ઊંઘ આવે છે?',
+  'Sleep, disturbed': 'શું રાત્રે વારંવાર ઊંઘ ઊડી જાય છે?',
+  'Sleep, unrefreshing': 'શું ઊંઘીને ઊઠ્યા પછી પણ તાજગી લાગતી નથી?',
+  'Sleep, dreams': 'શું તમને ઘણાં સપનાં આવે છે, અથવા વારંવાર એકસરખાં સપનાં આવે છે?',
+
+  'Rectum, constipation': 'શું તમને સામાન્ય રીતે કબજિયાત રહે છે?',
+  'Rectum, constipation, difficult stool': 'શું ઝાડો કરવામાં બહુ જોર કરવું પડે છે?',
+  'Rectum, constipation, ineffectual urging and straining': 'શું ઝાડાની તીવ્ર હાજત થાય છે, પણ જોર કરવા છતાં કંઈ નીકળતું નથી?',
+  'Rectum, constipation, alternating with diarrhea': 'શું ક્યારેક કબજિયાત રહે છે અને ક્યારેક ઝાડા થઈ જાય છે?',
+
+  'Stool, hard': 'શું તમારો ઝાડો કડક આવે છે?',
+  'Stool, soft': 'શું તમારો ઝાડો નરમ આવે છે?',
+  'Stool, watery': 'શું તમારો ઝાડો પાણી જેવો પાતળો આવે છે?',
+  'Stool, mucous': 'શું તમારા ઝાડામાં ચીકણો પદાર્થ (આમ) આવે છે?',
+  'Stool, odor': 'શું તમારા ઝાડામાંથી ખાસ કે તીવ્ર ગંધ આવે છે?',
+  'Stool, copious': 'શું દર વખતે ઝાડાનું પ્રમાણ સામાન્ય કરતાં વધારે હોય છે?',
+  'Stool, scanty': 'શું દર વખતે ઝાડાનું પ્રમાણ ખૂબ ઓછું હોય છે?',
+
+  'Urine, copious (increased)': 'શું તમારો પેશાબ સામાન્ય કરતાં વધારે પ્રમાણમાં આવે છે?',
+  'Urine, scanty': 'શું તમારો પેશાબ સામાન્ય કરતાં ખૂબ ઓછો આવે છે?',
+  'Urine, cloudy': 'શું તમારો પેશાબ ડહોળો કે મેલો દેખાય છે?',
+  'Urine, odor': 'શું તમારા પેશાબમાંથી કોઈ ખાસ ગંધ આવે છે?',
+  'Urine, burning (includes hot)': 'શું પેશાબ કરતી વખતે બળતરા કે ગરમાહટ લાગે છે?',
+  'Urine, colorless': 'શું તમારો પેશાબ એકદમ સાફ, રંગ વગરનો આવે છે?',
+
+  'Genitalia female, menses, irregular': 'શું તમારું માસિક અનિયમિત છે?',
+  'Genitalia female, menses, copious': 'શું માસિકમાં સ્ત્રાવ ખૂબ વધારે થાય છે?',
+  'Genitalia female, menses, scanty': 'શું માસિકમાં સ્ત્રાવ ખૂબ ઓછો થાય છે?',
+  'Genitalia female, menses, painful': 'શું માસિક દરમિયાન ખૂબ દુખાવો થાય છે?',
+  'Genitalia female, menses, late': 'શું તમારું માસિક ઘણી વાર મોડું આવે છે?',
+  'Genitalia female, menses, dark': 'શું માસિકનું લોહી ઘેરા રંગનું હોય છે?',
+  'Genitalia female, menses, bright-red': 'શું માસિકનું લોહી ચળકતા લાલ રંગનું હોય છે?',
+
+  'Which weather do you feel more comfortable in?': 'તમને કયા હવામાનમાં વધુ આરામ લાગે છે?',
+  'Generalities, cold, becoming, amel.': 'શિયાળો / ઠંડું હવામાન',
+  'Generalities, wet, weather, amel.': 'ચોમાસું / વરસાદી હવામાન',
+  'Which weather makes you feel worse?': 'કયું હવામાન તમને વધુ પરેશાન કરે છે?',
+  'Generalities, summer, in': 'ઉનાળો',
+  'Generalities, winter, in': 'શિયાળો',
+  'Generalities, wet, weather': 'ચોમાસું / વરસાદની ઋતુ',
+  'Generalities, food': 'શું કોઈ એવો ખોરાક છે જેનાથી તમારી તબિયત વધુ બગડે છે?',
+
+  'Mind, irritability': 'શું તમને ચીડિયાપણું રહે છે?',
+  'Mind, anger': 'શું તમને જલદી ગુસ્સો આવી જાય છે?',
+  'Mind, weeping': 'શું તમે જલદી રડી પડો છો?',
+  'What are your hobbies?': 'તમારા શોખ શું છે?',
+  'Mind, reading': 'વાંચન',
+  'Mind, writing': 'લેખન',
+  'Mind, music': 'સંગીત',
+  'Mind, singing': 'ગાવું'
+};
+const GENERALS_LABEL_GU = {
+  'Appetite': 'ભૂખ', 'Thirst': 'તરસ', 'Perspiration': 'પરસેવો', 'Sleep': 'ઊંઘ',
+  'Constipation': 'કબજિયાત', 'Stool': 'ઝાડો', 'Urine': 'પેશાબ', 'Menses': 'માસિક',
+  'Physical Generals': 'શારીરિક સામાન્ય લક્ષણો', 'Mental Generals': 'માનસિક સામાન્ય લક્ષણો'
+};
+GENERALS_WALKS.forEach(function (topic) {
+  topic.labelGu = GENERALS_LABEL_GU[topic.label] || topic.label;
+  topic.items.forEach(function (item) {
+    item.gu = GENERALS_GU[item.path || item.en] || '';
+    (item.options || []).forEach(function (opt) { opt.gu = GENERALS_GU[opt.path] || ''; });
+  });
+});
 
 function findRubricByExactPath(chapter, fullPath) {
   const bucket = (state.data.chaptersBucketed || {})[chapter] || []; // guarded: may not be ready yet if background loading hasn't finished
@@ -1565,14 +2219,14 @@ function renderGeneralsAnswerBadge(answer) {
   if (answer.choice === 'select') {
     const n = (answer.selected || []).length;
     if (!n) return '';
-    return `<span style="font-size:12px;font-weight:600;color:var(--teal);white-space:nowrap;">&#10003; ${n} chosen</span>`;
+    return `<span style="font-size:12px;font-weight:600;color:var(--teal);white-space:nowrap;">&#10003; ${G(n + ' chosen', n + ' પસંદ કર્યા')}</span>`;
   }
   if (answer.choice === 'yes') {
     const n = (answer.detailPaths || []).length;
-    return `<span style="font-size:12px;font-weight:600;color:var(--teal);white-space:nowrap;">&#10003; Yes${n ? ' (' + n + ')' : ''}</span>`;
+    return `<span style="font-size:12px;font-weight:600;color:var(--teal);white-space:nowrap;">&#10003; ${G('Yes', 'હા')}${n ? ' (' + n + ')' : ''}</span>`;
   }
-  if (answer.choice === 'no') return `<span style="font-size:12px;color:var(--ink3);white-space:nowrap;">No</span>`;
-  return `<span style="font-size:12px;color:var(--ink3);white-space:nowrap;">Not sure</span>`;
+  if (answer.choice === 'no') return `<span style="font-size:12px;color:var(--ink3);white-space:nowrap;">${G('No', 'ના')}</span>`;
+  return `<span style="font-size:12px;color:var(--ink3);white-space:nowrap;">${G('Not sure', 'ખબર નથી')}</span>`;
 }
 
 // Renders the categorized follow-up detail for one question — identical
@@ -1608,19 +2262,21 @@ function renderGeneralsDetailInline(topic, itemPath, key, hideDoneLink, filterFn
   const categoriesHtml = Object.entries(grouped).map(([kind, opts]) => {
     if (opts.length <= 4) {
       const optsHtml = opts.map(([token]) => renderOptCard(token)).join('');
-      return `<div class="option-group"><div class="option-group-label">${esc(kind)}</div>${optsHtml}</div>`;
+      return `<div class="option-group"><div class="option-group-label">${esc(kindName(kind))}</div>${optsHtml}</div>`;
     }
 
     const searchKey = key + '::' + kind;
     const inputId = 'genSearch_' + searchKey.replace(/[^a-zA-Z0-9]/g, '');
     const searchText = gq.detailSearch[searchKey] || '';
     const searchLower = searchText.toLowerCase();
+    const guDetail = (isGu() && guHas(searchLower)) ? guMatcher(searchLower.split(/[,\s]+/).filter(Boolean), !/[\s,]$/.test(searchLower)) : null;
     const chosen = opts.filter(([token]) => selected.includes(itemPath + ', ' + token));
     const unchosen = opts.filter(([token]) => !selected.includes(itemPath + ', ' + token));
     const matches = searchLower
       ? unchosen.filter(([token]) => {
           const disp = getDisplayText(chapter, itemPath + ', ' + token, token);
-          return (disp.en + ' ' + disp.hi + ' ' + disp.kent + ' ' + disp.roman).toLowerCase().includes(searchLower);
+          const hay = (disp.en + ' ' + disp.hi + ' ' + disp.kent + ' ' + disp.roman).toLowerCase();
+          return guDetail ? guDetail.test(hay) : hay.includes(searchLower);
         }).slice(0, 8)
       : [];
 
@@ -1631,27 +2287,27 @@ function renderGeneralsDetailInline(topic, itemPath, key, hideDoneLink, filterFn
     const browseList = unchosen.slice(0, browseCap);
     const browseMoreCount = unchosen.length - browseList.length;
     const browseHtml = browseList.map(([token]) => renderOptCard(token)).join('')
-      + (browseMoreCount > 0 ? `<div style="font-size:12px;color:var(--ink3);padding:6px 2px;">+${browseMoreCount} more — use search above to find them</div>` : '');
+      + (browseMoreCount > 0 ? `<div style="font-size:12px;color:var(--ink3);padding:6px 2px;">${G('+' + browseMoreCount + ' more — use search above to find them', '+' + browseMoreCount + ' વધુ — શોધવા માટે ઉપરનું શોધ બોક્સ વાપરો')}</div>` : '');
     const groupKey = 'genDetail::' + searchKey;
 
     return `<div class="option-group">
-      <div class="option-group-label">${esc(kind)} <span style="font-weight:400;color:var(--ink3)">(${opts.length})</span></div>
+      <div class="option-group-label">${esc(kindName(kind))} <span style="font-weight:400;color:var(--ink3)">(${opts.length})</span></div>
       ${chosenHtml}
-      <input id="${inputId}" class="search-box" type="text" placeholder="Type to search…" value="${escAttr(searchText)}"
+      <input id="${inputId}" class="search-box" type="text" placeholder="${G('Type to search…', 'શોધવા માટે લખો…')}" value="${escAttr(searchText)}"
         oninput="onGeneralsDetailSearch('${escAttr(searchKey)}', this.value)">
       ${matchesHtml}
-      ${renderCollapsibleSection(groupKey, 'Browse all', opts.length + ' option(s)', browseHtml)}
+      ${renderCollapsibleSection(groupKey, G('Browse all', 'બધા જુઓ'), opts.length + ' ' + G('option(s)', 'વિકલ્પ'), browseHtml)}
     </div>`;
   }).join('');
 
   const doneHtml = hideDoneLink ? '' : `
       <div style="text-align:center;margin-top:4px;">
-        <span style="color:var(--teal);text-decoration:underline;cursor:pointer;font-size:13px;font-weight:600;" onclick="onGeneralsDetailDone()">Done with this one</span>
+        <span style="color:var(--teal);text-decoration:underline;cursor:pointer;font-size:13px;font-weight:600;" onclick="onGeneralsDetailDone()">${G('Done with this one', 'આ પૂરું થયું')}</span>
       </div>`;
 
   return `
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
-      <div style="font-size:12px;color:var(--ink3);margin-bottom:8px;">A bit more detail on that —</div>
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:8px;">${G('A bit more detail on that —', 'એ વિશે થોડી વધુ વિગત —')}</div>
       ${categoriesHtml}
       ${doneHtml}
     </div>
@@ -1667,7 +2323,7 @@ function renderGeneralsQuestionStep() {
     <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
       <div style="height:100%;width:${Math.round((gq.index / topicTotal) * 100)}%;background:var(--teal);border-radius:2px;transition:width .3s;"></div>
     </div>
-    <div style="font-size:12px;color:var(--ink3);white-space:nowrap;">${gq.index + 1} of ${topicTotal}</div>
+    <div style="font-size:12px;color:var(--ink3);white-space:nowrap;">${G((gq.index + 1) + ' of ' + topicTotal, topicTotal + ' માંથી ' + (gq.index + 1))}</div>
   </div>`;
 
   const itemsHtml = topic.items.map((item, idx) => {
@@ -1678,7 +2334,7 @@ function renderGeneralsQuestionStep() {
     if (!isExpanded) {
       return `<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;" onclick="onGeneralsItemExpand(${idx})">
         <div style="flex:1;">
-          <div style="font-size:14px;font-weight:600;color:var(--ink);">${esc(state.patient.preferredLang === 'hi' ? item.hi : item.en)}</div>
+          <div style="font-size:14px;font-weight:600;color:var(--ink);">${esc(L3(item.en, item.hi, item.gu || item.en))}</div>
         </div>
         ${renderGeneralsAnswerBadge(answer)}
         <span style="color:var(--ink3);font-size:11px;">&#9656;</span>
@@ -1692,7 +2348,7 @@ function renderGeneralsQuestionStep() {
         const border = checked ? 'border:1.5px solid var(--teal);background:#EEF2FA;' : '';
         const card = `<div class="opt-card" style="cursor:pointer;${border}" onclick="onGeneralsSelectToggle(${optIdx})">
           <div class="kent">${checked ? '&#10003; ' : ''}${esc(opt.en)}</div>
-          <div class="hi">${esc(opt.hi)}</div>
+          <div class="hi">${esc(isGu() ? (opt.gu || opt.hi) : opt.hi)}</div>
         </div>`;
         // If this option maps to a real rubric that itself has further real
         // children (e.g. "Mind, reading" -> averse to / desires / agg.),
@@ -1704,7 +2360,7 @@ function renderGeneralsQuestionStep() {
         return card + optDetail;
       }).join('');
       return `<div style="border:1.5px solid var(--teal);border-radius:8px;padding:14px;margin-bottom:8px;">
-        <div style="font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;" onclick="onGeneralsItemExpand(${idx})">${esc(state.patient.preferredLang === 'hi' ? item.hi : item.en)}</div>
+        <div style="font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;" onclick="onGeneralsItemExpand(${idx})">${esc(L3(item.en, item.hi, item.gu || item.en))}</div>
         ${optsHtml}
       </div>`;
     }
@@ -1716,26 +2372,26 @@ function renderGeneralsQuestionStep() {
     const showDetail = answer && answer.choice === 'yes' && hasDetail;
 
     return `<div style="border:1.5px solid var(--teal);border-radius:8px;padding:14px;margin-bottom:8px;">
-      <div style="font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;" onclick="onGeneralsItemExpand(${idx})">${esc(state.patient.preferredLang === 'hi' ? item.hi : item.en)}</div>
+      <div style="font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;" onclick="onGeneralsItemExpand(${idx})">${esc(L3(item.en, item.hi, item.gu || item.en))}</div>
       <div style="display:flex;gap:8px;">
-        <button class="btn-primary" style="flex:1;${yesStyle}" onclick="onGeneralsAnswer('yes')">Yes</button>
-        <button class="btn-outline" style="flex:1;${noStyle}" onclick="onGeneralsAnswer('no')">No</button>
-        <button class="btn-outline" style="flex:1;${skipStyle}" onclick="onGeneralsAnswer('skip')">Not sure</button>
+        <button class="btn-primary" style="flex:1;${yesStyle}" onclick="onGeneralsAnswer('yes')">${G('Yes', 'હા')}</button>
+        <button class="btn-outline" style="flex:1;${noStyle}" onclick="onGeneralsAnswer('no')">${G('No', 'ના')}</button>
+        <button class="btn-outline" style="flex:1;${skipStyle}" onclick="onGeneralsAnswer('skip')">${G('Not sure', 'ખબર નથી')}</button>
       </div>
       ${showDetail ? renderGeneralsDetailInline(topic, item.path, key, false, item.childFilter) : ''}
     </div>`;
   }).join('');
 
   return `
-    ${renderTopbar('General Health', topic.label + ' — ' + (gq.index + 1) + ' of ' + topicTotal)}
+    ${renderTopbar(G('General Health', 'સામાન્ય સ્વાસ્થ્ય'), G(topic.label + ' — ' + (gq.index + 1) + ' of ' + topicTotal, topic.labelGu + ' — ' + topicTotal + ' માંથી ' + (gq.index + 1)))}
     ${progressHtml}
     <div class="body">
-      <button class="back-btn" onclick="onGeneralsItemBack()">&larr; Back</button>
-      <h2 class="step-title" style="margin-bottom:14px;">${esc(topic.label)}</h2>
+      <button class="back-btn" onclick="onGeneralsItemBack()">&larr; ${G('Back', 'પાછળ')}</button>
+      <h2 class="step-title" style="margin-bottom:14px;">${esc(G(topic.label, topic.labelGu))}</h2>
       ${itemsHtml}
     </div>
     <div class="footer-bar">
-      <button class="btn-primary" onclick="onGeneralsTopicContinue()">Continue →</button>
+      <button class="btn-primary" onclick="onGeneralsTopicContinue()">${G('Continue →', 'આગળ વધો →')}</button>
     </div>
   `;
 }
@@ -1748,7 +2404,7 @@ function findChapterKey(name) {
 
 
 function renderSubmittedScreen() {
-  const expiredNoticeHtml = state.reviewExpiredNotice ? `<p style="margin-top:14px;max-width:280px;font-size:12.5px;color:var(--danger);">Your 30-minute review window timed out from inactivity. आपका 30 मिनट का समीक्षा सत्र निष्क्रियता के कारण समाप्त हो गया। Your submitted case is safe — tap below to start a fresh review window.</p>` : '';
+  const expiredNoticeHtml = state.reviewExpiredNotice ? `<p style="margin-top:14px;max-width:280px;font-size:12.5px;color:var(--danger);">Your 30-minute review window timed out from inactivity. ${HG('आपका 30 मिनट का समीक्षा सत्र निष्क्रियता के कारण समाप्त हो गया।', 'નિષ્ક્રિયતાને કારણે તમારો 30 મિનિટનો સમીક્ષા સમય પૂરો થઈ ગયો.')} ${G('Your submitted case is safe — tap below to start a fresh review window.', 'તમારો મોકલેલો કેસ સુરક્ષિત છે — નવો સમીક્ષા સમય શરૂ કરવા માટે નીચે ટૅપ કરો.')}</p>` : '';
   state.reviewExpiredNotice = false; // one-time notice — clears once rendered so it doesn't persist on later visits
 
   // Reached by the doctor themselves, filling this in on the patient's
@@ -1773,15 +2429,15 @@ function renderSubmittedScreen() {
   }
 
   return `
-    ${renderTopbar('Punarvasu Clinic', 'All done')}
+    ${renderTopbar(G('Punarvasu Clinic', 'પુનર્વસુ ક્લિનિક'), G('All done', 'બધું પૂરું'))}
     <div class="body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;">
       <div style="font-size:48px;margin-bottom:16px;">✅</div>
-      <h2 class="step-title">Your case has been submitted</h2>
+      <h2 class="step-title">${G('Your case has been submitted', 'તમારો કેસ મોકલાઈ ગયો છે')}</h2>
       <p class="en" style="margin-top:8px;max-width:280px;">The doctor will review your symptoms and contact you shortly.</p>
-      <p class="hi" style="margin-top:8px;max-width:280px;">डॉक्टर आपके लक्षणों की समीक्षा करेंगे और जल्द आपसे संपर्क करेंगे।</p>
+      <p class="hi" style="margin-top:8px;max-width:280px;">${HG('डॉक्टर आपके लक्षणों की समीक्षा करेंगे और जल्द आपसे संपर्क करेंगे।', 'ડૉક્ટર તમારા લક્ષણોની સમીક્ષા કરશે અને ટૂંક સમયમાં તમારો સંપર્ક કરશે.')}</p>
       ${expiredNoticeHtml}
-      ${state.submittedCaseId ? `<button class="btn-outline" style="margin-top:22px;max-width:280px;" onclick="onReviewSubmittedCase()">Review your submitted case</button>` : ''}
-      <p class="step-sub" style="margin-top:20px;">You may now close this page.</p>
+      ${state.submittedCaseId ? `<button class="btn-outline" style="margin-top:22px;max-width:280px;" onclick="onReviewSubmittedCase()">${G('Review your submitted case', 'તમારો મોકલેલો કેસ જુઓ')}</button>` : ''}
+      <p class="step-sub" style="margin-top:20px;">${G('You may now close this page.', 'તમે હવે આ પેજ બંધ કરી શકો છો.')}</p>
     </div>
   `;
 }
@@ -1829,7 +2485,7 @@ function renderTopbar(title, sub, showSearchBtn) {
   return `<div class="topbar">
     <div style="display:flex;align-items:center;justify-content:space-between">
       <div><h1>${title}</h1><div class="sub">${sub}</div></div>
-      ${showSearchBtn ? `<button class="search-btn" onclick="onOpenSearch()">&#128269; Search</button>` : ''}
+      ${showSearchBtn ? `<button class="search-btn" onclick="onOpenSearch()">&#128269; ${G('Search', 'શોધો')}</button>` : ''}
     </div>
   </div>`;
 }
@@ -1948,7 +2604,7 @@ function onToggleGroup(groupKey) {
 function renderAddToggleBtn(rubricRef) {
   if (!rubricRef) return '';
   const alreadyAdded = state.completeCase.some(c => String(c.rubricId) === String(rubricRef.id));
-  return `<button class="quick-add-btn inline ${alreadyAdded ? 'added' : ''}" onclick="event.stopPropagation(); onQuickAddOption('${escAttr(rubricRef.id)}', '${escAttr(rubricRef.path)}', ${rubricRef.remedyCount})">${alreadyAdded ? '✓ Added · जोड़ा गया' : '+ Add · जोड़ें'}</button>`;
+  return `<button class="quick-add-btn inline ${alreadyAdded ? 'added' : ''}" onclick="event.stopPropagation(); onQuickAddOption('${escAttr(rubricRef.id)}', '${escAttr(rubricRef.path)}', ${rubricRef.remedyCount})">${alreadyAdded ? '✓ Added · ' + HG('जोड़ा गया', 'ઉમેર્યું') : '+ Add · ' + HG('जोड़ें', 'ઉમેરો')}</button>`;
 }
 
 // Checks ONE exact path and adds it to the case if it is itself a real
@@ -2046,7 +2702,7 @@ function renderResultTreeNode(node, depth) {
   const rowClass = (alreadyAdded ? 'selected-node-header' : 'tree-node-row') + (state.search.focusPath === node.path ? ' row-focus' : '');
   if (!resultFirstPath) resultFirstPath = node.path;
   const childCount = Object.keys(node.children).length;
-  const qualifierCountHtml = childCount > 0 ? `<div class="collapsible-count">${childCount} विकल्प · option(s)</div>` : '';
+  const qualifierCountHtml = childCount > 0 ? `<div class="collapsible-count">${childCount} ${HG('विकल्प', 'વિકલ્પ')} · option(s)</div>` : '';
   const childrenHtml = Object.values(node.children).map(child => renderResultTreeNode(child, depth + 1)).join('');
 
   return `
@@ -2078,6 +2734,7 @@ function renderResultTreeNode(node, depth) {
 function renderWizardScreen() {
   const q = state.search.query.trim();
   const keywords = q.split(/[,\s]+/).map(k => k.trim().toLowerCase()).filter(Boolean);
+  const guMatch = isGu() ? guMatcher(keywords, !/[\s,]$/.test(state.search.query)) : null; // Gujarati patient: typed Gujarati words are understood
   const pathTokens = state.currentWalk.pathTokens;
   const inWalk = pathTokens.length > 0;
   const chapter = pathTokens[0];
@@ -2089,9 +2746,9 @@ function renderWizardScreen() {
   const boxVal = stepSearch ? searchFilter : state.search.query;
   const searchBoxHtml = `
     <div class="wizard-search-highlight">
-      <div class="wizard-search-label">Enter your problem here · अपनी तकलीफ़ यहाँ लिखिए</div>
+      <div class="wizard-search-label">Enter your problem here · ${HG('अपनी तकलीफ़ यहाँ लिखिए', 'તમારી તકલીફ અહીં લખો')}</div>
       <div style="position:relative;">
-        <input id="globalSearchInput" class="search-box wizard-search-input" type="text" placeholder="e.g. pain, morning, right side… · जैसे: दर्द, सुबह, दायीं तरफ़…" value="${escAttr(boxVal)}" oninput="onSearchInput(this.value)">
+        <input id="globalSearchInput" class="search-box wizard-search-input" type="text" placeholder="e.g. pain, morning, right side… · ${HG('जैसे: दर्द, सुबह, दायीं तरफ़…', 'જેમ કે: દુખાવો, સવાર, જમણી બાજુ…')}" value="${escAttr(boxVal)}" oninput="onSearchInput(this.value)">
         ${(q || (stepSearch && searchFilter)) ? `<span class="search-clear-btn" onclick="onSearchInput('')" title="Clear">&#10005;</span>` : ''}
       </div>
     </div>
@@ -2104,10 +2761,10 @@ function renderWizardScreen() {
   const isStep = !q;
   const switchHtml = `
     <div class="view-switch" role="group" aria-label="View">
-      <button class="vs-btn ${isStep ? '' : 'on'}" onclick="setResultViewMode('list')">List view &middot; सूची</button>
-      <button class="vs-btn ${isStep ? 'on' : ''}" onclick="setResultViewMode('step')">Step-by-step &middot; चरण-दर-चरण</button>
+      <button class="vs-btn ${isStep ? '' : 'on'}" onclick="setResultViewMode('list')">List view &middot; ${HG('सूची', 'યાદી')}</button>
+      <button class="vs-btn ${isStep ? 'on' : ''}" onclick="setResultViewMode('step')">Step-by-step &middot; ${HG('चरण-दर-चरण', 'પગલે-પગલે')}</button>
     </div>
-    <div class="view-switch-hint">${isStep ? 'The same search, step by step. Press List view to see all results together. · वही खोज, चरण-दर-चरण। सभी परिणाम एक साथ देखने के लिए List view दबाएँ।' : 'Tap a row to pick it, then press Step-by-step to see it step by step. · किसी पंक्ति पर टैप करें, फिर Step-by-step दबाएँ।'}</div>`;
+    <div class="view-switch-hint">${isStep ? 'The same search, step by step. Press List view to see all results together. · ' + HG('वही खोज, चरण-दर-चरण। सभी परिणाम एक साथ देखने के लिए List view दबाएँ।', 'એ જ શોધ, પગલે-પગલે. બધા પરિણામો એકસાથે જોવા માટે List view દબાવો.') : 'Tap a row to pick it, then press Step-by-step to see it step by step. · ' + HG('किसी पंक्ति पर टैप करें, फिर Step-by-step दबाएँ।', 'કોઈ લીટી પર ટૅપ કરો, પછી Step-by-step દબાવો.')}</div>`;
   const stepSwitchHtml = (!q && inWalk && state.search.backQuery) ? switchHtml : '';
 
   // Back goes up one level of an active walk; with no walk in progress, it
@@ -2115,22 +2772,22 @@ function renderWizardScreen() {
   // reached from somewhere else in the app (returnScreenAfterSearch) — when
   // this already IS the root screen there's nowhere to show a Back to.
   const backToResultsHtml = (inWalk && !q && state.search.backQuery)
-    ? `<button class="back-btn" onclick="onBackToResults()">&#8617; Back to results · परिणामों पर वापस</button>` : '';
+    ? `<button class="back-btn" onclick="onBackToResults()">&#8617; Back to results · ${HG('परिणामों पर वापस', 'પરિણામો પર પાછા')}</button>` : '';
   const backBtnHtml = inWalk
-    ? `<div class="back-row"><button class="back-btn" onclick="onWalkBack()">&larr; Back</button>${backToResultsHtml}</div>`
+    ? `<div class="back-row"><button class="back-btn" onclick="onWalkBack()">&larr; ${G('Back', 'પાછળ')}</button>${backToResultsHtml}</div>`
     : (state.returnScreenAfterSearch && state.returnScreenAfterSearch !== 'search'
-      ? `<button class="back-btn" onclick="onCloseSearch()">&larr; Back</button>` : '');
+      ? `<button class="back-btn" onclick="onCloseSearch()">&larr; ${G('Back', 'પાછળ')}</button>` : '');
 
   // Single footer button (replacing the old two-button "Add more
   // complaints" / "Continue →" footer) — "add more" no longer needs its own
   // button since the search box above is always there to pivot to a new
   // complaint; this one just moves on once the patient is done.
   const footerHtml = pickMode ? pickFooterHtml() : state.completeCase.length ? `<div class="footer-bar">
-    <button class="btn-primary" onclick="goToCaseReview()">Done and Continue to Repertorize · पूर्ण — रिपर्टराइज़ करने हेतु आगे बढ़ें</button>
+    <button class="btn-primary" onclick="goToCaseReview()">Done and Continue to Repertorize · ${HG('पूर्ण — रिपर्टराइज़ करने हेतु आगे बढ़ें', 'પૂર્ણ — આગળ વધો')}</button>
   </div>` : '';
 
   const editingBannerHtml = state.editingCaseIndex !== null
-    ? `<div class="editing-banner">Editing an existing complaint. मौजूदा शिकायत में बदलाव किया जा रहा है। <span class="cancel-edit-link" onclick="onCancelEdit()">Cancel — keep original · रद्द करें, पहले जैसा रखें</span></div>` : '';
+    ? `<div class="editing-banner">Editing an existing complaint. ${HG('मौजूदा शिकायत में बदलाव किया जा रहा है।', 'હાલની તકલીફમાં ફેરફાર થઈ રહ્યો છે.')} <span class="cancel-edit-link" onclick="onCancelEdit()">Cancel — keep original · ${HG('रद्द करें, पहले जैसा रखें', 'રદ કરો, પહેલાં જેવું રાખો')}</span></div>` : '';
 
   // ============================================================
   // Branch 1: an active free-text query — show the matched Drill, whether
@@ -2148,14 +2805,14 @@ function renderWizardScreen() {
       // (one keyword so far) — same matching semantics as the .every()
       // form below, just without a closure call per rubric for a check
       // that only ever had one keyword to test anyway.
-      let matches = keywords.length === 1
+      let matches = guMatch ? guSearch(guMatch, state.data.searchIndex) : keywords.length === 1
         ? state.data.searchIndex.filter(r => r.searchable.includes(keywords[0]))
         : state.data.searchIndex.filter(r => keywords.every(k => r.searchable.includes(k)));
       matches.sort((a, b) => b.remedyCount - a.remedyCount);
       totalCount = matches.length;
 
       if (totalCount > 150) {
-        nudgeHtml = `<div class="search-nudge">This matched a very large number of rubrics (${totalCount}). Try adding when it happens, which side, or what makes it better/worse to narrow this down.</div>`;
+        nudgeHtml = `<div class="search-nudge">${G('This matched a very large number of rubrics (' + totalCount + '). Try adding when it happens, which side, or what makes it better/worse to narrow this down.', 'આ શબ્દ ઘણા બધા (' + totalCount + ') લક્ષણો સાથે મળે છે. યાદી નાની કરવા માટે તે ક્યારે થાય છે, કઈ બાજુ થાય છે, અથવા શાથી રાહત કે વધારો થાય છે તે ઉમેરો.')}</div>`;
       }
 
       const shown = matches.slice(0, state.search.displayLimit);
@@ -2185,7 +2842,7 @@ function renderWizardScreen() {
           // screen itself would once drilled in one level.
           if (!resultFirstPath) resultFirstPath = r.path;
           const childCount = Object.keys(getNextOptions([r.chapter]).nextOptions).length;
-          const qualifierCountHtml = childCount > 0 ? `<div class="collapsible-count">${childCount} विकल्प · option(s)</div>` : '';
+          const qualifierCountHtml = childCount > 0 ? `<div class="collapsible-count">${childCount} ${HG('विकल्प', 'વિકલ્પ')} · option(s)</div>` : '';
           return `<div class="selected-node">
             <div class="${(alreadyAdded ? 'selected-node-header' : 'tree-node-row') + (state.search.focusPath === r.path ? ' row-focus' : '')}" onclick="onResultRowTap('${escAttr(r.path)}', this)">
               <div class="selected-node-text">${renderTrilingualBlock(disp)}${qualifierCountHtml}</div>
@@ -2194,29 +2851,29 @@ function renderWizardScreen() {
           </div>`;
         }).join('');
         return `
-          <div class="option-group-label" style="margin-top:14px">${esc(chapterName)} (${items.length} shown)</div>
+          <div class="option-group-label" style="margin-top:14px">${esc(chapterName)}${chapterNameGu(chapterName) ? ' · ' + esc(chapterNameGu(chapterName)) : ''} (${G(items.length + ' shown', items.length + ' બતાવ્યા')})</div>
           ${chapterOnlyHtml}
           ${treeHtml}
         `;
       }).join('');
 
       if (state.search.displayLimit < totalCount) {
-        resultsHtml += `<div class="show-all-link" onclick="onSearchShowMore()">Showing ${Math.min(state.search.displayLimit, totalCount)} of ${totalCount} — show more</div>`;
+        resultsHtml += `<div class="show-all-link" onclick="onSearchShowMore()">${G('Showing ' + Math.min(state.search.displayLimit, totalCount) + ' of ' + totalCount + ' — show more', totalCount + ' માંથી ' + Math.min(state.search.displayLimit, totalCount) + ' બતાવ્યા — વધુ બતાવો')}</div>`;
       }
     }
 
     return `
-      ${renderTopbar('Guided Case Wizard', inWalk ? chapter : 'Search results', false)}
+      ${renderTopbar(G('Guided Case Wizard', 'માર્ગદર્શિત કેસ વિઝાર્ડ'), inWalk ? chapter : G('Search results', 'શોધનાં પરિણામો'), false)}
       ${renderBreadcrumb()}
       <div class="body">
         ${backBtnHtml}
         ${searchBoxHtml}
         ${editingBannerHtml}
-        <p class="step-sub">Separate multiple keywords with commas. More keywords narrow the results. · कई शब्द खोजने के लिए कॉमा से अलग करें।</p>
+        <p class="step-sub">Separate multiple keywords with commas. More keywords narrow the results. · ${HG('कई शब्द खोजने के लिए कॉमा से अलग करें।', 'તમે ગુજરાતી, હિન્દી કે અંગ્રેજીમાં લખી શકો છો. એકથી વધુ શબ્દો અલ્પવિરામ (,) થી અલગ કરો.')}</p>
         ${keywords.length ? switchHtml : ''}
-        ${nudgeHtml}
-        ${!keywords.length ? `<div class="empty-state">Start typing to search across all chapters.</div>` : ''}
-        ${keywords.length && !totalCount ? `<div class="empty-state">No rubrics found matching all of: ${esc(keywords.join(', '))}</div>` : ''}
+        ${totalCount ? guSoftHtml(guMatch) : ''}${nudgeHtml}
+        ${!keywords.length ? `<div class="empty-state">${G('Start typing to search across all chapters.', 'બધા વિભાગોમાં શોધવા માટે ટાઇપ કરવાનું શરૂ કરો.')}</div>` : ''}
+        ${keywords.length && !totalCount ? `<div class="empty-state">${G('No rubrics found matching all of: ' + esc(keywords.join(', ')), 'આ બધા શબ્દો સાથે મળતું કોઈ લક્ષણ મળ્યું નથી: ' + esc(keywords.join(', ')) + '.' + guNoResultHint(guMatch))}</div>` : ''}
         <div class="result-list">${resultsHtml}</div>
       </div>
       ${footerHtml}
@@ -2249,7 +2906,7 @@ function renderWizardScreen() {
       // live collapsible groups below use, and nothing at all once there's
       // truly nothing further to narrow down.
       const ownChildCount = Object.keys(ownNextOptions).length;
-      const ownQualifierCountHtml = ownChildCount > 0 ? `<div class="collapsible-count">${ownChildCount} विकल्प · option(s)</div>` : '';
+      const ownQualifierCountHtml = ownChildCount > 0 ? `<div class="collapsible-count">${ownChildCount} ${HG('विकल्प', 'વિકલ્પ')} · option(s)</div>` : '';
 
       historyHtml += `
         <div class="selected-node" style="margin-left:${indent}px">
@@ -2269,7 +2926,7 @@ function renderWizardScreen() {
     // If the path was cut short by a collapsed node, nothing further renders below it.
     if (stoppedAtCollapsedDepth !== -1) {
       return `
-        ${renderTopbar('Guided Case Wizard', chapter, false)}
+        ${renderTopbar(G('Guided Case Wizard', 'માર્ગદર્શિત કેસ વિઝાર્ડ'), chapter, false)}
         ${renderBreadcrumb()}
         <div class="body">
           ${backBtnHtml}
@@ -2277,7 +2934,7 @@ function renderWizardScreen() {
           ${stepSwitchHtml}
           ${editingBannerHtml}
           <h2 class="step-title">Choose what applies</h2>
-          <p class="step-sub">जो लागू हो उसे चुनें</p>
+          <p class="step-sub">${HG('जो लागू हो उसे चुनें', 'જે લાગુ પડે તે પસંદ કરો')}</p>
           ${historyHtml}
         </div>
         ${footerHtml}
@@ -2291,11 +2948,12 @@ function renderWizardScreen() {
     let entries = Object.entries(nextOptions);
     if (searchFilter) {
       const filterWords = searchFilter.split(/[,\s]+/).map(w => w.trim().toLowerCase()).filter(Boolean);
+      const guFilter = isGu() ? guMatcher(filterWords, !/[\s,]$/.test(searchFilter)) : null;
       entries = entries.filter(([token]) => {
         const optPath = pathTokens.concat([token]).join(', ');
         const disp = getDisplayText(chapter, optPath, token);
         const searchable = (disp.kent + ' ' + disp.en + ' ' + disp.hi + ' ' + disp.roman).toLowerCase();
-        return filterWords.every(w => searchable.includes(w));
+        return guFilter ? guFilter.test(searchable) : filterWords.every(w => searchable.includes(w));
       });
     }
     entries.sort((a, b) => b[1].rubricCount - a[1].rubricCount);
@@ -2321,7 +2979,7 @@ function renderWizardScreen() {
       stopHereHtml = `<div class="stop-here-card">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
           <div style="flex:1;min-width:0;">
-            <div class="label">Yes, this is it · हाँ, यही है</div>
+            <div class="label">Yes, this is it · ${HG('हाँ, यही है', 'હા, આ જ છે')}</div>
             ${renderTrilingualBlock(disp)}
           </div>
           ${renderAddToggleBtn(exactMatchRubric)}
@@ -2353,23 +3011,23 @@ function renderWizardScreen() {
           : null;
         return `<div class="opt-card" onclick="onOptionPick('${escAttr(token)}')">
           ${renderTrilingualBlock(disp, info.rubricCount)}
-          <div class="meta">${info.totalRemedies} remedy-references</div>
+          <div class="meta">${G(info.totalRemedies + ' remedy-references', info.totalRemedies + ' દવા-સંદર્ભ')}</div>
           ${renderAddToggleBtn(quickAdd)}
         </div>`;
       }).join('');
-      const kindLabel = kind + ' · ' + (KIND_HINDI[kind] || kind);
-      return renderCollapsibleSection(chapter + '::' + pathTokens.join(',') + '::' + kind, kindLabel, opts.length + ' विकल्प · option(s)', inner);
+      const kindLabel = kind + ' · ' + (isGu() ? (KIND_GUJARATI[kind] || kind) : (KIND_HINDI[kind] || kind));
+      return renderCollapsibleSection(chapter + '::' + pathTokens.join(',') + '::' + kind, kindLabel, opts.length + ' ' + HG('विकल्प', 'વિકલ્પ') + ' · option(s)', inner);
     }).join('');
 
     const showAllLink = (!showAllOptions && totalCount > 15)
-      ? `<div class="show-all-link" onclick="onShowAllOptions()">Show all ${totalCount} options · सभी ${totalCount} विकल्प देखें</div>` : '';
+      ? `<div class="show-all-link" onclick="onShowAllOptions()">Show all ${totalCount} options · ${HG('सभी ' + totalCount + ' विकल्प देखें', 'બધા ' + totalCount + ' વિકલ્પ જુઓ')}</div>` : '';
 
     const noMoreOptions = totalCount === 0;
     const filterMatchedNothing = noMoreOptions && searchFilter.length > 0;
     const genuinelyNoData = noMoreOptions && searchFilter.length === 0;
 
     return `
-      ${renderTopbar('Guided Case Wizard', chapter, false)}
+      ${renderTopbar(G('Guided Case Wizard', 'માર્ગદર્શિત કેસ વિઝાર્ડ'), chapter, false)}
       ${renderBreadcrumb()}
       <div class="body">
         ${backBtnHtml}
@@ -2377,13 +3035,13 @@ function renderWizardScreen() {
         ${stepSwitchHtml}
         ${editingBannerHtml}
         <h2 class="step-title">Choose what applies</h2>
-        <p class="step-sub">जो लागू हो उसे चुनें। Select one to go more specific, or tap "+ Add" on a row above to add it. अधिक विशेष जानकारी के लिए एक चुनें, या ऊपर की किसी पंक्ति पर "+ Add" दबाएँ।</p>
+        <p class="step-sub">${HG('जो लागू हो उसे चुनें।', 'જે લાગુ પડે તે પસંદ કરો.')} Select one to go more specific, or tap "+ Add" on a row above to add it. ${HG('अधिक विशेष जानकारी के लिए एक चुनें, या ऊपर की किसी पंक्ति पर "+ Add" दबाएँ।', 'વધુ ચોક્કસ માહિતી માટે એક પસંદ કરો, અથવા ઉપરની કોઈ લીટી પર "+ Add" દબાવો.')}</p>
         ${historyHtml}
         <div style="margin-left:${liveIndent}px">
-          ${!pickMode && (totalCount > 8 || searchFilter) ? `<input id="walkFilterInput" class="search-box ${filterMatchedNothing ? 'no-match' : ''}" type="text" placeholder="Search these options… · यहाँ खोजें…" value="${escAttr(searchFilter)}" oninput="onSearchFilterChange(this.value)">` : ''}
-          ${filterMatchedNothing ? `<div class="no-match-msg">No option here matches "${esc(searchFilter)}" — try a shorter part of the word, or clear this to see everything again. "${esc(searchFilter)}" से कोई विकल्प मेल नहीं खाता — शब्द का छोटा हिस्सा आज़माएं, या सब देखने के लिए इसे हटाएं।</div>` : ''}
+          ${!pickMode && (totalCount > 8 || searchFilter) ? `<input id="walkFilterInput" class="search-box ${filterMatchedNothing ? 'no-match' : ''}" type="text" placeholder="Search these options… · ${HG('यहाँ खोजें…', 'અહીં શોધો…')}" value="${escAttr(searchFilter)}" oninput="onSearchFilterChange(this.value)">` : ''}
+          ${filterMatchedNothing ? `<div class="no-match-msg">No option here matches "${esc(searchFilter)}" — try a shorter part of the word, or clear this to see everything again. ${HG('"' + esc(searchFilter) + '" से कोई विकल्प मेल नहीं खाता — शब्द का छोटा हिस्सा आज़माएं, या सब देखने के लिए इसे हटाएं।', '"' + esc(searchFilter) + '" સાથે મેળ ખાતો કોઈ વિકલ્પ નથી — શબ્દનો નાનો ભાગ અજમાવો, અથવા બધું ફરી જોવા માટે આને હટાવો.')}</div>` : ''}
           ${stopHereHtml}
-          ${genuinelyNoData && !exactMatchRubric ? `<div class="empty-state">No further detail on file for this exact combination. इस सटीक जानकारी के लिए कोई और विवरण उपलब्ध नहीं है।</div>` : ''}
+          ${genuinelyNoData && !exactMatchRubric ? `<div class="empty-state">No further detail on file for this exact combination. ${HG('इस सटीक जानकारी के लिए कोई और विवरण उपलब्ध नहीं है।', 'આ ચોક્કસ માહિતી માટે વધુ વિગતો ઉપલબ્ધ નથી.')}</div>` : ''}
           ${groupsHtml}
           ${showAllLink}
         </div>
@@ -2397,13 +3055,13 @@ function renderWizardScreen() {
   // above is the only way in, so a plain "start typing" prompt is shown.
   // ============================================================
   return `
-    ${renderTopbar('Guided Case Wizard', 'Describe your main problem', false)}
+    ${renderTopbar(G('Guided Case Wizard', 'માર્ગદર્શિત કેસ વિઝાર્ડ'), G('Describe your main problem', 'તમારી મુખ્ય તકલીફ જણાવો'), false)}
     ${renderBreadcrumb()}
     <div class="body">
       ${backBtnHtml}
       ${searchBoxHtml}
       ${editingBannerHtml}
-      <div class="empty-state">Start typing to search across all chapters. · सभी अध्यायों में खोजने के लिए टाइप करना शुरू करें।</div>
+      <div class="empty-state">Start typing to search across all chapters. · ${HG('सभी अध्यायों में खोजने के लिए टाइप करना शुरू करें।', 'બધા વિભાગોમાં શોધવા માટે ટાઇપ કરવાનું શરૂ કરો.')}</div>
     </div>
     ${footerHtml}
   `;
@@ -2438,18 +3096,19 @@ function renderConnectorPrompt() {
 //   -1 Worse · 0 Same · 25 · 50 · 75 · 100 Resolved
 // English or Hindi, following the language the patient chose.
 const FOLLOWUP_SCALE = [
-  { v: -1, en: 'Worse', hi: 'बढ़ गई' },
-  { v: 0, en: 'Same', hi: 'वैसी ही' },
-  { v: 25, en: '25%', hi: '25%' },
-  { v: 50, en: '50%', hi: '50%' },
-  { v: 75, en: '75%', hi: '75%' },
-  { v: 100, en: 'Resolved', hi: 'पूरी ठीक' }
+  { v: -1, en: 'Worse', hi: 'बढ़ गई', gu: 'વધી ગઈ' },
+  { v: 0, en: 'Same', hi: 'वैसी ही', gu: 'એવી જ' },
+  { v: 25, en: '25%', hi: '25%', gu: '25%' },
+  { v: 50, en: '50%', hi: '50%', gu: '50%' },
+  { v: 75, en: '75%', hi: '75%', gu: '75%' },
+  { v: 100, en: 'Resolved', hi: 'पूरी ठीक', gu: 'પૂરેપૂરી મટી ગઈ' }
 ];
 function renderFollowUpRatingScreen() {
   const hi = state.patient.preferredLang === 'hi';
+  const gu = isGu();
   const chiefComplaints = state.completeCase.filter(c => c.source !== 'generals');
   const scaleButtons = (current, handler) => FOLLOWUP_SCALE.map(o => `
-      <button class="rating-btn ${current === o.v ? 'active' : ''}${o.v === -1 ? ' worse' : ''}" onclick="${handler(o.v)}">${hi ? o.hi : o.en}</button>
+      <button class="rating-btn ${current === o.v ? 'active' : ''}${o.v === -1 ? ' worse' : ''}" onclick="${handler(o.v)}">${gu ? o.gu : hi ? o.hi : o.en}</button>
     `).join('');
 
   const complaintRows = chiefComplaints.map(c => {
@@ -2470,21 +3129,21 @@ function renderFollowUpRatingScreen() {
     && state.followUpOverallRating !== null;
 
   return `
-    ${renderTopbar(hi ? 'आप कैसा महसूस कर रहे हैं?' : 'How are you feeling?',
-                   hi ? 'पहली बार आने के समय की तुलना में' : 'Compared to when you first came to us')}
+    ${renderTopbar(gu ? 'તમને કેવું લાગે છે?' : hi ? 'आप कैसा महसूस कर रहे हैं?' : 'How are you feeling?',
+                   gu ? 'તમે પહેલી વાર આવ્યા હતા તેની સરખામણીમાં' : hi ? 'पहली बार आने के समय की तुलना में' : 'Compared to when you first came to us')}
     <div class="body">
-      <h2 class="step-title">${hi ? 'आपकी मुख्य तकलीफ़ें' : 'Your main complaints'}</h2>
-      <p class="step-sub">${hi
+      <h2 class="step-title">${gu ? 'તમારી મુખ્ય તકલીફો' : hi ? 'आपकी मुख्य तकलीफ़ें' : 'Your main complaints'}</h2>
+      <p class="step-sub">${gu ? 'દરેક માટે: આ તકલીફ માટે તમે પહેલી વાર આવ્યા હતા તેની સરખામણીમાં હવે તે કેવી છે? (% = કેટલી રાહત મળી)' : hi
         ? 'हर एक के लिए: जब आप पहली बार इस तकलीफ़ के लिए आए थे, उसकी तुलना में अब यह कैसी है? (% = कितना आराम मिला)'
         : 'For each one: compared to when you first came to us for this problem, how is it now? (% = how much better)'}</p>
-      ${complaintRows || `<div class="empty-state">${hi ? 'पिछली बार की कोई मुख्य तकलीफ़ नहीं मिली।' : 'No chief complaints found from last visit.'}</div>`}
+      ${complaintRows || `<div class="empty-state">${gu ? 'છેલ્લી મુલાકાતની કોઈ મુખ્ય તકલીફ મળી નથી.' : hi ? 'पिछली बार की कोई मुख्य तकलीफ़ नहीं मिली।' : 'No chief complaints found from last visit.'}</div>`}
       <div class="rating-row rating-row-overall">
-        <div class="kent" style="font-weight:600;">${hi ? 'कुल मिलाकर, पहली बार आने के समय की तुलना में अब आप कैसा महसूस कर रहे हैं?' : 'Overall, how do you feel now compared to when you first came?'}</div>
+        <div class="kent" style="font-weight:600;">${gu ? 'એકંદરે, તમે પહેલી વાર આવ્યા હતા તેની સરખામણીમાં હવે તમને કેવું લાગે છે?' : hi ? 'कुल मिलाकर, पहली बार आने के समय की तुलना में अब आप कैसा महसूस कर रहे हैं?' : 'Overall, how do you feel now compared to when you first came?'}</div>
         <div class="rating-buttons">${scaleButtons(state.followUpOverallRating, v => `onSetOverallRating(${v})`)}</div>
       </div>
     </div>
     <div class="footer-bar">
-      <button class="btn-primary" onclick="onContinueFromRating()" ${allRated ? '' : 'disabled'}>${hi ? 'आगे बढ़ें →' : 'Continue →'}</button>
+      <button class="btn-primary" onclick="onContinueFromRating()" ${allRated ? '' : 'disabled'}>${gu ? 'આગળ વધો →' : hi ? 'आगे बढ़ें →' : 'Continue →'}</button>
     </div>
   `;
 }
@@ -2508,28 +3167,30 @@ function renderCaseReview() {
     const disp = getDisplayText(chapter, c.path, c.path.split(',').map(s=>s.trim()).pop());
     const reconsidering = caseItemLockState[i] === 'reconsidering';
     const caption = reconsidering
-      ? { icon: 'lockOpen', en: 'Tap again to reconsider', hi: 'फिर से सोचने के लिए दोबारा टैप करें' }
-      : { icon: 'lockClosed', en: 'Tap to unlock', hi: 'अनलॉक करें' };
+      ? { icon: 'lockOpen', en: 'Tap again to reconsider', hi: 'फिर से सोचने के लिए दोबारा टैप करें', gu: 'ફરી વિચારવા માટે ફરી ટૅપ કરો' }
+      : { icon: 'lockClosed', en: 'Tap to unlock', hi: 'अनलॉक करें', gu: 'અનલૉક કરો' };
     const lockSvg = `<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="var(--danger)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">${ICON_PATHS[caption.icon]}</svg>`;
     return `
     <div class="case-item" onclick="onCaseItemTap(${i})">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
         <div style="flex:1;min-width:0;">
           ${renderTrilingualBlock(disp)}
-          <div class="remedy-count">${c.remedyCount} remedy-references on file</div>
+          <div class="remedy-count">${G(c.remedyCount + ' remedy-references on file', c.remedyCount + ' દવા-સંદર્ભ નોંધાયેલા')}</div>
         </div>
         <div class="lock-badge">
           ${lockSvg}
-          <div class="caption">${esc(caption.en)} · ${esc(caption.hi)}</div>
+          <div class="caption">${esc(caption.en)} · ${esc(isGu() ? caption.gu : caption.hi)}</div>
         </div>
       </div>
-      <button class="remove-btn" onclick="event.stopPropagation(); onRemoveCaseItem(${i})">Remove</button>
+      <button class="remove-btn" onclick="event.stopPropagation(); onRemoveCaseItem(${i})">${G('Remove', 'કાઢી નાખો')}</button>
     </div>
   `;
   }).join('');
 
-  const postSubmissionNotice = isPostSubmission ? `<div class="editing-banner">Reviewing your already-submitted case — you have 30 minutes of activity to make changes before this window closes. आपके पास बदलाव करने के लिए 30 मिनट हैं।</div>` : '';
-  const followUpNotice = state.isFollowUpReview ? `<div class="editing-banner">${state.patient.preferredLang === 'hi'
+  const postSubmissionNotice = isPostSubmission ? `<div class="editing-banner">Reviewing your already-submitted case — you have 30 minutes of activity to make changes before this window closes. ${HG('आपके पास बदलाव करने के लिए 30 मिनट हैं।', 'ફેરફાર કરવા માટે તમારી પાસે 30 મિનિટ છે.')}</div>` : '';
+  const followUpNotice = state.isFollowUpReview ? `<div class="editing-banner">${state.patient.preferredLang === 'gu'
+    ? '📋 આ તે લક્ષણો છે જે તમે તમારી છેલ્લી મુલાકાત વખતે પસંદ કર્યા હતા. કૃપા કરી તેની સમીક્ષા કરો, જરૂર હોય તો ફેરફાર કરો, અને તમારો કેસ ફોલો-અપ તરીકે મોકલો.'
+    : state.patient.preferredLang === 'hi'
     ? '📋 ये वे लक्षण/रुब्रिक्स हैं जिन्हें आपने अपनी पिछली विजिट के दौरान चुना था। कृपया इनकी समीक्षा करें, यदि आवश्यक हो तो बदलाव करें, और अपना केस फॉलो-अप के रूप में सबमिट करें।'
     : '📋 These are the rubrics you selected during your last visit. Please review them, make any changes if needed, and submit your case as a follow-up.'}</div>` : '';
   const submitErrorHtml = state.submit.error ? `<div class="no-match-msg" style="margin:0 0 10px;">${esc(state.submit.error)}</div>` : '';
@@ -2537,29 +3198,29 @@ function renderCaseReview() {
   const footerHtml = isPostSubmission ? `
     <div class="footer-bar" style="flex-direction:column">
       ${submitErrorHtml}
-      <button class="btn-outline" onclick="onAddAnotherComplaint()" ${state.submit.busy ? 'disabled' : ''}>+ Add another complaint</button>
-      <button class="btn-primary" onclick="onSubmitCase()" ${state.submit.busy ? 'disabled' : ''}>${state.submit.busy ? 'Submitting…' : 'Submit revised case →'}</button>
-      <button class="btn-outline" style="color:var(--ink3);" onclick="onDoneReviewingSubmittedCase()" ${state.submit.busy ? 'disabled' : ''}>Done — back to confirmation, no changes</button>
+      <button class="btn-outline" onclick="onAddAnotherComplaint()" ${state.submit.busy ? 'disabled' : ''}>${G('+ Add another complaint', '+ બીજી તકલીફ ઉમેરો')}</button>
+      <button class="btn-primary" onclick="onSubmitCase()" ${state.submit.busy ? 'disabled' : ''}>${state.submit.busy ? G('Submitting…', 'મોકલી રહ્યા છીએ…') : G('Submit revised case →', 'સુધારેલો કેસ મોકલો →')}</button>
+      <button class="btn-outline" style="color:var(--ink3);" onclick="onDoneReviewingSubmittedCase()" ${state.submit.busy ? 'disabled' : ''}>${G('Done — back to confirmation, no changes', 'થઈ ગયું — ફેરફાર વગર પુષ્ટિ પર પાછા')}</button>
     </div>
   ` : state.isFollowUpReview ? `
     <div class="footer-bar" style="flex-direction:column">
-      <button class="btn-primary" onclick="onAddAnotherComplaint()">+ Add another complaint</button>
-      ${state.completeCase.length ? `<button class="btn-outline" onclick="goToFollowUpChangesSummary()">Continue →</button>` : ''}
+      <button class="btn-primary" onclick="onAddAnotherComplaint()">${G('+ Add another complaint', '+ બીજી તકલીફ ઉમેરો')}</button>
+      ${state.completeCase.length ? `<button class="btn-outline" onclick="goToFollowUpChangesSummary()">${G('Continue →', 'આગળ વધો →')}</button>` : ''}
     </div>
   ` : `
     <div class="footer-bar" style="flex-direction:column">
-      <button class="btn-primary" onclick="onAddAnotherComplaint()">+ Add another complaint</button>
-      ${state.completeCase.length ? `<button class="btn-outline" onclick="startGeneralsSequence()">Continue →</button>` : ''}
+      <button class="btn-primary" onclick="onAddAnotherComplaint()">${G('+ Add another complaint', '+ બીજી તકલીફ ઉમેરો')}</button>
+      ${state.completeCase.length ? `<button class="btn-outline" onclick="startGeneralsSequence()">${G('Continue →', 'આગળ વધો →')}</button>` : ''}
     </div>
   `;
 
   return `
-    ${renderTopbar('Your Symptoms', isPostSubmission ? 'Reviewing submitted case' : 'Review before continuing')}
+    ${renderTopbar(G('Your Symptoms', 'તમારા લક્ષણો'), isPostSubmission ? G('Reviewing submitted case', 'મોકલેલા કેસની સમીક્ષા') : G('Review before continuing', 'આગળ વધતાં પહેલાં જુઓ'))}
     <div class="body">
-      <h2 class="step-title">Complaints added so far</h2>
+      <h2 class="step-title">${G('Complaints added so far', 'અત્યાર સુધી ઉમેરેલી તકલીફો')}</h2>
       ${postSubmissionNotice}
       ${followUpNotice}
-      ${state.completeCase.length ? items : '<div class="empty-state">No complaints added yet.</div>'}
+      ${state.completeCase.length ? items : '<div class="empty-state">' + G('No complaints added yet.', 'હજુ કોઈ તકલીફ ઉમેરી નથી.') + '</div>'}
     </div>
     ${footerHtml}
   `;
@@ -2896,7 +3557,7 @@ function renderFollowUpChangesSummary() {
       <div class="case-item" style="cursor:default;${kind === 'removed' ? 'opacity:0.6;' : ''}">
         ${renderTrilingualBlock(disp)}
         <div class="remedy-count" style="color:${kind === 'added' ? 'var(--teal)' : 'var(--danger)'};font-weight:600;">
-          ${kind === 'added' ? '+ Added this visit' : '− Removed this visit'}
+          ${kind === 'added' ? G('+ Added this visit', '+ આ મુલાકાતમાં ઉમેર્યું') : G('− Removed this visit', '− આ મુલાકાતમાં કાઢ્યું')}
         </div>
       </div>
     `;
@@ -2914,19 +3575,19 @@ function renderFollowUpChangesSummary() {
   const submitErrorHtml = state.submit.error ? ('<div class="no-match-msg" style="margin:0 0 10px;">' + esc(state.submit.error) + '</div>') : '';
 
   return `
-    ${renderTopbar('Review your changes', 'What\u2019s different since last visit')}
+    ${renderTopbar(G('Review your changes', 'તમારા ફેરફારો જુઓ'), G('What\u2019s different since last visit', 'છેલ્લી મુલાકાત પછી શું બદલાયું'))}
     <div class="body">
-      <h2 class="step-title">Here's what changed</h2>
-      <p class="step-sub">Everything from last visit stays on file either way — this is just what's new or different for this visit.</p>
-      ${noChanges ? '<div class="empty-state">No changes — the same complaints as last visit.</div>' : ''}
+      <h2 class="step-title">${G("Here's what changed", 'શું બદલાયું તે અહીં છે')}</h2>
+      <p class="step-sub">${G("Everything from last visit stays on file either way — this is just what's new or different for this visit.", 'છેલ્લી મુલાકાતની બધી બાબતો કોઈ પણ રીતે નોંધમાં રહે છે — આ ફક્ત એ છે જે આ મુલાકાત માટે નવું કે અલગ છે.')}</p>
+      ${noChanges ? '<div class="empty-state">' + G('No changes — the same complaints as last visit.', 'કોઈ ફેરફાર નથી — છેલ્લી મુલાકાત જેવી જ તકલીફો.') + '</div>' : ''}
       ${addedHtml}
       ${removedHtml}
     </div>
     <div class="footer-bar" style="flex-direction:column">
       ${submitErrorHtml}
-      <button class="btn-outline" onclick="goToCaseReview()">← Back to full list</button>
-      <button class="btn-primary" onclick="onAddAnotherComplaint()">+ Add something else</button>
-      <button class="btn-primary" onclick="onSubmitCase()" ${state.submit.busy ? 'disabled' : ''}>${state.submit.busy ? 'Submitting…' : 'Submit follow-up →'}</button>
+      <button class="btn-outline" onclick="goToCaseReview()">${G('← Back to full list', '← આખી યાદી પર પાછા')}</button>
+      <button class="btn-primary" onclick="onAddAnotherComplaint()">${G('+ Add something else', '+ બીજું કંઈ ઉમેરો')}</button>
+      <button class="btn-primary" onclick="onSubmitCase()" ${state.submit.busy ? 'disabled' : ''}>${state.submit.busy ? G('Submitting…', 'મોકલી રહ્યા છીએ…') : G('Submit follow-up →', 'ફોલો-અપ મોકલો →')}</button>
     </div>
   `;
 }
@@ -2954,7 +3615,7 @@ async function onSubmitCase() {
       // further down in this same function — this function's errors aren't
       // localized elsewhere either.
       state.submit.busy = false;
-      state.submit.error = 'This follow-up link is no longer current — your consultation has moved on since it was sent. Please contact the clinic for a fresh follow-up link.';
+      state.submit.error = G('This follow-up link is no longer current — your consultation has moved on since it was sent. Please contact the clinic for a fresh follow-up link.', 'આ ફોલો-અપ લિંક હવે ચાલુ નથી — લિંક મોકલ્યા પછી તમારી સલાહ આગળ વધી ગઈ છે. કૃપા કરી નવી ફોલો-અપ લિંક માટે ક્લિનિકનો સંપર્ક કરો.');
       render();
       return;
     }
@@ -3022,7 +3683,7 @@ async function onSubmitCase() {
     state.screen = 'submitted';
     render();
   } else {
-    state.submit.error = result.error || 'Could not submit — please try again.';
+    state.submit.error = result.error || G('Could not submit — please try again.', 'મોકલી શકાયું નથી — કૃપા કરી ફરી પ્રયત્ન કરો.');
     render();
   }
 }
