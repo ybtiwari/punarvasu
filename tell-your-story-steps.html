@@ -1154,6 +1154,7 @@ window.Wizard = W;
 // Sending and looking up the patient: the same Firebase project, the same places and the same record as tell-your-story.html
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, get, set, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 const app = initializeApp({
   apiKey: "AIzaSyAqzKPqBzNoBJc5FWjnVXMER4prgrbhqag",
   authDomain: "punarvasu-790a8.firebaseapp.com",
@@ -1164,11 +1165,55 @@ const app = initializeApp({
   appId: "1:774115339459:web:4ee1f45e1e25d61666c676"
 }, 'patientStoryApp');
 const db = getDatabase(app);
+const auth = getAuth(app);
+try { setPersistence(auth, browserSessionPersistence); } catch (e) {}   // signed in for this visit of the page only
 const W = window.Wizard;
+
+// STORY-LINK: a story sent from a link that does not carry the patient's id used to arrive as a case with no account ("Cases with no
+// account" in the Case Analyzer, to be linked by hand). Now Send first finds the patient's own account from the phone and name - the very
+// same account scheme as the intake wizard's ensurePatientAccount (patient_intake_wizard.html): phone+name first; then the one account
+// phoneIndex knows on this phone; then the old phone-only accounts, only when the name matches - or opens a new one, and files the story
+// under it. If none of that works (e.g. no network for sign-in), the story is still sent, unlinked, as before.
+function nameKey(name) { return String(name || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.+|\.+$/g, ''); }
+async function findOrMakeAccount(name, phone) {
+  const raw = String(phone || '').replace(/[^0-9]/g, ''), stripped = raw.replace(/^0+/, ''), ph = stripped.slice(-10);
+  if (ph.length !== 10) return null;
+  const pass = v => 'Pun@' + v.slice(-6) + 'Cl!', nk = nameKey(name);
+  const tryIn = async (email, pw) => { try { return (await signInWithEmailAndPassword(auth, email, pw)).user.uid; } catch (e) { return null; } };
+  let uid = nk ? await tryIn(ph + '.' + nk + '@punarvasu.clinic', pass(ph)) : null;
+  if (uid) return uid;
+  try {   // the only account on this phone, whatever spelling (or script) the name was typed in
+    const idx = await get(ref(db, 'phoneIndex/' + ph));
+    if (idx.exists()) {
+      const ids = Object.keys(idx.val() || {});
+      if (ids.length === 1) { const kn = nameKey(idx.val()[ids[0]]); if (kn) { uid = await tryIn(ph + '.' + kn + '@punarvasu.clinic', pass(ph)); if (uid) return uid; } }
+    }
+  } catch (e) { /* phoneIndex not readable - go on */ }
+  if (!nk) return null;   // a name in Hindi / Gujarati letters cannot make a new account: sent unlinked, as before
+  for (const v of [...new Set([raw, stripped, ph])]) {   // old phone-only accounts: the same person only when the name matches too
+    uid = await tryIn(v + '@punarvasu.clinic', pass(v));
+    if (uid) { try { const ex = await get(ref(db, 'patients/' + uid)); if (ex.exists() && nameKey(ex.val().name) === nk) return uid; } catch (e) {} }
+  }
+  const email = ph + '.' + nk + '@punarvasu.clinic';
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass(ph));
+    await set(ref(db, 'patients/' + cred.user.uid), { name, phone, email, status: 'active', createdAt: Date.now() });
+    try { await set(ref(db, 'phoneIndex/' + ph + '/' + cred.user.uid), name); } catch (e) {}
+    return cred.user.uid;
+  } catch (e) {
+    if (e && e.code === 'auth/email-already-in-use') return await tryIn(email, pass(ph));
+    return null;
+  }
+}
 
 // the form calls this when the patient presses "Send to Dr. Tiwari" (never in test mode)
 W.sender = async function (payload) {
   const patient = payload.patient;
+  if (!patient.uid) {   // STORY-LINK
+    let uid = null;
+    try { uid = await findOrMakeAccount(patient.name, patient.phone); } catch (e) { console.error('[story] account lookup failed:', e); }
+    if (uid) { patient.uid = uid; delete payload.unlinked; }
+  }
   const caseKey = push(ref(db, 'cases')).key;
   await set(ref(db, 'cases/' + caseKey), payload);
   if (patient.uid) { try { await set(ref(db, 'patients/' + patient.uid + '/casefile/lastCaseSubmittedAt'), new Date(payload.submittedAt).getTime()); } catch (e) {} }
