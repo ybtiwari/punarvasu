@@ -77,6 +77,10 @@
     .myp-chip.worse { background: #FDF3E0; color: #8A5200; border: 1px solid #E8D3A0; }
     .myp-chip.last.worse { background: #C8962E; color: #fff; border-color: #C8962E; }
     .myp-note { font-size: 12.5px; color: var(--ink2); margin-top: 8px; }
+    /* INCOMPLETE-CASE */
+    .draft-card { background: #FDF3E0; border-color: #E3C27A; }
+    .draft-card p { line-height: 1.55; }
+    .draft-go { display: inline-block; margin-top: 10px; background: var(--teal); color: #fff; text-decoration: none; font-weight: 600; font-size: 14px; border-radius: 8px; padding: 10px 16px; }
     /* WELLBEING-CHECKIN */
     .checkin-card { border-color: var(--teal); }
     .ck-row { padding: 12px 0; border-top: 1px solid var(--border); }
@@ -307,6 +311,7 @@
             <button onclick="document.getElementById('installPrompt').style.display='none';sessionStorage.setItem('installDismissed','1')" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:4px;padding:7px 10px;font-size:16px;cursor:pointer;line-height:1;">✕</button>
           </div>
         </div>
+        <div class="info-card draft-card" id="dash-draft" style="display:none;"></div><!-- INCOMPLETE-CASE -->
         <div class="info-card checkin-card" id="dash-checkin" style="display:none;"></div><!-- WELLBEING-CHECKIN -->
         <div class="info-card my-progress" id="dash-progress" style="display:none;"></div><!-- MY-PROGRESS -->
         <div class="info-card">
@@ -445,6 +450,7 @@ window.setLang = function(lang) {
   document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
   event.target.classList.add('active');
   applyTranslations();
+  renderDraftCard(); // INCOMPLETE-CASE: its local-language line follows the language buttons
   // Re-render the case file from the already-loaded data (no new Firebase
   // read) so Clinical Picture text switches language immediately too —
   // everything else in the case file (prescriptions, dates) stays in
@@ -507,6 +513,7 @@ async function showPortalForUser(user) {
   document.getElementById('dash-greeting').textContent  = 'Good day, ' + shownName();
   loadDashboard();
   loadCheckIns(); // WELLBEING-CHECKIN
+  loadDraftCase(); // INCOMPLETE-CASE
   loadMessages();
   loadCaseFile();
   loadAppointments();
@@ -1017,6 +1024,28 @@ let _myProgressSessions = null, _myProgressConsults = {};
 // consultations. Rating scale is the same one "Your progress" uses:
 // -1 worse, 0 same, 1-99 % better, 100 resolved.
 let _checkIns = null, _ckDraft = {}, _ckBusy = false, _ckErr = '', _ckThanks = false;
+// INCOMPLETE-CASE: the intake wizard keeps the complaints picked so far in patients/{uid}/draftCase until the case is submitted. While one
+// is there, the dashboard says the case is not complete and links straight back to the intake, which picks the saved complaints back up.
+let _draftCase = null;
+function loadDraftCase() {
+  onValue(ref(db, `patients/${currentUser.uid}/draftCase`), snap => { _draftCase = snap.exists() ? snap.val() : null; renderDraftCard(); },
+    () => { _draftCase = null; renderDraftCard(); });
+}
+function renderDraftCard() {
+  const el = document.getElementById('dash-draft'); if (!el) return;
+  const c = _draftCase && _draftCase.complaints;
+  const n = c ? (Array.isArray(c) ? c : Object.values(c)).filter(x => x && x.path).length : 0;
+  if (!n || !currentUser) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  const local = currentLang === 'gu'
+    ? `તમારો કેસ હજી પૂરો થયો નથી. અગાઉ ઉમેરેલી ${n} ફરિયાદ સાચવેલી છે — ચાલુ રાખો અને સબમિટ કરો, જેથી ડૉ. તિવારી તેને જોઈ શકે.`
+    : `आपका केस अभी पूरा नहीं हुआ है। पहले जोड़ी गई ${n} शिकायत${n === 1 ? '' : 'ें'} सहेजी हुई है${n === 1 ? '' : 'ं'} — आगे भरें और जमा करें, ताकि डॉ. तिवारी उसे देख सकें।`;
+  const go = currentLang === 'gu' ? 'મારો કેસ ચાલુ રાખો' : 'अपना केस आगे भरें';
+  el.style.display = 'block';
+  el.innerHTML = '<h3>Your case is not complete yet</h3>' +
+    '<p>You added ' + n + ' complaint' + (n === 1 ? '' : 's') + ' earlier, but the case was never submitted. Continue it and submit, so Dr. Tiwari can see it.<br>' +
+    '<span lang="' + (currentLang === 'gu' ? 'gu' : 'hi') + '">' + local + '</span></p>' +
+    '<a class="draft-go" href="patient_intake_wizard.html?uid=' + encodeURIComponent(currentUser.uid) + '">Continue my case &rarr; &middot; ' + go + '</a>';
+}
 function loadCheckIns() {
   onValue(ref(db, `patients/${currentUser.uid}/checkIns`), snap => {
     _checkIns = snap.exists() ? snap.val() : {};

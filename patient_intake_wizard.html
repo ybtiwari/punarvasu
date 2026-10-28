@@ -133,6 +133,9 @@ p.step-sub{font-size:13px;color:var(--ink3);margin-bottom:14px}
 .case-item:hover{border-color:var(--teal);background:var(--cream)}
 .case-item-hint{font-size:10.5px;color:var(--ink3);margin-top:6px;font-style:italic}
 .editing-banner{background:var(--amber-bg);border:1.5px solid var(--amber);border-radius:8px;padding:9px 12px;font-size:12.5px;color:var(--ink2);margin-bottom:12px}
+.resume-banner{position:relative;font-size:14px;line-height:1.45;padding:12px 34px 12px 14px} /* INCOMPLETE-CASE */
+.resume-banner .resume-go{margin-top:10px;width:100%}
+.resume-banner .resume-x{position:absolute;top:6px;right:8px;background:none;border:none;font-size:20px;line-height:1;color:var(--ink3);cursor:pointer}
 .cancel-edit-link{color:#8A5200;font-weight:700;cursor:pointer;text-decoration:underline}
 .case-item .path-en{font-size:13.5px;font-weight:600}
 .case-item .path-hi{font-size:12px;color:var(--ink3);margin-top:2px}
@@ -1598,6 +1601,7 @@ async function onIntakeContinue() {
       const draft = await window.loadDraftCase(state.patient.uid);
       if (draft && draft.length) {
         state.completeCase = dedupeCaseEntries(draft); // NO-DUPLICATES
+        state.resumedDraft = state.completeCase.length; // INCOMPLETE-CASE: say so on the search screen
         lastSavedDraftSnapshot = JSON.stringify(draft); // so the very next render doesn't immediately re-save what we just loaded
       }
     } catch (e) {
@@ -1633,6 +1637,7 @@ async function attemptAutoUnlock() {
         const draft = await window.loadDraftCase(state.patient.uid);
         if (draft && draft.length) {
           state.completeCase = dedupeCaseEntries(draft); // NO-DUPLICATES
+          state.resumedDraft = state.completeCase.length; // INCOMPLETE-CASE: say so on the search screen
           lastSavedDraftSnapshot = JSON.stringify(draft);
         }
       } catch (e) { console.error('[patient-intake] draft load failed:', e); }
@@ -2780,8 +2785,15 @@ function renderWizardScreen() {
     <button class="btn-primary" onclick="goToCaseReview()">Done and Continue to Repertorize · ${HG('पूर्ण — रिपर्टराइज़ करने हेतु आगे बढ़ें', 'પૂર્ણ — આગળ વધો')}</button>
   </div>` : '';
 
-  const editingBannerHtml = state.editingCaseIndex !== null
-    ? `<div class="editing-banner">Editing an existing complaint. ${HG('मौजूदा शिकायत में बदलाव किया जा रहा है।', 'હાલની તકલીફમાં ફેરફાર થઈ રહ્યો છે.')} <span class="cancel-edit-link" onclick="onCancelEdit()">Cancel — keep original · ${HG('रद्द करें, पहले जैसा रखें', 'રદ કરો, પહેલાં જેવું રાખો')}</span></div>` : '';
+  // INCOMPLETE-CASE: a patient (or the doctor, from the record's Complete it) coming back to a case left unfinished is told so, with the
+  // saved complaints one tap away. Shown until submitted or closed with its x.
+  const resumeN = state.resumedDraft && state.editingCaseIndex === null && !pickMode ? state.completeCase.length : 0;
+  const resumeBannerHtml = resumeN ? `<div class="editing-banner resume-banner"><button class="resume-x" onclick="onCloseResumeBanner()" aria-label="Close">&times;</button>
+      <b>Welcome back — your case is not complete yet.</b> ${resumeN} complaint${resumeN === 1 ? '' : 's'} you added earlier ${resumeN === 1 ? 'is' : 'are'} saved. Add anything else that is troubling you, then see your list and submit.
+      <div style="margin-top:3px">${HG(`आपका केस अभी पूरा नहीं हुआ है — पहले जोड़ी गई ${resumeN} शिकायत${resumeN === 1 ? '' : 'ें'} सहेजी हुई है${resumeN === 1 ? '' : 'ं'}। और कुछ हो तो जोड़ें, फिर अपनी सूची देखकर जमा करें।`, `તમારો કેસ હજી પૂરો થયો નથી — અગાઉ ઉમેરેલી ${resumeN} ફરિયાદ સાચવેલી છે. બીજું કંઈ હોય તો ઉમેરો, પછી તમારી યાદી જોઈને સબમિટ કરો.`)}</div>
+      <button class="btn-primary resume-go" onclick="goToCaseReview()">See my complaints and submit (${resumeN}) · ${HG(`अपनी शिकायतें देखें और जमा करें`, `મારી ફરિયાદો જુઓ અને સબમિટ કરો`)}</button></div>` : '';
+  const editingBannerHtml = resumeBannerHtml + (state.editingCaseIndex !== null
+    ? `<div class="editing-banner">Editing an existing complaint. ${HG('मौजूदा शिकायत में बदलाव किया जा रहा है।', 'હાલની તકલીફમાં ફેરફાર થઈ રહ્યો છે.')} <span class="cancel-edit-link" onclick="onCancelEdit()">Cancel — keep original · ${HG('रद्द करें, पहले जैसा रखें', 'રદ કરો, પહેલાં જેવું રાખો')}</span></div>` : '');
 
   // ============================================================
   // Branch 1: an active free-text query — show the matched Drill, whether
@@ -3504,6 +3516,7 @@ function onDoneReviewingSubmittedCase() {
   render();
 }
 
+window.onCloseResumeBanner = function () { state.resumedDraft = 0; render(); };   // INCOMPLETE-CASE
 function goToCaseReview() {
   state.screen = 'caseReview';
   render();
