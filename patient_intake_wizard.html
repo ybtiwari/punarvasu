@@ -123,8 +123,10 @@ p.step-sub{font-size:13px;color:var(--ink3);margin-bottom:14px}
 .stop-here-card .kent{font-size:14px;font-weight:700;margin-top:3px}
 .stop-here-card .en{font-size:12.5px;color:var(--lang-en);margin-top:2px}
 .stop-here-card .hi{font-size:12px;color:var(--lang-hi);margin-top:1px}
-.lock-badge{background:#FDECEA;border:1.5px solid var(--danger);border-radius:9px;padding:7px 8px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;}
-.lock-badge .caption{font-size:12px;font-weight:700;color:var(--danger);text-align:center;max-width:88px;line-height:1.3;text-transform:uppercase;letter-spacing:.01em;}
+.redo-badge{background:#EAF1FB;border:1.5px solid var(--teal);border-radius:9px;padding:7px 8px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;}
+.redo-badge .caption{font-size:12px;font-weight:700;color:var(--teal);text-align:center;max-width:88px;line-height:1.3;text-transform:uppercase;letter-spacing:.01em;}
+.redo-badge.armed{background:var(--teal);}
+.redo-badge.armed .caption{color:#fff;}
 .footer-bar{position:sticky;bottom:0;background:white;border-top:1px solid var(--border);padding:10px 16px;display:flex;gap:10px;flex-shrink:0}
 .btn-primary{background:var(--teal);color:white;border:none;border-radius:8px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;width:100%}
 .btn-outline{background:none;border:1.5px solid var(--border);border-radius:8px;padding:10px 16px;font-size:13px;color:var(--ink2);cursor:pointer;width:100%}
@@ -2514,15 +2516,15 @@ const CHAPTER_HINDI_NAMES = {
   'Urethra': 'मूत्रमार्ग', 'Urine': 'पेशाब', 'Vertigo': 'चक्कर', 'Vision': 'दृष्टि',
 };
 
-// Just the two lock glyphs now — used only by the Case Review screen's
-// "tap to reconsider / tap again to edit" badge (renderCaseReview). Every
+// Just the two redo glyphs now — used only by the Case Review screen's
+// "Redo / tap again to redo" badge (renderCaseReview). Every
 // other icon that used to live here (ear, eye, plate, the chapter-group
 // icons, etc.) was dropped when the icon-based organ picker was removed
 // (2026-10) and nothing else ever read them — renderIcon() went with them,
 // being its only caller.
 const ICON_PATHS = {
-  lockClosed: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/><circle cx="12" cy="15.3" r="1.3" fill="var(--teal)"/>',
-  lockOpen: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M16 10.5V8a4 4 0 0 0-7-2.5"/><circle cx="12" cy="15.3" r="1.3" fill="var(--teal)"/>',
+  redo: '<path d="M20 11a8 8 0 0 0-14.9-4"/><path d="M4 3.5V7h3.5"/><path d="M4 13a8 8 0 0 0 14.9 4"/><path d="M20 20.5V17h-3.5"/>',
+  redoArmed: '<path d="M20 11a8 8 0 0 0-14.9-4"/><path d="M4 3.5V7h3.5"/><path d="M4 13a8 8 0 0 0 14.9 4"/><path d="M20 20.5V17h-3.5"/><path d="M9 12.2l2.2 2.2 4-4.2"/>',
 };
 
 // CHANGE (2026-10): the organ/chapter-picker screen (renderChapterSelect)
@@ -3167,9 +3169,9 @@ function renderCaseReview() {
     const disp = getDisplayText(chapter, c.path, c.path.split(',').map(s=>s.trim()).pop());
     const reconsidering = caseItemLockState[i] === 'reconsidering';
     const caption = reconsidering
-      ? { icon: 'lockOpen', en: 'Tap again to reconsider', hi: 'फिर से सोचने के लिए दोबारा टैप करें', gu: 'ફરી વિચારવા માટે ફરી ટૅપ કરો' }
-      : { icon: 'lockClosed', en: 'Tap to unlock', hi: 'अनलॉक करें', gu: 'અનલૉક કરો' };
-    const lockSvg = `<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="var(--danger)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">${ICON_PATHS[caption.icon]}</svg>`;
+      ? { icon: 'redoArmed', en: 'Tap again to redo', hi: 'फिर से चुनने के लिए दोबारा टैप करें', gu: 'ફરીથી પસંદ કરવા માટે ફરી ટૅપ કરો' }
+      : { icon: 'redo', en: 'Redo', hi: 'फिर से चुनें', gu: 'ફરીથી પસંદ કરો' };
+    const iconSvg = `<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="${reconsidering ? '#fff' : 'var(--teal)'}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">${ICON_PATHS[caption.icon]}</svg>`;
     return `
     <div class="case-item" onclick="onCaseItemTap(${i})">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
@@ -3177,8 +3179,8 @@ function renderCaseReview() {
           ${renderTrilingualBlock(disp)}
           <div class="remedy-count">${G(c.remedyCount + ' remedy-references on file', c.remedyCount + ' દવા-સંદર્ભ નોંધાયેલા')}</div>
         </div>
-        <div class="lock-badge">
-          ${lockSvg}
+        <div class="redo-badge${reconsidering ? ' armed' : ''}">
+          ${iconSvg}
           <div class="caption">${esc(caption.en)} · ${esc(isGu() ? caption.gu : caption.hi)}</div>
         </div>
       </div>
