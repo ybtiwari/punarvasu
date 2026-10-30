@@ -308,6 +308,7 @@
   </div><!-- /body -->
 </div><!-- /shell -->
 
+<script src="rx-pdf.js"></script><!-- RX-PDF-ON-DEMAND -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { initializeAuth, browserSessionPersistence, signInWithEmailAndPassword, onAuthStateChanged, signOut }
@@ -985,11 +986,11 @@ function renderSection(section, snap) {
   if (!snap.exists()) { el.innerHTML = '<div class="empty" style="padding:16px 0;font-size:13px;">No entries yet.</div>'; return; }
   let html = '';
   const entries = Object.values(snap.val()).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  if (section === 'prescriptions') window.__rxPdfList = [];
   entries.forEach(e => {
     if (section === 'prescriptions') {
-      const pdfLink = e.pdfBase64
-        ? `<br/><a style="display:inline-block;margin-top:6px;color:#1a5c3a;font-weight:600" download="${(e.pdfFileName || 'Prescription.pdf').replace(/"/g,'')}" href="data:application/pdf;base64,${e.pdfBase64}">⬇ Download Prescription (PDF)</a>`
-        : '';
+      // RX-PDF-ON-DEMAND: the PDF is made from the prescription text, only when the button is pressed
+      const pdfLink = e.type === 'continue' ? '' : `<br/><button type="button" style="display:inline-block;margin-top:6px;color:#1a5c3a;font-weight:600;background:none;border:none;padding:0;cursor:pointer;font:inherit;font-weight:600" onclick="var r=__rxPdfList[${window.__rxPdfList.push({ e, n: (myPatients[snap.ref.parent.parent.key] || {}).name || '' }) - 1}];pvRxPdf.download(r.e,r.n,this)">⬇ Download Prescription (PDF)</button>`;
       html += `<div class="case-entry"><div class="case-entry-date">${e.date}</div><div class="case-entry-text"><strong>Medicine:</strong> ${e.medicine}<br/><strong>Dose:</strong> ${e.dose}${e.notes?'<br/><strong>Notes:</strong> '+e.notes:''}${pdfLink}</div></div>`;
     } else if (section === 'appointments') {
       html += `<div class="case-entry"><div class="case-entry-date">${e.date}</div><div class="case-entry-text">${e.note||'Consultation'} — <strong>${e.status||'Completed'}</strong></div></div>`;
