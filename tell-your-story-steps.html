@@ -173,6 +173,7 @@ var urlLang = (P.get('lang') || '').trim().toLowerCase();
 if (urlLang !== 'en' && urlLang !== 'hi' && urlLang !== 'gu') urlLang = '';
 var uid = (P.get('uid') || '').trim();
 var testMode = P.get('test') === '1';
+var byDoctor = P.get('by') === 'doctor';   // BY-DOCTOR: opened by the doctor's Patient is here - no thank-you to the patient at the end
 var LI = { en: 0, hi: 1, gu: 2 };
 var SPEAK = { en: 'en-IN', hi: 'hi-IN', gu: 'gu-IN' };
 var L = urlLang || 'en';
@@ -878,8 +879,11 @@ function render(step) {
 function renderDone(preview) {
   cur = 'done'; sent = true; setMsg('');
   $('prog').hidden = true; $('bar').hidden = true;
-  var h = '<div class="ty"><div class="ring" style="color:#163d7a">' + svg(46, 2.6, P_TICK) + '</div>' + h1(t('thanks'), true)
-    + '<p class="help">' + t('doneMsg') + '</p><p class="mini">' + t('closePage') + '</p>';
+  var h = byDoctor   // BY-DOCTOR
+    ? '<div class="ty"><div class="ring" style="color:#163d7a">' + svg(46, 2.6, P_TICK) + '</div>' + h1('Saved to the patient\u2019s record', true)
+      + '<p class="help">The story is now on the patient\u2019s record as a new case waiting for your prescription. Close this tab, go back to the Workspace and press <b>Refresh</b>, then <b>Read story &amp; find rubrics</b>.</p>'
+    : '<div class="ty"><div class="ring" style="color:#163d7a">' + svg(46, 2.6, P_TICK) + '</div>' + h1(t('thanks'), true)
+      + '<p class="help">' + t('doneMsg') + '</p><p class="mini">' + t('closePage') + '</p>';
   if (testMode) h += '<div class="prev"><p class="mini"><b>Test mode: nothing was sent.</b> This is the text Dr. Tiwari would have received:</p><pre id="testOut">' + esc(preview || '') + '</pre>'
     + '<p style="margin-top:14px"><button type="button" class="btn alt" style="width:100%" data-act="newtest">Start a new test</button></p></div>';
   $('view').innerHTML = h + '</div>';
