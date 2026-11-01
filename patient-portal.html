@@ -83,6 +83,20 @@
     .draft-go { display: inline-block; margin-top: 10px; background: var(--teal); color: #fff; text-decoration: none; font-weight: 600; font-size: 14px; border-radius: 8px; padding: 10px 16px; }
     /* WELLBEING-CHECKIN */
     .checkin-card { border-color: var(--teal); }
+    /* MY-COMPLAINTS */
+    .mc-list { margin: 8px 0 10px; }
+    .mc-row { display: flex; gap: 8px; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 14px; color: var(--ink2); }
+    .mc-row:last-child { border-bottom: none; }
+    .mc-n { color: var(--ink3, #888); min-width: 18px; }
+    .mc-t { flex: 1; line-height: 1.5; }
+    .mc-d { display: block; font-size: 12px; color: var(--ink3, #888); }
+    .mc-tag { font-size: 11.5px; color: var(--teal); white-space: nowrap; }
+    .mc-x { background: none; border: none; color: #B23A2E; font-size: 20px; line-height: 1; cursor: pointer; padding: 0 4px; }
+    .mc-add { display: flex; gap: 8px; align-items: stretch; margin-top: 6px; }
+    .mc-add textarea { flex: 1; min-width: 0; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font: inherit; font-size: 14px; resize: vertical; }
+    .mc-btn { border: 1px solid var(--teal); background: var(--white); color: var(--teal); border-radius: 6px; padding: 0 12px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .mc-btn.go { background: var(--teal); color: #fff; }
+    .mc-btn.on { background: #B23A2E; border-color: #B23A2E; color: #fff; }
     .ck-row { padding: 12px 0; border-top: 1px solid var(--border); }
     .ck-name { font-size: 15px; font-weight: 600; color: var(--ink); }
     .ck-hi { font-size: 14px; color: var(--ink2); margin-top: 2px; }
@@ -314,6 +328,7 @@
         <div class="info-card draft-card" id="dash-draft" style="display:none;"></div><!-- INCOMPLETE-CASE -->
         <div class="info-card checkin-card" id="dash-checkin" style="display:none;"></div><!-- WELLBEING-CHECKIN -->
         <div class="info-card my-progress" id="dash-progress" style="display:none;"></div><!-- MY-PROGRESS -->
+        <div class="info-card checkin-card" id="dash-noted" style="display:none;"></div><!-- MY-COMPLAINTS -->
         <div class="info-card">
           <h3>Account status</h3>
           <p>Your account is active. <span class="badge badge-active">Active</span></p>
@@ -452,6 +467,7 @@ window.setLang = function(lang) {
   event.target.classList.add('active');
   applyTranslations();
   renderDraftCard(); // INCOMPLETE-CASE: its local-language line follows the language buttons
+  renderMyNoted();   // MY-COMPLAINTS
   // Re-render the case file from the already-loaded data (no new Firebase
   // read) so Clinical Picture text switches language immediately too —
   // everything else in the case file (prescriptions, dates) stays in
@@ -517,6 +533,7 @@ async function showPortalForUser(user) {
   loadDraftCase(); // INCOMPLETE-CASE
   loadMessages();
   loadCaseFile();
+  loadMyNoted();   // MY-COMPLAINTS
   loadAppointments();
   loadForum();
   applyTranslations();
@@ -981,6 +998,77 @@ function pickLang(field, lang) {
   if (typeof field === 'string') return field; // old single-language entries
   return field[lang] || field.en || '';
 }
+
+// MY-COMPLAINTS: the patient notes each complaint whenever it comes up (typed, or spoken with the phone's microphone); they build up under
+// patients/{uid}/notedComplaints until Dr. Tiwari puts them together for repertorization (the Case Analyzer record's "Find rubrics &
+// repertorize"). A complaint can be removed until it has been sent (pushedAt); the doctor's side clears the sent ones once the prescription is written.
+const MC_TEXT = {
+  en: { title: '📝 My complaints', hint: 'Write down each complaint whenever you notice it - what you feel, where, and what makes it worse or better. Dr. Tiwari reads them together at your next consultation.',
+        ph: 'e.g. pain in both knees, worse on stairs', add: 'Add', sent: 'sent to the doctor', remove: 'Remove', speak: 'Speak', stop: 'Stop', listening: 'Listening…',
+        err: 'Could not save. Please check your internet connection and try again.', mic: 'The microphone is blocked. Allow it for this page, or type the complaint.' },
+  hi: { title: '📝 मेरी तकलीफ़ें', hint: 'जब भी कोई तकलीफ़ महसूस हो, उसे यहाँ लिखें - क्या महसूस होता है, कहाँ, और किससे बढ़ती या घटती है। डॉ. तिवारी अगले परामर्श में इन्हें एक साथ पढ़ेंगे।',
+        ph: 'जैसे: दोनों घुटनों में दर्द, सीढ़ी चढ़ने पर बढ़ता है', add: 'जोड़ें', sent: 'डॉक्टर को भेजा गया', remove: 'हटाएँ', speak: 'बोलें', stop: 'रोकें', listening: 'सुन रहे हैं…',
+        err: 'सेव नहीं हो सका। इंटरनेट जाँचें और फिर से कोशिश करें।', mic: 'माइक्रोफ़ोन बंद है। इस पेज के लिए अनुमति दें, या तकलीफ़ लिखें।' },
+  gu: { title: '📝 મારી તકલીફો', hint: 'જ્યારે પણ કોઈ તકલીફ લાગે, તેને અહીં લખો - શું લાગે છે, ક્યાં, અને શાનાથી વધે કે ઘટે છે. ડૉ. તિવારી આગલા કન્સલ્ટેશનમાં આ બધું સાથે વાંચશે.',
+        ph: 'દા.ત. બંને ઘૂંટણમાં દુખાવો, દાદરા ચઢતાં વધે', add: 'ઉમેરો', sent: 'ડૉક્ટરને મોકલ્યું', remove: 'કાઢી નાખો', speak: 'બોલો', stop: 'રોકો', listening: 'સાંભળી રહ્યા છીએ…',
+        err: 'સેવ ન થયું. ઇન્ટરનેટ તપાસો અને ફરી પ્રયત્ન કરો.', mic: 'માઇક્રોફોન બંધ છે. આ પેજ માટે મંજૂરી આપો, અથવા તકલીફ લખો.' }
+};
+let myNoted = {}, mcRec = null, mcDraft = '';
+function loadMyNoted() {
+  onValue(ref(db, `patients/${currentUser.uid}/notedComplaints`), snap => { myNoted = snap.exists() ? (snap.val() || {}) : {}; renderMyNoted(); });
+}
+function renderMyNoted() {
+  const box = document.getElementById('dash-noted');
+  if (!box || !currentUser) return;
+  const t = MC_TEXT[currentLang] || MC_TEXT.en;
+  const list = Object.entries(myNoted).filter(([, x]) => x && x.text).sort((a, b) => (a[1].at || 0) - (b[1].at || 0));
+  const canSpeak = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  const rows = list.map(([k, x], i) => `<div class="mc-row"><span class="mc-n">${i + 1}.</span><span class="mc-t">${mypEsc(x.text)}<span class="mc-d">${mypDate(x.at)}</span></span>${x.pushedAt
+    ? `<span class="mc-tag">${t.sent}</span>` : `<button class="mc-x" onclick="mcRemove('${mypEsc(k)}')" title="${t.remove}" aria-label="${t.remove}">&times;</button>`}</div>`).join('');
+  box.innerHTML = `<h3>${t.title}${list.length ? ' (' + list.length + ')' : ''}</h3>
+    <p>${t.hint}</p>
+    ${rows ? `<div class="mc-list">${rows}</div>` : ''}
+    <div class="mc-add">
+      ${canSpeak ? `<button class="mc-btn${mcRec ? ' on' : ''}" onclick="mcMic()" title="${mcRec ? t.stop : t.speak}" aria-label="${mcRec ? t.stop : t.speak}">${mcRec ? '⏹' : '🎤'}</button>` : ''}
+      <textarea id="mcText" rows="2" placeholder="${mcRec ? t.listening : t.ph}" oninput="mcSetDraft(this.value)">${mypEsc(mcDraft)}</textarea>
+      <button class="mc-btn go" id="mcAddBtn" onclick="mcAdd()">${t.add}</button>
+    </div>`;
+  box.style.display = '';
+}
+window.mcSetDraft = v => { mcDraft = v; };
+window.mcAdd = async function () {
+  const el = document.getElementById('mcText'), btn = document.getElementById('mcAddBtn');
+  const text = String((el ? el.value : mcDraft) || '').replace(/\s+/g, ' ').trim();
+  if (!text || !currentUser) { if (el) el.focus(); return; }
+  if (mcRec) { try { mcRec.stop(); } catch (e) {} }
+  if (btn) btn.disabled = true;
+  try {
+    await push(ref(db, `patients/${currentUser.uid}/notedComplaints`), { text, at: Date.now(), lang: currentLang, by: 'patient' });
+    mcDraft = ''; renderMyNoted();
+  } catch (e) { alert((MC_TEXT[currentLang] || MC_TEXT.en).err); if (btn) btn.disabled = false; }
+};
+window.mcRemove = async function (key) {
+  if (!currentUser || !myNoted[key] || myNoted[key].pushedAt) return;
+  try { await remove(ref(db, `patients/${currentUser.uid}/notedComplaints/${key}`)); }
+  catch (e) { alert((MC_TEXT[currentLang] || MC_TEXT.en).err); }
+};
+window.mcMic = function () {
+  if (mcRec) { try { mcRec.stop(); } catch (e) {} return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) return;
+  const ta = document.getElementById('mcText'), base = ta ? ta.value.trim() : '';
+  const rec = new SR(); rec.lang = currentLang === 'hi' ? 'hi-IN' : currentLang === 'gu' ? 'gu-IN' : 'en-IN'; rec.interimResults = true; rec.continuous = true;
+  let final = '';
+  rec.onresult = ev => {
+    let interim = '';
+    for (let i = ev.resultIndex; i < ev.results.length; i++) { const tr = ev.results[i][0].transcript; if (ev.results[i].isFinal) final += tr + ' '; else interim += tr; }
+    mcDraft = (base ? base + ' ' : '') + (final + interim).trim();
+    const el = document.getElementById('mcText'); if (el) el.value = mcDraft;
+  };
+  rec.onerror = ev => { if (ev && ev.error === 'not-allowed') alert((MC_TEXT[currentLang] || MC_TEXT.en).mic); };
+  rec.onend = () => { mcRec = null; renderMyNoted(); const el = document.getElementById('mcText'); if (el) { el.focus(); el.selectionStart = el.selectionEnd = el.value.length; } };
+  mcRec = rec; try { rec.start(); } catch (e) { mcRec = null; }
+  renderMyNoted();
+};
 
 function loadCaseFile() {
   onValue(ref(db, `patients/${currentUser.uid}/casefile`), snap => {
