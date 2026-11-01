@@ -299,6 +299,7 @@
   <div class="portal-body">
 
     <div class="sidebar">
+      <div class="nav-item" data-panel="complaints"><span class="nav-icon">📝</span> My complaints</div><!-- MY-COMPLAINTS-HOME -->
       <div class="nav-item active" data-panel="dashboard"><span class="nav-icon">🏠</span> Dashboard</div>
       <div class="nav-item" data-panel="messenger"><span class="nav-icon">💬</span> Messages</div>
       <div class="nav-item" data-panel="casefile"><span class="nav-icon">📋</span> My Case File</div>
@@ -314,21 +315,26 @@
         <button class="lang-btn" onclick="setLang('gu')">ગુજરાતી</button>
       </div>
 
-      <!-- DASHBOARD -->
-      <div class="panel active" id="panel-dashboard">
-        <div class="panel-title" id="dash-greeting">Good day</div>
-        <div class="panel-sub">Welcome to your patient portal.</div>
         <div id="installPrompt" style="display:none;background:var(--teal);color:white;border-radius:8px;padding:14px 18px;margin-bottom:16px;align-items:center;justify-content:space-between;gap:12px;">
-          <span id="installPromptText" style="font-size:14px;">📱 Save this portal to your home screen for quick access</span>
+          <span id="installPromptText" style="font-size:14px;">📱 Put “My complaints” on your home screen - one tap to note a complaint</span>
           <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
             <button id="installBtn" style="background:white;color:var(--teal);border:none;border-radius:4px;padding:7px 16px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;">Add to Home Screen</button>
             <button onclick="document.getElementById('installPrompt').style.display='none';sessionStorage.setItem('installDismissed','1')" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:4px;padding:7px 10px;font-size:16px;cursor:pointer;line-height:1;">✕</button>
           </div>
         </div>
+
+      <!-- MY-COMPLAINTS-HOME: the page the home-screen button opens (start_url ?open=complaints); everything else is in the menu -->
+      <div class="panel" id="panel-complaints">
+        <div class="info-card checkin-card" id="dash-noted" style="display:none;"></div>
+      </div>
+
+      <!-- DASHBOARD -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="panel-title" id="dash-greeting">Good day</div>
+        <div class="panel-sub">Welcome to your patient portal.</div>
         <div class="info-card draft-card" id="dash-draft" style="display:none;"></div><!-- INCOMPLETE-CASE -->
         <div class="info-card checkin-card" id="dash-checkin" style="display:none;"></div><!-- WELLBEING-CHECKIN -->
         <div class="info-card my-progress" id="dash-progress" style="display:none;"></div><!-- MY-PROGRESS -->
-        <div class="info-card checkin-card" id="dash-noted" style="display:none;"></div><!-- MY-COMPLAINTS -->
         <div class="info-card">
           <h3>Account status</h3>
           <p>Your account is active. <span class="badge badge-active">Active</span></p>
@@ -456,9 +462,9 @@ let currentLang = 'en';
 
 // TRANSLATIONS
 const T = {
-  en: { greeting:"Good day", dashboard:"Dashboard", messages:"Messages", casefile:"My Case File", appointments:"Appointments", forum:"Community Forum", signout:"Sign out", send:"Send", newpost:"+ New Post" },
-  hi: { greeting:"नमस्ते", dashboard:"डैशबोर्ड", messages:"संदेश", casefile:"मेरी केस फ़ाइल", appointments:"अपॉइंटमेंट", forum:"सामुदायिक फ़ोरम", signout:"साइन आउट", send:"भेजें", newpost:"+ नई पोस्ट" },
-  gu: { greeting:"નમસ્તે", dashboard:"ડેશબોર્ડ", messages:"સંદેશા", casefile:"મારી કેસ ફાઈલ", appointments:"એપોઈન્ટમેન્ટ", forum:"સામુદાયિક ફોરમ", signout:"સાઈન આઉટ", send:"મોકલો", newpost:"+ નવી પોસ્ટ" }
+  en: { greeting:"Good day", complaints:"My complaints", dashboard:"Dashboard", messages:"Messages", casefile:"My Case File", appointments:"Appointments", forum:"Community Forum", signout:"Sign out", send:"Send", newpost:"+ New Post" },
+  hi: { greeting:"नमस्ते", complaints:"मेरी तकलीफ़ें", dashboard:"डैशबोर्ड", messages:"संदेश", casefile:"मेरी केस फ़ाइल", appointments:"अपॉइंटमेंट", forum:"सामुदायिक फ़ोरम", signout:"साइन आउट", send:"भेजें", newpost:"+ नई पोस्ट" },
+  gu: { greeting:"નમસ્તે", complaints:"મારી તકલીફો", dashboard:"ડેશબોર્ડ", messages:"સંદેશા", casefile:"મારી કેસ ફાઈલ", appointments:"એપોઈન્ટમેન્ટ", forum:"સામુદાયિક ફોરમ", signout:"સાઈન આઉટ", send:"મોકલો", newpost:"+ નવી પોસ્ટ" }
 };
 
 window.setLang = function(lang) {
@@ -481,6 +487,7 @@ window.setLang = function(lang) {
 function applyTranslations() {
   const t = T[currentLang];
   document.getElementById('dash-greeting').textContent = t.greeting + (currentUser ? ', ' + (shownName()) : '');
+  document.querySelector('[data-panel="complaints"]').innerHTML = `<span class="nav-icon">📝</span> ${t.complaints}`;
   document.querySelector('[data-panel="dashboard"]').innerHTML  = `<span class="nav-icon">🏠</span> ${t.dashboard}`;
   document.querySelector('[data-panel="messenger"]').innerHTML  = `<span class="nav-icon">💬</span> ${t.messages}`;
   document.querySelector('[data-panel="casefile"]').innerHTML   = `<span class="nav-icon">📋</span> ${t.casefile}`;
@@ -514,6 +521,7 @@ const LS_UID_KEY   = 'punarvasu_patient_uid';
 let validatedThisPageLoad = false;
 let loginAttemptInProgress = false;
 
+const OPEN_COMPLAINTS = new URLSearchParams(location.search).get('open') === 'complaints';   // MY-COMPLAINTS-HOME: set by the home-screen button and the clinic's link
 function shownName() { return window.__pvShownName || (currentUser && (currentUser.displayName || currentUser.email.split('@')[0])) || ''; } // EDIT-PROFILE
 async function showPortalForUser(user) {
   currentUser = user;
@@ -534,6 +542,7 @@ async function showPortalForUser(user) {
   loadMessages();
   loadCaseFile();
   loadMyNoted();   // MY-COMPLAINTS
+  if (OPEN_COMPLAINTS) { const n = document.querySelector('[data-panel="complaints"]'); if (n) n.click(); }   // MY-COMPLAINTS-HOME
   loadAppointments();
   loadForum();
   applyTranslations();
@@ -602,7 +611,7 @@ async function attemptTokenSignIn(token, uid) {
   const urlUid   = params.get('uid');
 
   if (urlToken && urlUid) {
-    window.history.replaceState({}, document.title, '/patient-portal.html');
+    window.history.replaceState({}, document.title, '/patient-portal.html' + (params.get('open') === 'complaints' ? '?open=complaints' : ''));
     await attemptTokenSignIn(urlToken, urlUid);
     return;
   }
@@ -1752,7 +1761,7 @@ if (isIOS) {
   // install API, so we show static instructions instead and repurpose the
   // button as an explainer rather than a trigger.
   if (installPromptText) {
-    installPromptText.textContent = '📱 To add this portal to your Home Screen: tap the Share icon below, then "Add to Home Screen"';
+    installPromptText.textContent = '📱 To put “My complaints” on your Home Screen: tap the Share icon below, then "Add to Home Screen"';
   }
   if (installBtn) installBtn.style.display = 'none';
   showInstallPrompt();

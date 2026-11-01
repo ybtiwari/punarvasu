@@ -1,8 +1,8 @@
 {
-  "name": "Punarvasu Clinic Portal",
-  "short_name": "Punarvasu",
-  "description": "Your personal health portal — Punarvasu Clinic, Ahmedabad",
-  "start_url": "/patient-portal.html",
+  "name": "My complaints - Punarvasu Clinic",
+  "short_name": "My complaints",
+  "description": "Note each complaint for Dr. Tiwari - your Punarvasu Clinic account is in the menu",
+  "start_url": "/patient-portal.html?open=complaints",
   "display": "standalone",
   "background_color": "#F5F2EC",
   "theme_color": "#1C2E50",
