@@ -2,10 +2,15 @@
 // only when someone asks for it — nothing is stored, so the prescription lists stay small. The same layout the Case Analyzer and the
 // Repertory show on the screen. One identical copy in the public site and in the workspace (no build step) — change both together.
 // Older prescriptions that still carry a stored PDF (pdfBase64) keep using it.
+// RX-PDF-EDIT: preview() shows the same sheet on the screen with the remedies, the method & dose and the notes editable in place;
+// fromPreview() makes the PDF from that edited sheet. The edits are for that PDF only - nothing is saved.
 (function () {
   const CSS = `
 #pvRxPdfStage { position: fixed; left: -10000px; top: 0; width: 720px; z-index: -1; }
 #pvRxPdfStage, #pvRxPdfStage * { box-sizing: border-box; }
+#pvRxPdfStage [contenteditable] { outline: 1px dashed #9fb3d9; outline-offset: 2px; cursor: text; min-height: 1.4em; }
+#pvRxPdfStage [contenteditable]:focus { outline: 2px solid #2055a4; background: #fffdf4; }
+#pvRxPdfStage.rx-capturing [contenteditable] { outline: none; background: transparent; }
 #pvRxPdfStage #rx-wrap {
   width: 720px; min-height: 950px; margin: 0;
   background: #fff; display: flex; flex-direction: column;
@@ -66,9 +71,10 @@
     for (const [, src, has] of LIBS) if (!has()) { try { await loadScript(src); } catch (e) { console.error('[rx-pdf]', e.message); } }
   }
   function remedies(medicine) { return String(medicine || '').split(',').map(s => s.trim()).filter(Boolean); }
-  function sheetHtml(name, e) {
+  function sheetHtml(name, e, edit) {
+    const ce = k => edit ? ` contenteditable="plaintext-only" spellcheck="false" data-rxe="${k}"` : '';
     const rows = (remedies(e.medicine).length ? remedies(e.medicine) : ['—'])
-      .map((r, i) => `<tr class="${i === 0 ? 'top-remedy' : ''}"><td class="rx-num">${i + 1}</td><td class="rx-name">${esc(r)}</td></tr>`).join('');
+      .map((r, i) => `<tr class="${i === 0 ? 'top-remedy' : ''}"><td class="rx-num">${i + 1}</td><td class="rx-name"${ce('rem')}>${esc(r)}</td></tr>`).join('');
     return `<div id="rx-wrap">
     <div class="rx-clinic-header">
       <div class="rx-clinic-name">Punarvasu Clinic</div>
@@ -90,9 +96,9 @@
       <div style="clear:both"></div>
       <div class="rx-dose-box">
         <div class="rx-dose-box-label">Method &amp; Dose of Remedy</div>
-        <div class="rx-dose-box-inner">${esc(e.dose || '—')}</div>
+        <div class="rx-dose-box-inner"${ce('dose')}>${esc(e.dose || (edit ? '' : '—'))}</div>
       </div>
-      ${e.notes ? `<div class="rx-dose-box rx-notes"><div class="rx-dose-box-label">Notes</div><div class="rx-dose-box-inner">${esc(e.notes)}</div></div>` : ''}
+      ${e.notes || edit ? `<div class="rx-dose-box rx-notes"><div class="rx-dose-box-label">Notes</div><div class="rx-dose-box-inner"${ce('notes')}>${esc(e.notes || '')}</div></div>` : ''}
     </div>
     <div class="rx-footer-group">
       <div class="rx-disclaimer">Computer Generated Prescription &mdash; does not require signature &nbsp;|&nbsp; Prepared using Repertorium Publicum</div>
@@ -110,20 +116,60 @@
     for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
     return new Blob([arr], { type: 'application/pdf' });
   }
+  function addCss() { if (!document.getElementById('pvRxPdfCss')) { const st = document.createElement('style'); st.id = 'pvRxPdfCss'; st.textContent = CSS; document.head.appendChild(st); } }
+  // the drawn sheet (#rx-wrap) as a one-page PDF
+  async function render(wrap) {
+    if (document.fonts && document.fonts.load) { try { await document.fonts.load("600 20px 'EB Garamond'"); await document.fonts.ready; } catch (x) { /* fallback font is fine */ } }
+    const canvas = await window.html2canvas(wrap, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+    const w = 190, m = 10, h = (canvas.height / canvas.width) * w;
+    const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: [w + m * 2, h + m * 2], orientation: 'portrait' });
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.85), 'JPEG', m, m, w, h);
+    return pdf.output('blob');
+  }
   async function letterhead(name, e) {
-    if (!document.getElementById('pvRxPdfCss')) { const st = document.createElement('style'); st.id = 'pvRxPdfCss'; st.textContent = CSS; document.head.appendChild(st); }
+    addCss();
     const stage = document.createElement('div');
     stage.id = 'pvRxPdfStage';
     stage.innerHTML = sheetHtml(name, e);
     document.body.appendChild(stage);
-    try {
-      if (document.fonts && document.fonts.load) { try { await document.fonts.load("600 20px 'EB Garamond'"); await document.fonts.ready; } catch (x) { /* fallback font is fine */ } }
-      const canvas = await window.html2canvas(stage.querySelector('#rx-wrap'), { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-      const w = 190, m = 10, h = (canvas.height / canvas.width) * w;
-      const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: [w + m * 2, h + m * 2], orientation: 'portrait' });
-      pdf.addImage(canvas.toDataURL('image/jpeg', 0.85), 'JPEG', m, m, w, h);
-      return pdf.output('blob');
-    } finally { stage.remove(); }
+    try { return await render(stage.querySelector('#rx-wrap')); } finally { stage.remove(); }
+  }
+  // RX-PDF-EDIT: the sheet on the screen, editable, inside box (one at a time - it uses the stage's id)
+  function preview(box, e, name) {
+    addCss();
+    box.innerHTML = '<div id="pvRxPdfStage" style="position:relative;left:auto;top:auto;z-index:auto;margin:16px auto;box-shadow:0 2px 12px rgba(0,0,0,.15)">' + sheetHtml(name, e || {}, true) + '</div>';
+    ready();   // the PDF tools load while the doctor reads
+  }
+  // what the edited sheet says now (for the file name and the plain layout)
+  function previewValues(box, e) {
+    const t = k => [...box.querySelectorAll('[data-rxe="' + k + '"]')].map(x => x.innerText.trim()).filter(Boolean);
+    return Object.assign({}, e, { medicine: t('rem').join(', '), dose: t('dose').join('\n'), notes: t('notes').join('\n'), pdfBase64: null });
+  }
+  async function fromPreview(box, e, name) {
+    await ready();
+    if (!(window.jspdf && window.jspdf.jsPDF)) throw new Error('the PDF tool could not load - please check the internet connection and try again');
+    const v = previewValues(box, e || {});
+    if (document.activeElement && box.contains(document.activeElement)) document.activeElement.blur();
+    const notes = box.querySelector('.rx-notes');
+    if (notes && !v.notes) notes.style.display = 'none';   // an empty notes box is left out of the PDF
+    const stage = box.querySelector('#pvRxPdfStage');
+    stage.classList.add('rx-capturing');
+    let blob = null;
+    try { if (typeof window.html2canvas === 'function') blob = await render(stage.querySelector('#rx-wrap')); }
+    catch (x) { console.error('[rx-pdf] letterhead failed, using the plain layout:', x); }
+    finally { stage.classList.remove('rx-capturing'); if (notes) notes.style.display = ''; }
+    return { blob: blob || plain(name, v), fileName: fileName(name, v) };
+  }
+  function save(r) {
+    const url = URL.createObjectURL(r.blob), a = document.createElement('a');
+    a.href = url; a.download = r.fileName.replace(/"/g, ''); document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+  function print(r) {   // the PDF in a hidden frame, then the browser's print window
+    const url = URL.createObjectURL(r.blob), f = document.createElement('iframe');
+    f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+    f.onload = () => { try { f.contentWindow.focus(); f.contentWindow.print(); } catch (x) { window.open(url, '_blank'); } setTimeout(() => { f.remove(); URL.revokeObjectURL(url); }, 60000); };
+    f.src = url; document.body.appendChild(f);
   }
   function plain(name, e) {   // when the letterhead cannot be drawn (html2canvas missing): the same facts, plainly
     const doc = new window.jspdf.jsPDF();
@@ -156,9 +202,7 @@
     const was = btn ? btn.textContent : '';
     if (btn) { if (btn.dataset.busy) return; btn.dataset.busy = '1'; btn.textContent = 'Making the PDF…'; }
     try {
-      const r = await make(e, name), url = URL.createObjectURL(r.blob), a = document.createElement('a');
-      a.href = url; a.download = r.fileName.replace(/"/g, ''); document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      save(await make(e, name));
     } catch (x) { alert('Could not make the PDF: ' + (x && x.message ? x.message : x)); }
     finally { if (btn) { btn.textContent = was; delete btn.dataset.busy; } }
   }
@@ -171,5 +215,5 @@
       if (w) w.location.href = url; else { const a = document.createElement('a'); a.href = url; a.download = r.fileName; a.click(); }
     } catch (x) { if (w) w.close(); alert('Could not make the PDF: ' + (x && x.message ? x.message : x)); }
   }
-  window.pvRxPdf = { make, download, view };
+  window.pvRxPdf = { make, download, view, preview, fromPreview, save, print };
 })();
