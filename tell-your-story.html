@@ -851,7 +851,16 @@ function drawBar(step) {
   if (edit) h += '<button type="button" class="btn alt back wide" data-act="tocheck">' + t('toCheck') + '</button>';
   else if (step !== 'you') h += '<button type="button" class="btn alt back" data-act="back">' + t('back') + '</button>';
   $('btns').innerHTML = h + '<button type="button" class="btn main go" id="primary" data-act="primary"></button>';
+  // LATER: the doctor can stop half-way; the answers stay on this computer and the case shows as Incomplete on the Dashboard
+  if (byDoctor && step !== 'you') { $('btns').style.flexWrap = 'wrap'; $('btns').insertAdjacentHTML('beforeend', '<button type="button" class="btn alt later" data-act="later" style="flex-basis:100%;margin:8px 0 0 0">Complete it later</button>'); }
   fitBar();
+}
+function renderLater() {
+  cur = 'later'; setMsg('');
+  $('prog').hidden = true; $('bar').hidden = true;
+  $('view').innerHTML = '<div class="ty"><div class="ring" style="color:#163d7a">' + svg(46, 2.6, P_TICK) + '</div>' + h1('Saved to finish later', true)
+    + '<p class="help">The answers so far are kept <b>on this computer</b>. The patient shows as <b>Incomplete</b> on the Dashboard and on their record. Close this tab; to continue, press <b>Complete it</b> on the record (on this computer) and the form opens where you stopped.</p></div>';
+  try { window.scrollTo(0, 0); } catch (e) {}
 }
 function refreshControls() {
   var p = $('primary');
@@ -1037,6 +1046,7 @@ function onClick(e) {
     clearDraft(); var keep = S; S = freshState(); S.name = keep.name; S.phone = keep.phone; S.age = keep.age; S.sex = keep.sex;
     pending = null; lastNav = Date.now(); startAt('you');
   }
+  else if (act === 'later') leave(function () { draftNow(); renderLater(); });   // LATER
   else if (act === 'primary') onPrimary();
   else if (act === 'back') backOne();
   else if (act === 'tocheck') { collect(); var bad = validate(cur); if (bad) { showError(bad); return; } edit = null; backToCheck(); }
