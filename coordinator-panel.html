@@ -554,6 +554,14 @@ window.coordSignOut = function() {
 // coordinators/{uid} fresh rather than relying on any cached value, so this
 // always sends the current urlKey/phone even if either was changed after
 // this session started.
+// WA-NUMBER: digits only, leading zeros dropped, 10 digits = India (91 in front), 91 0 + 10 digits -> the 0 dropped; a number saved with its
+// own country code (+1 USA ...) keeps it. The same rule as the doctor's pages and the WhatsApp Worker.
+function waNumber(raw) {
+  let d = String(raw == null ? '' : raw).replace(/[^0-9]/g, '').replace(/^0+/, '');
+  if (d.length === 10) return '91' + d;
+  if (d.length === 13 && d.indexOf('910') === 0) return '91' + d.slice(3);
+  return d;
+}
 window.sendCoordinatorLoginViaWhatsApp = async function() {
   if (!coordUid) return;
   try {
@@ -563,14 +571,14 @@ window.sendCoordinatorLoginViaWhatsApp = async function() {
       return;
     }
     const data = snap.val();
-    const cleanPhone = (data.phone || '').replace(/[^0-9]/g, '');
-    if (!data.urlKey || cleanPhone.length !== 10) {
+    const cleanPhone = waNumber(data.phone);   // WA-NUMBER
+    if (!data.urlKey || cleanPhone.length < 11 || cleanPhone.length > 15) {
       alert('Your account is missing a phone number or login link on file. Please contact the clinic.');
       return;
     }
     const loginUrl = `https://punarvasu.clinic/coordinator-panel.html?c=${data.urlKey}`;
     const msg = `Here is your Punarvasu Clinic Coordinator Dashboard link:\n${loginUrl}\n\nKeep this safe — it signs you straight in.`;
-    const waUrl = `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(msg)}`;
+    const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
     window.open(waUrl, 'punarvasuWhatsApp'); // FIXED-TABS: reuse one WhatsApp tab
   } catch (err) {
     alert('Something went wrong preparing your login link. Please try again or contact the clinic.');

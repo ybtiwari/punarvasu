@@ -817,6 +817,14 @@ document.querySelectorAll('.nav-item').forEach(item => {
 // admin-panel.html, so the credentials always match what the admin panel
 // would generate. Reads patients/{uid} fresh at click time rather than
 // caching, so it's always correct even if phone/email were ever corrected.
+// WA-NUMBER: digits only, leading zeros dropped, 10 digits = India (91 in front), 91 0 + 10 digits -> the 0 dropped; a number saved with its
+// own country code (+1 USA ...) keeps it. The same rule as the doctor's pages and the WhatsApp Worker.
+function waNumber(raw) {
+  let d = String(raw == null ? '' : raw).replace(/[^0-9]/g, '').replace(/^0+/, '');
+  if (d.length === 10) return '91' + d;
+  if (d.length === 13 && d.indexOf('910') === 0) return '91' + d.slice(3);
+  return d;
+}
 window.sendCredentialsViaWhatsApp = async function() {
   if (!currentUser) return;
   try {
@@ -838,7 +846,7 @@ window.sendCredentialsViaWhatsApp = async function() {
     const token = btoa(email + ':' + password);
     const portalUrl = 'https://punarvasu.clinic/patient-portal.html?token=' + encodeURIComponent(token) + '&uid=' + currentUser.uid;
     const msg = `Here is your Punarvasu Clinic patient portal link:\n${portalUrl}\n\nKeep this safe — it signs you straight in.`;
-    const waUrl = `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(msg)}`;
+    const waUrl = `https://wa.me/${waNumber(data.phone)}?text=${encodeURIComponent(msg)}`;   // WA-NUMBER
     window.open(waUrl, 'punarvasuWhatsApp'); // FIXED-TABS: reuse one WhatsApp tab
   } catch (err) {
     alert('Something went wrong preparing your login link. Please try again or contact the clinic.');
