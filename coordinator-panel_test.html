@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Coordinator Panel — Punarvasu Clinic</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --navy:#1C2E50; --teal:#2055A4; --teal2:#163d7a;
+      --cream:#F5F2EC; --white:#FFFFFF; --ink:#0F1E2D;
+      --ink2:#2A4055; --ink3:#4A6478; --border:#D0DDE8;
+      --red:#c0392b; --orange:#c8962e;
+      --serif:'Lora',Georgia,serif; --sans:'Source Sans 3',system-ui,sans-serif;
+    }
+    body { font-family:var(--sans); background:var(--cream); color:var(--ink); min-height:100vh; }
+
+    /* LOGIN SCREEN */
+    .login-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+    .login-box { background:var(--white); border:1px solid var(--border); border-radius:10px; padding:44px 40px; width:100%; max-width:400px; box-shadow:0 4px 24px rgba(28,46,80,0.08); text-align:center; }
+    .login-logo { font-family:var(--serif); font-size:22px; color:var(--navy); margin-bottom:4px; }
+    .login-sub  { font-size:12px; color:var(--ink3); margin-bottom:8px; }
+    .coord-badge { display:inline-block; background:rgba(200,150,46,0.1); color:#8A5200; padding:3px 10px; border-radius:10px; font-size:12px; font-weight:500; margin-bottom:24px; }
+    .login-title { font-family:var(--serif); font-size:20px; color:var(--navy); margin-bottom:8px; }
+    .login-err { font-size:13px; color:var(--red); margin-top:10px; }
+
+    /* MAIN SHELL */
+    .shell { display:none; min-height:100vh; flex-direction:column; }
+    .topbar { background:var(--navy); padding:0 24px; height:56px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+    .topbar-logo { font-family:var(--serif); font-size:17px; color:var(--white); }
+    .topbar-right { display:flex; align-items:center; gap:14px; }
+    .topbar-name { font-size:13px; color:rgba(255,255,255,0.6); }
+    .body { display:flex; flex:1; }
+
+    /* SIDEBAR */
+    .sidebar { width:220px; background:var(--navy); padding:20px 0; min-height:calc(100vh - 56px); flex-shrink:0; }
+    .nav-item { display:flex; align-items:center; justify-content:space-between; padding:11px 20px; font-size:14px; color:rgba(255,255,255,0.6); cursor:pointer; border-left:2px solid transparent; transition:all 0.15s; }
+    .nav-item:hover { background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.9); }
+    .nav-item.active { color:white; border-left-color:#C8962E; background:rgba(255,255,255,0.06); font-weight:500; }
+    .nav-badge { background:var(--orange); color:white; border-radius:10px; padding:1px 7px; font-size:11px; min-width:20px; text-align:center; }
+
+    /* CONTENT */
+    .content { flex:1; padding:32px; }
+    .panel { display:none; }
+    .panel.active { display:block; }
+    .panel-title { font-family:var(--serif); font-size:24px; color:var(--navy); margin-bottom:6px; }
+    .panel-sub { font-size:14px; color:var(--ink3); margin-bottom:28px; }
+
+    /* PATIENTS LIST */
+    .patient-list { display:flex; flex-direction:column; gap:0; }
+    .patient-item { display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid var(--border); gap:12px; }
+    .patient-item:last-child { border-bottom:none; }
+    .patient-info h4 { font-size:15px; color:var(--navy); font-weight:500; margin-bottom:2px; }
+    .patient-info p  { font-size:12px; color:var(--ink3); }
+    .patient-actions { display:flex; gap:8px; flex-shrink:0; }
+    .btn-sm { padding:6px 14px; border-radius:4px; font-size:13px; cursor:pointer; font-family:var(--sans); border:none; font-weight:500; transition:background 0.15s; }
+    .btn-teal { background:var(--teal); color:white; }
+    .btn-teal:hover { background:var(--teal2); }
+    .btn-gray { background:var(--cream); color:var(--ink2); border:1px solid var(--border); }
+    .btn-gray:hover { background:#e8e5dc; }
+    .badge { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11.5px; font-weight:500; }
+    .badge-active   { background:rgba(32,85,164,0.1); color:var(--teal); }
+    .badge-disabled { background:rgba(192,57,43,0.1); color:var(--red); }
+    /* STAGE-INDICATOR: same three labels/colors as admin-panel.html's own
+       stageBadge() — change together, same as computeStage's own six-file rule. */
+    .stage-badge { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11.5px; font-weight:700; border:1px solid var(--border); background:var(--cream); color:var(--ink2); }
+    .stage-badge.stage-3 { background:rgba(32,85,164,0.1); border-color:rgba(32,85,164,0.25); color:var(--teal); }
+    .stage-badge.stage-4 { background:rgba(74,100,120,0.1); border-color:var(--border); color:var(--ink3); }
+    .stage-badge.stage-5 { background:#F1EAFA; border-color:#D2C0E8; color:#6B3FA0; } /* STAGE-V2: follow-up received */
+    .empty { text-align:center; padding:40px 20px; color:var(--ink3); }
+    .empty-icon { font-size:32px; margin-bottom:10px; }
+
+    /* MESSAGES */
+    .conv-list { display:flex; flex-direction:column; gap:0; margin-bottom:24px; }
+    .conv-item { display:flex; align-items:center; padding:12px 0; border-bottom:1px solid var(--border); cursor:pointer; gap:10px; }
+    .conv-item:hover { background:var(--cream); padding-left:8px; }
+    .conv-item.unread .conv-name { font-weight:600; }
+    .conv-name    { font-size:15px; color:var(--navy); margin-bottom:2px; }
+    .conv-preview { font-size:13px; color:var(--ink3); }
+    .conv-time    { font-size:11.5px; color:var(--ink3); flex-shrink:0; margin-left:auto; }
+    .unread-dot   { width:8px; height:8px; border-radius:50%; background:var(--orange); flex-shrink:0; }
+
+    /* CHAT */
+    .chat-panel { display:none; background:var(--white); border:1px solid var(--border); border-radius:8px; flex-direction:column; height:500px; }
+    .chat-panel.open { display:flex; }
+    .chat-header { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:var(--cream); border-radius:8px 8px 0 0; }
+    .chat-header h4 { font-family:var(--serif); font-size:16px; color:var(--navy); }
+    .chat-msgs { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; }
+    .msg-row { display:flex; align-items:flex-end; gap:6px; max-width:75%; }
+    .msg-row.from-patient { align-self:flex-start; }
+    .msg-row.from-doctor  { align-self:flex-end; flex-direction:row-reverse; }
+    .msg-row.from-coordinator { align-self:flex-end; flex-direction:row-reverse; }
+    .msg-bubble { padding:10px 14px; border-radius:12px; font-size:14px; line-height:1.55; }
+    .msg-bubble.from-patient { background:var(--cream); border:1px solid var(--border); border-bottom-left-radius:3px; }
+    .msg-bubble.from-doctor  { background:var(--teal); color:white; border-bottom-right-radius:3px; }
+    .msg-bubble.from-coordinator { background:#FBEFD5; border:1px solid #E8D3A0; color:var(--ink); border-bottom-right-radius:3px; }
+    .msg-sender { font-size:11px; font-weight:600; opacity:0.75; margin-bottom:3px; }
+    .msg-meta { font-size:11px; opacity:0.65; margin-top:4px; }
+    .chat-input-row { display:flex; gap:8px; padding:12px 16px; border-top:1px solid var(--border); }
+    .chat-input { flex:1; border:1px solid var(--border); border-radius:6px; padding:9px 12px; font-family:var(--sans); font-size:14px; resize:none; outline:none; height:42px; }
+    .chat-input:focus { border-color:var(--teal); }
+    .chat-send { background:var(--teal); color:white; border:none; border-radius:6px; padding:0 18px; font-size:14px; cursor:pointer; font-family:var(--sans); font-weight:500; }
+
+    /* CASE FILE */
+    .fg { display:flex; flex-direction:column; gap:5px; margin-bottom:14px; }
+    .fg label { font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3); }
+    .fg select { border:1px solid var(--border); border-radius:4px; padding:10px 12px; font-family:var(--sans); font-size:15px; color:var(--ink); outline:none; }
+    .case-editor { background:var(--white); border:1px solid var(--border); border-radius:8px; padding:24px; }
+    .case-editor h3 { font-family:var(--serif); font-size:18px; color:var(--navy); margin-bottom:16px; }
+    .case-tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:20px; }
+    .case-tab { padding:9px 20px; font-size:13.5px; cursor:pointer; color:var(--ink3); border-bottom:2px solid transparent; transition:all 0.15s; }
+    .case-tab.active { color:var(--teal); border-bottom-color:var(--teal); font-weight:500; }
+    .case-tab-panel { display:none; }
+    .case-tab-panel.active { display:block; }
+    .case-entries { margin-bottom:16px; }
+    .case-entry { background:var(--cream); border:1px solid var(--border); border-radius:6px; padding:14px 16px; margin-bottom:10px; }
+    .case-entry-date { font-size:11px; color:var(--ink3); margin-bottom:5px; }
+    .case-entry-text { font-size:14px; color:var(--ink2); line-height:1.65; }
+    .read-only-note { font-size:12px; color:var(--ink3); background:rgba(32,85,164,0.06); border:1px solid rgba(32,85,164,0.15); border-radius:4px; padding:8px 12px; margin-bottom:16px; }
+  
+/* THEME-NAVY-GOLD */
+.topbar{background:linear-gradient(135deg,var(--navy) 0%,var(--teal) 100%);box-shadow:inset 0 -3px 0 #C8962E}
+.login-box{border-top:4px solid #C8962E}
+.nav-badge{color:#1C2E50;font-weight:700}
+.topbar-name{color:rgba(255,255,255,.9)}
+.topbar-right button[onclick="coordSignOut()"]{color:rgba(255,255,255,.88)!important;border-color:rgba(255,255,255,.4)!important}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-wrap" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">Punarvasu Clinic</div>
+    <div class="login-sub">Dr. Yogeshwar Tiwari</div>
+    <div class="coord-badge">Coordinator Access</div>
+    <div class="login-title" id="loginStatusText">Signing in…</div>
+    <div class="login-err" id="loginErr"></div>
+
+    <p id="coordRecoveryToggleWrap" style="font-size:13px;margin-top:18px;">
+      <a href="#" id="showCoordRecoveryLink" style="color:var(--teal);">Lost your link? Recover using your phone number</a>
+    </p>
+    <div id="coordRecoveryPanel" style="display:none;margin-top:16px;text-align:left;">
+      <p style="font-size:14px;color:var(--ink2);margin-bottom:16px;">Enter the mobile number your coordinator account is registered under.</p>
+      <div class="fg">
+        <label>Mobile number</label>
+        <input type="tel" id="coordRecoveryPhone" placeholder="10-digit mobile number" style="border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-family:var(--sans);font-size:15px;color:var(--ink);outline:none;"/>
+      </div>
+      <button class="btn-sm btn-teal" id="coordRecoveryFindBtn">Find my account</button>
+      <div id="coordRecoveryNameChoice" style="display:none;margin-top:16px;">
+        <div class="fg">
+          <label>Which account is yours?</label>
+          <select id="coordRecoveryNameSelect"></select>
+        </div>
+        <button class="btn-sm btn-teal" id="coordRecoveryConfirmBtn">Continue</button>
+      </div>
+      <p style="font-size:13px;margin-top:16px;">
+        <a href="#" id="hideCoordRecoveryLink" style="color:var(--ink3);">← Back</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- COORDINATOR PANEL -->
+<div class="shell" id="shell">
+
+  <div class="topbar">
+    <div style="display:flex;align-items:center;">
+      <div class="topbar-logo">Punarvasu Clinic</div>
+    </div>
+    <div class="topbar-right">
+      <span class="topbar-name" id="coordNameDisplay"></span>
+      <button onclick="coordSignOut()" style="margin-left:14px;background:none;border:1px solid rgba(0,0,0,0.15);color:var(--ink3);padding:5px 12px;border-radius:5px;font-size:12.5px;cursor:pointer;">Sign out</button>
+    </div>
+  </div>
+
+  <div class="body">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="nav-item active" data-panel="dashboard">
+        <span>🏠 Dashboard</span>
+      </div>
+      <div class="nav-item" data-panel="patients">
+        <span>👤 My Patients</span>
+        <span class="nav-badge" id="badge-patients">0</span>
+      </div>
+      <div class="nav-item" data-panel="messages">
+        <span>💬 Messages</span>
+        <span class="nav-badge" id="badge-messages">0</span>
+      </div>
+      <div class="nav-item" data-panel="doctormsg">
+        <span>🩺 Message Dr. Tiwari</span>
+        <span class="nav-badge" id="badge-doctormsg">0</span>
+      </div>
+      <div class="nav-item" data-panel="casefile">
+        <span>📋 Case Files</span>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="panel-title" id="dashGreeting">Welcome</div>
+        <div class="panel-sub">Your coordinator dashboard.</div>
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:20px 22px;margin-bottom:16px;">
+          <h3 style="font-size:15px;margin-bottom:6px;">Save your login for later</h3>
+          <p style="font-size:13px;color:var(--ink3);margin-bottom:14px;">Message yourself a link to sign back in on any device — useful if you switch phones or clear your browser.</p>
+          <button onclick="sendCoordinatorLoginViaWhatsApp()" style="background:#25D366;color:white;border:none;border-radius:6px;padding:10px 18px;font-size:14px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px;">
+            💬 Send my login to WhatsApp
+          </button>
+        </div>
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:20px 22px;">
+          <h3 style="font-size:15px;margin-bottom:10px;">At a glance</h3>
+          <p style="font-size:14px;color:var(--ink2);margin-bottom:6px;">👤 <span id="dashPatientCount">0</span> patient(s) assigned to you</p>
+          <p style="font-size:14px;color:var(--ink2);">💬 <span id="dashUnreadCount">0</span> unread patient message(s)</p>
+        </div>
+      </div>
+
+      <!-- MY PATIENTS -->
+      <div class="panel" id="panel-patients">
+        <div class="panel-title">My Patients</div>
+        <div class="panel-sub">Patients assigned to you by Dr. Yogeshwar Tiwari</div>
+        <div class="patient-list" id="patientList">
+          <div class="empty"><div class="empty-icon">👤</div>No patients assigned yet.</div>
+        </div>
+      </div>
+
+      <!-- MESSAGES -->
+      <div class="panel" id="panel-messages">
+        <div class="panel-title">Messages</div>
+        <div class="panel-sub">Conversations with your assigned patients</div>
+        <div class="conv-list" id="convList">
+          <div class="empty"><div class="empty-icon">💬</div>No conversations yet.</div>
+        </div>
+        <div class="chat-panel" id="chatPanel">
+          <div class="chat-header">
+            <h4 id="chatPatientName">Patient</h4>
+            <button onclick="closeChat()" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:18px;">×</button>
+          </div>
+          <div class="chat-msgs" id="chatMsgs"></div>
+          <div class="chat-input-row">
+            <textarea class="chat-input" id="chatInput" placeholder="Type your message..."></textarea>
+            <button class="chat-send" onclick="sendMessage()">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MESSAGE THE DOCTOR — general, non-patient-specific channel.
+           Separate from the per-patient Messages panel above; this is for
+           scheduling, policy questions, anything not tied to one case. -->
+      <div class="panel" id="panel-doctormsg">
+        <div class="panel-title">Message Dr. Tiwari</div>
+        <div class="panel-sub">For anything not specific to one patient — scheduling, questions, updates</div>
+        <div class="chat-panel open" id="doctorChatPanel" style="height:520px;">
+          <div class="chat-msgs" id="doctorChatMsgs"></div>
+          <div class="chat-input-row">
+            <textarea class="chat-input" id="doctorChatInput" placeholder="Type your message to Dr. Tiwari..."></textarea>
+            <button class="chat-send" onclick="sendDoctorMessage()">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CASE FILES (read-only) -->
+      <div class="panel" id="panel-casefile">
+        <div class="panel-title">Case Files</div>
+        <div class="panel-sub">View clinical history for your assigned patients</div>
+        <div class="fg" style="max-width:300px;margin-bottom:20px;">
+          <label>Select patient</label>
+          <select id="casePatientSelect" onchange="loadCaseFile()">
+            <option value="">— Select a patient —</option>
+          </select>
+        </div>
+        <div id="caseWrap" style="display:none;">
+          <div class="read-only-note">📋 Case files are maintained by Dr. Yogeshwar Tiwari. You have read-only access.</div>
+          <div class="case-editor">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+              <h3 id="caseTitle" style="margin-bottom:0;">Case File</h3>
+              <span id="caseStageBadge"></span>
+            </div>
+            <div class="case-tabs">
+              <div class="case-tab active" onclick="switchTab('notes', this)">Clinical Notes</div>
+              <div class="case-tab" onclick="switchTab('prescriptions', this)">Prescriptions</div>
+              <div class="case-tab" onclick="switchTab('followups', this)">Follow-ups</div>
+              <div class="case-tab" onclick="switchTab('appointments', this)">Appointments</div>
+            </div>
+            <div class="case-tab-panel active" id="tab-notes">
+              <div class="case-entries" id="notes-list"></div>
+            </div>
+            <div class="case-tab-panel" id="tab-prescriptions">
+              <div class="case-entries" id="presc-list"></div>
+            </div>
+            <div class="case-tab-panel" id="tab-followups">
+              <div class="case-entries" id="followup-list"></div>
+            </div>
+            <div class="case-tab-panel" id="tab-appointments">
+              <div class="case-entries" id="appt-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /body -->
+</div><!-- /shell -->
+
+<script src="rx-pdf.js"></script><!-- RX-PDF-ON-DEMAND -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { initializeAuth, browserSessionPersistence, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, onValue, push, set, get, query, orderByChild, equalTo }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// ── CONFIG ──
+const firebaseConfig = {
+  apiKey: "AIzaSyAqzKPqBzNoBJc5FWjnVXMER4prgrbhqag",
+  authDomain: "punarvasu-790a8.firebaseapp.com",
+  databaseURL: "https://punarvasu-790a8-default-rtdb.firebaseio.com",
+  projectId: "punarvasu-790a8",
+  appId: "1:774115339459:web:4ee1f45e1e25d61666c676"
+};
+
+// ── FIREBASE INIT ──
+const app  = initializeApp(firebaseConfig);
+// FIXED-TABS: sign-in is kept to THIS tab only (sessionStorage), set up
+// that way from the start with initializeAuth rather than getAuth(). With
+// getAuth()'s default, sign-in is shared by every tab on the same address:
+// a coordinator link opened here would switch the doctor's admin/dashboard
+// tabs to that coordinator (all local file:// pages share one store), and
+// the admin session would show up here — where the "Account disabled"
+// check below would then call signOut() and sign the ADMIN tabs out too.
+// initializeAuth never reads or touches that shared store. Every load
+// signs in again from the ?c= link anyway, so nothing is lost.
+const auth = initializeAuth(app, { persistence: browserSessionPersistence });
+const db   = getDatabase(app);
+
+// ── STATE ──
+let coordUid  = null;
+let coordName = '';
+let myPatients = {};
+let currentChatUid = null;
+let currentCaseUid = null;
+// FIXED-TABS: the account this tab is meant to be signed in as — set from
+// coord_keys just before signing in, by the ?c= link or by phone recovery.
+// The panel is shown only for a session matching it (see applyAuthState).
+let expectedCoordEmail = null;
+
+// ── AUTO-LOGIN FROM URL PARAM ──
+// Credentials are stored in a public Firebase node: coord_keys/{urlKey}
+// This node is readable without auth (see Firebase Rules), but contains
+// only coordinator login info — no patient data.
+const urlKey = new URLSearchParams(window.location.search).get('c');
+
+if (!urlKey) {
+  document.getElementById('loginStatusText').textContent = 'Invalid access link.';
+  document.getElementById('loginErr').textContent =
+    'This link is not valid. Please contact Dr. Yogeshwar Tiwari for your personal coordinator link.';
+} else {
+  // Read from public coord_keys node
+  onValue(ref(db, `coord_keys/${urlKey}`), snap => {
+    if (!snap.exists()) {
+      document.getElementById('loginStatusText').textContent = 'Invalid access link.';
+      document.getElementById('loginErr').textContent =
+        'This link is not valid. Please contact Dr. Yogeshwar Tiwari for your personal coordinator link.';
+      return;
+    }
+    const entry = snap.val();
+    expectedCoordEmail = String(entry.email || '').toLowerCase();
+    signInWithEmailAndPassword(auth, entry.email, entry.pass)
+      // FIXED-TABS: applied directly, not only via onAuthStateChanged —
+      // Firebase stays silent when the same account signs in again (e.g. a
+      // reload of this tab), so the listener alone could leave it hidden.
+      .then(cred => applyAuthState(cred.user))
+      .catch(e => {
+        document.getElementById('loginStatusText').textContent = 'Sign-in failed';
+        document.getElementById('loginErr').textContent = e.message;
+      });
+  }, { onlyOnce: true });
+}
+
+// ── AUTH STATE ──
+onAuthStateChanged(auth, user => applyAuthState(user));
+
+// FIXED-TABS: the one place that decides what this tab shows. Only a
+// session belonging to the account this tab is signing in as counts.
+let shownForUid = null; // loadMyPatients()/loadDoctorMessages() attach live listeners — only once per account
+let checkedForUid = null; // the disabled/deleted check below runs once per sign-in, even though this is told twice
+function applyAuthState(user) {
+  const isExpectedAccount = !!(user && expectedCoordEmail &&
+    String(user.email || '').toLowerCase() === expectedCoordEmail);
+  if (user && !isExpectedAccount) {
+    // Not ours, or not confirmed yet. If no sign-in is under way (no ?c=
+    // link, no recovery started), drop it — tab-only, so no other tab is
+    // affected. Otherwise that sign-in will replace it; keep the panel
+    // hidden until it confirms. Never run the "Account disabled" check
+    // below against someone else's session.
+    if (!urlKey && !expectedCoordEmail) signOut(auth).catch(() => {});
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('shell').style.display = 'none';
+    return;
+  }
+  if (user) {
+    if (checkedForUid === user.uid) return;
+    checkedForUid = user.uid;
+    coordUid  = user.uid;
+    coordName = user.displayName || user.email;
+    // Blocks two situations, both meaning "this account should not have
+    // access anymore": (1) explicitly disabled via Admin Panel's toggle,
+    // and (2) the coordinators/{uid} record was deleted entirely via
+    // Admin Panel's "Delete" button. Deleting only removes the database
+    // record — it cannot revoke the underlying Firebase Auth login itself
+    // (that needs server-side access this project doesn't have) — so
+    // without this explicit "record missing" check, a deleted coordinator
+    // with an already-cached browser session could keep signing back in
+    // indefinitely. Checked once per sign-in, not live, so someone already
+    // using the app won't be kicked out mid-session at the exact moment
+    // they're disabled/deleted — they'll be blocked next time they open the link.
+    get(ref(db, `coordinators/${coordUid}`)).then(snap => {
+      const record = snap.exists() ? snap.val() : null;
+      if (!record || record.status === 'disabled') {
+        signOut(auth); // FIXED-TABS: tab-only now — cannot sign out other tabs
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('shell').style.display = 'none';
+        document.getElementById('loginStatusText').textContent = 'Account disabled';
+        document.getElementById('loginErr').textContent =
+          'Your coordinator access has been disabled. Please contact Dr. Yogeshwar Tiwari.';
+        return;
+      }
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('shell').style.display = 'flex';
+      document.getElementById('coordNameDisplay').textContent = coordName;
+      document.getElementById('dashGreeting').textContent = 'Welcome, ' + (record.name || coordName || '');
+      if (shownForUid !== user.uid) {
+        shownForUid = user.uid;
+        loadMyPatients();
+        loadDoctorMessages();
+      }
+    });
+  } else {
+    shownForUid = null;
+    checkedForUid = null;
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('shell').style.display = 'none';
+  }
+}
+
+// ── RECOVERY FLOW — "Lost your link?" ──
+// Coordinators (unlike patients) don't have a deterministic email/password
+// derived from their phone number — email and password are freely chosen
+// by the doctor when the account is created. So recovery here works in two
+// hops: coordPhoneIndex/{phone} (public, no auth) gives the account's
+// urlKey, then coord_keys/{urlKey} (already public — this is the same node
+// the normal ?c= auto-login already reads) gives the actual email/pass to
+// sign in with. Nothing more sensitive is exposed than the existing invite
+// link already exposes.
+document.getElementById('showCoordRecoveryLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('coordRecoveryToggleWrap').style.display = 'none';
+  document.getElementById('coordRecoveryPanel').style.display = 'block';
+  document.getElementById('loginErr').textContent = '';
+});
+document.getElementById('hideCoordRecoveryLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('coordRecoveryPanel').style.display = 'none';
+  document.getElementById('coordRecoveryToggleWrap').style.display = 'block';
+  document.getElementById('coordRecoveryNameChoice').style.display = 'none';
+  document.getElementById('loginErr').textContent = '';
+});
+
+let coordRecoveryMatches = {}; // cuid -> { urlKey, name }, from the most recent lookup
+function normalizeCoordRecoveryPhone(raw) {
+  const rawDigits = raw.replace(/[^0-9]/g, '');
+  const stripped = rawDigits.replace(/^0+/, '');
+  return stripped.slice(-10);
+}
+
+document.getElementById('coordRecoveryFindBtn').addEventListener('click', async () => {
+  const cleanPhone = normalizeCoordRecoveryPhone(document.getElementById('coordRecoveryPhone').value);
+  document.getElementById('loginErr').textContent = '';
+  if (!cleanPhone) {
+    document.getElementById('loginErr').textContent = 'Please enter a valid mobile number.';
+    return;
+  }
+  try {
+    const snap = await get(ref(db, `coordPhoneIndex/${cleanPhone}`));
+    if (!snap.exists()) {
+      document.getElementById('loginErr').textContent = 'No coordinator account found for this number. Please contact Dr. Yogeshwar Tiwari.';
+      return;
+    }
+    coordRecoveryMatches = snap.val();
+    const cuids = Object.keys(coordRecoveryMatches);
+    if (cuids.length === 1) {
+      await coordRecoverySignIn(coordRecoveryMatches[cuids[0]].urlKey);
+    } else {
+      const select = document.getElementById('coordRecoveryNameSelect');
+      select.innerHTML = '';
+      cuids.forEach(cuid => {
+        const opt = document.createElement('option');
+        opt.value = coordRecoveryMatches[cuid].urlKey;
+        opt.textContent = coordRecoveryMatches[cuid].name || 'Coordinator';
+        select.appendChild(opt);
+      });
+      document.getElementById('coordRecoveryNameChoice').style.display = 'block';
+    }
+  } catch (e) {
+    document.getElementById('loginErr').textContent = 'Something went wrong looking up that number. Please try again or contact the clinic.';
+  }
+});
+
+document.getElementById('coordRecoveryConfirmBtn').addEventListener('click', async () => {
+  const foundUrlKey = document.getElementById('coordRecoveryNameSelect').value;
+  await coordRecoverySignIn(foundUrlKey);
+});
+
+async function coordRecoverySignIn(foundUrlKey) {
+  document.getElementById('loginErr').textContent = '';
+  try {
+    const keySnap = await get(ref(db, `coord_keys/${foundUrlKey}`));
+    if (!keySnap.exists()) {
+      document.getElementById('loginErr').textContent = 'Could not find login details for this account. Please contact the clinic.';
+      return;
+    }
+    const entry = keySnap.val();
+    expectedCoordEmail = String(entry.email || '').toLowerCase(); // FIXED-TABS: see applyAuthState
+    const cred = await signInWithEmailAndPassword(auth, entry.email, entry.pass);
+    applyAuthState(cred.user); // FIXED-TABS: same-account sign-in is silent in onAuthStateChanged
+    // Re-point this browser tab at the real link going forward, and hand
+    // them a copy so they have it saved outside this one device too.
+    const newUrl = window.location.origin + window.location.pathname + '?c=' + encodeURIComponent(foundUrlKey);
+    window.history.replaceState({}, '', newUrl);
+    try {
+      await navigator.clipboard.writeText(newUrl);
+      setTimeout(() => {
+        alert("You're signed in. Your coordinator link has also been copied to your clipboard — save it in a note or send it to yourself on WhatsApp so you have it for next time.");
+      }, 300);
+    } catch (clipErr) {
+      // Clipboard access can fail (permissions, older browsers) — non-fatal.
+    }
+  } catch (e) {
+    document.getElementById('loginErr').textContent = 'Could not sign in — please contact the clinic for help.';
+  }
+}
+
+window.coordSignOut = function() {
+  signOut(auth);
+};
+
+// Mirrors patient-portal.html's "Send my login to WhatsApp" — re-fetches
+// coordinators/{uid} fresh rather than relying on any cached value, so this
+// always sends the current urlKey/phone even if either was changed after
+// this session started.
+// WA-NUMBER: digits only, leading zeros dropped, 10 digits = India (91 in front), 91 0 + 10 digits -> the 0 dropped; a number saved with its
+// own country code (+1 USA ...) keeps it. The same rule as the doctor's pages and the WhatsApp Worker.
+function waNumber(raw) {
+  let d = String(raw == null ? '' : raw).replace(/[^0-9]/g, '').replace(/^0+/, '');
+  if (d.length === 10) return '91' + d;
+  if (d.length === 13 && d.indexOf('910') === 0) return '91' + d.slice(3);
+  return d;
+}
+window.sendCoordinatorLoginViaWhatsApp = async function() {
+  if (!coordUid) return;
+  try {
+    const snap = await get(ref(db, `coordinators/${coordUid}`));
+    if (!snap.exists()) {
+      alert('Could not find your account details. Please contact the clinic.');
+      return;
+    }
+    const data = snap.val();
+    const cleanPhone = waNumber(data.phone);   // WA-NUMBER
+    if (!data.urlKey || cleanPhone.length < 11 || cleanPhone.length > 15) {
+      alert('Your account is missing a phone number or login link on file. Please contact the clinic.');
+      return;
+    }
+    const loginUrl = `https://punarvasu.clinic/coordinator-panel.html?c=${data.urlKey}`;
+    const msg = `Here is your Punarvasu Clinic Coordinator Dashboard link:\n${loginUrl}\n\nKeep this safe — it signs you straight in.`;
+    const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, 'punarvasuWhatsApp'); // FIXED-TABS: reuse one WhatsApp tab
+  } catch (err) {
+    alert('Something went wrong preparing your login link. Please try again or contact the clinic.');
+  }
+};
+
+// ── NAV ──
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    item.classList.add('active');
+    document.getElementById('panel-' + item.dataset.panel).classList.add('active');
+  });
+});
+
+// ── STAGE INDICATOR ──
+// Same 4-stage model case_analyzer_local.html, admin-panel.html and
+// dashboard.html use (1 no case yet, 2 submitted/awaiting prescription,
+// 3 prescribed/awaiting follow-up, 4 closed). Those three compute it from
+// the shared cases/ collection, which this page cannot read — the per-record
+// Firebase rule below only opens up patients/{uid} for a patient assigned to
+// this coordinator, not the top-level cases/ node. So this reads only
+// patients/{uid}/casefile instead — which loadMyPatients() already has for
+// every assigned patient below — including lastCaseSubmittedAt, mirrored in
+// by the intake wizard at submission specifically so a page like this one
+// never needs the shared cases/ node just to compute a stage. Same approach
+// patient-portal.html uses for its own computeMyStage.
+// STAGE-V2 / STAGE-RULE (v2) — the stage is always worked out from the data,
+// never stored. In this order:
+//   4  closed after the newest visit AND after the doctor's latest action (a
+//      prescription, or a "continue same Rx" decision) — so a consultation
+//      closed right after a final follow-up, with no new prescription, counts
+//      as closed;
+//   3  the doctor's latest action is newer than the newest visit: waiting for
+//      the patient's next follow-up;
+//   5  the newest visit is newer than the doctor's latest action AND is a
+//      follow-up (every real follow-up saves a followUpSessions record dated
+//      the same instant as its own case): the doctor decides to continue or
+//      to change the prescription;
+//   2  the newest visit is newer than the doctor's latest action and is not a
+//      follow-up: a new case waiting for its first prescription.
+// (1 = no case at all.) Same rule in case_analyzer_local.html, admin-panel.html,
+// dashboard.html, patient-portal.html, coordinator-panel.html, the intake
+// wizard's checkFollowUpConsultationStillOpen and the repertory tool — change
+// all seven together. Takes the patient's followUpSessions as well as the
+// casefile: they come in the same per-patient record loadMyPatients() already
+// reads, so no extra reads are needed.
+function computeStage(s, followUpSessions) {
+  if (!s) return 1;
+  const caseAt = s.lastCaseSubmittedAt || 0;
+  let latestRxAt = 0;
+  if (s.prescriptions) {
+    Object.values(s.prescriptions).forEach(e => { if (e.sessionId && e.sessionId > latestRxAt) latestRxAt = e.sessionId; });
+  }
+  let latestContinueAt = 0, latestFollowUpAt = 0;
+  if (followUpSessions && typeof followUpSessions === 'object') {
+    Object.values(followUpSessions).forEach(e => {
+      const at = e && e.date ? new Date(e.date).getTime() : 0;
+      if (at > latestFollowUpAt) latestFollowUpAt = at;
+      if (e && e.decision === 'continue' && e.decidedAt && e.decidedAt > latestContinueAt) latestContinueAt = e.decidedAt;
+    });
+  }
+  const latestDecisionAt = Math.max(latestRxAt, latestContinueAt);
+  const closedAt = s.sessionClosedAt || 0;
+  if (closedAt > latestDecisionAt && closedAt > caseAt) return 4;
+  if (latestDecisionAt > caseAt) return 3;
+  return (latestFollowUpAt > 0 && latestFollowUpAt >= caseAt) ? 5 : 2;
+}
+// STAGE-INDICATOR: a small read-only label for where a consultation sits —
+// never a control, same as every other copy of this function (stage stays
+// purely derived, nothing here is ever settable off a list). Same wording
+// and colors as admin-panel.html's own stageBadge() — change together.
+// Stage 1 (no case at all yet) has nothing worth showing, so it renders
+// nothing.
+function stageBadge(stage) {
+  if (stage === 2) return '<span class="stage-badge stage-2">Awaiting Prescription</span>';
+  if (stage === 3) return '<span class="stage-badge stage-3">Prescribed</span>';
+  if (stage === 4) return '<span class="stage-badge stage-4">Closed</span>';
+  if (stage === 5) return '<span class="stage-badge stage-5">Follow-up received</span>'; // STAGE-V2
+  return '';
+}
+
+// ── LOAD MY PATIENTS ──
+// Coordinators only see patients where coordinatorId === their uid
+// Firebase rules enforce this at the data layer too
+function loadMyPatients() {
+  // Query only patients whose coordinatorId matches this coordinator, rather
+  // than reading the entire patients node and filtering client-side. This
+  // matters for two reasons: (1) the broader "patients" Firebase rule only
+  // grants the admin account read access to the whole node — only the
+  // per-record rule allows a coordinator to read patients assigned to them,
+  // and that per-record rule only applies when querying/reading at that
+  // granularity, not when reading the whole collection at once; and
+  // (2) even if it were allowed, reading everyone's data into the browser
+  // just to filter it in JS would expose other patients' records to anyone
+  // inspecting this page, which the per-record rule is specifically designed
+  // to prevent.
+  const myPatientsQuery = query(ref(db, 'patients'), orderByChild('coordinatorId'), equalTo(coordUid));
+  onValue(myPatientsQuery, snap => {
+    myPatients = {};
+    if (snap.exists()) {
+      Object.entries(snap.val()).forEach(([uid, p]) => {
+        myPatients[uid] = p;
+      });
+    }
+
+    const count = Object.keys(myPatients).length;
+    document.getElementById('badge-patients').textContent = count;
+    document.getElementById('dashPatientCount').textContent = count;
+
+    // Render patient list
+    const el = document.getElementById('patientList');
+    if (count === 0) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">👤</div>No patients assigned yet.</div>';
+    } else {
+      let html = '';
+      Object.entries(myPatients).forEach(([uid, p]) => {
+        const status = p.status || 'active';
+        const stage = computeStage(p.casefile, p.followUpSessions); // STAGE-V2
+        html += `<div class="patient-item">
+          <div class="patient-info">
+            <h4>${p.name || 'Unknown'}</h4>
+            <p>📞 ${p.phone || 'No phone'}</p>
+          </div>
+          <div class="patient-actions">
+            <span class="badge ${status==='active'?'badge-active':'badge-disabled'}">${status}</span>
+            ${stageBadge(stage)}
+            <button class="btn-sm btn-teal" onclick="openChat('${uid}','${p.name||p.phone}')">Message</button>
+            <!-- STAGE-INDICATOR: hide, don't grey — nothing to view yet when
+            no case has been submitted at all. -->
+            ${stage>=2 ? `<button class="btn-sm btn-gray" onclick="viewCase('${uid}')">Case file</button>` : ''}
+          </div>
+        </div>`;
+      });
+      el.innerHTML = html;
+    }
+
+    // Update case file dropdown
+    const sel = document.getElementById('casePatientSelect');
+    sel.innerHTML = '<option value="">— Select a patient —</option>';
+    Object.entries(myPatients).forEach(([uid, p]) => {
+      sel.innerHTML += `<option value="${uid}">${p.name || p.email}</option>`;
+    });
+
+    // Refresh messages list if open
+    loadMessages();
+  }, (error) => {
+    console.error('loadMyPatients error:', error.code, error.message);
+  });
+}
+
+// ── MESSAGES ──
+function loadMessages() {
+  const el = document.getElementById('convList');
+  if (Object.keys(myPatients).length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">💬</div>No patients assigned yet.</div>';
+    document.getElementById('badge-messages').textContent = '0';
+    return;
+  }
+
+  // Listen to messages for all assigned patients
+  let unreadTotal = 0;
+  let convData = {};
+  let pending = Object.keys(myPatients).length;
+
+  Object.entries(myPatients).forEach(([uid, p]) => {
+    onValue(ref(db, `messages/${uid}`), snap => {
+      if (snap.exists()) {
+        convData[uid] = { msgs: snap.val(), name: p.name || p.phone };
+      } else {
+        delete convData[uid];
+      }
+      pending--;
+      if (pending <= 0) renderConvList(convData);
+    }, { onlyOnce: true });
+  });
+
+  // Also set up live listeners for real-time updates
+  Object.entries(myPatients).forEach(([uid, p]) => {
+    onValue(ref(db, `messages/${uid}`), snap => {
+      if (snap.exists()) {
+        convData[uid] = { msgs: snap.val(), name: p.name || p.phone };
+      } else {
+        delete convData[uid];
+      }
+      renderConvList(convData);
+    });
+  });
+}
+
+function renderConvList(convData) {
+  const el = document.getElementById('convList');
+  let unreadTotal = 0;
+  let html = '';
+
+  Object.entries(convData).forEach(([uid, d]) => {
+    const msgArr = Object.values(d.msgs);
+    const last   = msgArr[msgArr.length - 1];
+    const unread = msgArr.filter(m => m.from === 'patient' && !m.read).length;
+    unreadTotal += unread;
+    const time = last.timestamp
+      ? new Date(last.timestamp).toLocaleString('en-IN', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})
+      : '';
+    html += `<div class="conv-item ${unread>0?'unread':''}" onclick="openChat('${uid}','${d.name}')">
+      ${unread>0?'<div class="unread-dot"></div>':'<div style="width:8px;"></div>'}
+      <div style="flex:1;">
+        <div class="conv-name">${d.name}</div>
+        <div class="conv-preview">${last.text?.substring(0,60)||''}${(last.text?.length||0)>60?'...':''}</div>
+      </div>
+      <div class="conv-time">${time}</div>
+    </div>`;
+  });
+
+  el.innerHTML = html || '<div class="empty"><div class="empty-icon">💬</div>No messages yet.</div>';
+  document.getElementById('badge-messages').textContent = unreadTotal || '0';
+  document.getElementById('dashUnreadCount').textContent = unreadTotal || '0';
+}
+
+// ── CHAT ──
+window.openChat = function(uid, name) {
+  // Only allow chatting with assigned patients
+  if (!myPatients[uid]) return;
+  currentChatUid = uid;
+  document.getElementById('chatPatientName').textContent = name;
+  document.getElementById('chatPanel').classList.add('open');
+
+  // Switch to messages panel
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('[data-panel="messages"]').classList.add('active');
+  document.getElementById('panel-messages').classList.add('active');
+
+  onValue(query(ref(db, `messages/${uid}`), orderByChild('timestamp')), snap => {
+    const list = document.getElementById('chatMsgs');
+    list.innerHTML = '';
+    if (!snap.exists()) return;
+
+    snap.forEach(child => {
+      const m = child.val();
+      let fromClass;
+      if (m.from === 'patient') fromClass = 'from-patient';
+      else if (m.from === 'coordinator') fromClass = 'from-coordinator';
+      else fromClass = 'from-doctor';
+
+      const time = m.timestamp
+        ? new Date(m.timestamp).toLocaleString('en-IN', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})
+        : '';
+
+      const row = document.createElement('div');
+      row.className = `msg-row ${fromClass}`;
+
+      const bubble = document.createElement('div');
+      bubble.className = `msg-bubble ${fromClass}`;
+
+      // Show sender name for doctor and coordinator messages (not patient)
+      if (m.from === 'doctor') {
+        const senderDiv = document.createElement('div');
+        senderDiv.className = 'msg-sender';
+        senderDiv.textContent = 'Dr. Yogeshwar Tiwari';
+        bubble.appendChild(senderDiv);
+      } else if (m.from === 'coordinator') {
+        const senderDiv = document.createElement('div');
+        senderDiv.className = 'msg-sender';
+        senderDiv.textContent = m.senderName || coordName;
+        bubble.appendChild(senderDiv);
+      }
+
+      const textDiv = document.createElement('div');
+      textDiv.textContent = m.text || '';
+      const metaDiv = document.createElement('div');
+      metaDiv.className = 'msg-meta';
+      metaDiv.textContent = time;
+      bubble.appendChild(textDiv);
+      bubble.appendChild(metaDiv);
+
+      row.appendChild(bubble);
+      list.appendChild(row);
+
+      // Mark patient messages as read
+      if (m.from === 'patient' && !m.read) {
+        set(ref(db, `messages/${uid}/${child.key}/read`), true);
+      }
+    });
+    list.scrollTop = list.scrollHeight;
+  });
+};
+
+window.closeChat = function() {
+  document.getElementById('chatPanel').classList.remove('open');
+  currentChatUid = null;
+};
+
+window.sendMessage = async function() {
+  if (!currentChatUid) return;
+  const input = document.getElementById('chatInput');
+  const text  = input.value.trim();
+  if (!text) return;
+  await push(ref(db, `messages/${currentChatUid}`), {
+    text,
+    from: 'coordinator',
+    senderId: coordUid,
+    senderName: coordName,
+    timestamp: Date.now(),
+    read: false
+  });
+  input.value = '';
+};
+
+document.getElementById('chatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.sendMessage(); }
+});
+
+// ── MESSAGE THE DOCTOR (general, non-patient-specific) ──
+// coordinatorMessages/{coordUid} — separate node from messages/{patientUid}
+// above. Mirrors the same read/mark-read/send pattern.
+function loadDoctorMessages() {
+  onValue(query(ref(db, `coordinatorMessages/${coordUid}`), orderByChild('timestamp')), snap => {
+    const list = document.getElementById('doctorChatMsgs');
+    list.innerHTML = '';
+    let unread = 0;
+    if (snap.exists()) {
+      snap.forEach(child => {
+        const m = child.val();
+        const fromClass = m.from === 'coordinator' ? 'from-coordinator' : 'from-doctor';
+        const time = m.timestamp ? new Date(m.timestamp).toLocaleString('en-IN', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+        const row = document.createElement('div');
+        row.className = `msg-row ${fromClass}`;
+        const bubble = document.createElement('div');
+        bubble.className = `msg-bubble ${fromClass}`;
+        const textDiv = document.createElement('div');
+        textDiv.textContent = m.text || '';
+        bubble.appendChild(textDiv);
+        const timeDiv = document.createElement('div');
+        timeDiv.style.cssText = 'font-size:10px;opacity:0.6;margin-top:4px;';
+        timeDiv.textContent = time;
+        bubble.appendChild(timeDiv);
+        row.appendChild(bubble);
+        list.appendChild(row);
+
+        if (m.from === 'doctor' && !m.read) {
+          unread++;
+          set(ref(db, `coordinatorMessages/${coordUid}/${child.key}/read`), true);
+        }
+      });
+    }
+    list.scrollTop = list.scrollHeight;
+    document.getElementById('badge-doctormsg').textContent = unread;
+  });
+}
+
+window.sendDoctorMessage = async function() {
+  const input = document.getElementById('doctorChatInput');
+  const text  = input.value.trim();
+  if (!text) return;
+  await push(ref(db, `coordinatorMessages/${coordUid}`), {
+    text, from: 'coordinator', timestamp: Date.now(), read: false
+  });
+  // Surfaces immediately in Admin Panel's notification list, same as
+  // patient messages and appointment inquiries.
+  await push(ref(db, 'notifications/admin'), {
+    type: 'coordinator_message',
+    coordinatorId: coordUid,
+    coordinatorName: coordName,
+    preview: text.slice(0, 80),
+    timestamp: Date.now(),
+    read: false
+  });
+  input.value = '';
+};
+
+document.getElementById('doctorChatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.sendDoctorMessage(); }
+});
+
+// ── CASE FILE (READ-ONLY) ──
+window.viewCase = function(uid) {
+  if (!myPatients[uid]) return;
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('[data-panel="casefile"]').classList.add('active');
+  document.getElementById('panel-casefile').classList.add('active');
+  document.getElementById('casePatientSelect').value = uid;
+  loadCaseFile();
+};
+
+window.loadCaseFile = function() {
+  const uid = document.getElementById('casePatientSelect').value;
+  if (!uid) { document.getElementById('caseWrap').style.display = 'none'; return; }
+  if (!myPatients[uid]) return; // security: only assigned patients
+  currentCaseUid = uid;
+  const pat = myPatients[uid];
+  document.getElementById('caseTitle').textContent = (pat?.name || 'Patient') + ' — Case File';
+  // STAGE-INDICATOR: same badge as the patient-list row, repeated here on
+  // the record view itself — see computeStage/stageBadge above.
+  document.getElementById('caseStageBadge').innerHTML = stageBadge(computeStage(pat?.casefile, pat?.followUpSessions)); // STAGE-V2
+  document.getElementById('caseWrap').style.display = 'block';
+
+  ['notes','prescriptions','followups','appointments'].forEach(section => {
+    onValue(ref(db, `patients/${uid}/casefile/${section}`), snap => {
+      renderSection(section, snap);
+    });
+  });
+};
+
+function renderSection(section, snap) {
+  const listId = section === 'notes' ? 'notes-list'
+    : section === 'prescriptions' ? 'presc-list'
+    : section === 'followups' ? 'followup-list'
+    : 'appt-list';
+  const el = document.getElementById(listId);
+  if (!el) return;
+  if (!snap.exists()) { el.innerHTML = '<div class="empty" style="padding:16px 0;font-size:13px;">No entries yet.</div>'; return; }
+  let html = '';
+  const entries = Object.values(snap.val()).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  if (section === 'prescriptions') window.__rxPdfList = [];
+  entries.forEach(e => {
+    if (section === 'prescriptions') {
+      // RX-PDF-ON-DEMAND: the PDF is made from the prescription text, only when the button is pressed
+      const pdfLink = e.type === 'continue' ? '' : `<br/><button type="button" style="display:inline-block;margin-top:6px;color:#1a5c3a;font-weight:600;background:none;border:none;padding:0;cursor:pointer;font:inherit;font-weight:600" onclick="var r=__rxPdfList[${window.__rxPdfList.push({ e, n: (myPatients[snap.ref.parent.parent.key] || {}).name || '' }) - 1}];pvRxPdf.download(r.e,r.n,this)">⬇ Download Prescription (PDF)</button>`;
+      html += `<div class="case-entry"><div class="case-entry-date">${e.date}</div><div class="case-entry-text"><strong>Medicine:</strong> ${e.medicine}<br/><strong>Dose:</strong> ${e.dose}${e.notes?'<br/><strong>Notes:</strong> '+e.notes:''}${pdfLink}</div></div>`;
+    } else if (section === 'appointments') {
+      html += `<div class="case-entry"><div class="case-entry-date">${e.date}</div><div class="case-entry-text">${e.note||'Consultation'} — <strong>${e.status||'Completed'}</strong></div></div>`;
+    } else {
+      html += `<div class="case-entry"><div class="case-entry-date">${e.date}</div><div class="case-entry-text">${e.text}</div></div>`;
+    }
+  });
+  el.innerHTML = html;
+}
+
+window.switchTab = function(tab, el) {
+  document.querySelectorAll('.case-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.case-tab-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+};
+
+</script>
+</body>
+</html>
