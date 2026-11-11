@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Patient Portal — Punarvasu Clinic</title>
   <link rel="manifest" href="/manifest.json"/>
-  <link rel="apple-touch-icon" href="/icon-192.png"/>
+  <link rel="apple-touch-icon" href="/icon-mic-180.png"/><!-- SPEAK-BUTTON: the home-screen button is a microphone -->
   <meta name="theme-color" content="#1C2E50"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
@@ -97,6 +97,13 @@
     .mc-btn { border: 1px solid var(--teal); background: var(--white); color: var(--teal); border-radius: 6px; padding: 0 12px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
     .mc-btn.go { background: var(--teal); color: #fff; }
     .mc-btn.on { background: #B23A2E; border-color: #B23A2E; color: #fff; }
+    /* SPEAK-BUTTON */
+    .mc-big { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; min-height: 76px; margin: 6px 0 12px; padding: 12px 16px; border: none; border-radius: 14px; background: linear-gradient(145deg, #2055A4, #1C2E50); color: #fff; font: inherit; font-size: 17px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 14px rgba(28,46,80,.25); }
+    .mc-big-ic { display: inline-flex; align-items: center; justify-content: center; width: 50px; height: 50px; border-radius: 50%; background: #fff; font-size: 26px; flex: 0 0 auto; }
+    .mc-big.on { background: #B23A2E; box-shadow: 0 0 0 6px rgba(178,58,46,.18); }
+    .mc-check { font-size: 13px; color: var(--teal); font-weight: 600; margin: -4px 0 6px; }
+    .mc-nomic { font-size: 13px !important; color: var(--ink3, #888) !important; }
+    .mc-list { margin-top: 14px; }
     .ck-row { padding: 12px 0; border-top: 1px solid var(--border); }
     .ck-name { font-size: 15px; font-weight: 600; color: var(--ink); }
     .ck-hi { font-size: 14px; color: var(--ink2); margin-top: 2px; }
@@ -1019,6 +1026,12 @@ function pickLang(field, lang) {
 // MY-COMPLAINTS: the patient notes each complaint whenever it comes up (typed, or spoken with the phone's microphone); they build up under
 // patients/{uid}/notedComplaints until Dr. Tiwari puts them together for repertorization (the Case Analyzer record's "Find rubrics &
 // repertorize"). A complaint can be removed until it has been sent (pushedAt); the doctor's side clears the sent ones once the prescription is written.
+// SPEAK-BUTTON: the big microphone button's words
+const MC_BIG = {
+  en: { big: 'Tap and speak your complaint', stop: 'Listening… tap here when you finish', check: 'Check the words below, then press Add.', nomic: 'To speak: tap the box below and use the microphone key on your keyboard.' },
+  hi: { big: 'दबाएँ और अपनी तकलीफ़ बोलें', stop: 'सुन रहे हैं… बोलना पूरा होने पर यहाँ दबाएँ', check: 'नीचे लिखे शब्द देख लें, फिर जोड़ें दबाएँ।', nomic: 'बोलने के लिए: नीचे के बॉक्स पर दबाएँ और कीबोर्ड का माइक्रोफ़ोन बटन इस्तेमाल करें।' },
+  gu: { big: 'દબાવો અને તમારી તકલીફ બોલો', stop: 'સાંભળી રહ્યા છીએ… બોલવાનું પૂરું થાય ત્યારે અહીં દબાવો', check: 'નીચે લખેલા શબ્દો જોઈ લો, પછી ઉમેરો દબાવો.', nomic: 'બોલવા માટે: નીચેના બોક્સ પર દબાવો અને કીબોર્ડનું માઇક્રોફોન બટન વાપરો.' }
+};
 const MC_TEXT = {
   en: { title: '📝 My complaints', hint: 'Write down each complaint whenever you notice it - what you feel, where, and what makes it worse or better. Dr. Tiwari reads them together at your next consultation.',
         ph: 'e.g. pain in both knees, worse on stairs', add: 'Add', sent: 'sent to the doctor', remove: 'Remove', speak: 'Speak', stop: 'Stop', listening: 'Listening…',
@@ -1042,14 +1055,18 @@ function renderMyNoted() {
   const canSpeak = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
   const rows = list.map(([k, x], i) => `<div class="mc-row"><span class="mc-n">${i + 1}.</span><span class="mc-t">${mypEsc(x.text)}<span class="mc-d">${mypDate(x.at)}</span></span>${x.pushedAt
     ? `<span class="mc-tag">${t.sent}</span>` : `<button class="mc-x" onclick="mcRemove('${mypEsc(k)}')" title="${t.remove}" aria-label="${t.remove}">&times;</button>`}</div>`).join('');
+  const big = MC_BIG[currentLang] || MC_BIG.en;
+  // SPEAK-BUTTON: one large microphone first; then the words it heard (or typed) with Add; then the complaints already noted
   box.innerHTML = `<h3>${t.title}${list.length ? ' (' + list.length + ')' : ''}</h3>
     <p>${t.hint}</p>
-    ${rows ? `<div class="mc-list">${rows}</div>` : ''}
+    ${canSpeak ? `<button class="mc-big${mcRec ? ' on' : ''}" onclick="mcMic()"><span class="mc-big-ic">${mcRec ? '⏹' : '🎤'}</span><span>${mcRec ? big.stop : big.big}</span></button>`
+      : `<p class="mc-nomic">${big.nomic}</p>`}
+    ${!mcRec && String(mcDraft || '').trim() ? `<div class="mc-check">${big.check}</div>` : ''}
     <div class="mc-add">
-      ${canSpeak ? `<button class="mc-btn${mcRec ? ' on' : ''}" onclick="mcMic()" title="${mcRec ? t.stop : t.speak}" aria-label="${mcRec ? t.stop : t.speak}">${mcRec ? '⏹' : '🎤'}</button>` : ''}
       <textarea id="mcText" rows="2" placeholder="${mcRec ? t.listening : t.ph}" oninput="mcSetDraft(this.value)">${mypEsc(mcDraft)}</textarea>
       <button class="mc-btn go" id="mcAddBtn" onclick="mcAdd()">${t.add}</button>
-    </div>`;
+    </div>
+    ${rows ? `<div class="mc-list">${rows}</div>` : ''}`;
   box.style.display = '';
 }
 window.mcSetDraft = v => { mcDraft = v; };
