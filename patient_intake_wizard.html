@@ -3785,6 +3785,19 @@ function escAttr(s) {
     }
   };
 
+// FAMILY-NUMBER: is a typed name the same person as the name on the only account of a mobile number? Same first name (titles such as
+  // Shri / Smt left out), or the whole name nearly the same, counts as a spelling variant; otherwise it is another person - a relative on
+  // the same number - who gets an account of their own. Keys are lower-case words joined by dots (rakesh.jhaveri).
+  function sameNameish(a, b) {
+    const TITLES = ['shri', 'shree', 'sri', 'smt', 'shrimati', 'mr', 'mrs', 'ms', 'miss', 'dr', 'kumari', 'kum', 'master', 'baby', 'ben', 'bhai'];
+    const words = k => String(k || '').split('.').filter(w => w && TITLES.indexOf(w) < 0);
+    const x = words(a), y = words(b); if (!x.length || !y.length) return false;
+    if (x[0] === y[0] && x[0].length >= 3) return true;
+    const s1 = x.join(''), s2 = y.join(''), m = s1.length, n = s2.length;
+    let prev = Array.from({ length: n + 1 }, (v, j) => j);
+    for (let i = 1; i <= m; i++) { const cur = [i]; for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (s1[i - 1] === s2[j - 1] ? 0 : 1)); prev = cur; }
+    return 1 - prev[n] / Math.max(m, n) >= 0.8;
+  }
   window.ensurePatientAccount = async function (name, phone) {
     const rawDigits = phone.replace(/[^0-9]/g, '');
     if (!rawDigits) return null;
@@ -3831,7 +3844,7 @@ function escAttr(s) {
         const knownUids = Object.keys(known);
         if (knownUids.length === 1) {
           const knownNormalized = normalizeNameForEmail(known[knownUids[0]] || '');
-          if (knownNormalized) {
+          if (knownNormalized && sameNameish(normalizedName, knownNormalized)) {   // FAMILY-NUMBER: a different person on this number gets their own account
             const knownEmail = cleanPhone + '.' + knownNormalized + '@punarvasu.clinic';
             const knownPass = 'Pun@' + cleanPhone.slice(-6) + 'Cl!';
             try {

@@ -222,6 +222,7 @@ var T = {
   tip3: ['You can skip any question you prefer not to answer.', 'जिस सवाल का जवाब न देना चाहें, उसे छोड़ सकते हैं।', 'જે સવાલનો જવાબ ન આપવો હોય તે છોડી શકો છો.'],
   firstDetails: ['First, a few details about you.', 'पहले, आपके बारे में कुछ जानकारी।', 'પહેલાં, તમારા વિશે થોડી માહિતી.'],
   lName: ['Your name', 'आपका नाम', 'તમારું નામ'],
+  forFamily: ['Filling this for a family member? Write their name and age (your own mobile number is fine).', 'परिवार के किसी सदस्य के लिए भर रहे हैं? उनका नाम और उम्र लिखें (मोबाइल नंबर आपका भी चल जाएगा)।', 'પરિવારના કોઈ સભ્ય માટે ભરી રહ્યા છો? તેમનું નામ અને ઉંમર લખો (મોબાઇલ નંબર તમારો પણ ચાલશે).'],   // FAMILY-NUMBER
   lPhone: ['Mobile number', 'मोबाइल नंबर', 'મોબાઈલ નંબર'],
   lAge: ['Age', 'उम्र', 'ઉંમર'],
   lSex: ['Sex', 'लिंग', 'જાતિ'],
@@ -717,7 +718,7 @@ function youHtml() {
     if (!sexKind(known.sex)) h += '<div class="card">' + sexField(true) + '<p class="mini" style="margin-top:8px">' + t('sexWhy') + '</p></div>';
   } else {
     h += h1(t('namaste'), true) + '<p class="help">' + t('firstDetails') + '</p>';
-    h += '<div class="card"><label class="lab" for="fName" style="margin-top:0">' + t('lName') + '</label><input class="in" id="fName" type="text" autocomplete="name" value="' + esc(S.name) + '">';
+    h += '<div class="card"><label class="lab" for="fName" style="margin-top:0">' + t('lName') + '</label><input class="in" id="fName" type="text" autocomplete="name" value="' + esc(S.name) + '"><p class="mini" style="margin:4px 0 0">' + t('forFamily') + '</p>';
     h += '<label class="lab" for="fPhone">' + t('lPhone') + '</label><input class="in" id="fPhone" type="tel" inputmode="numeric" autocomplete="tel" value="' + esc(S.phone) + '">';
     h += '<div class="pair"><div><label class="lab" for="fAge">' + t('lAge') + '</label><input class="in" id="fAge" type="number" min="0" max="120" inputmode="numeric" value="' + esc(S.age) + '"></div><div>' + sexField(false) + '</div></div></div>';
     h += '<p class="mini">' + t('unlinkedMini') + '</p>';
@@ -1189,6 +1190,19 @@ const W = window.Wizard;
 // phoneIndex knows on this phone; then the old phone-only accounts, only when the name matches - or opens a new one, and files the story
 // under it. If none of that works (e.g. no network for sign-in), the story is still sent, unlinked, as before.
 function nameKey(name) { return String(name || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.+|\.+$/g, ''); }
+// FAMILY-NUMBER: is a typed name the same person as the name on the only account of a mobile number? Same first name (titles such as
+// Shri / Smt left out), or the whole name nearly the same, counts as a spelling variant; otherwise it is another person - a relative on
+// the same number - who gets an account of their own. Keys are lower-case words joined by dots (rakesh.jhaveri).
+function sameNameish(a, b) {
+  const TITLES = ['shri', 'shree', 'sri', 'smt', 'shrimati', 'mr', 'mrs', 'ms', 'miss', 'dr', 'kumari', 'kum', 'master', 'baby', 'ben', 'bhai'];
+  const words = k => String(k || '').split('.').filter(w => w && TITLES.indexOf(w) < 0);
+  const x = words(a), y = words(b); if (!x.length || !y.length) return false;
+  if (x[0] === y[0] && x[0].length >= 3) return true;
+  const s1 = x.join(''), s2 = y.join(''), m = s1.length, n = s2.length;
+  let prev = Array.from({ length: n + 1 }, (v, j) => j);
+  for (let i = 1; i <= m; i++) { const cur = [i]; for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (s1[i - 1] === s2[j - 1] ? 0 : 1)); prev = cur; }
+  return 1 - prev[n] / Math.max(m, n) >= 0.8;
+}
 async function findOrMakeAccount(name, phone) {
   const raw = String(phone || '').replace(/[^0-9]/g, ''), stripped = raw.replace(/^0+/, ''), ph = stripped.slice(-10);
   if (ph.length !== 10) return null;
@@ -1200,7 +1214,7 @@ async function findOrMakeAccount(name, phone) {
     const idx = await get(ref(db, 'phoneIndex/' + ph));
     if (idx.exists()) {
       const ids = Object.keys(idx.val() || {});
-      if (ids.length === 1) { const kn = nameKey(idx.val()[ids[0]]); if (kn) { uid = await tryIn(ph + '.' + kn + '@punarvasu.clinic', pass(ph)); if (uid) return uid; } }
+      if (ids.length === 1) { const kn = nameKey(idx.val()[ids[0]]); if (kn && (!nk || sameNameish(nk, kn))) { uid = await tryIn(ph + '.' + kn + '@punarvasu.clinic', pass(ph)); if (uid) return uid; } }   // FAMILY-NUMBER: not for a different person
     }
   } catch (e) { /* phoneIndex not readable - go on */ }
   if (!nk) return null;   // a name in Hindi / Gujarati letters cannot make a new account: sent unlinked, as before
