@@ -216,6 +216,21 @@ var T = {
   // 1 - You
   namaste: ['Namaste', 'नमस्ते', 'નમસ્તે'],
   notYou: ['Not you?', 'आप नहीं?', 'તમે નથી?'],
+  // FOR-WHOM: is the story for the sender, or for someone else (a relative or friend using this link / this phone)?
+  whoQ: ['Is this for you, or for someone else?', 'यह आपके लिए है या किसी और के लिए?', 'આ તમારા માટે છે કે બીજા કોઈ માટે?'],
+  whoMe: ['For me', 'मेरे लिए', 'મારા માટે'],
+  whoOther: ['For someone else (family member or friend)', 'किसी और के लिए (परिवार का सदस्य या मित्र)', 'બીજા કોઈ માટે (પરિવારના સભ્ય કે મિત્ર)'],
+  otherHead: ['About the person who is unwell', 'जिनकी तकलीफ़ है, उनके बारे में', 'જેમને તકલીફ છે, તેમના વિશે'],
+  otherHelp: ['Their own name, age and sex. Dr. Tiwari opens a separate record for them.', 'उनका अपना नाम, उम्र और लिंग। डॉ. तिवारी उनका अलग रिकॉर्ड बनाएँगे।', 'તેમનું પોતાનું નામ, ઉંમર અને જાતિ. ડૉ. તિવારી તેમનો અલગ રેકોર્ડ બનાવશે.'],
+  lTheirName: ['Their name', 'उनका नाम', 'તેમનું નામ'],
+  youHead: ['About you (the one sending this)', 'आपके बारे में (जो भेज रहे हैं)', 'તમારા વિશે (જે મોકલી રહ્યા છે)'],
+  sentAs: ['You are sending this as {n}. Your mobile number is used to reach them.', 'आप इसे {n} के रूप में भेज रहे हैं। उनसे संपर्क आपके मोबाइल नंबर पर होगा।', 'તમે આ {n} તરીકે મોકલી રહ્યા છો. તેમનો સંપર્ક તમારા મોબાઇલ નંબર પર થશે.'],
+  forLine: ['For {n}', '{n} के लिए', '{n} માટે'],
+  answerFor: ['Answer every question for {n}.', 'हर सवाल का जवाब {n} के लिए दीजिए।', 'દરેક સવાલનો જવાબ {n} માટે આપો.'],
+  errWho: ['Please choose: for you, or for someone else.', 'कृपया चुनिए: आपके लिए या किसी और के लिए।', 'કૃપા કરી પસંદ કરો: તમારા માટે કે બીજા કોઈ માટે.'],
+  errTheirName: ['Please write the name of the person who is unwell.', 'कृपया जिनकी तकलीफ़ है उनका नाम लिखिए।', 'કૃપા કરી જેમને તકલીફ છે તેમનું નામ લખો.'],
+  errSameName: ['This is your own name. Please write the other person’s name.', 'यह आपका अपना नाम है। कृपया दूसरे व्यक्ति का नाम लिखिए।', 'આ તમારું પોતાનું નામ છે. કૃપા કરી બીજી વ્યક્તિનું નામ લખો.'],
+  errTheirAge: ['Please write their age.', 'कृपया उनकी उम्र लिखिए।', 'કૃપા કરી તેમની ઉંમર લખો.'],
   knownHelp: ['Dr. Tiwari reads your answers before your consultation.', 'डॉ. तिवारी परामर्श से पहले आपके जवाब पढ़ते हैं।', 'ડૉ. તિવારી સલાહ પહેલાં તમારા જવાબ વાંચે છે.'],
   tip1: ['It takes about 10 minutes.', 'इसमें लगभग 10 मिनट लगते हैं।', 'આમાં લગભગ 10 મિનિટ લાગે છે.'],
   tip2: ['You can speak instead of typing.', 'आप टाइप करने की जगह बोल सकते हैं।', 'તમે ટાઇપ કરવાને બદલે બોલી શકો છો.'],
@@ -530,11 +545,12 @@ var GROUPS = ['you', 'main', 'others', 'general', 'extra', 'review'];
 var GLAB = { you: 'sYou', main: 'sMain', others: 'sOthers', general: 'sGeneral', extra: 'sExtra', review: 'sCheck' };
 var S = freshState();          // the answers
 var known = null;              // the patient the link belongs to: { uid, name, phone, age, sex }
+var notYou = false;           // FOR-WHOM: "Not you?" pressed - the link's own patient is not the one writing
 var booted = false, cur = '', nav = [], navAt = 0, edit = null, pending = null;
 var sent = false, sending = false, navBusy = false, lastNav = 0, saveTimer = null, slowTimer = null, boxSeq = 0;
 var W = { uid: uid, init: init, sender: null };
 
-function freshState() { return { name: '', phone: '', age: '', sex: '', main: '', since: '', better: '', others: [''], g: {}, extra: '' }; }
+function freshState() { return { who: '', oName: '', oAge: '', oSex: '', name: '', phone: '', age: '', sex: '', main: '', since: '', better: '', others: [''], g: {}, extra: '' }; }
 function ga(id) { var a = S.g[id]; if (!a) a = S.g[id] = { v: Qby[id].multi ? [] : '', own: '' }; return a; }
 function answered(id) { var a = S.g[id]; if (!a) return false; return (Qby[id].multi ? a.v.length > 0 : !!a.v) || clean(a.own) !== ''; }
 // anything stored on the phone is checked before it is used
@@ -543,6 +559,7 @@ function normState(x) {
   function str(v) { return typeof v === 'string' ? v : ''; }
   if (!x || typeof x !== 'object') return s;
   s.name = str(x.name); s.phone = str(x.phone); s.age = str(x.age); s.sex = str(x.sex);
+  s.who = x.who === 'me' || x.who === 'other' ? x.who : ''; s.oName = str(x.oName); s.oAge = str(x.oAge); s.oSex = str(x.oSex);   // FOR-WHOM
   s.main = str(x.main); s.since = str(x.since); s.better = str(x.better); s.extra = str(x.extra);
   if (isArray(x.others)) s.others = x.others.slice(0, 8).map(str);
   if (!s.others.length) s.others = [''];
@@ -571,7 +588,7 @@ function sexKind(s) {
   if (c === 'm' || s === 'पुरुष' || s === 'પુરુષ') return 'M';
   return 'O';
 }
-function effSex() { return (known && sexKind(known.sex)) ? known.sex : S.sex; }
+function effSex() { if (S.who === 'other') return S.oSex; return (known && sexKind(known.sex)) ? known.sex : S.sex; }   // FOR-WHOM: the questions are about the person it is for
 function askPeriods() { var k = sexKind(effSex()); return k === 'F' || k === 'O'; }
 function generalList() { var a = []; for (var i = 0; i < Q.length; i++) { if (Q[i].grp === 'main') continue; if (Q[i].id === 'periods' && !askPeriods()) continue; a.push('g_' + Q[i].id); } return a; }
 function ccList() { var a = []; for (var i = 0; i < Q.length; i++) if (Q[i].grp === 'main') a.push('g_' + Q[i].id); return a; }   // CC-DETAILS
@@ -630,7 +647,10 @@ function collect() {
   if (!booted || sent) return;
   var s = cur;
   if (s === 'you') {
-    if (!known) { S.name = val('fName'); S.phone = val('fPhone'); S.age = val('fAge'); S.sex = val('fSex'); }
+    if (S.who === 'other') {   // FOR-WHOM: the sender's name and phone (unless the link knows them), then the person it is for
+      if (!known) { S.name = val('fName'); S.phone = val('fPhone'); } else if ($('fPhone')) S.phone = val('fPhone');
+      S.oName = val('fOName'); S.oAge = val('fOAge'); S.oSex = val('fOSex');
+    } else if (!known) { S.name = val('fName'); S.phone = val('fPhone'); S.age = val('fAge'); S.sex = val('fSex'); }
     else if (!sexKind(known.sex) && $('fSex')) S.sex = val('fSex');
   } else if (s === 'main') { S.main = val('fMain'); S.since = val('fSince'); if ($('fBetter')) S.better = val('fBetter'); }
   else if (s === 'others') {
@@ -641,6 +661,16 @@ function collect() {
 }
 function validate(step) {
   if (step === 'you') {
+    if (!S.who) return ['whoBox', t('errWho')];   // FOR-WHOM
+    if (S.who === 'other') {
+      if (!known && clean(S.name) === '') return ['fName', t('errName')];
+      if (senderPhone().replace(/\D/g, '').length < 10) return ['fPhone', t('errPhone')];
+      if (clean(S.oName) === '') return ['fOName', t('errTheirName')];
+      if (nameKeyOf(S.oName) && nameKeyOf(S.oName) === nameKeyOf(senderName())) return ['fOName', t('errSameName')];
+      if (!/\d/.test(S.oAge)) return ['fOAge', t('errTheirAge')];
+      if (!S.oSex) return ['fOSex', t('errSex')];
+      return null;
+    }
     if (!known) {
       if (clean(S.name) === '') return ['fName', t('errName')];
       if (S.phone.replace(/\D/g, '').length < 10) return ['fPhone', t('errPhone')];
@@ -708,16 +738,48 @@ function sexField(first) {
   function op(v, key) { return '<option value="' + v + '"' + (S.sex === v ? ' selected' : '') + '>' + t(key) + '</option>'; }
   return '<label class="lab" for="fSex"' + (first ? ' style="margin-top:0"' : '') + '>' + t('lSex') + '</label><select class="in" id="fSex"><option value="">' + t('sexChoose') + '</option>' + op('Male', 'male') + op('Female', 'female') + op('Other', 'other') + '</select>';
 }
+// FOR-WHOM helpers
+function senderName() { return known ? known.name : clean(S.name); }
+function senderPhone() { return (known && known.phone) ? String(known.phone) : S.phone; }
+function nameKeyOf(n) { return String(n || '').trim().toLowerCase().replace(/[^a-z0-9\u0900-\u0aff]+/g, '.').replace(/^\.+|\.+$/g, ''); }
+function whoHtml() {
+  function b(v, key) { var on = S.who === v; return '<button type="button" role="radio" aria-checked="' + on + '" class="opt' + (on ? ' on' : '') + '" data-act="who" data-v="' + v + '"><span class="mk">' + mkInner(false, on) + '</span><span>' + t(key) + '</span></button>'; }
+  return '<div class="card" id="whoBox" tabindex="-1"><p class="lab" style="margin-top:0">' + t('whoQ') + '</p><div class="opts" role="radiogroup" aria-label="' + esc(t('whoQ')) + '">' + b('me', 'whoMe') + b('other', 'whoOther') + '</div></div>';
+}
+function oSexField() {
+  function op(v, key) { return '<option value="' + v + '"' + (S.oSex === v ? ' selected' : '') + '>' + t(key) + '</option>'; }
+  return '<label class="lab" for="fOSex">' + t('lSex') + '</label><select class="in" id="fOSex"><option value="">' + t('sexChoose') + '</option>' + op('Male', 'male') + op('Female', 'female') + op('Other', 'other') + '</select>';
+}
+function otherHtml() {   // FOR-WHOM: the sender (only what the link does not already know), then the person the story is about
+  var h = '';
+  if (!known) {
+    h += '<div class="card"><p class="lab" style="margin-top:0"><b>' + t('youHead') + '</b></p><label class="lab" for="fName">' + t('lName') + '</label><input class="in" id="fName" type="text" autocomplete="name" value="' + esc(S.name) + '">';
+    h += '<label class="lab" for="fPhone">' + t('lPhone') + '</label><input class="in" id="fPhone" type="tel" inputmode="numeric" autocomplete="tel" value="' + esc(S.phone) + '"></div>';
+  } else {
+    h += '<p class="mini">' + t('sentAs', { n: esc(known.name) }) + '</p>';
+    if (!known.phone) h += '<div class="card"><label class="lab" for="fPhone" style="margin-top:0">' + t('lPhone') + '</label><input class="in" id="fPhone" type="tel" inputmode="numeric" autocomplete="tel" value="' + esc(S.phone) + '"></div>';
+  }
+  h += '<div class="card"><p class="lab" style="margin-top:0"><b>' + t('otherHead') + '</b></p><p class="mini" style="margin:0 0 4px">' + t('otherHelp') + '</p>';
+  h += '<label class="lab" for="fOName">' + t('lTheirName') + '</label><input class="in" id="fOName" type="text" autocomplete="off" value="' + esc(S.oName) + '">';
+  h += '<div class="pair"><div><label class="lab" for="fOAge">' + t('lAge') + '</label><input class="in" id="fOAge" type="number" min="0" max="120" inputmode="numeric" value="' + esc(S.oAge) + '"></div><div>' + oSexField() + '</div></div></div>';
+  return h;
+}
 function youHtml() {
   var h = uiLangRow();
+  if (S.who === 'other') {   // FOR-WHOM
+    h += h1(t('namaste') + (known ? ', ' + esc(known.name) : ''), true);
+    if (known) h += '<button type="button" class="notyou" data-act="notyou">' + t('notYou') + '</button>';
+    return h + whoHtml() + otherHtml();
+  }
   if (known) {
     h += h1(t('namaste') + ', ' + esc(known.name), true);
     h += '<button type="button" class="notyou" data-act="notyou">' + t('notYou') + '</button>';
+    h += whoHtml();   // FOR-WHOM
     h += '<p class="help">' + t('knownHelp') + '</p>';
     h += '<div class="card"><ul class="tips">' + tip(P_CLOCK, t('tip1')) + tip(P_MIC, t('tip2')) + tip(P_SKIP, t('tip3')) + '</ul></div>';
     if (!sexKind(known.sex)) h += '<div class="card">' + sexField(true) + '<p class="mini" style="margin-top:8px">' + t('sexWhy') + '</p></div>';
   } else {
-    h += h1(t('namaste'), true) + '<p class="help">' + t('firstDetails') + '</p>';
+    h += h1(t('namaste'), true) + whoHtml() + '<p class="help">' + t('firstDetails') + '</p>';   // FOR-WHOM
     h += '<div class="card"><label class="lab" for="fName" style="margin-top:0">' + t('lName') + '</label><input class="in" id="fName" type="text" autocomplete="name" value="' + esc(S.name) + '"><p class="mini" style="margin:4px 0 0">' + t('forFamily') + '</p>';
     h += '<label class="lab" for="fPhone">' + t('lPhone') + '</label><input class="in" id="fPhone" type="tel" inputmode="numeric" autocomplete="tel" value="' + esc(S.phone) + '">';
     h += '<div class="pair"><div><label class="lab" for="fAge">' + t('lAge') + '</label><input class="in" id="fAge" type="number" min="0" max="120" inputmode="numeric" value="' + esc(S.age) + '"></div><div>' + sexField(false) + '</div></div></div>';
@@ -737,7 +799,7 @@ function resumeHtml() {
   return h + '</div><div class="stack"><button type="button" class="btn go" data-act="resume">' + t('cont') + '</button><button type="button" class="btn alt" data-act="again">' + t('again') + '</button></div>';
 }
 function mainHtml() {
-  return h1(t('mainQ')) + '<p class="help">' + t('mainHelp') + '</p>' + speakRow(false)
+  return h1(t('mainQ')) + (S.who === 'other' && clean(S.oName) ? '<p class="help"><b>' + t('answerFor', { n: esc(clean(S.oName)) }) + '</b></p>' : '') + '<p class="help">' + t('mainHelp') + '</p>' + speakRow(false)
     + '<textarea class="ta" id="fMain" aria-label="' + esc(t('mainQ')) + '" placeholder="' + esc(t('mainPh')) + '">' + esc(S.main) + '</textarea>'
     + '<div class="tools">' + micBtn('fMain') + '</div><p class="hint tip">' + t(SR ? 'kbTip' : 'kbTipNo') + '</p>'
     + '<label class="lab" for="fSince">' + t('sinceL') + ' <small>' + t('optional') + '</small></label><input class="in" id="fSince" type="text" placeholder="' + esc(t('sincePh')) + '" value="' + esc(S.since) + '">'
@@ -800,6 +862,7 @@ function reviewHtml() {
   var since = clean(S.since), better = clean(S.better), others = [], i;
   S.others.forEach(function (o) { var c = clean(o); if (c) others.push(esc(c)); });
   var h = h1(t('reviewTitle'));
+  if (S.who === 'other') h += rvGroup('you', '<p><b>' + t('forLine', { n: esc(clean(S.oName)) }) + '</b> &middot; ' + esc(S.oAge) + ' &middot; ' + esc(S.oSex) + '</p><p class="mu">' + t('sentAs', { n: esc(senderName()) }) + '</p>');   // FOR-WHOM
   h += rvGroup('main', '<p>' + esc(clean(S.main)) + '</p>'
     + (since ? '<p class="mu"><b>' + t('lSince') + '</b> ' + esc(since) + '</p>' : '')
     + (better ? '<p class="mu"><b>' + t('lBetter') + '</b> ' + esc(better) + '</p>' : '')
@@ -951,8 +1014,11 @@ function onPrimary() {
 
 // ============================================================ sending
 function patientNow() {
+  // FOR-WHOM: a story for someone else is never filed under the sender - it carries that person's own name, age and sex and the
+  // sender's phone, and goes to their own record (found, or opened, from that name and phone)
+  if (S.who === 'other') return { uid: '', name: clean(S.oName), phone: senderPhone().replace(/[^\d+]/g, ''), age: S.oAge || '', sex: S.oSex || '' };
   if (known) return { uid: known.uid, name: known.name, phone: known.phone || '', age: known.age || '', sex: effSex() || '' };
-  return { uid: uid || '', name: clean(S.name), phone: S.phone.replace(/[^\d+]/g, ''), age: S.age || '', sex: S.sex || '' };   // a link that carries the patient's id still files it under that patient
+  return { uid: notYou ? '' : (uid || ''), name: clean(S.name), phone: S.phone.replace(/[^\d+]/g, ''), age: S.age || '', sex: S.sex || '' };   // a link that carries the patient's id still files it under that patient
 }
 function afterSent(preview) {
   clearDraft(); renderDone(preview);
@@ -966,6 +1032,7 @@ function send() {
   var patient = patientNow(), b = buildStory();
   var payload = { patient: patient, submittedAt: new Date().toISOString(), story: b.story, storyParts: { complaints: b.complaints, general: b.general }, storyEntry: true, storyLang: micLang };
   if (!patient.uid) payload.unlinked = true;
+  if (S.who === 'other') { payload.storyFor = 'other'; payload.forPerson = { name: clean(S.oName), age: S.oAge || '', sex: S.oSex || '' }; payload.sentBy = { uid: known ? known.uid : '', name: senderName(), phone: senderPhone().replace(/[^\d+]/g, '') }; }   // FOR-WHOM
   if (testMode) { afterSent(b.story); return; }
   sending = true; setMsg('');
   var btn = $('primary'); if (btn) { btn.disabled = true; btn.textContent = '…'; }
@@ -1038,13 +1105,14 @@ function onClick(e) {
   else if (act === 'speaklang') setMicLang(b.getAttribute('data-l'));
   else if (act === 'addprob') addProblem();
   else if (act === 'rmprob') removeProblem(b);
-  else if (act === 'notyou') leave(function () { known = null; render('you'); });
+  else if (act === 'notyou') leave(function () { known = null; notYou = true; render('you'); });   // FOR-WHOM: then it is filed by the name and phone typed, not under the link's patient
+  else if (act === 'who') { collect(); S.who = b.getAttribute('data-v'); setMsg(''); render('you'); draftSoon(); }   // FOR-WHOM
   else if (act === 'lang') { var l2 = b.getAttribute('data-l'); leave(function () { L = l2; applyLang(); render(cur); draftNow(); }); }
   else if (act === 'change') { var g = b.getAttribute('data-g'); startEdit(g, firstOfGroup(g), false); }
   else if (act === 'cell') startEdit('general', b.getAttribute('data-s'), true);
   else if (act === 'resume') { var st = pending.step; pending = null; lastNav = Date.now(); startAt(st); }
   else if (act === 'again') {
-    clearDraft(); var keep = S; S = freshState(); S.name = keep.name; S.phone = keep.phone; S.age = keep.age; S.sex = keep.sex;
+    clearDraft(); var keep = S; S = freshState(); S.name = keep.name; S.phone = keep.phone; S.age = keep.age; S.sex = keep.sex; S.who = keep.who; S.oName = keep.oName; S.oAge = keep.oAge; S.oSex = keep.oSex;
     pending = null; lastNav = Date.now(); startAt('you');
   }
   else if (act === 'later') leave(function () { draftNow(); renderLater(); });   // LATER
@@ -1203,7 +1271,7 @@ function sameNameish(a, b) {
   for (let i = 1; i <= m; i++) { const cur = [i]; for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (s1[i - 1] === s2[j - 1] ? 0 : 1)); prev = cur; }
   return 1 - prev[n] / Math.max(m, n) >= 0.8;
 }
-async function findOrMakeAccount(name, phone) {
+async function findOrMakeAccount(name, phone, opt) {   // opt (FOR-WHOM): { notName: the sender, extra: fields for a new record }
   const raw = String(phone || '').replace(/[^0-9]/g, ''), stripped = raw.replace(/^0+/, ''), ph = stripped.slice(-10);
   if (ph.length !== 10) return null;
   const pass = v => 'Pun@' + v.slice(-6) + 'Cl!', nk = nameKey(name);
@@ -1214,7 +1282,7 @@ async function findOrMakeAccount(name, phone) {
     const idx = await get(ref(db, 'phoneIndex/' + ph));
     if (idx.exists()) {
       const ids = Object.keys(idx.val() || {});
-      if (ids.length === 1) { const kn = nameKey(idx.val()[ids[0]]); if (kn && (!nk || sameNameish(nk, kn))) { uid = await tryIn(ph + '.' + kn + '@punarvasu.clinic', pass(ph)); if (uid) return uid; } }   // FAMILY-NUMBER: not for a different person
+      if (ids.length === 1) { const kn = nameKey(idx.val()[ids[0]]); if (kn && (!nk || sameNameish(nk, kn)) && !(opt && opt.notName && sameNameish(kn, nameKey(opt.notName)))) { uid = await tryIn(ph + '.' + kn + '@punarvasu.clinic', pass(ph)); if (uid) return uid; } }   // FAMILY-NUMBER: not for a different person
     }
   } catch (e) { /* phoneIndex not readable - go on */ }
   if (!nk) return null;   // a name in Hindi / Gujarati letters cannot make a new account: sent unlinked, as before
@@ -1225,7 +1293,7 @@ async function findOrMakeAccount(name, phone) {
   const email = ph + '.' + nk + '@punarvasu.clinic';
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, pass(ph));
-    await set(ref(db, 'patients/' + cred.user.uid), { name, phone, email, status: 'active', createdAt: Date.now() });
+    await set(ref(db, 'patients/' + cred.user.uid), Object.assign({ name, phone, email, status: 'active', createdAt: Date.now() }, (opt && opt.extra) || {}));
     try { await set(ref(db, 'phoneIndex/' + ph + '/' + cred.user.uid), name); } catch (e) {}
     return cred.user.uid;
   } catch (e) {
@@ -1239,7 +1307,10 @@ W.sender = async function (payload) {
   const patient = payload.patient;
   if (!patient.uid) {   // STORY-LINK
     let uid = null;
-    try { uid = await findOrMakeAccount(patient.name, patient.phone); } catch (e) { console.error('[story] account lookup failed:', e); }
+    const sb = payload.sentBy;   // FOR-WHOM: a story for someone else - their own record, noting the shared phone and the sender as contact
+    const opt = sb ? { notName: sb.name, extra: Object.assign({ familyContact: { uid: sb.uid || '', name: sb.name || '', phone: sb.phone || '', note: 'Phone number is shared', at: Date.now() } },
+      patient.age ? { age: String(patient.age) } : {}, patient.sex ? { sex: patient.sex } : {}) } : null;
+    try { uid = await findOrMakeAccount(patient.name, patient.phone, opt); } catch (e) { console.error('[story] account lookup failed:', e); }
     if (uid) { patient.uid = uid; delete payload.unlinked; }
   }
   const caseKey = push(ref(db, 'cases')).key;
