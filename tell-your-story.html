@@ -173,7 +173,12 @@ var urlLang = (P.get('lang') || '').trim().toLowerCase();
 if (urlLang !== 'en' && urlLang !== 'hi' && urlLang !== 'gu') urlLang = '';
 var uid = (P.get('uid') || '').trim();
 var testMode = P.get('test') === '1';
-var byDoctor = P.get('by') === 'doctor';   // BY-DOCTOR: opened by the doctor's Patient is here - no thank-you to the patient at the end
+var byDoctor = P.get('by') === 'doctor';
+// APPROVE-FIRST: ?k=<the clinic's current link code> - the universal new-patient link. What is sent becomes a request for Dr. Tiwari to
+// approve; no account is made here. A link with neither a patient id nor a code (the old plain link) is no longer in use.
+var inviteKey = (P.get('k') || '').trim().slice(0, 64);
+var requestMode = !uid && !!inviteKey;
+var deadLink = !uid && !inviteKey && !testMode;   // BY-DOCTOR: opened by the doctor's Patient is here - no thank-you to the patient at the end
 var LI = { en: 0, hi: 1, gu: 2 };
 var SPEAK = { en: 'en-IN', hi: 'hi-IN', gu: 'gu-IN' };
 var L = urlLang || 'en';
@@ -279,6 +284,8 @@ var T = {
   skipped: ['Skipped', 'छोड़ा गया', 'છોડ્યું'],
   ownAdded: ['own words added', 'अपने शब्द जुड़े हैं', 'પોતાના શબ્દો ઉમેર્યા છે'],
   thanks: ['Thank you', 'धन्यवाद', 'આભાર'],
+  deadHead: ['This link is no longer in use', 'यह लिंक अब इस्तेमाल में नहीं है', 'આ લિંક હવે ઉપયોગમાં નથી'],
+  deadMsg: ['Please ask Punarvasu Clinic on WhatsApp for a new link.', 'कृपया पुनर्वसु क्लिनिक से WhatsApp पर नया लिंक मँगवाएँ।', 'કૃપા કરી પુનર્વસુ ક્લિનિક પાસેથી WhatsApp પર નવી લિંક મંગાવો.'],
   doneMsg: ['Your answers have reached Dr. Tiwari. He will read them and be in touch.', 'आपके जवाब डॉ. तिवारी तक पहुँच गए हैं। वे उन्हें पढ़कर आपसे संपर्क करेंगे।', 'તમારા જવાબ ડૉ. તિવારી સુધી પહોંચી ગયા છે. તેઓ તે વાંચીને તમારો સંપર્ક કરશે.'],
   closePage: ['You can close this page.', 'आप यह पेज बंद कर सकते हैं।', 'તમે આ પેજ બંધ કરી શકો છો.'],
   // speaking
@@ -548,7 +555,7 @@ var known = null;              // the patient the link belongs to: { uid, name, 
 var notYou = false;           // FOR-WHOM: "Not you?" pressed - the link's own patient is not the one writing
 var booted = false, cur = '', nav = [], navAt = 0, edit = null, pending = null;
 var sent = false, sending = false, navBusy = false, lastNav = 0, saveTimer = null, slowTimer = null, boxSeq = 0;
-var W = { uid: uid, init: init, sender: null };
+var W = { uid: uid, init: init, sender: null, k: inviteKey, req: requestMode };
 
 function freshState() { return { who: '', oName: '', oAge: '', oSex: '', name: '', phone: '', age: '', sex: '', main: '', since: '', better: '', others: [''], g: {}, extra: '' }; }
 function ga(id) { var a = S.g[id]; if (!a) a = S.g[id] = { v: Qby[id].multi ? [] : '', own: '' }; return a; }
@@ -1199,6 +1206,11 @@ function setMicLang(code) {
 function init(k) {
   if (booted) { if (k && !known && cur === 'you' && !sent) { known = k; render('you'); } return; }
   booted = true; known = k || null;
+  if (deadLink) {   // APPROVE-FIRST: the old plain link
+    applyLang(); cur = 'done'; $('prog').hidden = true; $('bar').hidden = true;
+    $('view').innerHTML = '<div class="ty">' + h1(t('deadHead'), true) + '<p class="help">' + t('deadMsg') + '</p></div>';
+    return;
+  }
   var d = loadDraft();
   if (d) {
     if (!urlLang && (d.lang === 'en' || d.lang === 'hi' || d.lang === 'gu')) L = d.lang;
@@ -1305,6 +1317,11 @@ async function findOrMakeAccount(name, phone, opt) {   // opt (FOR-WHOM): { notN
 // the form calls this when the patient presses "Send to Dr. Tiwari" (never in test mode)
 W.sender = async function (payload) {
   const patient = payload.patient;
+  if (W.req) {   // APPROVE-FIRST: a request for the doctor to approve - no account, no case yet. The database accepts it only with the current code.
+    await set(push(ref(db, 'newPatientRequests')), { code: W.k, at: Date.now(), name: String(patient.name || '').slice(0, 120), phone: String(patient.phone || '').slice(0, 30),
+      age: String(patient.age || '').slice(0, 5), sex: String(patient.sex || '').slice(0, 20), payload });
+    return;
+  }
   if (!patient.uid) {   // STORY-LINK
     let uid = null;
     const sb = payload.sentBy;   // FOR-WHOM: a story for someone else - their own record, noting the shared phone and the sender as contact
