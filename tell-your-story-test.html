@@ -284,7 +284,6 @@ var T = {
   skipped: ['Skipped', 'छोड़ा गया', 'છોડ્યું'],
   ownAdded: ['own words added', 'अपने शब्द जुड़े हैं', 'પોતાના શબ્દો ઉમેર્યા છે'],
   thanks: ['Thank you', 'धन्यवाद', 'આભાર'],
-  reqMsg: ['Your details have reached Punarvasu Clinic. Dr. Tiwari will confirm them and send you your own personal link on WhatsApp.', 'आपकी जानकारी पुनर्वसु क्लिनिक तक पहुँच गई है। डॉ. तिवारी इसकी पुष्टि करके आपको WhatsApp पर आपका अपना निजी लिंक भेजेंगे।', 'તમારી વિગતો પુનર્વસુ ક્લિનિક સુધી પહોંચી ગઈ છે. ડૉ. તિવારી તેની પુષ્ટિ કરીને તમને WhatsApp પર તમારી પોતાની અંગત લિંક મોકલશે.'],
   deadHead: ['This link is no longer in use', 'यह लिंक अब इस्तेमाल में नहीं है', 'આ લિંક હવે ઉપયોગમાં નથી'],
   deadMsg: ['Please ask Punarvasu Clinic on WhatsApp for a new link.', 'कृपया पुनर्वसु क्लिनिक से WhatsApp पर नया लिंक मँगवाएँ।', 'કૃપા કરી પુનર્વસુ ક્લિનિક પાસેથી WhatsApp પર નવી લિંક મંગાવો.'],
   doneMsg: ['Your answers have reached Dr. Tiwari. He will read them and be in touch.', 'आपके जवाब डॉ. तिवारी तक पहुँच गए हैं। वे उन्हें पढ़कर आपसे संपर्क करेंगे।', 'તમારા જવાબ ડૉ. તિવારી સુધી પહોંચી ગયા છે. તેઓ તે વાંચીને તમારો સંપર્ક કરશે.'],
@@ -964,7 +963,7 @@ function renderDone(preview) {
     ? '<div class="ty"><div class="ring" style="color:#163d7a">' + svg(46, 2.6, P_TICK) + '</div>' + h1('Saved to the patient\u2019s record', true)
       + '<p class="help">The story is now on the patient\u2019s record as a new case waiting for your prescription. Close this tab, go back to the Workspace and press <b>Refresh</b>, then <b>Read story &amp; find rubrics</b>.</p>'
     : '<div class="ty"><div class="ring" style="color:#163d7a">' + svg(46, 2.6, P_TICK) + '</div>' + h1(t('thanks'), true)
-      + '<p class="help">' + t(requestMode ? 'reqMsg' : 'doneMsg') + '</p><p class="mini">' + t('closePage') + '</p>';   // APPROVE-FIRST
+      + '<p class="help">' + t('doneMsg') + '</p><p class="mini">' + t('closePage') + '</p>';
   if (testMode) h += '<div class="prev"><p class="mini"><b>Test mode: nothing was sent.</b> This is the text Dr. Tiwari would have received:</p><pre id="testOut">' + esc(preview || '') + '</pre>'
     + '<p style="margin-top:14px"><button type="button" class="btn alt" style="width:100%" data-act="newtest">Start a new test</button></p></div>';
   $('view').innerHTML = h + '</div>';
