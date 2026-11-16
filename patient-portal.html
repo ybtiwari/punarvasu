@@ -1648,7 +1648,7 @@ function renderCaseFileContent() {
           sess.prescriptions.forEach(p => {
             // RX-PDF-ON-DEMAND: the PDF is made on the phone from the prescription text, only when the button is pressed
             const pdfLink = p.type === 'continue' ? '' : `<br/><button type="button" class="btn-download" style="display:inline-block;margin-top:6px;border:none;cursor:pointer;font-family:inherit" onclick="var r=__rxPdfList[${window.__rxPdfList.push({ e: p, n: shownName() }) - 1}];pvRxPdf.download(r.e,r.n,this)">⬇ Download Prescription (PDF)</button>`;
-            html += `<div class="case-entry"><div class="case-entry-text"><strong>Medicine:</strong> ${p.medicine}<br/>${p.dose ? '<strong>Dose:</strong> ' + p.dose + '<br/>' : ''}${p.notes ? '<strong>Notes:</strong> '+p.notes : ''}${pdfLink}</div></div>`;
+            html += `<div class="case-entry"><div class="case-entry-text"><strong>Medicine:</strong> ${p.medicine}<br/>${p.dose ? '<strong>Dose:</strong> ' + p.dose + '<br/>' : ''}${p.notes ? '<strong>Advice:</strong> '+p.notes : ''}${pdfLink}</div></div>`;
           });
 
           html += '</div>'; // .time-box
