@@ -1077,7 +1077,10 @@ window.mcAdd = async function () {
   if (mcRec) { try { mcRec.stop(); } catch (e) {} }
   if (btn) btn.disabled = true;
   try {
-    await push(ref(db, `patients/${currentUser.uid}/notedComplaints`), { text, at: Date.now(), lang: currentLang, by: 'patient' });
+    const noteRef = await push(ref(db, `patients/${currentUser.uid}/notedComplaints`), { text, at: Date.now(), lang: currentLang, by: 'patient' });
+    // COMPLAINT-NOTICE: tell Dr. Tiwari's Dashboard a complaint was noted (non-fatal - the complaint itself is already saved)
+    try { await push(ref(db, 'notifications/admin'), { type: 'complaint_noted', patientUid: currentUser.uid, name: shownName(), noteKey: noteRef.key, preview: text.slice(0, 160), timestamp: Date.now() }); }
+    catch (e) { console.error('complaint notification failed (non-fatal):', e); }
     mcDraft = ''; renderMyNoted();
   } catch (e) { alert((MC_TEXT[currentLang] || MC_TEXT.en).err); if (btn) btn.disabled = false; }
 };
