@@ -1017,6 +1017,8 @@ async function sendMessage() {
 // the new format (an object like {en:"...", hi:"...", gu:"..."}) and the
 // old format (a plain string, from before multi-language support existed —
 // those only ever have English, regardless of which language is toggled).
+const AYUR_TITLE = { en: '🌿 Ayurvedic perspective', hi: '🌿 आयुर्वेदिक दृष्टिकोण', gu: '🌿 આયુર્વેદિક દૃષ્ટિકોણ' };   // AYURVEDA-VIEW
+const AYUR_NOTE = { en: 'Ayurvedic perspective, for understanding only - not a treatment. Based on principles of Charaka Samhita, Sushruta Samhita and Madhava Nidana. Reviewed by Dr. Tiwari.', hi: 'आयुर्वेदिक दृष्टिकोण, केवल समझने के लिए - यह उपचार नहीं है। चरक संहिता, सुश्रुत संहिता और माधव निदान के सिद्धांतों पर आधारित। डॉ. तिवारी द्वारा जाँचा गया।', gu: 'આયુર્વેદિક દૃષ્ટિકોણ, ફક્ત સમજવા માટે - આ સારવાર નથી. ચરક સંહિતા, સુશ્રુત સંહિતા અને માધવ નિદાનના સિદ્ધાંતો પર આધારિત. ડૉ. તિવારી દ્વારા તપાસાયેલું.' };
 function pickLang(field, lang) {
   if (!field) return '';
   if (typeof field === 'string') return field; // old single-language entries
@@ -1645,6 +1647,8 @@ function renderCaseFileContent() {
             const progText = pickLang(c.prognosis, currentLang);
             if (diffText) html += `<div style="white-space:pre-wrap;margin-bottom:14px">${diffText}</div>`;
             if (progText) html += `<div style="white-space:pre-wrap;padding-top:12px;border-top:1px solid var(--border);color:var(--ink3)"><strong>What to expect as treatment progresses:</strong><br/>${progText}</div>`;
+            const ayText = pickLang(c.ayurveda, currentLang);   // AYURVEDA-VIEW: shown only once Dr. Tiwari has approved the Clinical Picture
+            if (ayText) html += `<div style="padding-top:12px;margin-top:12px;border-top:1px solid var(--border)"><strong>${AYUR_TITLE[currentLang] || AYUR_TITLE.en}</strong><div style="white-space:pre-wrap;margin-top:4px">${mypEsc(ayText)}</div><div style="font-size:12px;color:var(--ink3);font-style:italic;margin-top:6px">${AYUR_NOTE[currentLang] || AYUR_NOTE.en}</div></div>`;
             html += '</div></details>';
           });
 
